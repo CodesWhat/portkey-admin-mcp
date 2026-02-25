@@ -198,11 +198,6 @@ async function main() {
 		() => (ctx.workspaceId ? null : "no workspaceId"),
 	);
 
-	await test("listTraces", async () => {
-		const res = await portkey.listTraces({ page_size: 1 });
-		if (res.data?.[0]) ctx.traceId = res.data[0].id;
-	});
-
 	await test("listProviders", async () => {
 		const res = await portkey.listProviders();
 		if (res.data?.[0]) ctx.providerSlug = res.data[0].slug;

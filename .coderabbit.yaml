@@ -1,0 +1,81 @@
+# CodeRabbit Configuration
+# Copy this to your project root and customize the path_instructions for your project.
+
+language: en-US
+
+reviews:
+  # "chill" = fewer comments, higher signal. "assertive" = more comments including nitpicks.
+  profile: chill
+
+  # Enable automatic reviews on PRs
+  auto_review:
+    enabled: true
+
+  # High-level summary and walkthrough
+  high_level_summary: true
+  collapse_walkthrough: false
+  review_status: true
+  poem: false
+
+  # Don't request changes — just comment
+  request_changes_workflow: false
+
+  # Files/patterns to ignore
+  path_filters:
+    - "!**/node_modules/**"
+    - "!**/dist/**"
+    - "!**/build/**"
+    - "!**/.next/**"
+    - "!**/coverage/**"
+    - "!**/*.min.js"
+    - "!**/*.min.css"
+    - "!**/package-lock.json"
+    - "!**/yarn.lock"
+    - "!**/pnpm-lock.yaml"
+    - "!**/*.generated.*"
+    - "!**/generated/**"
+    - "!**/*.lock"
+    - "!**/migrations/**"
+
+  # Per-path review instructions — add entries to tell CR about intentional patterns.
+  # Uncomment and customize for your project:
+  # path_instructions:
+  #   - path: "src/api/**"
+  #     instructions: |
+  #       Error handling is done in middleware. Don't flag missing try/catch in handlers.
+  #   - path: "src/jobs/**"
+  #     instructions: |
+  #       Jobs use broad exception catches intentionally. Don't flag bare except clauses.
+  #   - path: "**/*.test.*"
+  #     instructions: |
+  #       Test files. Don't suggest error handling or null checks in test code.
+
+knowledge_base:
+  opt_out: false
+
+  # Local only — don't let learnings from other repos bleed into this one.
+  # Each repo has its own patterns and conventions.
+  learnings:
+    scope: local
+
+  # Local only for issues too
+  issues:
+    scope: local
+
+  # Let CR read our CLAUDE.md and other agent instruction files
+  code_guidelines:
+    enabled: true
+    file_patterns:
+      - "**/CLAUDE.md"
+      - "**/.cursorrules"
+
+  # Web search for additional context (library docs, etc.)
+  web_search:
+    enabled: true
+
+  # Pull request history for context
+  pull_requests:
+    scope: local
+
+chat:
+  auto_reply: true

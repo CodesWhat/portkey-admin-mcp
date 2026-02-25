@@ -31,6 +31,8 @@ MCP server for [Portkey](https://portkey.ai/) Admin API. **116 tools** for promp
 - [🔧 Tools](#-tools-116)
 - [🏗️ Architecture](#-architecture)
 - [🚢 Deployment](#-deployment)
+- [▲ Vercel Guide](./docs/VERCEL_DEPLOYMENT.md)
+- [🔐 Security Policy](./SECURITY.md)
 - [⚠️ Limitations](#-limitations)
 
 ---
@@ -213,7 +215,7 @@ Users, workspaces, API keys
 </details>
 
 <details>
-<summary><strong>🧩 Prompt Partials</strong> (6 tools)</summary>
+<summary><strong>🧩 Prompt Partials</strong> (7 tools)</summary>
 
 | Tool | Description |
 |------|-------------|
@@ -289,30 +291,19 @@ Users, workspaces, API keys
 </details>
 
 <details>
-<summary><strong>📊 Analytics</strong> (20 tools)</summary>
+<summary><strong>📊 Analytics</strong> (9 tools)</summary>
 
 | Tool | Description |
 |------|-------------|
 | `get_cost_analytics` | Get cost analytics data |
-| `get_analytics_summary` | Get analytics summary |
-| `get_analytics_by_models` | Analytics by model |
-| `get_analytics_by_metadata` | Analytics by metadata |
 | `get_request_analytics` | Request analytics |
 | `get_token_analytics` | Token usage analytics |
 | `get_latency_analytics` | Latency analytics |
 | `get_error_analytics` | Error analytics |
 | `get_error_rate_analytics` | Error rate analytics |
-| `get_status_code_analytics` | Status code distribution |
-| `get_cache_analytics` | Cache analytics |
-| `get_feedback_analytics` | Feedback analytics |
-| `get_user_analytics` | Per-user analytics |
+| `get_users_analytics` | Per-user analytics |
 | `get_cache_hit_latency` | Cache hit latency |
 | `get_cache_hit_rate` | Cache hit rate |
-| `get_feedback_per_model` | Feedback per model |
-| `get_feedback_score_distribution` | Score distribution |
-| `get_requests_per_user` | Requests per user |
-| `get_rescued_requests` | Rescued requests |
-| `get_weighted_feedback` | Weighted feedback |
 
 </details>
 
@@ -333,13 +324,12 @@ Users, workspaces, API keys
 </details>
 
 <details>
-<summary><strong>🔍 Tracing</strong> (4 tools)</summary>
+<summary><strong>🔍 Tracing</strong> (3 tools)</summary>
 
 | Tool | Description |
 |------|-------------|
 | `create_feedback` | Create feedback |
 | `update_feedback` | Update feedback |
-| `list_traces` | List traces |
 | `get_trace` | Get trace details |
 
 </details>
@@ -407,32 +397,155 @@ sequenceDiagram
 
 ### Transports
 
-| Transport | Use Case | Default |
-|-----------|----------|---------|
-| `stdio` | Local CLI tools (Claude Code, Cursor) | Yes |
-| `Streamable HTTP` | Remote clients, web, production | - |
+| Transport | Entrypoint | Use Case |
+|-----------|------------|----------|
+| `stdio` | `node build/index.js` | Local CLI tools (Claude Code, Cursor) |
+| `Streamable HTTP` | `node build/server.js` | Remote clients, web, production |
 
-Set via `MCP_TRANSPORT=stdio|http` environment variable.
+`MCP_TRANSPORT` is retained for compatibility, but transport selection is done by choosing the correct entrypoint.
+
+### Session Modes (HTTP)
+
+| Mode | Env | Best For | Tradeoff |
+|------|-----|----------|----------|
+| Stateful | `MCP_SESSION_MODE=stateful` (default) | Single-instance always-on services | Session transport state is in memory |
+| Stateless | `MCP_SESSION_MODE=stateless` | Autoscaling/serverless (Render scale-out, Vercel, Cloud Run) | `DELETE /mcp` not used; no server-side session tracking |
+
+### Recommended Hosted Defaults (Team Setup)
+
+For shared/team hosting, use:
+
+- `MCP_SESSION_MODE=stateless`
+- `MCP_EVENT_STORE=redis`
+- `MCP_REDIS_URL=...` (or `REDIS_URL=...`)
+- `MCP_AUTH_MODE=clerk` (or `bearer` for internal-only setups)
+- `ALLOWED_ORIGINS=https://your-app-domain`
+- `MCP_READY_CHECK_MODE=portkey`
+
+This keeps MCP request handling stateless while preserving stream resumability across instances.
+
+### Event Store Modes
+
+| Mode | Env | Default | Purpose |
+|------|-----|---------|---------|
+| Off | `MCP_EVENT_STORE=off` | `stateful` mode | No resumability store |
+| Memory | `MCP_EVENT_STORE=memory` | `stateless` mode | In-process resumability |
+| Redis | `MCP_EVENT_STORE=redis` + `MCP_REDIS_URL` or `REDIS_URL` | none | Shared resumability across instances |
+
+`MCP_EVENT_TTL_SECONDS` controls retention (default `3600`).
+When `MCP_EVENT_STORE=redis`, the server resolves Redis URL in this order:
+`MCP_REDIS_URL` first, then `REDIS_URL`.
 
 ### HTTP Mode
 
 ```bash
-MCP_TRANSPORT=http MCP_PORT=3000 node build/index.js
+PORTKEY_API_KEY=your_key \
+MCP_HOST=0.0.0.0 \
+MCP_PORT=3000 \
+MCP_SESSION_MODE=stateful \
+MCP_EVENT_STORE=off \
+MCP_AUTH_MODE=bearer \
+MCP_AUTH_TOKEN=replace_with_long_random_secret \
+node build/server.js
 ```
 
 Exposes a single `/mcp` endpoint with session management via `Mcp-Session-Id` header.
+
+### HTTPS Mode (Native TLS)
+
+```bash
+PORTKEY_API_KEY=your_key \
+MCP_HOST=0.0.0.0 \
+MCP_PORT=3443 \
+MCP_TLS_KEY_PATH=/etc/ssl/private/server.key \
+MCP_TLS_CERT_PATH=/etc/ssl/certs/server.crt \
+MCP_AUTH_MODE=clerk \
+CLERK_ISSUER=https://your-clerk-domain \
+node build/server.js
+```
+
+If you host behind a platform/load balancer (Vercel, Cloud Run, Fly, Nginx, Cloudflare), leave `MCP_TLS_*` unset and let the platform terminate HTTPS.
+
+### Clerk Auth (HTTP)
+
+```bash
+PORTKEY_API_KEY=your_key \
+MCP_HOST=0.0.0.0 \
+MCP_PORT=3000 \
+MCP_SESSION_MODE=stateless \
+MCP_EVENT_STORE=redis \
+MCP_REDIS_URL=redis://localhost:6379 \
+MCP_AUTH_MODE=clerk \
+CLERK_ISSUER=https://your-clerk-domain \
+CLERK_AUDIENCE=your-audience \
+node build/server.js
+```
+
+### Vercel
+
+This repo includes Vercel routing files:
+
+- `api/index.ts` - Vercel function entrypoint
+- `vercel.json` - rewrites `/`, `/mcp`, `/health`, `/ready`, `/auth/info` to that function
+
+Full setup guide (including public-repo security checklist):
+- [`docs/VERCEL_DEPLOYMENT.md`](./docs/VERCEL_DEPLOYMENT.md)
+
+Recommended Vercel environment variables:
+
+- `PORTKEY_API_KEY=...`
+- `MCP_SESSION_MODE=stateless`
+- `MCP_EVENT_STORE=redis`
+- `MCP_REDIS_URL=redis://...`
+- `MCP_AUTH_MODE=clerk` (or `bearer`)
+- `ALLOWED_ORIGINS=https://your-app-domain`
+- `MCP_TRUST_PROXY=true`
+- `MCP_READY_CHECK_MODE=portkey`
+
+Notes:
+
+- Leave `MCP_TLS_*` unset on Vercel (Vercel terminates HTTPS).
+- Keep MCP on Streamable HTTP/SSE (Vercel does not support WebSockets).
+- `vercel.json` sets function `maxDuration` to `300`; adjust based on your plan limits.
+- For public repos, never commit keys; keep all credentials in Vercel Environment Variables only.
+
+### Quick MCP HTTP Test
+
+After starting the HTTP server, run:
+
+```bash
+npm run test:http
+```
+
+Optional overrides:
+
+- `MCP_TEST_BASE_URL=https://your-host`
+- `MCP_TEST_MCP_URL=https://your-host/mcp`
+- `MCP_TEST_BEARER_TOKEN=...` (or `MCP_TEST_AUTH_HEADER='Authorization: Bearer ...'`)
+
+The script verifies `/health`, `/ready`, runs `initialize`, then runs `tools/list`.
 
 ### Docker
 
 ```bash
 docker build -t portkey-admin-mcp .
-docker run -e PORTKEY_API_KEY=your_key -p 3000:3000 portkey-admin-mcp
+docker run \
+  -e PORTKEY_API_KEY=your_key \
+  -e MCP_TRANSPORT=http \
+  -e MCP_HOST=0.0.0.0 \
+  -e MCP_PORT=3000 \
+  -e MCP_AUTH_MODE=bearer \
+  -e MCP_AUTH_TOKEN=replace_with_long_random_secret \
+  -p 3000:3000 \
+  portkey-admin-mcp
 ```
 
 ### Health Endpoints
 
+- `GET /` - Web status/auth helper page
+- `GET /auth/info` - Auth metadata (auth mode, session mode, event store mode, Clerk config flags, MCP endpoint URL)
 - `GET /health` - Server status
-- `GET /ready` - Portkey API connectivity check
+- `GET /ready` - Readiness state (includes session mode/event store mode, and optional Portkey connectivity when `MCP_READY_CHECK_MODE=portkey`)
 
 ---
 
@@ -448,6 +561,21 @@ The following require a Portkey Enterprise plan with Admin API keys:
 - User management (list users, invites)
 - Provider creation
 
+### Scope-Gated Endpoints (Verified 2026-02-25)
+
+Most `403` responses include Portkey error code `AB03` ("not enough permissions").
+This indicates missing API key scopes, not broken endpoint paths.
+
+| Endpoint Group | Typical Failing Tools | Required Scope(s) |
+|------|------|------|
+| Users | `list_users`, `get_user` | `users.list`, `users.view` |
+| User Invites | `list_user_invites`, `get_user_invite` | `users.invites.list`, `users.invites.view` |
+| API Keys | `list_api_keys`, `get_api_key` | `apiKeys.list`, `apiKeys.view` (+ API key management feature) |
+| Audit Logs | `list_audit_logs` | `auditLogs.list` |
+| Analytics Graphs | `get_cost_analytics`, `get_request_analytics`, etc. | `analytics.view` |
+| Analytics Groups | `get_user_grouped_data` | `analytics.groups.view` |
+| Integration Access | `list_integration_models`, `list_integration_workspaces` | `integrations.models.list`, `integrations.workspaces.list` |
+
 ### Known Issues
 
 Some endpoints are pending Portkey API clarification:
@@ -458,7 +586,6 @@ Some endpoints are pending Portkey API clarification:
 | `create_prompt_label` | 400 | Request format unclear |
 | `create_usage_limit` | 400 | Request format unclear |
 | `create_rate_limit` | 400 | Request format unclear |
-| `list_traces` | 405 | Endpoint path unclear |
 
 ---
 
