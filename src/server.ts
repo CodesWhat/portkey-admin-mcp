@@ -478,10 +478,19 @@ app.delete("/mcp", async (req, res) => {
 // Session cleanup interval (every minute)
 const cleanupInterval = isStatefulSessionMode
 	? setInterval(async () => {
-			const expiredIds = await sessionStore.cleanup(config.sessionTimeout);
-			for (const id of expiredIds) {
-				Logger.info("MCP session expired and cleaned up", {
-					metadata: { sessionId: id },
+			try {
+				const expiredIds = await sessionStore.cleanup(config.sessionTimeout);
+				for (const id of expiredIds) {
+					Logger.info("MCP session expired and cleaned up", {
+						metadata: { sessionId: id },
+					});
+				}
+			} catch (error) {
+				Logger.error("Session cleanup tick failed", {
+					metadata: {
+						fn: "sessionStore.cleanup",
+						error: error instanceof Error ? error.message : String(error),
+					},
 				});
 			}
 		}, 60000)
@@ -500,13 +509,18 @@ async function closeRuntimeResources(): Promise<void> {
 		clearInterval(cleanupInterval);
 	}
 
-	if (isStatefulSessionMode) {
-		await sessionStore.closeAll();
-	} else if (statelessTransportPromise) {
-		const statelessTransport = await statelessTransportPromise;
-		await statelessTransport.close();
+	try {
+		if (isStatefulSessionMode) {
+			await sessionStore.closeAll();
+		} else if (statelessTransportPromise) {
+			const transportPromise = statelessTransportPromise;
+			statelessTransportPromise = undefined;
+			const statelessTransport = await transportPromise;
+			await statelessTransport.close();
+		}
+	} finally {
+		await managedEventStore.close();
 	}
-	await managedEventStore.close();
 }
 
 export async function closeHttpApp(): Promise<void> {
