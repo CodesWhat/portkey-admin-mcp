@@ -56,7 +56,7 @@ Auth option A (recommended for teams): Clerk JWT
 
 - `MCP_AUTH_MODE=clerk`
 - `CLERK_ISSUER=https://<your-clerk-domain>`
-- `CLERK_AUDIENCE=<your-audience>` (optional, but recommended)
+- `CLERK_AUDIENCE=<your-audience>` (required)
 - `CLERK_JWKS_URL=...` (optional; auto-derived from issuer if omitted)
 
 Auth option B (internal shared token):
@@ -159,7 +159,7 @@ For team access:
 - Manage secrets in Vercel project envs, not in local files.
 - Keep each environment on a separate Portkey key and Redis namespace.
 
-Suggested prod naming:
+Suggested naming convention:
 
 - `MCP_REDIS_KEY_PREFIX=portkey-admin-mcp:prod`
 - `MCP_REDIS_KEY_PREFIX=portkey-admin-mcp:staging`

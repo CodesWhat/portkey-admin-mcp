@@ -65,10 +65,22 @@ function getHttpAuthConfigFromEnv(): HttpAuthConfig {
 		);
 	}
 
-	if (mode === "clerk" && !jwksUrl) {
-		throw new Error(
-			"MCP_AUTH_MODE=clerk requires CLERK_JWKS_URL or CLERK_ISSUER to be set",
-		);
+	if (mode === "clerk") {
+		const missing: string[] = [];
+		if (!issuer) {
+			missing.push("CLERK_ISSUER");
+		}
+		if (!audience || audience.length === 0) {
+			missing.push("CLERK_AUDIENCE");
+		}
+		if (!jwksUrl) {
+			missing.push("CLERK_JWKS_URL");
+		}
+		if (missing.length > 0) {
+			throw new Error(
+				`MCP_AUTH_MODE=clerk requires ${missing.join(", ")} to be set`,
+			);
+		}
 	}
 
 	return {
@@ -118,6 +130,12 @@ async function verifyClerkToken(
 ): Promise<void> {
 	if (!config.jwksUrl) {
 		throw new Error("Missing Clerk JWKS URL configuration");
+	}
+	if (!config.issuer) {
+		throw new Error("Missing Clerk issuer configuration");
+	}
+	if (!config.audience || config.audience.length === 0) {
+		throw new Error("Missing Clerk audience configuration");
 	}
 
 	let jwks = jwksCache.get(config.jwksUrl);

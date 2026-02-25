@@ -8,12 +8,24 @@ The latest `main` branch is supported for security fixes.
 
 Please do not open public GitHub issues for suspected vulnerabilities.
 
-Instead, report privately to the maintainers and include:
+Preferred private channel:
+
+- GitHub private vulnerability reporting:
+  `https://github.com/SYPartners/portkey-admin-mcp/security/advisories/new`
+
+If you cannot use GitHub advisories, contact maintainers privately through your organization's established security channel.
+
+Include:
 
 - affected version/commit
 - reproduction steps
 - impact assessment
 - suggested fix (if available)
+
+Response expectations:
+
+- Initial acknowledgement target: within 3 business days
+- Status update target: within 7 business days
 
 ## Secrets and Credentials
 

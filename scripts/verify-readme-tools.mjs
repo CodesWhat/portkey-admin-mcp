@@ -16,7 +16,7 @@ const perFileCounts = [];
 for (const fileName of toolFileNames) {
 	const fullPath = path.join(toolsDir, fileName);
 	const source = readFileSync(fullPath, "utf8");
-	const matches = [...source.matchAll(/server\.tool\(\s*"([^"]+)"/gms)];
+	const matches = [...source.matchAll(/server\.tool\(\s*["']([^"']+)["']/gms)];
 	perFileCounts.push({ fileName, count: matches.length });
 	for (const match of matches) {
 		codeToolNames.push(match[1]);

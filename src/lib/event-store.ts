@@ -110,7 +110,7 @@ class RedisEventStore implements EventStore {
 	private readonly client: RedisClientType;
 	private readonly ttlSeconds: number;
 	private readonly keyPrefix: string;
-	private readonly connectPromise: Promise<unknown>;
+	private connectPromise: Promise<unknown> | undefined;
 
 	constructor(redisUrl: string, keyPrefix: string, ttlSeconds: number) {
 		this.ttlSeconds = ttlSeconds;
@@ -126,8 +126,6 @@ class RedisEventStore implements EventStore {
 				},
 			});
 		});
-
-		this.connectPromise = this.client.connect();
 	}
 
 	private counterKey(): string {
@@ -143,6 +141,17 @@ class RedisEventStore implements EventStore {
 	}
 
 	private async ensureConnected(): Promise<void> {
+		if (this.client.isOpen) {
+			return;
+		}
+
+		if (!this.connectPromise) {
+			this.connectPromise = this.client.connect().catch((error) => {
+				this.connectPromise = undefined;
+				throw error;
+			});
+		}
+
 		await this.connectPromise;
 	}
 
@@ -219,6 +228,13 @@ class RedisEventStore implements EventStore {
 	}
 
 	async close(): Promise<void> {
+		if (!this.client.isOpen && this.connectPromise) {
+			try {
+				await this.connectPromise;
+			} catch {
+				// Ignore connect failures during shutdown.
+			}
+		}
 		if (this.client.isOpen) {
 			await this.client.quit();
 		}

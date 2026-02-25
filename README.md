@@ -498,6 +498,8 @@ Recommended Vercel environment variables:
 - `MCP_EVENT_STORE=redis`
 - `MCP_REDIS_URL=redis://...`
 - `MCP_AUTH_MODE=clerk` (or `bearer`)
+- `CLERK_ISSUER=https://your-clerk-domain` (required when `MCP_AUTH_MODE=clerk`)
+- `CLERK_AUDIENCE=your-audience` (required when `MCP_AUTH_MODE=clerk`)
 - `ALLOWED_ORIGINS=https://your-app-domain`
 - `MCP_TRUST_PROXY=true`
 - `MCP_READY_CHECK_MODE=portkey`
@@ -568,7 +570,7 @@ This indicates missing API key scopes, not broken endpoint paths.
 
 | Endpoint Group | Typical Failing Tools | Required Scope(s) |
 |------|------|------|
-| Users | `list_users`, `get_user` | `users.list`, `users.view` |
+| Users | `list_all_users`, `get_user` | `users.list`, `users.view` |
 | User Invites | `list_user_invites`, `get_user_invite` | `users.invites.list`, `users.invites.view` |
 | API Keys | `list_api_keys`, `get_api_key` | `apiKeys.list`, `apiKeys.view` (+ API key management feature) |
 | Audit Logs | `list_audit_logs` | `auditLogs.list` |

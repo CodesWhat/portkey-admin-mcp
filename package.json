@@ -10,7 +10,7 @@
 		"lint": "biome lint .",
 		"format": "biome format --write .",
 		"check": "biome check --write .",
-		"test": "tsx --test tests/**/*.test.ts",
+		"test": "tsx --test \"tests/**/*.test.ts\"",
 		"smoke": "tsx tests/smoke.ts",
 		"test:http": "bash scripts/test-mcp-http.sh",
 		"verify:readme-tools": "node scripts/verify-readme-tools.mjs",

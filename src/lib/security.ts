@@ -17,6 +17,51 @@ function parseOrigins(raw: string): string[] {
 		.filter(Boolean);
 }
 
+interface OriginParts {
+	protocol: string;
+	hostname: string;
+	port: string;
+}
+
+function parseOriginParts(value: string): OriginParts | null {
+	try {
+		const url = new URL(value);
+		return {
+			protocol: url.protocol.toLowerCase(),
+			hostname: url.hostname.toLowerCase(),
+			port: url.port,
+		};
+	} catch {
+		return null;
+	}
+}
+
+function normalizeHostWithoutPort(value: string): string {
+	return value.trim().toLowerCase().split(":")[0];
+}
+
+function isOriginMatch(origin: string, allowedOrigin: string): boolean {
+	const originParts = parseOriginParts(origin);
+	const allowedParts = parseOriginParts(allowedOrigin);
+	if (!originParts || !allowedParts) {
+		return false;
+	}
+
+	if (
+		originParts.protocol !== allowedParts.protocol ||
+		originParts.hostname !== allowedParts.hostname
+	) {
+		return false;
+	}
+
+	// If the allow-list entry specifies a port, it must match exactly.
+	// Otherwise, allow any origin port for that host/protocol.
+	if (allowedParts.port) {
+		return originParts.port === allowedParts.port;
+	}
+	return true;
+}
+
 export function getAllowedOrigins(): string[] {
 	const envOrigins = process.env.ALLOWED_ORIGINS ?? process.env.CORS_ORIGIN;
 	if (envOrigins) {
@@ -40,22 +85,7 @@ export function validateOrigin(origin: string | undefined): boolean {
 	if (allowedOrigins.includes("*")) {
 		return true;
 	}
-	const normalizedOrigin = origin.toLowerCase();
-
-	return allowedOrigins.some((allowed) => {
-		const normalizedAllowed = allowed.toLowerCase();
-		// Exact match
-		if (normalizedAllowed === normalizedOrigin) {
-			return true;
-		}
-		// Check if origin starts with allowed (for ports like localhost:3000)
-		if (normalizedOrigin.startsWith(normalizedAllowed)) {
-			const remaining = normalizedOrigin.slice(normalizedAllowed.length);
-			// Must be followed by a port or nothing
-			return remaining === "" || remaining.startsWith(":");
-		}
-		return false;
-	});
+	return allowedOrigins.some((allowed) => isOriginMatch(origin, allowed));
 }
 
 /**
@@ -66,18 +96,14 @@ export function isAllowedHost(host: string): boolean {
 	if (allowedOrigins.includes("*")) {
 		return true;
 	}
-	const normalizedHost = host.toLowerCase();
+	const hostWithoutPort = normalizeHostWithoutPort(host);
 
 	return allowedOrigins.some((allowed) => {
-		try {
-			const url = new URL(allowed.toLowerCase());
-			// Match hostname (ignoring port in host check)
-			const hostWithoutPort = normalizedHost.split(":")[0];
-			return url.hostname === hostWithoutPort;
-		} catch {
-			// If not a valid URL, do direct comparison
-			return allowed.includes(normalizedHost);
+		const allowedParts = parseOriginParts(allowed);
+		if (allowedParts) {
+			return allowedParts.hostname === hostWithoutPort;
 		}
+		return normalizeHostWithoutPort(allowed) === hostWithoutPort;
 	});
 }
 
@@ -126,12 +152,36 @@ interface TokenBucket {
 	lastRefill: number;
 }
 
+function parsePositiveIntegerEnv(
+	name: string,
+	fallback: number,
+): number {
+	const raw = process.env[name];
+	if (raw === undefined) {
+		return fallback;
+	}
+
+	const parsed = Number.parseInt(raw.trim(), 10);
+	if (Number.isFinite(parsed) && Number.isInteger(parsed) && parsed > 0) {
+		return parsed;
+	}
+
+	Logger.warn("Invalid rate limit configuration value; using fallback", {
+		metadata: {
+			variable: name,
+			value: raw,
+			fallback,
+		},
+	});
+	return fallback;
+}
+
 // Cache rate limit config at module load
 const RATE_LIMIT_CONFIG: RateLimitConfig = {
-	enabled: process.env.RATE_LIMIT_ENABLED !== "false",
-	maxTokens: Number.parseInt(process.env.RATE_LIMIT_MAX || "60", 10),
-	windowMs: Number.parseInt(process.env.RATE_LIMIT_WINDOW_MS || "60000", 10),
-	refillRate: Number.parseInt(process.env.RATE_LIMIT_REFILL || "60", 10),
+	enabled: process.env.RATE_LIMIT_ENABLED?.trim().toLowerCase() !== "false",
+	maxTokens: parsePositiveIntegerEnv("RATE_LIMIT_MAX", 60),
+	windowMs: parsePositiveIntegerEnv("RATE_LIMIT_WINDOW_MS", 60000),
+	refillRate: parsePositiveIntegerEnv("RATE_LIMIT_REFILL", 60),
 };
 
 function getRateLimitConfig(): RateLimitConfig {

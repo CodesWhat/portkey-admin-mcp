@@ -65,7 +65,7 @@ knowledge_base:
   # Let CR read our CLAUDE.md and other agent instruction files
   code_guidelines:
     enabled: true
-    file_patterns:
+    filePatterns:
       - "**/CLAUDE.md"
       - "**/.cursorrules"
 

@@ -11,6 +11,8 @@ jobs:
   checks:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      PORTKEY_API_KEY_STAGING: ${{ secrets.PORTKEY_API_KEY_STAGING }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -40,7 +42,7 @@ jobs:
         run: npm run verify:readme-tools
 
       - name: Optional smoke test (requires secret)
-        if: ${{ secrets.PORTKEY_API_KEY_STAGING != '' }}
+        if: ${{ env.PORTKEY_API_KEY_STAGING != '' }}
         env:
-          PORTKEY_API_KEY: ${{ secrets.PORTKEY_API_KEY_STAGING }}
+          PORTKEY_API_KEY: ${{ env.PORTKEY_API_KEY_STAGING }}
         run: npm run smoke

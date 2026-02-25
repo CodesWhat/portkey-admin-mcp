@@ -33,6 +33,11 @@ print_body_preview() {
   fi
 }
 
+has_jsonrpc_error() {
+  local file_path="$1"
+  grep -Eq '"error"[[:space:]]*:[[:space:]]*\{' "$file_path"
+}
+
 AUTH_HEADER=""
 if [[ -n "${MCP_TEST_AUTH_HEADER:-}" ]]; then
   AUTH_HEADER="${MCP_TEST_AUTH_HEADER}"
@@ -127,6 +132,24 @@ print_body_preview "$TOOLS_BODY"
 echo
 
 if [[ "$INIT_STATUS" -ge 400 || "$TOOLS_STATUS" -ge 400 ]]; then
+  echo "MCP HTTP test failed"
+  exit 1
+fi
+
+INIT_HAS_ERROR=0
+TOOLS_HAS_ERROR=0
+if has_jsonrpc_error "$INIT_BODY"; then
+  INIT_HAS_ERROR=1
+  echo "Initialize response contains JSON-RPC error payload:"
+  grep -E '"error"[[:space:]]*:' "$INIT_BODY" || true
+fi
+if has_jsonrpc_error "$TOOLS_BODY"; then
+  TOOLS_HAS_ERROR=1
+  echo "tools/list response contains JSON-RPC error payload:"
+  grep -E '"error"[[:space:]]*:' "$TOOLS_BODY" || true
+fi
+
+if [[ "$INIT_HAS_ERROR" -eq 1 || "$TOOLS_HAS_ERROR" -eq 1 ]]; then
   echo "MCP HTTP test failed"
   exit 1
 fi

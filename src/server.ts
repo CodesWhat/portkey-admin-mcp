@@ -73,7 +73,7 @@ let statelessTransportPromise:
 
 async function getStatelessTransport(): Promise<StreamableHTTPServerTransport> {
 	if (!statelessTransportPromise) {
-		statelessTransportPromise = (async () => {
+		const initPromise = (async () => {
 			const transport = new StreamableHTTPServerTransport({
 				sessionIdGenerator: undefined,
 				eventStore: managedEventStore.eventStore,
@@ -82,6 +82,10 @@ async function getStatelessTransport(): Promise<StreamableHTTPServerTransport> {
 			await mcpServer.connect(transport);
 			return transport;
 		})();
+		statelessTransportPromise = initPromise.catch((error) => {
+			statelessTransportPromise = undefined;
+			throw error;
+		});
 	}
 
 	return statelessTransportPromise;
@@ -204,6 +208,10 @@ app.get("/", (req, res) => {
 				? "Send Authorization: Bearer <MCP_AUTH_TOKEN>."
 				: "Send Authorization: Bearer <Clerk JWT> (verified via CLERK_ISSUER/JWKS).";
 
+	res.setHeader(
+		"Content-Security-Policy",
+		"default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
+	);
 	res.type("html").send(`<!doctype html>
 <html lang="en">
 <head>
@@ -276,7 +284,6 @@ app.get("/auth/info", (req, res) => {
 		},
 		redis: {
 			configured: Boolean(config.eventStore.redisUrl),
-			keyPrefix: config.eventStore.redisKeyPrefix,
 		},
 	});
 });
@@ -316,11 +323,15 @@ app.post("/mcp", async (req, res) => {
 					createdAt: Date.now(),
 					lastActivity: Date.now(),
 				});
-				console.log(`[MCP] Session initialized: ${id}`);
+				Logger.info("MCP session initialized", {
+					metadata: { sessionId: id },
+				});
 			},
 			onsessionclosed: (id) => {
 				sessionStore.delete(id);
-				console.log(`[MCP] Session closed: ${id}`);
+				Logger.info("MCP session closed", {
+					metadata: { sessionId: id },
+				});
 			},
 		});
 
@@ -449,7 +460,9 @@ const cleanupInterval = isStatefulSessionMode
 	? setInterval(async () => {
 			const expiredIds = await sessionStore.cleanup(config.sessionTimeout);
 			for (const id of expiredIds) {
-				console.log(`[MCP] Session expired and cleaned up: ${id}`);
+				Logger.info("MCP session expired and cleaned up", {
+					metadata: { sessionId: id },
+				});
 			}
 		}, 60000)
 	: undefined;
@@ -532,15 +545,43 @@ function logStartup(): void {
 
 async function shutdown(signal: string): Promise<void> {
 	console.log(`\n[MCP] Received ${signal}, shutting down gracefully...`);
-	await closeRuntimeResources();
+	const rawShutdownTimeout = process.env.MCP_SHUTDOWN_TIMEOUT_MS?.trim();
+	const parsedShutdownTimeout = rawShutdownTimeout
+		? Number.parseInt(rawShutdownTimeout, 10)
+		: 10_000;
+	const shutdownTimeoutMs =
+		Number.isFinite(parsedShutdownTimeout) && parsedShutdownTimeout > 0
+			? parsedShutdownTimeout
+			: 10_000;
+
+	const forceExitTimer = setTimeout(() => {
+		console.error(
+			`[MCP] Forced shutdown after ${shutdownTimeoutMs}ms timeout`,
+		);
+		process.exit(1);
+	}, shutdownTimeoutMs);
+	forceExitTimer.unref();
+
+	let exitCode = 0;
+	try {
+		await closeRuntimeResources();
+	} catch (error) {
+		exitCode = 1;
+		console.error(
+			"[MCP] Error while closing runtime resources:",
+			error instanceof Error ? error.message : String(error),
+		);
+	}
 
 	if (!server) {
-		process.exit(0);
+		clearTimeout(forceExitTimer);
+		process.exit(exitCode);
 	}
 
 	server.close(() => {
+		clearTimeout(forceExitTimer);
 		console.log("[MCP] All sessions closed, exiting...");
-		process.exit(0);
+		process.exit(exitCode);
 	});
 }
 

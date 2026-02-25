@@ -44,4 +44,27 @@ describe("origin security configuration", () => {
 		assert.equal(validateOrigin("https://any-origin.example"), true);
 		assert.equal(isAllowedHost("anything.local"), true);
 	});
+
+	it("does not allow prefix-based origin spoofing", () => {
+		process.env.ALLOWED_ORIGINS = "https://example.com";
+
+		assert.equal(validateOrigin("https://example.com"), true);
+		assert.equal(validateOrigin("https://example.com.evil"), false);
+	});
+
+	it("allows any port when allow-listed origin has no explicit port", () => {
+		process.env.ALLOWED_ORIGINS = "http://localhost";
+
+		assert.equal(validateOrigin("http://localhost:3000"), true);
+		assert.equal(validateOrigin("http://localhost:9999"), true);
+		assert.equal(validateOrigin("https://localhost:3000"), false);
+	});
+
+	it("uses strict host comparison for non-URL allow-list entries", () => {
+		process.env.ALLOWED_ORIGINS = "example.local";
+
+		assert.equal(isAllowedHost("example.local"), true);
+		assert.equal(isAllowedHost("example.local:3000"), true);
+		assert.equal(isAllowedHost("evil-example.local"), false);
+	});
 });
