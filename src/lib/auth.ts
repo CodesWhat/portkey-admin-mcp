@@ -41,6 +41,15 @@ function resolveClerkJwksUrl(
 	return `${issuer.replace(/\/+$/, "")}/.well-known/jwks.json`;
 }
 
+function isValidHttpsUrl(value: string): boolean {
+	try {
+		const parsed = new URL(value);
+		return parsed.protocol === "https:" && Boolean(parsed.hostname);
+	} catch {
+		return false;
+	}
+}
+
 function getHttpAuthConfigFromEnv(): HttpAuthConfig {
 	const mode = (process.env.MCP_AUTH_MODE?.trim().toLowerCase() ||
 		"none") as HttpAuthMode;
@@ -67,19 +76,29 @@ function getHttpAuthConfigFromEnv(): HttpAuthConfig {
 
 	if (mode === "clerk") {
 		const missing: string[] = [];
+		const invalid: string[] = [];
 		if (!issuer) {
 			missing.push("CLERK_ISSUER");
+		} else if (!isValidHttpsUrl(issuer)) {
+			invalid.push("CLERK_ISSUER");
 		}
 		if (!audience || audience.length === 0) {
 			missing.push("CLERK_AUDIENCE");
 		}
 		if (!jwksUrl) {
 			missing.push("CLERK_JWKS_URL");
+		} else if (!isValidHttpsUrl(jwksUrl)) {
+			invalid.push("CLERK_JWKS_URL");
 		}
-		if (missing.length > 0) {
-			throw new Error(
-				`MCP_AUTH_MODE=clerk requires ${missing.join(", ")} to be set`,
-			);
+		if (missing.length > 0 || invalid.length > 0) {
+			const issues: string[] = [];
+			if (missing.length > 0) {
+				issues.push(`missing: ${missing.join(", ")}`);
+			}
+			if (invalid.length > 0) {
+				issues.push(`invalid https URL: ${invalid.join(", ")}`);
+			}
+			throw new Error(`MCP_AUTH_MODE=clerk configuration error (${issues.join("; ")})`);
 		}
 	}
 
@@ -104,8 +123,12 @@ function extractBearerToken(req: Request): string | null {
 		return null;
 	}
 
-	const [scheme, token] = authHeader.split(" ");
-	if (scheme !== AUTH_SCHEMES.bearer || !token?.trim()) {
+	const [scheme, token, ...rest] = authHeader.trim().split(/\s+/);
+	if (
+		rest.length > 0 ||
+		scheme?.toLowerCase() !== AUTH_SCHEMES.bearer.toLowerCase() ||
+		!token?.trim()
+	) {
 		return null;
 	}
 

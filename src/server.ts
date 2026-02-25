@@ -46,6 +46,30 @@ const corsOriginConfig: cors.CorsOptions["origin"] = allowedOrigins.includes("*"
 const healthService = process.env.PORTKEY_API_KEY ? new HealthService() : null;
 const isStatefulSessionMode = config.sessionMode === "stateful";
 
+function resolveTrustProxy(
+	raw: string | undefined,
+): boolean | number | string {
+	const trimmed = raw?.trim();
+	if (!trimmed) {
+		return "loopback";
+	}
+
+	const normalized = trimmed.toLowerCase();
+	if (normalized === "true") {
+		return true;
+	}
+	if (normalized === "false") {
+		return false;
+	}
+
+	const hopCount = Number.parseInt(trimmed, 10);
+	if (Number.isInteger(hopCount) && String(hopCount) === trimmed && hopCount >= 0) {
+		return hopCount;
+	}
+
+	return trimmed;
+}
+
 function escapeHtml(value: string): string {
 	return value
 		.replaceAll("&", "&amp;")
@@ -56,12 +80,8 @@ function escapeHtml(value: string): string {
 }
 
 function getPublicBaseUrl(req: express.Request): string {
-	const forwardedProto = req.headers["x-forwarded-proto"];
-	const protocol =
-		typeof forwardedProto === "string" && forwardedProto.trim()
-			? forwardedProto.trim()
-			: config.protocol;
-	const host = req.headers.host || `${config.host}:${config.port}`;
+	const protocol = req.protocol || config.protocol;
+	const host = req.get("host") || req.headers.host || `${config.host}:${config.port}`;
 	return `${protocol}://${host}`;
 }
 
@@ -93,7 +113,7 @@ async function getStatelessTransport(): Promise<StreamableHTTPServerTransport> {
 
 // Create Express app
 const app = express();
-app.set("trust proxy", process.env.MCP_TRUST_PROXY?.trim() || "loopback");
+app.set("trust proxy", resolveTrustProxy(process.env.MCP_TRUST_PROXY));
 app.use(
 	cors({
 		origin: corsOriginConfig,
