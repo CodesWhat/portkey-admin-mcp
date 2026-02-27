@@ -306,7 +306,6 @@ This document lists all API endpoints used by the Portkey Admin MCP Server, veri
 |--------|--------|---------------|-----------|-------------|
 | [x] | POST | `/feedback` | `/feedback` | Create feedback |
 | [x] | PUT | `/feedback/{id}` | `/feedback/{id}` | Update feedback |
-| [!] | GET | `/logs` | `/logs` | List traces - Returns 405 Method Not Allowed |
 | [x] | GET | `/logs/{id}` | `/logs/{id}` | Get trace |
 
 ---

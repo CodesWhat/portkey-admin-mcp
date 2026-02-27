@@ -58,7 +58,7 @@ EXPOSE 3000
 # Only effective when MCP_TRANSPORT=http
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD if [ "$MCP_TRANSPORT" = "http" ]; then \
-        node -e "require('http').get('http://127.0.0.1:' + (process.env.MCP_PORT || 3000) + '/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"; \
+        node -e "const port=process.env.PORT||process.env.MCP_PORT||3000; require('http').get('http://127.0.0.1:' + port + '/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"; \
     else \
         exit 0; \
     fi
@@ -66,6 +66,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 # Switch to non-root user
 USER mcpuser
 
-# Default command (stdio mode)
-# Override with 'node build/server.js' for HTTP mode
-CMD ["node", "build/index.js"]
+# Default command
+# - MCP_TRANSPORT=stdio -> node build/index.js
+# - MCP_TRANSPORT=http  -> node build/server.js
+CMD ["sh", "-c", "if [ \"$MCP_TRANSPORT\" = \"http\" ]; then exec node build/server.js; else exec node build/index.js; fi"]

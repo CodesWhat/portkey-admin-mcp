@@ -359,8 +359,6 @@ export class PortkeyService {
 		this.tracing.createFeedback(...args);
 	updateFeedback = (...args: Parameters<TracingService["updateFeedback"]>) =>
 		this.tracing.updateFeedback(...args);
-	listTraces = (...args: Parameters<TracingService["listTraces"]>) =>
-		this.tracing.listTraces(...args);
 	getTrace = (...args: Parameters<TracingService["getTrace"]>) =>
 		this.tracing.getTrace(...args);
 

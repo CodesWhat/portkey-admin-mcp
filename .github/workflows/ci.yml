@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - "codex/**"
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PORTKEY_API_KEY_STAGING: ${{ secrets.PORTKEY_API_KEY_STAGING }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Verify README tool inventory
+        run: npm run verify:readme-tools
+
+      - name: Optional smoke test (requires secret)
+        if: ${{ env.PORTKEY_API_KEY_STAGING != '' }}
+        env:
+          PORTKEY_API_KEY: ${{ env.PORTKEY_API_KEY_STAGING }}
+        run: npm run smoke

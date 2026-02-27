@@ -78,21 +78,6 @@ export interface GetTraceResponse {
 	data: Trace;
 }
 
-// List Traces Types
-export interface ListTracesParams {
-	workspace_id?: string;
-	current_page?: number;
-	page_size?: number;
-	search?: string;
-}
-
-export interface ListTracesResponse {
-	success: boolean;
-	data: Trace[];
-	total: number;
-	object: "list";
-}
-
 export class TracingService extends BaseService {
 	// Feedback endpoints
 	async createFeedback(
@@ -106,16 +91,6 @@ export class TracingService extends BaseService {
 		data: UpdateFeedbackRequest,
 	): Promise<UpdateFeedbackResponse> {
 		return this.put<UpdateFeedbackResponse>(`/feedback/${id}`, data);
-	}
-
-	// Trace endpoints
-	async listTraces(params?: ListTracesParams): Promise<ListTracesResponse> {
-		return this.get<ListTracesResponse>("/logs", {
-			workspace_id: params?.workspace_id,
-			current_page: params?.current_page,
-			page_size: params?.page_size,
-			search: params?.search,
-		});
 	}
 
 	async getTrace(id: string): Promise<GetTraceResponse> {

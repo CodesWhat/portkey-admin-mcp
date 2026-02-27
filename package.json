@@ -10,8 +10,11 @@
 		"lint": "biome lint .",
 		"format": "biome format --write .",
 		"check": "biome check --write .",
-		"test": "echo \"No tests specified\" && exit 0",
+		"test": "tsx --test \"tests/**/*.test.ts\"",
 		"smoke": "tsx tests/smoke.ts",
+		"test:http": "bash scripts/test-mcp-http.sh",
+		"verify:readme-tools": "node scripts/verify-readme-tools.mjs",
+		"ci": "npm run lint && npm run typecheck && npm run test && npm run build && npm run verify:readme-tools",
 		"start:http": "node build/server.js"
 	},
 	"files": [
@@ -22,6 +25,8 @@
 		"cors": "^2.8.5",
 		"dotenv": "^17.2.3",
 		"express": "^5.2.1",
+		"jose": "^6.1.3",
+		"redis": "^5.11.0",
 		"undici": "^7.16.0",
 		"zod": "^4.3.2"
 	},

@@ -10,10 +10,65 @@ import { Logger } from "./logger.js";
 // Origin Validation
 // ============================================================================
 
-function getAllowedOrigins(): string[] {
-	const envOrigins = process.env.ALLOWED_ORIGINS;
+function parseOrigins(raw: string): string[] {
+	return raw
+		.split(",")
+		.map((origin) => origin.trim())
+		.filter(Boolean);
+}
+
+interface OriginParts {
+	protocol: string;
+	hostname: string;
+	port: string;
+}
+
+function parseOriginParts(value: string): OriginParts | null {
+	try {
+		const url = new URL(value);
+		return {
+			protocol: url.protocol.toLowerCase(),
+			hostname: url.hostname.toLowerCase(),
+			port: url.port,
+		};
+	} catch {
+		return null;
+	}
+}
+
+function normalizeHostWithoutPort(value: string): string {
+	return value.trim().toLowerCase().split(":")[0];
+}
+
+function isOriginMatch(origin: string, allowedOrigin: string): boolean {
+	const originParts = parseOriginParts(origin);
+	const allowedParts = parseOriginParts(allowedOrigin);
+	if (!originParts || !allowedParts) {
+		return false;
+	}
+
+	if (
+		originParts.protocol !== allowedParts.protocol ||
+		originParts.hostname !== allowedParts.hostname
+	) {
+		return false;
+	}
+
+	// If the allow-list entry specifies a port, it must match exactly.
+	// Otherwise, allow any origin port for that host/protocol.
+	if (allowedParts.port) {
+		return originParts.port === allowedParts.port;
+	}
+	return true;
+}
+
+export function getAllowedOrigins(): string[] {
+	const envOrigins = process.env.ALLOWED_ORIGINS ?? process.env.CORS_ORIGIN;
 	if (envOrigins) {
-		return envOrigins.split(",").map((origin) => origin.trim().toLowerCase());
+		const parsed = parseOrigins(envOrigins);
+		if (parsed.length > 0) {
+			return parsed;
+		}
 	}
 	return ["http://localhost", "https://localhost"];
 }
@@ -27,21 +82,10 @@ export function validateOrigin(origin: string | undefined): boolean {
 	}
 
 	const allowedOrigins = getAllowedOrigins();
-	const normalizedOrigin = origin.toLowerCase();
-
-	return allowedOrigins.some((allowed) => {
-		// Exact match
-		if (allowed === normalizedOrigin) {
-			return true;
-		}
-		// Check if origin starts with allowed (for ports like localhost:3000)
-		if (normalizedOrigin.startsWith(allowed)) {
-			const remaining = normalizedOrigin.slice(allowed.length);
-			// Must be followed by a port or nothing
-			return remaining === "" || remaining.startsWith(":");
-		}
-		return false;
-	});
+	if (allowedOrigins.includes("*")) {
+		return true;
+	}
+	return allowedOrigins.some((allowed) => isOriginMatch(origin, allowed));
 }
 
 /**
@@ -49,18 +93,17 @@ export function validateOrigin(origin: string | undefined): boolean {
  */
 export function isAllowedHost(host: string): boolean {
 	const allowedOrigins = getAllowedOrigins();
-	const normalizedHost = host.toLowerCase();
+	if (allowedOrigins.includes("*")) {
+		return true;
+	}
+	const hostWithoutPort = normalizeHostWithoutPort(host);
 
 	return allowedOrigins.some((allowed) => {
-		try {
-			const url = new URL(allowed);
-			// Match hostname (ignoring port in host check)
-			const hostWithoutPort = normalizedHost.split(":")[0];
-			return url.hostname === hostWithoutPort;
-		} catch {
-			// If not a valid URL, do direct comparison
-			return allowed.includes(normalizedHost);
+		const allowedParts = parseOriginParts(allowed);
+		if (allowedParts) {
+			return allowedParts.hostname === hostWithoutPort;
 		}
+		return normalizeHostWithoutPort(allowed) === hostWithoutPort;
 	});
 }
 
@@ -109,12 +152,36 @@ interface TokenBucket {
 	lastRefill: number;
 }
 
+function parsePositiveIntegerEnv(
+	name: string,
+	fallback: number,
+): number {
+	const raw = process.env[name];
+	if (raw === undefined) {
+		return fallback;
+	}
+
+	const parsed = Number.parseInt(raw.trim(), 10);
+	if (Number.isFinite(parsed) && Number.isInteger(parsed) && parsed > 0) {
+		return parsed;
+	}
+
+	Logger.warn("Invalid rate limit configuration value; using fallback", {
+		metadata: {
+			variable: name,
+			value: raw,
+			fallback,
+		},
+	});
+	return fallback;
+}
+
 // Cache rate limit config at module load
 const RATE_LIMIT_CONFIG: RateLimitConfig = {
-	enabled: process.env.RATE_LIMIT_ENABLED === "true",
-	maxTokens: Number.parseInt(process.env.RATE_LIMIT_MAX || "100", 10),
-	windowMs: Number.parseInt(process.env.RATE_LIMIT_WINDOW_MS || "60000", 10),
-	refillRate: Number.parseInt(process.env.RATE_LIMIT_REFILL || "10", 10),
+	enabled: process.env.RATE_LIMIT_ENABLED?.trim().toLowerCase() !== "false",
+	maxTokens: parsePositiveIntegerEnv("RATE_LIMIT_MAX", 60),
+	windowMs: parsePositiveIntegerEnv("RATE_LIMIT_WINDOW_MS", 60000),
+	refillRate: parsePositiveIntegerEnv("RATE_LIMIT_REFILL", 60),
 };
 
 function getRateLimitConfig(): RateLimitConfig {
@@ -211,8 +278,9 @@ export function rateLimitMiddleware(
 	next();
 }
 
-// Cleanup old buckets periodically (every 5 minutes)
-setInterval(
+// Cleanup old buckets periodically (every 5 minutes).
+// unref() prevents this background timer from blocking process shutdown.
+const cleanupTimer = setInterval(
 	() => {
 		const now = Date.now();
 		const config = getRateLimitConfig();
@@ -226,3 +294,4 @@ setInterval(
 	},
 	5 * 60 * 1000,
 );
+cleanupTimer.unref();
