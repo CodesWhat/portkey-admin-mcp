@@ -157,6 +157,9 @@ async function getStatelessTransport(): Promise<StreamableHTTPServerTransport> {
 let oauthStore: OAuthStore | undefined;
 let oauthReadyPromise: Promise<void> | undefined;
 
+// Bearer auth handler — set once initOAuth completes, used by the sync gate middleware.
+let oauthBearerAuth: express.RequestHandler | undefined;
+
 function initOAuth(expressApp: express.Express): Promise<void> {
 	if (oauthReadyPromise) return oauthReadyPromise;
 
@@ -194,12 +197,12 @@ function initOAuth(expressApp: express.Express): Promise<void> {
 		// Mount Clerk callback handler
 		expressApp.get("/oauth/callback", createClerkCallbackHandler(oauthStore, oauthConfig));
 
-		// Apply bearer auth middleware to /mcp routes
+		// Store the bearer auth handler — picked up by the sync gate middleware
 		const resourceMetadataUrl = getOAuthProtectedResourceMetadataUrl(resourceUrl);
-		expressApp.use("/mcp", requireBearerAuth({
+		oauthBearerAuth = requireBearerAuth({
 			verifier: provider,
 			resourceMetadataUrl,
-		}));
+		});
 
 		Logger.info("OAuth 2.1 authorization initialized", {
 			metadata: {
@@ -212,6 +215,24 @@ function initOAuth(expressApp: express.Express): Promise<void> {
 	})();
 
 	return oauthReadyPromise;
+}
+
+/**
+ * Synchronous gate middleware for OAuth bearer auth on /mcp routes.
+ * Mounted before the /mcp route handlers at module init. Delegates to the
+ * real requireBearerAuth once async OAuth init has completed.
+ */
+function oauthBearerAuthGate(
+	req: express.Request,
+	res: express.Response,
+	next: express.NextFunction,
+): void {
+	if (!oauthBearerAuth) {
+		// OAuth init hasn't completed yet — reject with 503
+		res.status(503).json({ error: "OAuth authorization not yet initialized" });
+		return;
+	}
+	oauthBearerAuth(req, res, next);
 }
 
 // ---------------------------------------------------------------------------
@@ -229,6 +250,11 @@ app.use(express.json({ limit: requestBodyLimit }));
 app.use(originValidationMiddleware);
 app.use(rateLimitMiddleware);
 app.use(mcpAuthMiddleware);
+
+// OAuth bearer auth gate — must be registered before /mcp route handlers
+if (authConfig.mode === "oauth") {
+	app.use("/mcp", oauthBearerAuthGate);
+}
 
 // Parse/body-size errors need a controlled JSON response in HTTP mode.
 app.use((err: unknown, _req: express.Request, res: express.Response, next: express.NextFunction) => {
