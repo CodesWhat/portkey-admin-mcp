@@ -85,6 +85,32 @@ function getPublicBaseUrl(req: express.Request): string {
 	return `${protocol}://${host}`;
 }
 
+function respondJsonRpcInternalError(
+	res: express.Response,
+	context: string,
+	error: unknown,
+): void {
+	Logger.error("Stateless transport request handling failed", {
+		metadata: {
+			context,
+			error: error instanceof Error ? error.message : String(error),
+		},
+	});
+
+	if (res.headersSent) {
+		return;
+	}
+
+	res.status(500).json({
+		jsonrpc: "2.0",
+		error: {
+			code: -32603,
+			message: `Internal server error (${context})`,
+		},
+		id: null,
+	});
+}
+
 // Create session store
 const sessionStore = new SessionStore();
 let statelessTransportPromise:
@@ -314,8 +340,12 @@ app.get("/auth/info", (req, res) => {
  */
 app.post("/mcp", async (req, res) => {
 	if (!isStatefulSessionMode) {
-		const statelessTransport = await getStatelessTransport();
-		await statelessTransport.handleRequest(req, res, req.body);
+		try {
+			const statelessTransport = await getStatelessTransport();
+			await statelessTransport.handleRequest(req, res, req.body);
+		} catch (error) {
+			respondJsonRpcInternalError(res, "POST /mcp stateless", error);
+		}
 		return;
 	}
 
@@ -389,8 +419,12 @@ app.post("/mcp", async (req, res) => {
  */
 app.get("/mcp", async (req, res) => {
 	if (!isStatefulSessionMode) {
-		const statelessTransport = await getStatelessTransport();
-		await statelessTransport.handleRequest(req, res);
+		try {
+			const statelessTransport = await getStatelessTransport();
+			await statelessTransport.handleRequest(req, res);
+		} catch (error) {
+			respondJsonRpcInternalError(res, "GET /mcp stateless", error);
+		}
 		return;
 	}
 
