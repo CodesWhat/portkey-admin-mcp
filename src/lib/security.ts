@@ -115,8 +115,14 @@ export function originValidationMiddleware(
 	res: Response,
 	next: NextFunction,
 ): void {
-	// Skip for health/ready endpoints
-	if (req.path === "/health" || req.path === "/ready") {
+	// Skip for health/ready endpoints and OAuth browser-navigated paths
+	if (
+		req.path === "/health" ||
+		req.path === "/ready" ||
+		req.path === "/authorize" ||
+		req.path === "/oauth/callback" ||
+		req.path.startsWith("/.well-known/")
+	) {
 		next();
 		return;
 	}

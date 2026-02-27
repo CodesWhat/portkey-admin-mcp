@@ -24,6 +24,19 @@ import {
 import { SessionStore } from "./lib/session-store.js";
 import { HealthService } from "./services/health.service.js";
 
+// OAuth 2.1 imports (SDK + our provider)
+import { mcpAuthRouter } from "@modelcontextprotocol/sdk/server/auth/router.js";
+import { requireBearerAuth } from "@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js";
+import { getOAuthProtectedResourceMetadataUrl } from "@modelcontextprotocol/sdk/server/auth/router.js";
+import {
+	ClerkOAuthProvider,
+	createClerkCallbackHandler,
+	createOAuthStore,
+	loadOrGenerateKeyPair,
+	type OAuthStore,
+} from "./lib/oauth/index.js";
+import type { OAuthConfig, OAuthStoreMode } from "./lib/oauth/index.js";
+
 // Get configuration
 const config = getServerConfig();
 const authConfig = getHttpAuthConfig();
@@ -137,7 +150,74 @@ async function getStatelessTransport(): Promise<StreamableHTTPServerTransport> {
 	return statelessTransportPromise;
 }
 
+// ---------------------------------------------------------------------------
+// OAuth 2.1 setup (when authConfig.mode === "oauth")
+// ---------------------------------------------------------------------------
+
+let oauthStore: OAuthStore | undefined;
+let oauthReadyPromise: Promise<void> | undefined;
+
+function initOAuth(expressApp: express.Express): Promise<void> {
+	if (oauthReadyPromise) return oauthReadyPromise;
+
+	oauthReadyPromise = (async () => {
+		const issuerUrl = new URL(process.env.OAUTH_ISSUER_URL as string);
+		const resourceUrl = new URL("/mcp", issuerUrl);
+
+		const oauthConfig: OAuthConfig = {
+			issuerUrl,
+			resourceUrl,
+			clerkSignInUrl: process.env.CLERK_SIGN_IN_URL as string,
+			clerkIssuer: process.env.CLERK_ISSUER as string,
+			accessTokenTtlSeconds: 3600,
+			refreshTokenTtlSeconds: 30 * 24 * 3600, // 30 days
+			authCodeTtlSeconds: 600, // 10 min
+		};
+
+		const storeMode = (process.env.OAUTH_STORE_MODE?.trim().toLowerCase() || "memory") as OAuthStoreMode;
+		oauthStore = createOAuthStore(storeMode);
+
+		const keyPair = await loadOrGenerateKeyPair();
+		const provider = new ClerkOAuthProvider(oauthStore, keyPair, oauthConfig);
+
+		// Mount the SDK's auth router (installs /authorize, /token, /register, /revoke, .well-known/*)
+		expressApp.use(
+			mcpAuthRouter({
+				provider,
+				issuerUrl,
+				resourceServerUrl: resourceUrl,
+				resourceName: "Portkey Admin MCP",
+				scopesSupported: ["mcp:admin"],
+			}),
+		);
+
+		// Mount Clerk callback handler
+		expressApp.get("/oauth/callback", createClerkCallbackHandler(oauthStore, oauthConfig));
+
+		// Apply bearer auth middleware to /mcp routes
+		const resourceMetadataUrl = getOAuthProtectedResourceMetadataUrl(resourceUrl);
+		expressApp.use("/mcp", requireBearerAuth({
+			verifier: provider,
+			resourceMetadataUrl,
+		}));
+
+		Logger.info("OAuth 2.1 authorization initialized", {
+			metadata: {
+				issuer: issuerUrl.toString(),
+				resource: resourceUrl.toString(),
+				storeMode,
+				keySource: process.env.OAUTH_JWT_PRIVATE_KEY ? "env" : "ephemeral",
+			},
+		});
+	})();
+
+	return oauthReadyPromise;
+}
+
+// ---------------------------------------------------------------------------
 // Create Express app
+// ---------------------------------------------------------------------------
+
 const app = express();
 app.set("trust proxy", resolveTrustProxy(process.env.MCP_TRUST_PROXY));
 app.use(
@@ -252,7 +332,9 @@ app.get("/", (req, res) => {
 			? "Authentication disabled (development only)."
 			: authConfig.mode === "bearer"
 				? "Send Authorization: Bearer <MCP_AUTH_TOKEN>."
-				: "Send Authorization: Bearer <Clerk JWT> (verified via CLERK_ISSUER/JWKS).";
+				: authConfig.mode === "oauth"
+					? "MCP-spec OAuth 2.1 — clients auto-discover auth via .well-known metadata."
+					: "Send Authorization: Bearer <Clerk JWT> (verified via CLERK_ISSUER/JWKS).";
 
 	res.setHeader(
 		"Content-Security-Policy",
@@ -292,7 +374,9 @@ app.get("/", (req, res) => {
     <div><strong>Useful endpoints</strong></div>
     <div><code>GET /auth/info</code> auth metadata for hosted clients</div>
     <div><code>GET /health</code> process health</div>
-    <div><code>GET /ready</code> readiness + optional Portkey ping</div>
+    <div><code>GET /ready</code> readiness + optional Portkey ping</div>${authConfig.mode === "oauth" ? `
+    <div><code>GET /.well-known/oauth-authorization-server</code> OAuth AS metadata</div>
+    <div><code>GET /.well-known/oauth-protected-resource/mcp</code> Protected resource metadata</div>` : ""}
   </div>
   <script>
     async function ping(id, path) {
@@ -554,6 +638,9 @@ async function closeRuntimeResources(): Promise<void> {
 		}
 	} finally {
 		await managedEventStore.close();
+		if (oauthStore) {
+			await oauthStore.close();
+		}
 	}
 }
 
@@ -604,6 +691,14 @@ function logStartup(): void {
 	console.log(
 		`  DELETE /mcp  - ${isStatefulSessionMode ? "Close session" : "Not used in stateless mode"}`,
 	);
+	if (authConfig.mode === "oauth") {
+		console.log(`  GET  /.well-known/oauth-authorization-server - OAuth metadata`);
+		console.log(`  GET  /.well-known/oauth-protected-resource/mcp - Resource metadata`);
+		console.log(`  GET  /authorize - OAuth authorization`);
+		console.log(`  POST /token    - Token exchange`);
+		console.log(`  POST /register - Dynamic client registration`);
+		console.log(`  GET  /oauth/callback - Clerk sign-in callback`);
+	}
 	console.log(`[MCP] Session timeout: ${config.sessionTimeout}ms`);
 	console.log(`[MCP] Session mode: ${config.sessionMode}`);
 	console.log(`[MCP] Event store mode: ${config.eventStore.mode}`);
@@ -653,10 +748,28 @@ async function shutdown(signal: string): Promise<void> {
 	});
 }
 
-export function startHttpServer(): HttpServer | HttpsServer {
+// Kick off OAuth init eagerly at module load for Vercel (cold start)
+if (authConfig.mode === "oauth") {
+	initOAuth(app);
+}
+
+/**
+ * Wait for async initialization (OAuth key generation, etc.) to complete.
+ * Vercel's entry point should await this before marking the app ready.
+ */
+export async function ensureReady(): Promise<void> {
+	if (oauthReadyPromise) {
+		await oauthReadyPromise;
+	}
+}
+
+export async function startHttpServer(): Promise<HttpServer | HttpsServer> {
 	if (server) {
 		return server;
 	}
+
+	// Wait for async initialization (OAuth key gen, etc.)
+	await ensureReady();
 
 	try {
 		server = createNodeServer();
@@ -704,5 +817,5 @@ export { app, authConfig, config };
 export default app;
 
 if (isMainModule()) {
-	startHttpServer();
+	void startHttpServer();
 }
