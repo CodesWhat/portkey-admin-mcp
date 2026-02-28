@@ -77,7 +77,9 @@ class InMemoryEventStore implements EventStore {
 
 	async replayEventsAfter(
 		lastEventId: EventId,
-		{ send }: { send: (eventId: EventId, message: JSONRPCMessage) => Promise<void> },
+		{
+			send,
+		}: { send: (eventId: EventId, message: JSONRPCMessage) => Promise<void> },
 	): Promise<StreamId> {
 		this.cleanupExpired();
 
@@ -189,7 +191,9 @@ class RedisEventStore implements EventStore {
 
 	async replayEventsAfter(
 		lastEventId: EventId,
-		{ send }: { send: (eventId: EventId, message: JSONRPCMessage) => Promise<void> },
+		{
+			send,
+		}: { send: (eventId: EventId, message: JSONRPCMessage) => Promise<void> },
 	): Promise<StreamId> {
 		await this.ensureConnected();
 
@@ -241,7 +245,9 @@ class RedisEventStore implements EventStore {
 	}
 }
 
-export function createManagedEventStore(config: ServerConfig): ManagedEventStore {
+export function createManagedEventStore(
+	config: ServerConfig,
+): ManagedEventStore {
 	if (config.eventStore.mode === "off") {
 		return {
 			mode: "off",

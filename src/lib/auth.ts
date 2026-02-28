@@ -3,7 +3,7 @@ import type { NextFunction, Request, Response } from "express";
 import { createRemoteJWKSet, jwtVerify } from "jose";
 import { Logger } from "./logger.js";
 
-export type HttpAuthMode = "none" | "bearer" | "clerk" | "oauth";
+export type HttpAuthMode = "none" | "bearer" | "clerk";
 
 export interface HttpAuthConfig {
 	mode: HttpAuthMode;
@@ -54,9 +54,9 @@ function getHttpAuthConfigFromEnv(): HttpAuthConfig {
 	const mode = (process.env.MCP_AUTH_MODE?.trim().toLowerCase() ||
 		"none") as HttpAuthMode;
 
-	if (!["none", "bearer", "clerk", "oauth"].includes(mode)) {
+	if (!["none", "bearer", "clerk"].includes(mode)) {
 		throw new Error(
-			`Invalid MCP_AUTH_MODE value: ${mode}. Must be 'none', 'bearer', 'clerk', or 'oauth'`,
+			`Invalid MCP_AUTH_MODE value: ${mode}. Must be 'none', 'bearer', or 'clerk'`,
 		);
 	}
 
@@ -69,9 +69,7 @@ function getHttpAuthConfigFromEnv(): HttpAuthConfig {
 	);
 
 	if (mode === "bearer" && !bearerToken) {
-		throw new Error(
-			"MCP_AUTH_MODE=bearer requires MCP_AUTH_TOKEN to be set",
-		);
+		throw new Error("MCP_AUTH_MODE=bearer requires MCP_AUTH_TOKEN to be set");
 	}
 
 	if (mode === "clerk") {
@@ -98,23 +96,8 @@ function getHttpAuthConfigFromEnv(): HttpAuthConfig {
 			if (invalid.length > 0) {
 				issues.push(`invalid https URL: ${invalid.join(", ")}`);
 			}
-			throw new Error(`MCP_AUTH_MODE=clerk configuration error (${issues.join("; ")})`);
-		}
-	}
-
-	if (mode === "oauth") {
-		const oauthIssuerUrl = process.env.OAUTH_ISSUER_URL?.trim();
-		const clerkSignInUrl = process.env.CLERK_SIGN_IN_URL?.trim();
-		const clerkIssuer = process.env.CLERK_ISSUER?.trim();
-
-		const missing: string[] = [];
-		if (!oauthIssuerUrl) missing.push("OAUTH_ISSUER_URL");
-		if (!clerkSignInUrl) missing.push("CLERK_SIGN_IN_URL");
-		if (!clerkIssuer) missing.push("CLERK_ISSUER");
-
-		if (missing.length > 0) {
 			throw new Error(
-				`MCP_AUTH_MODE=oauth requires ${missing.join(", ")} to be set`,
+				`MCP_AUTH_MODE=clerk configuration error (${issues.join("; ")})`,
 			);
 		}
 	}
@@ -211,8 +194,7 @@ export async function mcpAuthMiddleware(
 	}
 
 	const config = getHttpAuthConfig();
-	if (config.mode === "none" || config.mode === "oauth") {
-		// oauth mode: the SDK's requireBearerAuth middleware handles /mcp auth
+	if (config.mode === "none") {
 		next();
 		return;
 	}

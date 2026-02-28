@@ -115,14 +115,8 @@ export function originValidationMiddleware(
 	res: Response,
 	next: NextFunction,
 ): void {
-	// Skip for health/ready endpoints and OAuth browser-navigated paths
-	if (
-		req.path === "/health" ||
-		req.path === "/ready" ||
-		req.path === "/authorize" ||
-		req.path === "/oauth/callback" ||
-		req.path.startsWith("/.well-known/")
-	) {
+	// Skip for health/ready endpoints
+	if (req.path === "/health" || req.path === "/ready") {
 		next();
 		return;
 	}
@@ -158,10 +152,7 @@ interface TokenBucket {
 	lastRefill: number;
 }
 
-function parsePositiveIntegerEnv(
-	name: string,
-	fallback: number,
-): number {
+function parsePositiveIntegerEnv(name: string, fallback: number): number {
 	const raw = process.env[name];
 	if (raw === undefined) {
 		return fallback;

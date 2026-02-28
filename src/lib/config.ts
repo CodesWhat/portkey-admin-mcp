@@ -44,10 +44,11 @@ export function getServerConfig(): ServerConfig {
 		| "http";
 	const sessionMode = (process.env.MCP_SESSION_MODE?.trim().toLowerCase() ||
 		"stateful") as "stateful" | "stateless";
-	const eventStoreMode = (
-		process.env.MCP_EVENT_STORE?.trim().toLowerCase() ||
-		(sessionMode === "stateless" ? "memory" : "off")
-	) as "off" | "memory" | "redis";
+	const eventStoreMode = (process.env.MCP_EVENT_STORE?.trim().toLowerCase() ||
+		(sessionMode === "stateless" ? "memory" : "off")) as
+		| "off"
+		| "memory"
+		| "redis";
 
 	// Validate transport value
 	if (transport !== "stdio" && transport !== "http") {
