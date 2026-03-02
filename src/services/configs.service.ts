@@ -16,7 +16,8 @@ export interface Config {
 }
 
 export interface ListConfigsResponse {
-	success: boolean;
+	object: "list";
+	total: number;
 	data: Config[];
 }
 
@@ -41,10 +42,22 @@ export interface ConfigDetails {
 }
 
 export interface GetConfigResponse {
-	success?: boolean;
-	data?: {
-		config?: ConfigDetails;
-	};
+	id: string;
+	name: string;
+	workspace_id: string;
+	slug: string;
+	organisation_id: string;
+	is_default: number;
+	status: string;
+	owner_id: string;
+	updated_by: string;
+	created_at: string;
+	last_updated_at: string;
+	config: string; // JSON-encoded ConfigDetails
+	format: string;
+	type: string;
+	version_id: string;
+	object: "config";
 }
 
 // Phase 1 types
@@ -52,6 +65,13 @@ export interface CreateConfigRequest {
 	name: string;
 	config: ConfigDetails;
 	workspace_id?: string;
+}
+
+export interface CreateConfigResponse {
+	id: string;
+	version_id: string;
+	slug: string;
+	object: "config";
 }
 
 export interface UpdateConfigRequest {
@@ -84,8 +104,8 @@ export class ConfigsService extends BaseService {
 	}
 
 	// Phase 1: Config CRUD
-	async createConfig(data: CreateConfigRequest): Promise<GetConfigResponse> {
-		return this.post<GetConfigResponse>("/configs", data);
+	async createConfig(data: CreateConfigRequest): Promise<CreateConfigResponse> {
+		return this.post<CreateConfigResponse>("/configs", data);
 	}
 
 	async updateConfig(

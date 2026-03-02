@@ -36,39 +36,28 @@ export function registerTracingTools(
 				),
 		},
 		async (params) => {
-			try {
-				const result = await service.createFeedback({
-					trace_id: params.trace_id,
-					value: params.value,
-					weight: params.weight,
-					metadata: params.metadata,
-				});
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									message: `Successfully created feedback for trace "${params.trace_id}"`,
-									success: result.success,
-									id: result.data?.id,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error creating feedback: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			const result = await service.createFeedback({
+				trace_id: params.trace_id,
+				value: params.value,
+				weight: params.weight,
+				metadata: params.metadata,
+			});
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: `Successfully created feedback for trace "${params.trace_id}"`,
+								success: result.success,
+								id: result.data?.id,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -97,38 +86,27 @@ export function registerTracingTools(
 				.describe("New or updated custom metadata for the feedback"),
 		},
 		async (params) => {
-			try {
-				const result = await service.updateFeedback(params.id, {
-					value: params.value,
-					weight: params.weight,
-					metadata: params.metadata,
-				});
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									message: `Successfully updated feedback "${params.id}"`,
-									success: result.success,
-									id: result.data?.id,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error updating feedback: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			const result = await service.updateFeedback(params.id, {
+				value: params.value,
+				weight: params.weight,
+				metadata: params.metadata,
+			});
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: `Successfully updated feedback "${params.id}"`,
+								success: result.success,
+								id: result.data?.id,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -140,55 +118,44 @@ export function registerTracingTools(
 			id: z.string().describe("The unique identifier of the trace to retrieve"),
 		},
 		async (params) => {
-			try {
-				const result = await service.getTrace(params.id);
-				const trace = result.data;
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									success: result.success,
-									trace: {
-										id: trace.id,
-										trace_id: trace.trace_id,
-										request: trace.request,
-										response: trace.response,
-										metadata: trace.metadata,
-										workspace_id: trace.workspace_id,
-										organisation_id: trace.organisation_id,
-										cost: trace.cost,
-										tokens: trace.tokens,
-										spans: trace.spans?.map((span) => ({
-											span_id: span.span_id,
-											span_name: span.span_name,
-											parent_span_id: span.parent_span_id,
-											start_time: span.start_time,
-											end_time: span.end_time,
-											status: span.status,
-											attributes: span.attributes,
-										})),
-										feedback: trace.feedback,
-										created_at: trace.created_at,
-									},
+			const result = await service.getTrace(params.id);
+			const trace = result.data;
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								success: result.success,
+								trace: {
+									id: trace.id,
+									trace_id: trace.trace_id,
+									request: trace.request,
+									response: trace.response,
+									metadata: trace.metadata,
+									workspace_id: trace.workspace_id,
+									organisation_id: trace.organisation_id,
+									cost: trace.cost,
+									tokens: trace.tokens,
+									spans: trace.spans?.map((span) => ({
+										span_id: span.span_id,
+										span_name: span.span_name,
+										parent_span_id: span.parent_span_id,
+										start_time: span.start_time,
+										end_time: span.end_time,
+										status: span.status,
+										attributes: span.attributes,
+									})),
+									feedback: trace.feedback,
+									created_at: trace.created_at,
 								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error fetching trace: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 }

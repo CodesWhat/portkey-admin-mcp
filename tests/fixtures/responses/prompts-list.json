@@ -1,0 +1,17 @@
+{
+  "object": "list",
+  "total": 1,
+  "data": [
+    {
+      "id": "8105d4bf-baa6-4b3c-8de8-bce5a1b5dc57",
+      "collection_id": "8acec6a1-e595-11f0-84d4-024c88f9cbd3",
+      "name": "🧪 Protomold",
+      "slug": "pp-protomold-c76be4",
+      "created_at": "2026-02-19T21:14:28.000Z",
+      "last_updated_at": "2026-02-27T21:18:53.000Z",
+      "status": "active",
+      "model": "claude-sonnet-4-6",
+      "object": "prompt"
+    }
+  ]
+}

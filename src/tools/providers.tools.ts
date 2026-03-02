@@ -32,61 +32,50 @@ export function registerProvidersTools(
 				),
 		},
 		async (params) => {
-			try {
-				const providers = await service.listProviders({
-					current_page: params.current_page,
-					page_size: params.page_size,
-					workspace_id: params.workspace_id,
-				});
+			const providers = await service.listProviders({
+				current_page: params.current_page,
+				page_size: params.page_size,
+				workspace_id: params.workspace_id,
+			});
 
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									total: providers.total,
-									providers: providers.data.map((provider) => ({
-										name: provider.name,
-										slug: provider.slug,
-										integration_id: provider.integration_id,
-										status: provider.status,
-										note: provider.note,
-										usage_limits: provider.usage_limits
-											? {
-													credit_limit: provider.usage_limits.credit_limit,
-													alert_threshold:
-														provider.usage_limits.alert_threshold,
-													periodic_reset: provider.usage_limits.periodic_reset,
-												}
-											: null,
-										rate_limits:
-											provider.rate_limits?.map((limit) => ({
-												type: limit.type,
-												unit: limit.unit,
-												value: limit.value,
-											})) ?? null,
-										reset_usage: provider.reset_usage,
-										expires_at: provider.expires_at,
-										created_at: provider.created_at,
-									})),
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error listing providers: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								total: providers.total,
+								providers: providers.data.map((provider) => ({
+									name: provider.name,
+									slug: provider.slug,
+									integration_id: provider.integration_id,
+									status: provider.status,
+									note: provider.note,
+									usage_limits: provider.usage_limits
+										? {
+												credit_limit: provider.usage_limits.credit_limit,
+												alert_threshold:
+													provider.usage_limits.alert_threshold,
+												periodic_reset: provider.usage_limits.periodic_reset,
+											}
+										: null,
+									rate_limits:
+										provider.rate_limits?.map((limit) => ({
+											type: limit.type,
+											unit: limit.unit,
+											value: limit.value,
+										})) ?? null,
+									reset_usage: provider.reset_usage,
+									expires_at: provider.expires_at,
+									created_at: provider.created_at,
+								})),
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -145,54 +134,43 @@ export function registerProvidersTools(
 				.describe("Expiration date in ISO 8601 format"),
 		},
 		async (params) => {
-			try {
-				const result = await service.createProvider({
-					name: params.name,
-					integration_id: params.integration_id,
-					workspace_id: params.workspace_id,
-					slug: params.slug,
-					note: params.note,
-					usage_limits: buildUsageLimits({
-						credit_limit: params.credit_limit,
-						alert_threshold: params.alert_threshold,
-					}),
-					rate_limits:
-						params.rate_limit_value !== undefined &&
-						params.rate_limit_unit !== undefined
-							? buildRateLimits({
-									value: params.rate_limit_value,
-									unit: params.rate_limit_unit,
-								})
-							: undefined,
-					expires_at: params.expires_at,
-				});
+			const result = await service.createProvider({
+				name: params.name,
+				integration_id: params.integration_id,
+				workspace_id: params.workspace_id,
+				slug: params.slug,
+				note: params.note,
+				usage_limits: buildUsageLimits({
+					credit_limit: params.credit_limit,
+					alert_threshold: params.alert_threshold,
+				}),
+				rate_limits:
+					params.rate_limit_value !== undefined &&
+					params.rate_limit_unit !== undefined
+						? buildRateLimits({
+								value: params.rate_limit_value,
+								unit: params.rate_limit_unit,
+							})
+						: undefined,
+				expires_at: params.expires_at,
+			});
 
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									message: `Successfully created provider "${params.name}"`,
-									id: result.id,
-									slug: result.slug,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error creating provider: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: `Successfully created provider "${params.name}"`,
+								id: result.id,
+								slug: result.slug,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -210,56 +188,45 @@ export function registerProvidersTools(
 				.describe("Workspace ID - required when using organization admin keys"),
 		},
 		async (params) => {
-			try {
-				const provider = await service.getProvider(
-					params.slug,
-					params.workspace_id,
-				);
+			const provider = await service.getProvider(
+				params.slug,
+				params.workspace_id,
+			);
 
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									name: provider.name,
-									slug: provider.slug,
-									integration_id: provider.integration_id,
-									status: provider.status,
-									note: provider.note,
-									usage_limits: provider.usage_limits
-										? {
-												credit_limit: provider.usage_limits.credit_limit,
-												alert_threshold: provider.usage_limits.alert_threshold,
-												periodic_reset: provider.usage_limits.periodic_reset,
-											}
-										: null,
-									rate_limits:
-										provider.rate_limits?.map((limit) => ({
-											type: limit.type,
-											unit: limit.unit,
-											value: limit.value,
-										})) ?? null,
-									reset_usage: provider.reset_usage,
-									expires_at: provider.expires_at,
-									created_at: provider.created_at,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error fetching provider: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								name: provider.name,
+								slug: provider.slug,
+								integration_id: provider.integration_id,
+								status: provider.status,
+								note: provider.note,
+								usage_limits: provider.usage_limits
+									? {
+											credit_limit: provider.usage_limits.credit_limit,
+											alert_threshold: provider.usage_limits.alert_threshold,
+											periodic_reset: provider.usage_limits.periodic_reset,
+										}
+									: null,
+								rate_limits:
+									provider.rate_limits?.map((limit) => ({
+										type: limit.type,
+										unit: limit.unit,
+										value: limit.value,
+									})) ?? null,
+								reset_usage: provider.reset_usage,
+								expires_at: provider.expires_at,
+								created_at: provider.created_at,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -310,56 +277,45 @@ export function registerProvidersTools(
 				.describe("Set to true to reset accumulated usage metrics"),
 		},
 		async (params) => {
-			try {
-				const result = await service.updateProvider(
-					params.slug,
-					{
-						name: params.name,
-						note: params.note,
-						usage_limits: buildUsageLimits({
-							credit_limit: params.credit_limit,
-							alert_threshold: params.alert_threshold,
-						}),
-						rate_limits:
-							params.rate_limit_value !== undefined &&
-							params.rate_limit_unit !== undefined
-								? buildRateLimits({
-										value: params.rate_limit_value,
-										unit: params.rate_limit_unit,
-									})
-								: undefined,
-						expires_at: params.expires_at,
-						reset_usage: params.reset_usage,
-					},
-					params.workspace_id,
-				);
+			const result = await service.updateProvider(
+				params.slug,
+				{
+					name: params.name,
+					note: params.note,
+					usage_limits: buildUsageLimits({
+						credit_limit: params.credit_limit,
+						alert_threshold: params.alert_threshold,
+					}),
+					rate_limits:
+						params.rate_limit_value !== undefined &&
+						params.rate_limit_unit !== undefined
+							? buildRateLimits({
+									value: params.rate_limit_value,
+									unit: params.rate_limit_unit,
+								})
+							: undefined,
+					expires_at: params.expires_at,
+					reset_usage: params.reset_usage,
+				},
+				params.workspace_id,
+			);
 
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									message: `Successfully updated provider "${params.slug}"`,
-									id: result.id,
-									slug: result.slug,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error updating provider: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: `Successfully updated provider "${params.slug}"`,
+								id: result.id,
+								slug: result.slug,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -375,34 +331,23 @@ export function registerProvidersTools(
 				.describe("Workspace ID - required when using organization admin keys"),
 		},
 		async (params) => {
-			try {
-				await service.deleteProvider(params.slug, params.workspace_id);
+			await service.deleteProvider(params.slug, params.workspace_id);
 
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									message: `Successfully deleted provider "${params.slug}"`,
-									success: true,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error deleting provider: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: `Successfully deleted provider "${params.slug}"`,
+								success: true,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 }

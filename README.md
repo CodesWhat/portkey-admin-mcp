@@ -43,7 +43,44 @@ MCP server for [Portkey](https://portkey.ai/) Admin API. **116 tools** for promp
 
 | Method | Type | Setup |
 |--------|------|-------|
-| [![Docker](https://img.shields.io/badge/Docker-Container-2496ED?logo=docker&logoColor=white)](https://github.com/SYPartners/portkey-admin-mcp) | Self-hosted | `docker pull` or build from source |
+| `npx portkey-admin-mcp` | Zero-install | Runs directly via npx |
+| [![Docker](https://img.shields.io/badge/Docker-Container-2496ED?logo=docker&logoColor=white)](https://github.com/s-b-e-n-s-o-n/portkey-admin-mcp) | Self-hosted | `docker pull` or build from source |
+
+### npx (Recommended)
+
+```bash
+PORTKEY_API_KEY=your_key npx -y portkey-admin-mcp
+```
+
+<details>
+<summary><strong>Claude Code</strong></summary>
+
+```bash
+claude mcp add -e PORTKEY_API_KEY=your_key portkey -- npx -y portkey-admin-mcp
+```
+
+</details>
+
+<details>
+<summary><strong>Cursor / Windsurf / VS Code</strong></summary>
+
+Add to your MCP config (`.cursor/mcp.json`, `.windsurf/mcp.json`, or `.vscode/mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "portkey": {
+      "command": "npx",
+      "args": ["-y", "portkey-admin-mcp"],
+      "env": {
+        "PORTKEY_API_KEY": "your_api_key"
+      }
+    }
+  }
+}
+```
+
+</details>
 
 ---
 
@@ -51,7 +88,7 @@ MCP server for [Portkey](https://portkey.ai/) Admin API. **116 tools** for promp
 <summary><strong>🔨 Build from source</strong></summary>
 
 ```bash
-git clone https://github.com/SYPartners/portkey-admin-mcp.git
+git clone https://github.com/s-b-e-n-s-o-n/portkey-admin-mcp.git
 cd portkey-admin-mcp
 npm install
 npm run build
@@ -533,7 +570,6 @@ The script verifies `/health`, `/ready`, runs `initialize`, then runs `tools/lis
 docker build -t portkey-admin-mcp .
 docker run \
   -e PORTKEY_API_KEY=your_key \
-  -e MCP_TRANSPORT=http \
   -e MCP_HOST=0.0.0.0 \
   -e MCP_PORT=3000 \
   -e MCP_AUTH_MODE=bearer \
@@ -578,16 +614,17 @@ This indicates missing API key scopes, not broken endpoint paths.
 | Analytics Groups | `get_user_grouped_data` | `analytics.groups.view` |
 | Integration Access | `list_integration_models`, `list_integration_workspaces` | `integrations.models.list`, `integrations.workspaces.list` |
 
-### Known Issues
+---
 
-Some endpoints are pending Portkey API clarification:
+## 🛠️ Development
 
-| Tool | Status | Issue |
-|------|--------|-------|
-| `render_prompt` | 500 | Server error - investigating |
-| `create_prompt_label` | 400 | Request format unclear |
-| `create_usage_limit` | 400 | Request format unclear |
-| `create_rate_limit` | 400 | Request format unclear |
+```bash
+npm run dev           # stdio with hot reload
+npm run dev:http      # HTTP with hot reload
+npm run test:e2e      # MCP protocol tests
+npm run test:contract # API contract tests
+npm run ci            # full CI pipeline (lint + typecheck + test + build + verify)
+```
 
 ---
 

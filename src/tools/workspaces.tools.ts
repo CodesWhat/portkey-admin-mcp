@@ -25,26 +25,15 @@ export function registerWorkspacesTools(
 				.describe("Page number to retrieve when results are paginated"),
 		},
 		async (params) => {
-			try {
-				const workspaces = await service.listWorkspaces(params);
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(workspaces, null, 2),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error fetching workspaces: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			const workspaces = await service.listWorkspaces(params);
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(workspaces, null, 2),
+					},
+				],
+			};
 		},
 	);
 
@@ -61,47 +50,36 @@ export function registerWorkspacesTools(
 				),
 		},
 		async (params) => {
-			try {
-				const workspace = await service.getWorkspace(params.workspace_id);
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									id: workspace.id,
-									name: workspace.name,
-									slug: workspace.slug,
-									description: workspace.description,
-									created_at: workspace.created_at,
-									last_updated_at: workspace.last_updated_at,
-									defaults: workspace.defaults,
-									users: workspace.users.map((user) => ({
-										id: user.id,
-										name: `${user.first_name} ${user.last_name}`,
-										organization_role: user.org_role,
-										workspace_role: user.role,
-										status: user.status,
-										created_at: user.created_at,
-										last_updated_at: user.last_updated_at,
-									})),
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error fetching workspace details: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			const workspace = await service.getWorkspace(params.workspace_id);
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								id: workspace.id,
+								name: workspace.name,
+								slug: workspace.slug,
+								description: workspace.description,
+								created_at: workspace.created_at,
+								last_updated_at: workspace.last_updated_at,
+								defaults: workspace.defaults,
+								users: workspace.users.map((user) => ({
+									id: user.id,
+									name: `${user.first_name} ${user.last_name}`,
+									organization_role: user.org_role,
+									workspace_role: user.role,
+									status: user.status,
+									created_at: user.created_at,
+									last_updated_at: user.last_updated_at,
+								})),
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -129,44 +107,33 @@ export function registerWorkspacesTools(
 				.describe("Custom metadata key-value pairs"),
 		},
 		async (params) => {
-			try {
-				const workspace = await service.createWorkspace({
-					name: params.name,
-					slug: params.slug,
-					description: params.description,
-					defaults:
-						params.is_default !== undefined || params.metadata
-							? {
-									is_default: params.is_default,
-									metadata: params.metadata,
-								}
-							: undefined,
-				});
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									message: `Successfully created workspace "${params.name}"`,
-									workspace,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error creating workspace: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			const workspace = await service.createWorkspace({
+				name: params.name,
+				slug: params.slug,
+				description: params.description,
+				defaults:
+					params.is_default !== undefined || params.metadata
+						? {
+								is_default: params.is_default,
+								metadata: params.metadata,
+							}
+						: undefined,
+			});
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: `Successfully created workspace "${params.name}"`,
+								workspace,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -189,42 +156,31 @@ export function registerWorkspacesTools(
 				.describe("New metadata key-value pairs"),
 		},
 		async (params) => {
-			try {
-				const { workspace_id, is_default, metadata, ...rest } = params;
-				// Build defaults object with only defined fields
-				const defaults: Record<string, unknown> = {};
-				if (is_default !== undefined) defaults.is_default = is_default;
-				if (metadata !== undefined) defaults.metadata = metadata;
+			const { workspace_id, is_default, metadata, ...rest } = params;
+			// Build defaults object with only defined fields
+			const defaults: Record<string, unknown> = {};
+			if (is_default !== undefined) defaults.is_default = is_default;
+			if (metadata !== undefined) defaults.metadata = metadata;
 
-				const workspace = await service.updateWorkspace(workspace_id, {
-					...rest,
-					...(Object.keys(defaults).length > 0 ? { defaults } : {}),
-				});
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									message: "Successfully updated workspace",
-									workspace,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error updating workspace: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			const workspace = await service.updateWorkspace(workspace_id, {
+				...rest,
+				...(Object.keys(defaults).length > 0 ? { defaults } : {}),
+			});
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: "Successfully updated workspace",
+								workspace,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -236,33 +192,22 @@ export function registerWorkspacesTools(
 			workspace_id: z.string().describe("The workspace ID to delete"),
 		},
 		async (params) => {
-			try {
-				await service.deleteWorkspace(params.workspace_id);
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									message: `Successfully deleted workspace ${params.workspace_id}`,
-									success: true,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error deleting workspace: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			await service.deleteWorkspace(params.workspace_id);
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: `Successfully deleted workspace ${params.workspace_id}`,
+								success: true,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -287,36 +232,25 @@ export function registerWorkspacesTools(
 				.describe("Role in the workspace"),
 		},
 		async (params) => {
-			try {
-				const member = await service.addWorkspaceMember(params.workspace_id, {
-					user_id: params.user_id,
-					role: params.role,
-				});
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									message: `Successfully added user to workspace as ${params.role}`,
-									member,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error adding member: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			const member = await service.addWorkspaceMember(params.workspace_id, {
+				user_id: params.user_id,
+				role: params.role,
+			});
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: `Successfully added user to workspace as ${params.role}`,
+								member,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -328,21 +262,10 @@ export function registerWorkspacesTools(
 			workspace_id: z.string().describe("The workspace ID to list members for"),
 		},
 		async (params) => {
-			try {
-				const members = await service.listWorkspaceMembers(params.workspace_id);
-				return {
-					content: [{ type: "text", text: JSON.stringify(members, null, 2) }],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error listing members: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			const members = await service.listWorkspaceMembers(params.workspace_id);
+			return {
+				content: [{ type: "text", text: JSON.stringify(members, null, 2) }],
+			};
 		},
 	);
 
@@ -355,24 +278,13 @@ export function registerWorkspacesTools(
 			user_id: z.string().describe("The user ID to retrieve"),
 		},
 		async (params) => {
-			try {
-				const member = await service.getWorkspaceMember(
-					params.workspace_id,
-					params.user_id,
-				);
-				return {
-					content: [{ type: "text", text: JSON.stringify(member, null, 2) }],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error fetching member: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			const member = await service.getWorkspaceMember(
+				params.workspace_id,
+				params.user_id,
+			);
+			return {
+				content: [{ type: "text", text: JSON.stringify(member, null, 2) }],
+			};
 		},
 	);
 
@@ -388,39 +300,28 @@ export function registerWorkspacesTools(
 				.describe("New role in the workspace"),
 		},
 		async (params) => {
-			try {
-				const member = await service.updateWorkspaceMember(
-					params.workspace_id,
-					params.user_id,
+			const member = await service.updateWorkspaceMember(
+				params.workspace_id,
+				params.user_id,
+				{
+					role: params.role,
+				},
+			);
+			return {
+				content: [
 					{
-						role: params.role,
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: `Successfully updated member role to ${params.role}`,
+								member,
+							},
+							null,
+							2,
+						),
 					},
-				);
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									message: `Successfully updated member role to ${params.role}`,
-									member,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error updating member: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+				],
+			};
 		},
 	);
 
@@ -433,36 +334,25 @@ export function registerWorkspacesTools(
 			user_id: z.string().describe("The user ID to remove"),
 		},
 		async (params) => {
-			try {
-				await service.removeWorkspaceMember(
-					params.workspace_id,
-					params.user_id,
-				);
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									message: `Successfully removed user from workspace`,
-									success: true,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error removing member: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			await service.removeWorkspaceMember(
+				params.workspace_id,
+				params.user_id,
+			);
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: `Successfully removed user from workspace`,
+								success: true,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 }

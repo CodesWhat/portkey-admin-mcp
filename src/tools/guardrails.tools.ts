@@ -79,44 +79,33 @@ export function registerGuardrailsTools(
 				.describe("Page number for pagination"),
 		},
 		async (params) => {
-			try {
-				const result = await service.listGuardrails(params);
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									total: result.total,
-									guardrails: result.data.map((guardrail) => ({
-										id: guardrail.id,
-										name: guardrail.name,
-										slug: guardrail.slug,
-										status: guardrail.status,
-										workspace_id: guardrail.workspace_id,
-										organisation_id: guardrail.organisation_id,
-										created_at: guardrail.created_at,
-										last_updated_at: guardrail.last_updated_at,
-										owner_id: guardrail.owner_id,
-										updated_by: guardrail.updated_by,
-									})),
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error listing guardrails: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			const result = await service.listGuardrails(params);
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								total: result.total,
+								guardrails: result.data.map((guardrail) => ({
+									id: guardrail.id,
+									name: guardrail.name,
+									slug: guardrail.slug,
+									status: guardrail.status,
+									workspace_id: guardrail.workspace_id,
+									organisation_id: guardrail.organisation_id,
+									created_at: guardrail.created_at,
+									last_updated_at: guardrail.last_updated_at,
+									owner_id: guardrail.owner_id,
+									updated_by: guardrail.updated_by,
+								})),
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -132,43 +121,32 @@ export function registerGuardrailsTools(
 				),
 		},
 		async (params) => {
-			try {
-				const guardrail = await service.getGuardrail(params.guardrail_id);
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									id: guardrail.id,
-									name: guardrail.name,
-									slug: guardrail.slug,
-									status: guardrail.status,
-									workspace_id: guardrail.workspace_id,
-									organisation_id: guardrail.organisation_id,
-									checks: guardrail.checks,
-									actions: guardrail.actions,
-									created_at: guardrail.created_at,
-									last_updated_at: guardrail.last_updated_at,
-									owner_id: guardrail.owner_id,
-									updated_by: guardrail.updated_by,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error retrieving guardrail: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			const guardrail = await service.getGuardrail(params.guardrail_id);
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								id: guardrail.id,
+								name: guardrail.name,
+								slug: guardrail.slug,
+								status: guardrail.status,
+								workspace_id: guardrail.workspace_id,
+								organisation_id: guardrail.organisation_id,
+								checks: guardrail.checks,
+								actions: guardrail.actions,
+								created_at: guardrail.created_at,
+								last_updated_at: guardrail.last_updated_at,
+								owner_id: guardrail.owner_id,
+								updated_by: guardrail.updated_by,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -195,41 +173,30 @@ export function registerGuardrailsTools(
 				.describe("Organisation ID (required if workspace_id not provided)"),
 		},
 		async (params) => {
-			try {
-				const result = await service.createGuardrail({
-					name: params.name,
-					checks: params.checks,
-					actions: params.actions,
-					workspace_id: params.workspace_id,
-					organisation_id: params.organisation_id,
-				});
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									message: `Successfully created guardrail "${params.name}"`,
-									id: result.id,
-									slug: result.slug,
-									version_id: result.version_id,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error creating guardrail: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			const result = await service.createGuardrail({
+				name: params.name,
+				checks: params.checks,
+				actions: params.actions,
+				workspace_id: params.workspace_id,
+				organisation_id: params.organisation_id,
+			});
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: `Successfully created guardrail "${params.name}"`,
+								id: result.id,
+								slug: result.slug,
+								version_id: result.version_id,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -250,54 +217,43 @@ export function registerGuardrailsTools(
 				.describe("Updated actions configuration"),
 		},
 		async (params) => {
-			try {
-				const updateData: {
-					name?: string;
-					checks?: typeof params.checks;
-					actions?: typeof params.actions;
-				} = {};
+			const updateData: {
+				name?: string;
+				checks?: typeof params.checks;
+				actions?: typeof params.actions;
+			} = {};
 
-				if (params.name !== undefined) {
-					updateData.name = params.name;
-				}
-				if (params.checks !== undefined) {
-					updateData.checks = params.checks;
-				}
-				if (params.actions !== undefined) {
-					updateData.actions = params.actions;
-				}
-
-				const result = await service.updateGuardrail(
-					params.guardrail_id,
-					updateData,
-				);
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									message: `Successfully updated guardrail "${params.guardrail_id}"`,
-									id: result.id,
-									slug: result.slug,
-									version_id: result.version_id,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error updating guardrail: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
+			if (params.name !== undefined) {
+				updateData.name = params.name;
 			}
+			if (params.checks !== undefined) {
+				updateData.checks = params.checks;
+			}
+			if (params.actions !== undefined) {
+				updateData.actions = params.actions;
+			}
+
+			const result = await service.updateGuardrail(
+				params.guardrail_id,
+				updateData,
+			);
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: `Successfully updated guardrail "${params.guardrail_id}"`,
+								id: result.id,
+								slug: result.slug,
+								version_id: result.version_id,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -309,33 +265,22 @@ export function registerGuardrailsTools(
 			guardrail_id: z.string().describe("The guardrail UUID or slug to delete"),
 		},
 		async (params) => {
-			try {
-				const result = await service.deleteGuardrail(params.guardrail_id);
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									message: `Successfully deleted guardrail "${params.guardrail_id}"`,
-									success: result.success,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error deleting guardrail: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			const result = await service.deleteGuardrail(params.guardrail_id);
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: `Successfully deleted guardrail "${params.guardrail_id}"`,
+								success: result.success,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 }

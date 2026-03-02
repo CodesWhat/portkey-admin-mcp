@@ -13,54 +13,43 @@ export function registerKeysTools(
 		"Retrieve all virtual keys in your Portkey organization, including their usage limits, rate limits, and status",
 		{},
 		async () => {
-			try {
-				const virtualKeys = await service.listVirtualKeys();
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									total: virtualKeys.total,
-									virtual_keys: virtualKeys.data.map((key) => ({
-										name: key.name,
-										slug: key.slug,
-										status: key.status,
-										note: key.note,
-										usage_limits: key.usage_limits
-											? {
-													credit_limit: key.usage_limits.credit_limit,
-													alert_threshold: key.usage_limits.alert_threshold,
-													periodic_reset: key.usage_limits.periodic_reset,
-												}
-											: null,
-										rate_limits:
-											key.rate_limits?.map((limit) => ({
-												type: limit.type,
-												unit: limit.unit,
-												value: limit.value,
-											})) ?? null,
-										reset_usage: key.reset_usage,
-										created_at: key.created_at,
-										model_config: key.model_config,
-									})),
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error fetching virtual keys: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			const virtualKeys = await service.listVirtualKeys();
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								total: virtualKeys.total,
+								virtual_keys: virtualKeys.data.map((key) => ({
+									name: key.name,
+									slug: key.slug,
+									status: key.status,
+									note: key.note,
+									usage_limits: key.usage_limits
+										? {
+												credit_limit: key.usage_limits.credit_limit,
+												alert_threshold: key.usage_limits.alert_threshold,
+												periodic_reset: key.usage_limits.periodic_reset,
+											}
+										: null,
+									rate_limits:
+										key.rate_limits?.map((limit) => ({
+											type: limit.type,
+											unit: limit.unit,
+											value: limit.value,
+										})) ?? null,
+									reset_usage: key.reset_usage,
+									created_at: key.created_at,
+									model_config: key.model_config,
+								})),
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -114,51 +103,40 @@ export function registerKeysTools(
 				.describe("Rate limit in requests per minute"),
 		},
 		async (params) => {
-			try {
-				const result = await service.createVirtualKey({
-					name: params.name,
-					provider: params.provider,
-					key: params.key,
-					note: params.note,
-					workspace_id: params.workspace_id,
-					apiVersion: params.api_version,
-					resourceName: params.resource_name,
-					deploymentName: params.deployment_name,
-					usage_limits: buildUsageLimits({
-						credit_limit: params.credit_limit,
-						alert_threshold: params.alert_threshold,
-					}),
-					rate_limits: buildRateLimitsRpm(params.rate_limit_rpm),
-				});
+			const result = await service.createVirtualKey({
+				name: params.name,
+				provider: params.provider,
+				key: params.key,
+				note: params.note,
+				workspace_id: params.workspace_id,
+				apiVersion: params.api_version,
+				resourceName: params.resource_name,
+				deploymentName: params.deployment_name,
+				usage_limits: buildUsageLimits({
+					credit_limit: params.credit_limit,
+					alert_threshold: params.alert_threshold,
+				}),
+				rate_limits: buildRateLimitsRpm(params.rate_limit_rpm),
+			});
 
-				// Handle both response formats: { data: { slug } } or { slug }
-				const slug = result.data?.slug ?? (result as { slug?: string }).slug;
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									message: `Successfully created virtual key "${params.name}"`,
-									success: result.success,
-									slug,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error creating virtual key: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			// Handle both response formats: { data: { slug } } or { slug }
+			const slug = result.data?.slug ?? (result as { slug?: string }).slug;
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: `Successfully created virtual key "${params.name}"`,
+								success: result.success,
+								slug,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -172,52 +150,41 @@ export function registerKeysTools(
 				.describe("The unique slug identifier of the virtual key to retrieve"),
 		},
 		async (params) => {
-			try {
-				const virtualKey = await service.getVirtualKey(params.slug);
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									name: virtualKey.name,
-									slug: virtualKey.slug,
-									status: virtualKey.status,
-									note: virtualKey.note,
-									usage_limits: virtualKey.usage_limits
-										? {
-												credit_limit: virtualKey.usage_limits.credit_limit,
-												alert_threshold:
-													virtualKey.usage_limits.alert_threshold,
-												periodic_reset: virtualKey.usage_limits.periodic_reset,
-											}
-										: null,
-									rate_limits:
-										virtualKey.rate_limits?.map((limit) => ({
-											type: limit.type,
-											unit: limit.unit,
-											value: limit.value,
-										})) ?? null,
-									reset_usage: virtualKey.reset_usage,
-									created_at: virtualKey.created_at,
-									model_config: virtualKey.model_config,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error fetching virtual key: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			const virtualKey = await service.getVirtualKey(params.slug);
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								name: virtualKey.name,
+								slug: virtualKey.slug,
+								status: virtualKey.status,
+								note: virtualKey.note,
+								usage_limits: virtualKey.usage_limits
+									? {
+											credit_limit: virtualKey.usage_limits.credit_limit,
+											alert_threshold:
+												virtualKey.usage_limits.alert_threshold,
+											periodic_reset: virtualKey.usage_limits.periodic_reset,
+										}
+									: null,
+								rate_limits:
+									virtualKey.rate_limits?.map((limit) => ({
+										type: limit.type,
+										unit: limit.unit,
+										value: limit.value,
+									})) ?? null,
+								reset_usage: virtualKey.reset_usage,
+								created_at: virtualKey.created_at,
+								model_config: virtualKey.model_config,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -248,45 +215,34 @@ export function registerKeysTools(
 				.describe("New rate limit in requests per minute"),
 		},
 		async (params) => {
-			try {
-				const result = await service.updateVirtualKey(params.slug, {
-					name: params.name,
-					key: params.key,
-					note: params.note,
-					usage_limits: buildUsageLimits({
-						credit_limit: params.credit_limit,
-						alert_threshold: params.alert_threshold,
-					}),
-					rate_limits: buildRateLimitsRpm(params.rate_limit_rpm),
-				});
+			const result = await service.updateVirtualKey(params.slug, {
+				name: params.name,
+				key: params.key,
+				note: params.note,
+				usage_limits: buildUsageLimits({
+					credit_limit: params.credit_limit,
+					alert_threshold: params.alert_threshold,
+				}),
+				rate_limits: buildRateLimitsRpm(params.rate_limit_rpm),
+			});
 
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									message: `Successfully updated virtual key "${params.slug}"`,
-									name: result.name,
-									slug: result.slug,
-									status: result.status,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error updating virtual key: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: `Successfully updated virtual key "${params.slug}"`,
+								name: result.name,
+								slug: result.slug,
+								status: result.status,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -298,33 +254,22 @@ export function registerKeysTools(
 			slug: z.string().describe("The slug of the virtual key to delete"),
 		},
 		async (params) => {
-			try {
-				const result = await service.deleteVirtualKey(params.slug);
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									message: `Successfully deleted virtual key "${params.slug}"`,
-									success: result.success,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error deleting virtual key: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			const result = await service.deleteVirtualKey(params.slug);
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: `Successfully deleted virtual key "${params.slug}"`,
+								success: result.success,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -358,7 +303,6 @@ export function registerKeysTools(
 				.describe("User ID (required for user sub-type keys)"),
 			scopes: z
 				.array(z.string())
-				.optional()
 				.describe(
 					"Permission scopes for the key (e.g., ['logs.read', 'analytics.read'])",
 				),
@@ -396,82 +340,73 @@ export function registerKeysTools(
 				.describe("Expiration date in ISO 8601 format"),
 		},
 		async (params) => {
-			try {
-				// Validate required fields based on type and sub_type
-				if (params.type === "workspace" && !params.workspace_id) {
-					return {
-						content: [
-							{
-								type: "text",
-								text: "Error creating API key: workspace_id is required for workspace-type keys",
-							},
-						],
-					};
-				}
-				if (params.sub_type === "user" && !params.user_id) {
-					return {
-						content: [
-							{
-								type: "text",
-								text: "Error creating API key: user_id is required for user sub-type keys",
-							},
-						],
-					};
-				}
-
-				const result = await service.createApiKey(
-					params.type,
-					params.sub_type,
-					{
-						name: params.name,
-						description: params.description,
-						workspace_id: params.workspace_id,
-						user_id: params.user_id,
-						scopes: params.scopes,
-						usage_limits: buildUsageLimits({
-							credit_limit: params.credit_limit,
-							alert_threshold: params.alert_threshold,
-						}),
-						rate_limits: buildRateLimitsRpm(params.rate_limit_rpm),
-						defaults: (() => {
-							const d: Record<string, unknown> = {};
-							if (params.default_config_id !== undefined)
-								d.config_id = params.default_config_id;
-							if (params.default_metadata !== undefined)
-								d.metadata = params.default_metadata;
-							return Object.keys(d).length > 0 ? d : undefined;
-						})(),
-						alert_emails: params.alert_emails,
-						expires_at: params.expires_at,
-					},
-				);
-
+			// Validate required fields based on type and sub_type
+			if (params.type === "workspace" && !params.workspace_id) {
 				return {
 					content: [
 						{
 							type: "text",
-							text: JSON.stringify(
-								{
-									message: `Successfully created API key "${params.name}"`,
-									id: result.id,
-									key: result.key,
-								},
-								null,
-								2,
-							),
+							text: "Error creating API key: workspace_id is required for workspace-type keys",
 						},
 					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error creating API key: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
+					isError: true,
 				};
 			}
+			if (params.sub_type === "user" && !params.user_id) {
+				return {
+					content: [
+						{
+							type: "text",
+							text: "Error creating API key: user_id is required for user sub-type keys",
+						},
+					],
+					isError: true,
+				};
+			}
+
+			const result = await service.createApiKey(
+				params.type,
+				params.sub_type,
+				{
+					name: params.name,
+					description: params.description,
+					workspace_id: params.workspace_id,
+					user_id: params.user_id,
+					scopes: params.scopes,
+					usage_limits: buildUsageLimits({
+						credit_limit: params.credit_limit,
+						alert_threshold: params.alert_threshold,
+					}),
+					rate_limits: buildRateLimitsRpm(params.rate_limit_rpm),
+					defaults: (() => {
+						const d: Record<string, unknown> = {};
+						if (params.default_config_id !== undefined)
+							d.config_id = params.default_config_id;
+						if (params.default_metadata !== undefined)
+							d.metadata = params.default_metadata;
+						return Object.keys(d).length > 0 ? d : undefined;
+					})(),
+					alert_emails: params.alert_emails,
+					expires_at: params.expires_at,
+				},
+			);
+
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: `Successfully created API key "${params.name}"`,
+								id: result.id,
+								key: result.key,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -494,67 +429,56 @@ export function registerKeysTools(
 			workspace_id: z.string().optional().describe("Filter by workspace ID"),
 		},
 		async (params) => {
-			try {
-				const apiKeys = await service.listApiKeys({
-					page_size: params.page_size,
-					current_page: params.current_page,
-					workspace_id: params.workspace_id,
-				});
+			const apiKeys = await service.listApiKeys({
+				page_size: params.page_size,
+				current_page: params.current_page,
+				workspace_id: params.workspace_id,
+			});
 
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									total: apiKeys.total,
-									api_keys: apiKeys.data.map((key) => ({
-										id: key.id,
-										name: key.name,
-										description: key.description,
-										type: key.type,
-										status: key.status,
-										organisation_id: key.organisation_id,
-										workspace_id: key.workspace_id,
-										user_id: key.user_id,
-										scopes: key.scopes,
-										usage_limits: key.usage_limits
-											? {
-													credit_limit: key.usage_limits.credit_limit,
-													alert_threshold: key.usage_limits.alert_threshold,
-													periodic_reset: key.usage_limits.periodic_reset,
-												}
-											: null,
-										rate_limits:
-											key.rate_limits?.map((limit) => ({
-												type: limit.type,
-												unit: limit.unit,
-												value: limit.value,
-											})) ?? null,
-										defaults: key.defaults,
-										alert_emails: key.alert_emails,
-										expires_at: key.expires_at,
-										created_at: key.created_at,
-										last_updated_at: key.last_updated_at,
-										creation_mode: key.creation_mode,
-									})),
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error listing API keys: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								total: apiKeys.total,
+								api_keys: apiKeys.data.map((key) => ({
+									id: key.id,
+									name: key.name,
+									description: key.description,
+									type: key.type,
+									status: key.status,
+									organisation_id: key.organisation_id,
+									workspace_id: key.workspace_id,
+									user_id: key.user_id,
+									scopes: key.scopes,
+									usage_limits: key.usage_limits
+										? {
+												credit_limit: key.usage_limits.credit_limit,
+												alert_threshold: key.usage_limits.alert_threshold,
+												periodic_reset: key.usage_limits.periodic_reset,
+											}
+										: null,
+									rate_limits:
+										key.rate_limits?.map((limit) => ({
+											type: limit.type,
+											unit: limit.unit,
+											value: limit.value,
+										})) ?? null,
+									defaults: key.defaults,
+									alert_emails: key.alert_emails,
+									expires_at: key.expires_at,
+									created_at: key.created_at,
+									last_updated_at: key.last_updated_at,
+									creation_mode: key.creation_mode,
+								})),
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -566,60 +490,49 @@ export function registerKeysTools(
 			id: z.string().uuid().describe("The UUID of the API key to retrieve"),
 		},
 		async (params) => {
-			try {
-				const apiKey = await service.getApiKey(params.id);
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									id: apiKey.id,
-									name: apiKey.name,
-									description: apiKey.description,
-									type: apiKey.type,
-									status: apiKey.status,
-									organisation_id: apiKey.organisation_id,
-									workspace_id: apiKey.workspace_id,
-									user_id: apiKey.user_id,
-									scopes: apiKey.scopes,
-									usage_limits: apiKey.usage_limits
-										? {
-												credit_limit: apiKey.usage_limits.credit_limit,
-												alert_threshold: apiKey.usage_limits.alert_threshold,
-												periodic_reset: apiKey.usage_limits.periodic_reset,
-											}
-										: null,
-									rate_limits:
-										apiKey.rate_limits?.map((limit) => ({
-											type: limit.type,
-											unit: limit.unit,
-											value: limit.value,
-										})) ?? null,
-									defaults: apiKey.defaults,
-									alert_emails: apiKey.alert_emails,
-									expires_at: apiKey.expires_at,
-									reset_usage: apiKey.reset_usage,
-									created_at: apiKey.created_at,
-									last_updated_at: apiKey.last_updated_at,
-									creation_mode: apiKey.creation_mode,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error fetching API key: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			const apiKey = await service.getApiKey(params.id);
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								id: apiKey.id,
+								name: apiKey.name,
+								description: apiKey.description,
+								type: apiKey.type,
+								status: apiKey.status,
+								organisation_id: apiKey.organisation_id,
+								workspace_id: apiKey.workspace_id,
+								user_id: apiKey.user_id,
+								scopes: apiKey.scopes,
+								usage_limits: apiKey.usage_limits
+									? {
+											credit_limit: apiKey.usage_limits.credit_limit,
+											alert_threshold: apiKey.usage_limits.alert_threshold,
+											periodic_reset: apiKey.usage_limits.periodic_reset,
+										}
+									: null,
+								rate_limits:
+									apiKey.rate_limits?.map((limit) => ({
+										type: limit.type,
+										unit: limit.unit,
+										value: limit.value,
+									})) ?? null,
+								defaults: apiKey.defaults,
+								alert_emails: apiKey.alert_emails,
+								expires_at: apiKey.expires_at,
+								reset_usage: apiKey.reset_usage,
+								created_at: apiKey.created_at,
+								last_updated_at: apiKey.last_updated_at,
+								creation_mode: apiKey.creation_mode,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -668,52 +581,41 @@ export function registerKeysTools(
 				.describe("New email addresses for alerts"),
 		},
 		async (params) => {
-			try {
-				const result = await service.updateApiKey(params.id, {
-					name: params.name,
-					description: params.description,
-					scopes: params.scopes,
-					usage_limits: buildUsageLimits({
-						credit_limit: params.credit_limit,
-						alert_threshold: params.alert_threshold,
-					}),
-					rate_limits: buildRateLimitsRpm(params.rate_limit_rpm),
-					defaults:
-						params.default_config_id !== undefined ||
-						params.default_metadata !== undefined
-							? {
-									config_id: params.default_config_id,
-									metadata: params.default_metadata,
-								}
-							: undefined,
-					alert_emails: params.alert_emails,
-				});
+			const result = await service.updateApiKey(params.id, {
+				name: params.name,
+				description: params.description,
+				scopes: params.scopes,
+				usage_limits: buildUsageLimits({
+					credit_limit: params.credit_limit,
+					alert_threshold: params.alert_threshold,
+				}),
+				rate_limits: buildRateLimitsRpm(params.rate_limit_rpm),
+				defaults:
+					params.default_config_id !== undefined ||
+					params.default_metadata !== undefined
+						? {
+								config_id: params.default_config_id,
+								metadata: params.default_metadata,
+							}
+						: undefined,
+				alert_emails: params.alert_emails,
+			});
 
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									message: `Successfully updated API key "${params.id}"`,
-									success: result.success,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error updating API key: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: `Successfully updated API key "${params.id}"`,
+								success: result.success,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -725,33 +627,22 @@ export function registerKeysTools(
 			id: z.string().uuid().describe("The UUID of the API key to delete"),
 		},
 		async (params) => {
-			try {
-				const result = await service.deleteApiKey(params.id);
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									message: `Successfully deleted API key "${params.id}"`,
-									success: result.success,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error deleting API key: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			const result = await service.deleteApiKey(params.id);
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: `Successfully deleted API key "${params.id}"`,
+								success: result.success,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 }

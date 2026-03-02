@@ -36,49 +36,38 @@ export function registerIntegrationsTools(
 				),
 		},
 		async (params) => {
-			try {
-				const integrations = await service.listIntegrations({
-					current_page: params.current_page,
-					page_size: params.page_size,
-					workspace_id: params.workspace_id,
-					type: params.type,
-				});
+			const integrations = await service.listIntegrations({
+				current_page: params.current_page,
+				page_size: params.page_size,
+				workspace_id: params.workspace_id,
+				type: params.type,
+			});
 
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									total: integrations.total,
-									integrations: integrations.data.map((integration) => ({
-										id: integration.id,
-										name: integration.name,
-										slug: integration.slug,
-										ai_provider_id: integration.ai_provider_id,
-										status: integration.status,
-										description: integration.description,
-										organisation_id: integration.organisation_id,
-										created_at: integration.created_at,
-										last_updated_at: integration.last_updated_at,
-									})),
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error listing integrations: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								total: integrations.total,
+								integrations: integrations.data.map((integration) => ({
+									id: integration.id,
+									name: integration.name,
+									slug: integration.slug,
+									ai_provider_id: integration.ai_provider_id,
+									status: integration.status,
+									description: integration.description,
+									organisation_id: integration.organisation_id,
+									created_at: integration.created_at,
+									last_updated_at: integration.last_updated_at,
+								})),
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -153,69 +142,58 @@ export function registerIntegrationsTools(
 				.describe("Custom base URL for the provider"),
 		},
 		async (params) => {
-			try {
-				const configurations: Record<string, unknown> = {};
+			const configurations: Record<string, unknown> = {};
 
-				// Azure OpenAI configurations
-				if (params.api_version) configurations.api_version = params.api_version;
-				if (params.resource_name)
-					configurations.resource_name = params.resource_name;
-				if (params.deployment_name)
-					configurations.deployment_name = params.deployment_name;
+			// Azure OpenAI configurations
+			if (params.api_version) configurations.api_version = params.api_version;
+			if (params.resource_name)
+				configurations.resource_name = params.resource_name;
+			if (params.deployment_name)
+				configurations.deployment_name = params.deployment_name;
 
-				// AWS Bedrock configurations
-				if (params.aws_region) configurations.aws_region = params.aws_region;
-				if (params.aws_access_key_id)
-					configurations.aws_access_key_id = params.aws_access_key_id;
-				if (params.aws_secret_access_key)
-					configurations.aws_secret_access_key = params.aws_secret_access_key;
+			// AWS Bedrock configurations
+			if (params.aws_region) configurations.aws_region = params.aws_region;
+			if (params.aws_access_key_id)
+				configurations.aws_access_key_id = params.aws_access_key_id;
+			if (params.aws_secret_access_key)
+				configurations.aws_secret_access_key = params.aws_secret_access_key;
 
-				// Vertex AI configurations
-				if (params.vertex_project_id)
-					configurations.vertex_project_id = params.vertex_project_id;
-				if (params.vertex_region)
-					configurations.vertex_region = params.vertex_region;
+			// Vertex AI configurations
+			if (params.vertex_project_id)
+				configurations.vertex_project_id = params.vertex_project_id;
+			if (params.vertex_region)
+				configurations.vertex_region = params.vertex_region;
 
-				// Custom host
-				if (params.custom_host) configurations.custom_host = params.custom_host;
+			// Custom host
+			if (params.custom_host) configurations.custom_host = params.custom_host;
 
-				const result = await service.createIntegration({
-					name: params.name,
-					ai_provider_id: params.ai_provider_id,
-					slug: params.slug,
-					key: params.key,
-					description: params.description,
-					workspace_id: params.workspace_id,
-					configurations:
-						Object.keys(configurations).length > 0 ? configurations : undefined,
-				});
+			const result = await service.createIntegration({
+				name: params.name,
+				ai_provider_id: params.ai_provider_id,
+				slug: params.slug,
+				key: params.key,
+				description: params.description,
+				workspace_id: params.workspace_id,
+				configurations:
+					Object.keys(configurations).length > 0 ? configurations : undefined,
+			});
 
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									message: `Successfully created integration "${params.name}"`,
-									id: result.id,
-									slug: result.slug,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error creating integration: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: `Successfully created integration "${params.name}"`,
+								id: result.id,
+								slug: result.slug,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -229,47 +207,36 @@ export function registerIntegrationsTools(
 				.describe("The unique slug identifier of the integration to retrieve"),
 		},
 		async (params) => {
-			try {
-				const integration = await service.getIntegration(params.slug);
+			const integration = await service.getIntegration(params.slug);
 
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									id: integration.id,
-									name: integration.name,
-									slug: integration.slug,
-									ai_provider_id: integration.ai_provider_id,
-									status: integration.status,
-									description: integration.description,
-									organisation_id: integration.organisation_id,
-									masked_key: integration.masked_key,
-									configurations: integration.configurations,
-									global_workspace_access_settings:
-										integration.global_workspace_access_settings,
-									allow_all_models: integration.allow_all_models,
-									workspace_count: integration.workspace_count,
-									created_at: integration.created_at,
-									last_updated_at: integration.last_updated_at,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error fetching integration: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								id: integration.id,
+								name: integration.name,
+								slug: integration.slug,
+								ai_provider_id: integration.ai_provider_id,
+								status: integration.status,
+								description: integration.description,
+								organisation_id: integration.organisation_id,
+								masked_key: integration.masked_key,
+								configurations: integration.configurations,
+								global_workspace_access_settings:
+									integration.global_workspace_access_settings,
+								allow_all_models: integration.allow_all_models,
+								workspace_count: integration.workspace_count,
+								created_at: integration.created_at,
+								last_updated_at: integration.last_updated_at,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -330,68 +297,57 @@ export function registerIntegrationsTools(
 				.describe("New custom base URL for the provider"),
 		},
 		async (params) => {
-			try {
-				const configurations: Record<string, unknown> = {};
+			const configurations: Record<string, unknown> = {};
 
-				// Azure OpenAI configurations
-				if (params.api_version !== undefined)
-					configurations.api_version = params.api_version;
-				if (params.resource_name !== undefined)
-					configurations.resource_name = params.resource_name;
-				if (params.deployment_name !== undefined)
-					configurations.deployment_name = params.deployment_name;
+			// Azure OpenAI configurations
+			if (params.api_version !== undefined)
+				configurations.api_version = params.api_version;
+			if (params.resource_name !== undefined)
+				configurations.resource_name = params.resource_name;
+			if (params.deployment_name !== undefined)
+				configurations.deployment_name = params.deployment_name;
 
-				// AWS Bedrock configurations
-				if (params.aws_region !== undefined)
-					configurations.aws_region = params.aws_region;
-				if (params.aws_access_key_id !== undefined)
-					configurations.aws_access_key_id = params.aws_access_key_id;
-				if (params.aws_secret_access_key !== undefined)
-					configurations.aws_secret_access_key = params.aws_secret_access_key;
+			// AWS Bedrock configurations
+			if (params.aws_region !== undefined)
+				configurations.aws_region = params.aws_region;
+			if (params.aws_access_key_id !== undefined)
+				configurations.aws_access_key_id = params.aws_access_key_id;
+			if (params.aws_secret_access_key !== undefined)
+				configurations.aws_secret_access_key = params.aws_secret_access_key;
 
-				// Vertex AI configurations
-				if (params.vertex_project_id !== undefined)
-					configurations.vertex_project_id = params.vertex_project_id;
-				if (params.vertex_region !== undefined)
-					configurations.vertex_region = params.vertex_region;
+			// Vertex AI configurations
+			if (params.vertex_project_id !== undefined)
+				configurations.vertex_project_id = params.vertex_project_id;
+			if (params.vertex_region !== undefined)
+				configurations.vertex_region = params.vertex_region;
 
-				// Custom host
-				if (params.custom_host !== undefined)
-					configurations.custom_host = params.custom_host;
+			// Custom host
+			if (params.custom_host !== undefined)
+				configurations.custom_host = params.custom_host;
 
-				const result = await service.updateIntegration(params.slug, {
-					name: params.name,
-					key: params.key,
-					description: params.description,
-					configurations:
-						Object.keys(configurations).length > 0 ? configurations : undefined,
-				});
+			const result = await service.updateIntegration(params.slug, {
+				name: params.name,
+				key: params.key,
+				description: params.description,
+				configurations:
+					Object.keys(configurations).length > 0 ? configurations : undefined,
+			});
 
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									message: `Successfully updated integration "${params.slug}"`,
-									success: result.success,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error updating integration: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: `Successfully updated integration "${params.slug}"`,
+								success: result.success,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -403,34 +359,23 @@ export function registerIntegrationsTools(
 			slug: z.string().describe("The slug of the integration to delete"),
 		},
 		async (params) => {
-			try {
-				const result = await service.deleteIntegration(params.slug);
+			const result = await service.deleteIntegration(params.slug);
 
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									message: `Successfully deleted integration "${params.slug}"`,
-									success: result.success,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error deleting integration: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: `Successfully deleted integration "${params.slug}"`,
+								success: result.success,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -454,46 +399,35 @@ export function registerIntegrationsTools(
 				.describe("Number of results per page"),
 		},
 		async (params) => {
-			try {
-				const models = await service.listIntegrationModels(params.slug, {
-					current_page: params.current_page,
-					page_size: params.page_size,
-				});
+			const models = await service.listIntegrationModels(params.slug, {
+				current_page: params.current_page,
+				page_size: params.page_size,
+			});
 
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									total: models.total,
-									integration_slug: params.slug,
-									models: models.data.map((model) => ({
-										id: model.id,
-										model_id: model.model_id,
-										model_name: model.model_name,
-										enabled: model.enabled,
-										custom: model.custom,
-										created_at: model.created_at,
-										last_updated_at: model.last_updated_at,
-									})),
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error listing integration models: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								total: models.total,
+								integration_slug: params.slug,
+								models: models.data.map((model) => ({
+									id: model.id,
+									model_id: model.model_id,
+									model_name: model.model_name,
+									enabled: model.enabled,
+									custom: model.custom,
+									created_at: model.created_at,
+									last_updated_at: model.last_updated_at,
+								})),
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -523,37 +457,26 @@ export function registerIntegrationsTools(
 				.describe("Array of model configurations to update"),
 		},
 		async (params) => {
-			try {
-				const result = await service.updateIntegrationModels(params.slug, {
-					models: params.models,
-				});
+			const result = await service.updateIntegrationModels(params.slug, {
+				models: params.models,
+			});
 
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									message: `Successfully updated models for integration "${params.slug}"`,
-									success: result.success,
-									models_updated: params.models.length,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error updating integration models: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: `Successfully updated models for integration "${params.slug}"`,
+								success: result.success,
+								models_updated: params.models.length,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -566,37 +489,26 @@ export function registerIntegrationsTools(
 			model_id: z.string().describe("The ID of the model to delete"),
 		},
 		async (params) => {
-			try {
-				const result = await service.deleteIntegrationModel(
-					params.slug,
-					params.model_id,
-				);
+			const result = await service.deleteIntegrationModel(
+				params.slug,
+				params.model_id,
+			);
 
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									message: `Successfully deleted model "${params.model_id}" from integration "${params.slug}"`,
-									success: result.success,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error deleting integration model: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: `Successfully deleted model "${params.model_id}" from integration "${params.slug}"`,
+								success: result.success,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -620,50 +532,39 @@ export function registerIntegrationsTools(
 				.describe("Number of results per page"),
 		},
 		async (params) => {
-			try {
-				const workspaces = await service.listIntegrationWorkspaces(
-					params.slug,
-					{
-						current_page: params.current_page,
-						page_size: params.page_size,
-					},
-				);
+			const workspaces = await service.listIntegrationWorkspaces(
+				params.slug,
+				{
+					current_page: params.current_page,
+					page_size: params.page_size,
+				},
+			);
 
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									total: workspaces.total,
-									integration_slug: params.slug,
-									workspaces: workspaces.data.map((ws) => ({
-										id: ws.id,
-										workspace_id: ws.workspace_id,
-										workspace_name: ws.workspace_name,
-										enabled: ws.enabled,
-										usage_limits: ws.usage_limits,
-										rate_limits: ws.rate_limits,
-										created_at: ws.created_at,
-										last_updated_at: ws.last_updated_at,
-									})),
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error listing integration workspaces: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								total: workspaces.total,
+								integration_slug: params.slug,
+								workspaces: workspaces.data.map((ws) => ({
+									id: ws.id,
+									workspace_id: ws.workspace_id,
+									workspace_name: ws.workspace_name,
+									enabled: ws.enabled,
+									usage_limits: ws.usage_limits,
+									rate_limits: ws.rate_limits,
+									created_at: ws.created_at,
+									last_updated_at: ws.last_updated_at,
+								})),
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -701,45 +602,34 @@ export function registerIntegrationsTools(
 				.describe("Array of workspace configurations to update"),
 		},
 		async (params) => {
-			try {
-				const result = await service.updateIntegrationWorkspaces(params.slug, {
-					workspaces: params.workspaces.map((ws) => ({
-						workspace_id: ws.workspace_id,
-						enabled: ws.enabled,
-						usage_limits: buildUsageLimits({
-							credit_limit: ws.credit_limit,
-							alert_threshold: ws.alert_threshold,
-						}),
-						rate_limits: buildRateLimitsRpm(ws.rate_limit_rpm),
-					})),
-				});
+			const result = await service.updateIntegrationWorkspaces(params.slug, {
+				workspaces: params.workspaces.map((ws) => ({
+					workspace_id: ws.workspace_id,
+					enabled: ws.enabled,
+					usage_limits: buildUsageLimits({
+						credit_limit: ws.credit_limit,
+						alert_threshold: ws.alert_threshold,
+					}),
+					rate_limits: buildRateLimitsRpm(ws.rate_limit_rpm),
+				})),
+			});
 
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									message: `Successfully updated workspace access for integration "${params.slug}"`,
-									success: result.success,
-									workspaces_updated: params.workspaces.length,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error updating integration workspaces: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: `Successfully updated workspace access for integration "${params.slug}"`,
+								success: result.success,
+								workspaces_updated: params.workspaces.length,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 }

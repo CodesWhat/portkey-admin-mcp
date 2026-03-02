@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import {
+	FetchError,
 	buildQueryString,
 	fetchWithTimeout,
 	parseErrorResponse,
@@ -74,16 +75,16 @@ export class BaseService {
 			const duration_ms = Date.now() - startTime;
 
 			if (!response.ok) {
-				const errorMessage = await parseErrorResponse(response);
+				const apiError = await parseErrorResponse(response);
 				Logger.error("HTTP request failed", {
 					requestId,
 					method: "GET",
 					path,
 					statusCode: response.status,
 					duration_ms,
-					error: errorMessage,
+					error: apiError.message,
 				});
-				throw new Error(errorMessage);
+				throw new FetchError(apiError.message, response.status, apiError);
 			}
 
 			Logger.info("HTTP request completed", {
@@ -98,14 +99,14 @@ export class BaseService {
 		} catch (error) {
 			const duration_ms = Date.now() - startTime;
 			// Only log network/system errors (TypeError, AbortError, etc.)
-			// Generic Error from HTTP failures is already logged above
-			if (error instanceof Error && error.name !== "Error") {
+			// FetchError from HTTP failures is already logged above
+			if (!(error instanceof FetchError)) {
 				Logger.error("HTTP request error", {
 					requestId,
 					method: "GET",
 					path,
 					duration_ms,
-					error: error.message,
+					error: error instanceof Error ? error.message : String(error),
 				});
 			}
 			throw error;
@@ -138,16 +139,16 @@ export class BaseService {
 			const duration_ms = Date.now() - startTime;
 
 			if (!response.ok) {
-				const errorMessage = await parseErrorResponse(response);
+				const apiError = await parseErrorResponse(response);
 				Logger.error("HTTP request failed", {
 					requestId,
 					method: "POST",
 					path,
 					statusCode: response.status,
 					duration_ms,
-					error: errorMessage,
+					error: apiError.message,
 				});
-				throw new Error(errorMessage);
+				throw new FetchError(apiError.message, response.status, apiError);
 			}
 
 			Logger.info("HTTP request completed", {
@@ -162,14 +163,14 @@ export class BaseService {
 		} catch (error) {
 			const duration_ms = Date.now() - startTime;
 			// Only log network/system errors (TypeError, AbortError, etc.)
-			// Generic Error from HTTP failures is already logged above
-			if (error instanceof Error && error.name !== "Error") {
+			// FetchError from HTTP failures is already logged above
+			if (!(error instanceof FetchError)) {
 				Logger.error("HTTP request error", {
 					requestId,
 					method: "POST",
 					path,
 					duration_ms,
-					error: error.message,
+					error: error instanceof Error ? error.message : String(error),
 				});
 			}
 			throw error;
@@ -202,16 +203,16 @@ export class BaseService {
 			const duration_ms = Date.now() - startTime;
 
 			if (!response.ok) {
-				const errorMessage = await parseErrorResponse(response);
+				const apiError = await parseErrorResponse(response);
 				Logger.error("HTTP request failed", {
 					requestId,
 					method: "PUT",
 					path,
 					statusCode: response.status,
 					duration_ms,
-					error: errorMessage,
+					error: apiError.message,
 				});
-				throw new Error(errorMessage);
+				throw new FetchError(apiError.message, response.status, apiError);
 			}
 
 			Logger.info("HTTP request completed", {
@@ -226,14 +227,14 @@ export class BaseService {
 		} catch (error) {
 			const duration_ms = Date.now() - startTime;
 			// Only log network/system errors (TypeError, AbortError, etc.)
-			// Generic Error from HTTP failures is already logged above
-			if (error instanceof Error && error.name !== "Error") {
+			// FetchError from HTTP failures is already logged above
+			if (!(error instanceof FetchError)) {
 				Logger.error("HTTP request error", {
 					requestId,
 					method: "PUT",
 					path,
 					duration_ms,
-					error: error.message,
+					error: error instanceof Error ? error.message : String(error),
 				});
 			}
 			throw error;
@@ -264,16 +265,16 @@ export class BaseService {
 			const duration_ms = Date.now() - startTime;
 
 			if (!response.ok) {
-				const errorMessage = await parseErrorResponse(response);
+				const apiError = await parseErrorResponse(response);
 				Logger.error("HTTP request failed", {
 					requestId,
 					method: "DELETE",
 					path,
 					statusCode: response.status,
 					duration_ms,
-					error: errorMessage,
+					error: apiError.message,
 				});
-				throw new Error(errorMessage);
+				throw new FetchError(apiError.message, response.status, apiError);
 			}
 
 			Logger.info("HTTP request completed", {
@@ -292,14 +293,14 @@ export class BaseService {
 		} catch (error) {
 			const duration_ms = Date.now() - startTime;
 			// Only log network/system errors (TypeError, AbortError, etc.)
-			// Generic Error from HTTP failures is already logged above
-			if (error instanceof Error && error.name !== "Error") {
+			// FetchError from HTTP failures is already logged above
+			if (!(error instanceof FetchError)) {
 				Logger.error("HTTP request error", {
 					requestId,
 					method: "DELETE",
 					path,
 					duration_ms,
-					error: error.message,
+					error: error instanceof Error ? error.message : String(error),
 				});
 			}
 			throw error;

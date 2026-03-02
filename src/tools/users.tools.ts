@@ -72,34 +72,23 @@ export function registerUsersTools(
 				.describe("Optional API key to be created for the user"),
 		},
 		async (params) => {
-			try {
-				const result = await service.inviteUser(params);
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									message: `Successfully invited ${params.email} as ${params.role}`,
-									invite_id: result.id,
-									invite_link: result.invite_link,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error inviting user: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			const result = await service.inviteUser(params);
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: `Successfully invited ${params.email} as ${params.role}`,
+								invite_id: result.id,
+								invite_link: result.invite_link,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -153,26 +142,15 @@ export function registerUsersTools(
 				.describe("Number of results per page (for pagination)"),
 		},
 		async (params) => {
-			try {
-				const stats = await service.getUserGroupedData(params);
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(stats, null, 2),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error fetching user statistics: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			const stats = await service.getUserGroupedData(params);
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(stats, null, 2),
+					},
+				],
+			};
 		},
 	);
 
@@ -184,21 +162,10 @@ export function registerUsersTools(
 			user_id: z.string().describe("The user ID to retrieve"),
 		},
 		async (params) => {
-			try {
-				const user = await service.getUser(params.user_id);
-				return {
-					content: [{ type: "text", text: JSON.stringify(user, null, 2) }],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error fetching user: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			const user = await service.getUser(params.user_id);
+			return {
+				content: [{ type: "text", text: JSON.stringify(user, null, 2) }],
+			};
 		},
 	);
 
@@ -216,34 +183,23 @@ export function registerUsersTools(
 				.describe("New organization-level role"),
 		},
 		async (params) => {
-			try {
-				const { user_id, ...updateData } = params;
-				const user = await service.updateUser(user_id, updateData);
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									message: "Successfully updated user",
-									user,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error updating user: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			const { user_id, ...updateData } = params;
+			const user = await service.updateUser(user_id, updateData);
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: "Successfully updated user",
+								user,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -255,33 +211,22 @@ export function registerUsersTools(
 			user_id: z.string().describe("The user ID to delete"),
 		},
 		async (params) => {
-			try {
-				await service.deleteUser(params.user_id);
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									message: `Successfully deleted user ${params.user_id}`,
-									success: true,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error deleting user: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			await service.deleteUser(params.user_id);
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: `Successfully deleted user ${params.user_id}`,
+								success: true,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -291,21 +236,10 @@ export function registerUsersTools(
 		"List all pending and sent user invitations in your Portkey organization",
 		{},
 		async () => {
-			try {
-				const invites = await service.listUserInvites();
-				return {
-					content: [{ type: "text", text: JSON.stringify(invites, null, 2) }],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error listing invites: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			const invites = await service.listUserInvites();
+			return {
+				content: [{ type: "text", text: JSON.stringify(invites, null, 2) }],
+			};
 		},
 	);
 
@@ -317,21 +251,10 @@ export function registerUsersTools(
 			invite_id: z.string().describe("The invite ID to retrieve"),
 		},
 		async (params) => {
-			try {
-				const invite = await service.getUserInvite(params.invite_id);
-				return {
-					content: [{ type: "text", text: JSON.stringify(invite, null, 2) }],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error fetching invite: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			const invite = await service.getUserInvite(params.invite_id);
+			return {
+				content: [{ type: "text", text: JSON.stringify(invite, null, 2) }],
+			};
 		},
 	);
 
@@ -343,33 +266,22 @@ export function registerUsersTools(
 			invite_id: z.string().describe("The invite ID to delete"),
 		},
 		async (params) => {
-			try {
-				await service.deleteUserInvite(params.invite_id);
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									message: `Successfully deleted invite ${params.invite_id}`,
-									success: true,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error deleting invite: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			await service.deleteUserInvite(params.invite_id);
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: `Successfully deleted invite ${params.invite_id}`,
+								success: true,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -381,33 +293,22 @@ export function registerUsersTools(
 			invite_id: z.string().describe("The invite ID to resend"),
 		},
 		async (params) => {
-			try {
-				await service.resendUserInvite(params.invite_id);
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									message: `Successfully resent invite ${params.invite_id}`,
-									success: true,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error resending invite: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			await service.resendUserInvite(params.invite_id);
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: `Successfully resent invite ${params.invite_id}`,
+								success: true,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 }

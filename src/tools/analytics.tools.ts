@@ -121,41 +121,30 @@ export function registerAnalyticsTools(
 		"Retrieve detailed cost analytics data over time, including total costs and averages per request",
 		baseAnalyticsSchema,
 		async (params) => {
-			try {
-				const analytics = await service.getCostAnalytics(params);
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									summary: {
-										total_cost: analytics.summary.total,
-										average_cost_per_request: analytics.summary.avg,
-									},
-									data_points: analytics.data_points.map((point) => ({
-										timestamp: point.timestamp,
-										total_cost: point.total,
-										average_cost: point.avg,
-									})),
-									object: analytics.object,
+			const analytics = await service.getCostAnalytics(params);
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								summary: {
+									total_cost: analytics.summary.total,
+									average_cost_per_request: analytics.summary.avg,
 								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error fetching cost analytics: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+								data_points: analytics.data_points.map((point) => ({
+									timestamp: point.timestamp,
+									total_cost: point.total,
+									average_cost: point.avg,
+								})),
+								object: analytics.object,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -166,43 +155,32 @@ export function registerAnalyticsTools(
 		"Retrieve request analytics as time-series data, showing total, successful, and failed requests over time",
 		baseAnalyticsSchema,
 		async (params) => {
-			try {
-				const analytics = await service.getRequestAnalytics(params);
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									summary: {
-										total_requests: analytics.summary.total,
-										successful_requests: analytics.summary.success,
-										failed_requests: analytics.summary.failed,
-									},
-									data_points: analytics.data_points.map((point) => ({
-										timestamp: point.timestamp,
-										total: point.total,
-										success: point.success,
-										failed: point.failed,
-									})),
-									object: analytics.object,
+			const analytics = await service.getRequestAnalytics(params);
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								summary: {
+									total_requests: analytics.summary.total,
+									successful_requests: analytics.summary.success,
+									failed_requests: analytics.summary.failed,
 								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error fetching request analytics: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+								data_points: analytics.data_points.map((point) => ({
+									timestamp: point.timestamp,
+									total: point.total,
+									success: point.success,
+									failed: point.failed,
+								})),
+								object: analytics.object,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -211,43 +189,32 @@ export function registerAnalyticsTools(
 		"Retrieve token usage analytics as time-series data, showing total, prompt, and completion tokens over time",
 		baseAnalyticsSchema,
 		async (params) => {
-			try {
-				const analytics = await service.getTokenAnalytics(params);
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									summary: {
-										total_tokens: analytics.summary.total,
-										prompt_tokens: analytics.summary.prompt,
-										completion_tokens: analytics.summary.completion,
-									},
-									data_points: analytics.data_points.map((point) => ({
-										timestamp: point.timestamp,
-										total: point.total,
-										prompt: point.prompt,
-										completion: point.completion,
-									})),
-									object: analytics.object,
+			const analytics = await service.getTokenAnalytics(params);
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								summary: {
+									total_tokens: analytics.summary.total,
+									prompt_tokens: analytics.summary.prompt,
+									completion_tokens: analytics.summary.completion,
 								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error fetching token analytics: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+								data_points: analytics.data_points.map((point) => ({
+									timestamp: point.timestamp,
+									total: point.total,
+									prompt: point.prompt,
+									completion: point.completion,
+								})),
+								object: analytics.object,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -256,45 +223,34 @@ export function registerAnalyticsTools(
 		"Retrieve latency analytics as time-series data, showing average, p50, p90, and p99 latency percentiles over time",
 		baseAnalyticsSchema,
 		async (params) => {
-			try {
-				const analytics = await service.getLatencyAnalytics(params);
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									summary: {
-										avg_latency_ms: analytics.summary.avg,
-										p50_latency_ms: analytics.summary.p50,
-										p90_latency_ms: analytics.summary.p90,
-										p99_latency_ms: analytics.summary.p99,
-									},
-									data_points: analytics.data_points.map((point) => ({
-										timestamp: point.timestamp,
-										avg: point.avg,
-										p50: point.p50,
-										p90: point.p90,
-										p99: point.p99,
-									})),
-									object: analytics.object,
+			const analytics = await service.getLatencyAnalytics(params);
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								summary: {
+									avg_latency_ms: analytics.summary.avg,
+									p50_latency_ms: analytics.summary.p50,
+									p90_latency_ms: analytics.summary.p90,
+									p99_latency_ms: analytics.summary.p99,
 								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error fetching latency analytics: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+								data_points: analytics.data_points.map((point) => ({
+									timestamp: point.timestamp,
+									avg: point.avg,
+									p50: point.p50,
+									p90: point.p90,
+									p99: point.p99,
+								})),
+								object: analytics.object,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -303,39 +259,28 @@ export function registerAnalyticsTools(
 		"Retrieve error count analytics as time-series data, showing total error counts over time",
 		baseAnalyticsSchema,
 		async (params) => {
-			try {
-				const analytics = await service.getErrorAnalytics(params);
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									summary: {
-										total_errors: analytics.summary.total,
-									},
-									data_points: analytics.data_points.map((point) => ({
-										timestamp: point.timestamp,
-										total_errors: point.total,
-									})),
-									object: analytics.object,
+			const analytics = await service.getErrorAnalytics(params);
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								summary: {
+									total_errors: analytics.summary.total,
 								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error fetching error analytics: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+								data_points: analytics.data_points.map((point) => ({
+									timestamp: point.timestamp,
+									total_errors: point.total,
+								})),
+								object: analytics.object,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -344,39 +289,28 @@ export function registerAnalyticsTools(
 		"Retrieve error rate analytics as time-series data, showing the percentage of failed requests over time",
 		baseAnalyticsSchema,
 		async (params) => {
-			try {
-				const analytics = await service.getErrorRateAnalytics(params);
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									summary: {
-										error_rate_percent: analytics.summary.rate,
-									},
-									data_points: analytics.data_points.map((point) => ({
-										timestamp: point.timestamp,
-										error_rate_percent: point.rate,
-									})),
-									object: analytics.object,
+			const analytics = await service.getErrorRateAnalytics(params);
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								summary: {
+									error_rate_percent: analytics.summary.rate,
 								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error fetching error rate analytics: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+								data_points: analytics.data_points.map((point) => ({
+									timestamp: point.timestamp,
+									error_rate_percent: point.rate,
+								})),
+								object: analytics.object,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -387,41 +321,30 @@ export function registerAnalyticsTools(
 		"Retrieve cache hit latency analytics as time-series data, showing total and average latency for cache hits over time",
 		baseAnalyticsSchema,
 		async (params) => {
-			try {
-				const analytics = await service.getCacheHitLatency(params);
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									summary: {
-										total_latency: analytics.summary.total,
-										avg_latency: analytics.summary.avg,
-									},
-									data_points: analytics.data_points.map((point) => ({
-										timestamp: point.timestamp,
-										total: point.total,
-										avg: point.avg,
-									})),
-									object: analytics.object,
+			const analytics = await service.getCacheHitLatency(params);
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								summary: {
+									total_latency: analytics.summary.total,
+									avg_latency: analytics.summary.avg,
 								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error fetching cache hit latency analytics: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+								data_points: analytics.data_points.map((point) => ({
+									timestamp: point.timestamp,
+									total: point.total,
+									avg: point.avg,
+								})),
+								object: analytics.object,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -430,43 +353,32 @@ export function registerAnalyticsTools(
 		"Retrieve cache hit rate analytics as time-series data, showing hit rate percentage, total hits, and misses over time",
 		baseAnalyticsSchema,
 		async (params) => {
-			try {
-				const analytics = await service.getCacheHitRate(params);
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									summary: {
-										hit_rate: analytics.summary.rate,
-										total_hits: analytics.summary.total_hits,
-										total_misses: analytics.summary.total_misses,
-									},
-									data_points: analytics.data_points.map((point) => ({
-										timestamp: point.timestamp,
-										rate: point.rate,
-										hits: point.hits,
-										misses: point.misses,
-									})),
-									object: analytics.object,
+			const analytics = await service.getCacheHitRate(params);
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								summary: {
+									hit_rate: analytics.summary.rate,
+									total_hits: analytics.summary.total_hits,
+									total_misses: analytics.summary.total_misses,
 								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error fetching cache hit rate analytics: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+								data_points: analytics.data_points.map((point) => ({
+									timestamp: point.timestamp,
+									rate: point.rate,
+									hits: point.hits,
+									misses: point.misses,
+								})),
+								object: analytics.object,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -477,41 +389,30 @@ export function registerAnalyticsTools(
 		"Retrieve user activity analytics over time, showing active and new user counts",
 		baseAnalyticsSchema,
 		async (params) => {
-			try {
-				const analytics = await service.getUsersAnalytics(params);
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									summary: {
-										total_active_users: analytics.summary.total_active_users,
-										total_new_users: analytics.summary.total_new_users,
-									},
-									data_points: analytics.data_points.map((point) => ({
-										timestamp: point.timestamp,
-										active_users: point.active_users,
-										new_users: point.new_users,
-									})),
-									object: analytics.object,
+			const analytics = await service.getUsersAnalytics(params);
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								summary: {
+									total_active_users: analytics.summary.total_active_users,
+									total_new_users: analytics.summary.total_new_users,
 								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error fetching users analytics: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+								data_points: analytics.data_points.map((point) => ({
+									timestamp: point.timestamp,
+									active_users: point.active_users,
+									new_users: point.new_users,
+								})),
+								object: analytics.object,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 }

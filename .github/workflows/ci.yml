@@ -38,6 +38,9 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: E2E tests
+        run: npm run test:e2e
+
       - name: Verify README tool inventory
         run: npm run verify:readme-tools
 

@@ -34,7 +34,21 @@ export function registerPromptsTools(
 			model: z
 				.string()
 				.optional()
-				.describe("Model identifier (e.g., 'gpt-4', 'claude-3-opus')"),
+				.describe(
+					"Model identifier (e.g., 'gpt-4', 'claude-3-opus'). Required unless ai_model_id or finetune_id is provided",
+				),
+			ai_model_id: z
+				.string()
+				.optional()
+				.describe(
+					"AI model ID (alternative to model). Required unless model or finetune_id is provided",
+				),
+			finetune_id: z
+				.string()
+				.optional()
+				.describe(
+					"Fine-tune ID (alternative to model). Required unless model or ai_model_id is provided",
+				),
 			version_description: z
 				.string()
 				.optional()
@@ -58,58 +72,36 @@ export function registerPromptsTools(
 				.describe("When true, validate without creating"),
 		},
 		async (params) => {
-			try {
-				if (params.dry_run) {
-					return {
-						content: [
-							{
-								type: "text",
-								text: JSON.stringify(
-									{
-										dry_run: true,
-										action: "create",
-										message: `Would create prompt "${params.name}" in collection ${params.collection_id}`,
-										prompt_preview: {
-											name: params.name,
-											collection_id: params.collection_id,
-											model: params.model,
-											template_length: params.string.length,
-											parameter_count: Object.keys(params.parameters ?? {})
-												.length,
-										},
-									},
-									null,
-									2,
-								),
-							},
-						],
-					};
-				}
+			if (!params.model && !params.ai_model_id && !params.finetune_id) {
+				return {
+					content: [
+						{
+							type: "text",
+							text: "Error creating prompt: At least one of model, ai_model_id, or finetune_id must be provided",
+						},
+					],
+					isError: true,
+				};
+			}
 
-				const result = await service.createPrompt({
-					name: params.name,
-					collection_id: params.collection_id,
-					string: params.string,
-					parameters: params.parameters,
-					virtual_key: params.virtual_key,
-					model: params.model,
-					version_description: params.version_description,
-					template_metadata: params.template_metadata,
-					functions: params.functions,
-					tools: params.tools,
-					tool_choice: params.tool_choice,
-				});
-
+			if (params.dry_run) {
 				return {
 					content: [
 						{
 							type: "text",
 							text: JSON.stringify(
 								{
-									message: `Successfully created prompt "${params.name}"`,
-									id: result.id,
-									slug: result.slug,
-									version_id: result.version_id,
+									dry_run: true,
+									action: "create",
+									message: `Would create prompt "${params.name}" in collection ${params.collection_id}`,
+									prompt_preview: {
+										name: params.name,
+										collection_id: params.collection_id,
+										model: params.model,
+										template_length: params.string.length,
+										parameter_count: Object.keys(params.parameters ?? {})
+											.length,
+									},
 								},
 								null,
 								2,
@@ -117,16 +109,41 @@ export function registerPromptsTools(
 						},
 					],
 				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error creating prompt: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
 			}
+
+			const result = await service.createPrompt({
+				name: params.name,
+				collection_id: params.collection_id,
+				string: params.string,
+				parameters: params.parameters,
+				virtual_key: params.virtual_key,
+				model: params.model,
+				ai_model_id: params.ai_model_id,
+				finetune_id: params.finetune_id,
+				version_description: params.version_description,
+				template_metadata: params.template_metadata,
+				functions: params.functions,
+				tools: params.tools,
+				tool_choice: params.tool_choice,
+			});
+
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: `Successfully created prompt "${params.name}"`,
+								id: result.id,
+								slug: result.slug,
+								version_id: result.version_id,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -156,42 +173,31 @@ export function registerPromptsTools(
 				.describe("Results per page (max 100)"),
 		},
 		async (params) => {
-			try {
-				const prompts = await service.listPrompts(params);
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									total: prompts.total,
-									prompts: prompts.data.map((prompt) => ({
-										id: prompt.id,
-										name: prompt.name,
-										slug: prompt.slug,
-										collection_id: prompt.collection_id,
-										model: prompt.model,
-										status: prompt.status,
-										created_at: prompt.created_at,
-										last_updated_at: prompt.last_updated_at,
-									})),
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error listing prompts: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			const prompts = await service.listPrompts(params);
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								total: prompts.total,
+								prompts: prompts.data.map((prompt) => ({
+									id: prompt.id,
+									name: prompt.name,
+									slug: prompt.slug,
+									collection_id: prompt.collection_id,
+									model: prompt.model,
+									status: prompt.status,
+									created_at: prompt.created_at,
+									last_updated_at: prompt.last_updated_at,
+								})),
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -203,58 +209,47 @@ export function registerPromptsTools(
 			prompt_id: z.string().describe("Prompt ID or slug to retrieve"),
 		},
 		async (params) => {
-			try {
-				const prompt = await service.getPrompt(params.prompt_id);
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									id: prompt.id,
-									name: prompt.name,
-									slug: prompt.slug,
-									collection_id: prompt.collection_id,
-									created_at: prompt.created_at,
-									last_updated_at: prompt.last_updated_at,
-									current_version: prompt.current_version
-										? {
-												id: prompt.current_version.id,
-												version_number: prompt.current_version.version_number,
-												description: prompt.current_version.version_description,
-												model: prompt.current_version.model,
-												template: prompt.current_version.string,
-												parameters: prompt.current_version.parameters,
-												metadata: prompt.current_version.template_metadata,
-												has_tools: !!prompt.current_version.tools?.length,
-												has_functions:
-													!!prompt.current_version.functions?.length,
-											}
-										: null,
-									version_count: (prompt.versions || []).length,
-									versions: (prompt.versions || []).map((v) => ({
-										id: v.id,
-										version_number: v.version_number,
-										description: v.version_description,
-										created_at: v.created_at,
-									})),
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error fetching prompt: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			const prompt = await service.getPrompt(params.prompt_id);
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								id: prompt.id,
+								name: prompt.name,
+								slug: prompt.slug,
+								collection_id: prompt.collection_id,
+								created_at: prompt.created_at,
+								last_updated_at: prompt.last_updated_at,
+								current_version: prompt.current_version
+									? {
+											id: prompt.current_version.id,
+											version_number: prompt.current_version.version_number,
+											description: prompt.current_version.version_description,
+											model: prompt.current_version.model,
+											template: prompt.current_version.string,
+											parameters: prompt.current_version.parameters,
+											metadata: prompt.current_version.template_metadata,
+											has_tools: !!prompt.current_version.tools?.length,
+											has_functions:
+												!!prompt.current_version.functions?.length,
+										}
+									: null,
+								version_count: (prompt.versions || []).length,
+								versions: (prompt.versions || []).map((v) => ({
+									id: v.id,
+									version_number: v.version_number,
+									description: v.version_description,
+									created_at: v.created_at,
+								})),
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -306,47 +301,25 @@ export function registerPromptsTools(
 				.describe("When true, validate without updating"),
 		},
 		async (params) => {
-			try {
-				const { prompt_id, dry_run, ...updateData } = params;
+			const { prompt_id, dry_run, ...updateData } = params;
 
-				if (dry_run) {
-					const current = await service.getPrompt(prompt_id);
-					return {
-						content: [
-							{
-								type: "text",
-								text: JSON.stringify(
-									{
-										dry_run: true,
-										action: "update",
-										message: `Would update prompt "${current.name}"`,
-										current_version:
-											current.current_version?.version_number ?? null,
-										changes: Object.keys(updateData).filter(
-											(k) =>
-												updateData[k as keyof typeof updateData] !== undefined,
-										),
-									},
-									null,
-									2,
-								),
-							},
-						],
-					};
-				}
-
-				const result = await service.updatePrompt(prompt_id, updateData);
-
+			if (dry_run) {
+				const current = await service.getPrompt(prompt_id);
 				return {
 					content: [
 						{
 							type: "text",
 							text: JSON.stringify(
 								{
-									message: "Successfully updated prompt",
-									id: result.id,
-									slug: result.slug,
-									new_version_id: result.prompt_version_id,
+									dry_run: true,
+									action: "update",
+									message: `Would update prompt "${current.name}"`,
+									current_version:
+										current.current_version?.version_number ?? null,
+									changes: Object.keys(updateData).filter(
+										(k) =>
+											updateData[k as keyof typeof updateData] !== undefined,
+									),
 								},
 								null,
 								2,
@@ -354,16 +327,27 @@ export function registerPromptsTools(
 						},
 					],
 				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error updating prompt: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
 			}
+
+			const result = await service.updatePrompt(prompt_id, updateData);
+
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: "Successfully updated prompt",
+								id: result.id,
+								slug: result.slug,
+								new_version_id: result.prompt_version_id,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -375,33 +359,22 @@ export function registerPromptsTools(
 			prompt_id: z.string().describe("Prompt ID or slug to delete"),
 		},
 		async (params) => {
-			try {
-				await service.deletePrompt(params.prompt_id);
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									message: `Successfully deleted prompt "${params.prompt_id}"`,
-									success: true,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error deleting prompt: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			await service.deletePrompt(params.prompt_id);
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: `Successfully deleted prompt "${params.prompt_id}"`,
+								success: true,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -417,37 +390,26 @@ export function registerPromptsTools(
 				.describe("Version number to publish as the default"),
 		},
 		async (params) => {
-			try {
-				await service.publishPrompt(params.prompt_id, {
-					version: params.version,
-				});
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									message: `Successfully published version ${params.version} of prompt "${params.prompt_id}"`,
-									prompt_id: params.prompt_id,
-									published_version: params.version,
-									success: true,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error publishing prompt version: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			await service.publishPrompt(params.prompt_id, {
+				version: params.version,
+			});
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: `Successfully published version ${params.version} of prompt "${params.prompt_id}"`,
+								prompt_id: params.prompt_id,
+								published_version: params.version,
+								success: true,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -459,59 +421,48 @@ export function registerPromptsTools(
 			prompt_id: z.string().describe("Prompt ID or slug to list versions for"),
 		},
 		async (params) => {
-			try {
-				const response = await service.listPromptVersions(params.prompt_id);
-				// Handle both response formats: array directly or { data: [...], total: N }
-				type VersionItem = {
-					id: string;
-					prompt_version: number;
-					prompt_description?: string;
-					status?: string;
-					label_id?: string;
-					created_at: string;
-					prompt_template?: string | object;
-				};
-				const versions: VersionItem[] = Array.isArray(response)
-					? response
-					: (response as { data?: VersionItem[] }).data || [];
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									prompt_id: params.prompt_id,
-									total_versions: versions.length,
-									versions: versions.map((v) => ({
-										id: v.id,
-										version_number: v.prompt_version,
-										description: v.prompt_description,
-										status: v.status,
-										label_id: v.label_id,
-										created_at: v.created_at,
-										template_preview:
-											typeof v.prompt_template === "string"
-												? v.prompt_template.substring(0, 200) +
-													(v.prompt_template.length > 200 ? "..." : "")
-												: "[object]",
-									})),
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error listing prompt versions: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			const response = await service.listPromptVersions(params.prompt_id);
+			// Handle both response formats: array directly or { data: [...], total: N }
+			type VersionItem = {
+				id: string;
+				prompt_version: number;
+				prompt_description?: string;
+				status?: string;
+				label_id?: string;
+				created_at: string;
+				prompt_template?: string | object;
+			};
+			const versions: VersionItem[] = Array.isArray(response)
+				? response
+				: (response as { data?: VersionItem[] }).data || [];
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								prompt_id: params.prompt_id,
+								total_versions: versions.length,
+								versions: versions.map((v) => ({
+									id: v.id,
+									version_number: v.prompt_version,
+									description: v.prompt_description,
+									status: v.status,
+									label_id: v.label_id,
+									created_at: v.created_at,
+									template_preview:
+										typeof v.prompt_template === "string"
+											? v.prompt_template.substring(0, 200) +
+												(v.prompt_template.length > 200 ? "..." : "")
+											: "[object]",
+								})),
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -529,43 +480,32 @@ export function registerPromptsTools(
 			),
 		},
 		async (params) => {
-			try {
-				const result = await service.renderPrompt(params.prompt_id, {
-					variables: params.variables,
-					hyperparameters: params.hyperparameters,
-				});
+			const result = await service.renderPrompt(params.prompt_id, {
+				variables: params.variables,
+				hyperparameters: params.hyperparameters,
+			});
 
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									success: result.success,
-									rendered_messages: result.data.messages,
-									model: result.data.model,
-									hyperparameters: {
-										max_tokens: result.data.max_tokens,
-										temperature: result.data.temperature,
-										top_p: result.data.top_p,
-									},
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								success: result.success,
+								rendered_messages: result.data.messages,
+								model: result.data.model,
+								hyperparameters: {
+									max_tokens: result.data.max_tokens,
+									temperature: result.data.temperature,
+									top_p: result.data.top_p,
 								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error rendering prompt: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -586,49 +526,38 @@ export function registerPromptsTools(
 			),
 		},
 		async (params) => {
-			try {
-				const result = await service.runPromptCompletion(params.prompt_id, {
-					variables: params.variables,
-					metadata: params.metadata,
-					hyperparameters: params.hyperparameters,
-					stream: false,
-				});
+			const result = await service.runPromptCompletion(params.prompt_id, {
+				variables: params.variables,
+				metadata: params.metadata,
+				hyperparameters: params.hyperparameters,
+				stream: false,
+			});
 
-				const choice = result.choices?.[0];
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									id: result.id,
-									model: result.model,
-									response: choice?.message?.content ?? null,
-									finish_reason: choice?.finish_reason ?? null,
-									usage: result.usage
-										? {
-												prompt_tokens: result.usage.prompt_tokens,
-												completion_tokens: result.usage.completion_tokens,
-												total_tokens: result.usage.total_tokens,
-											}
-										: null,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error running prompt completion: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			const choice = result.choices?.[0];
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								id: result.id,
+								model: result.model,
+								response: choice?.message?.content ?? null,
+								finish_reason: choice?.finish_reason ?? null,
+								usage: result.usage
+									? {
+											prompt_tokens: result.usage.prompt_tokens,
+											completion_tokens: result.usage.completion_tokens,
+											total_tokens: result.usage.total_tokens,
+										}
+									: null,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -675,60 +604,49 @@ export function registerPromptsTools(
 				),
 		},
 		async (params) => {
-			try {
-				const result = await service.migratePrompt({
-					name: params.name,
-					app: params.app,
-					env: params.env,
-					collection_id: params.collection_id,
-					string: params.string,
-					parameters: params.parameters,
-					virtual_key: params.virtual_key,
-					model: params.model,
-					version_description: params.version_description,
-					template_metadata: params.template_metadata,
-					functions: params.functions,
-					tools: params.tools,
-					tool_choice: params.tool_choice,
-					dry_run: params.dry_run,
-				});
+			const result = await service.migratePrompt({
+				name: params.name,
+				app: params.app,
+				env: params.env,
+				collection_id: params.collection_id,
+				string: params.string,
+				parameters: params.parameters,
+				virtual_key: params.virtual_key,
+				model: params.model,
+				version_description: params.version_description,
+				template_metadata: params.template_metadata,
+				functions: params.functions,
+				tools: params.tools,
+				tool_choice: params.tool_choice,
+				dry_run: params.dry_run,
+			});
 
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									action: result.action,
-									dry_run: result.dry_run,
-									message: result.message,
-									prompt_id: result.prompt_id ?? undefined,
-									slug: result.slug ?? undefined,
-									version_id: result.version_id ?? undefined,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error migrating prompt: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								action: result.action,
+								dry_run: result.dry_run,
+								message: result.message,
+								prompt_id: result.prompt_id ?? undefined,
+								slug: result.slug ?? undefined,
+								version_id: result.version_id ?? undefined,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
 	// Promote prompt tool
 	server.tool(
 		"promote_prompt",
-		"Promote a prompt from one environment to another (e.g., staging → prod). Copies the current version to the target environment.",
+		"Promote a prompt from one environment to another (e.g., staging -> prod). Copies the current version to the target environment.",
 		{
 			source_prompt_id: z
 				.string()
@@ -753,49 +671,38 @@ export function registerPromptsTools(
 				),
 		},
 		async (params) => {
-			try {
-				const result = await service.promotePrompt({
-					source_prompt_id: params.source_prompt_id,
-					target_collection_id: params.target_collection_id,
-					target_name: params.target_name,
-					target_env: params.target_env,
-					virtual_key: params.virtual_key,
-				});
+			const result = await service.promotePrompt({
+				source_prompt_id: params.source_prompt_id,
+				target_collection_id: params.target_collection_id,
+				target_name: params.target_name,
+				target_env: params.target_env,
+				virtual_key: params.virtual_key,
+			});
 
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									message: `Successfully promoted prompt to ${params.target_env}`,
-									source: {
-										prompt_id: result.source_prompt_id,
-										version_id: result.source_version_id,
-									},
-									target: {
-										prompt_id: result.target_prompt_id,
-										version_id: result.target_version_id,
-										action: result.action,
-									},
-									promoted_at: result.promoted_at,
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: `Successfully promoted prompt to ${params.target_env}`,
+								source: {
+									prompt_id: result.source_prompt_id,
+									version_id: result.source_version_id,
 								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error promoting prompt: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+								target: {
+									prompt_id: result.target_prompt_id,
+									version_id: result.target_version_id,
+									action: result.action,
+								},
+								promoted_at: result.promoted_at,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -823,36 +730,25 @@ export function registerPromptsTools(
 			feature: z.string().optional().describe("Feature name for tracking"),
 		},
 		async (params) => {
-			try {
-				const result = service.validateBillingMetadata(params);
+			const result = service.validateBillingMetadata(params);
 
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									valid: result.valid,
-									errors: result.errors,
-									warnings: result.warnings,
-									metadata: params,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error validating metadata: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								valid: result.valid,
+								errors: result.errors,
+								warnings: result.warnings,
+								metadata: params,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 }

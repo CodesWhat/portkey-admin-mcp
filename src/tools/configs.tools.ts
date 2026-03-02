@@ -12,44 +12,33 @@ export function registerConfigsTools(
 		"Retrieve all configurations in your Portkey organization, including their status and workspace associations",
 		{},
 		async () => {
-			try {
-				const configs = await service.listConfigs();
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									success: configs.success,
-									configurations: (configs.data ?? []).map((config) => ({
-										id: config.id,
-										name: config.name,
-										slug: config.slug,
-										workspace_id: config.workspace_id,
-										status: config.status,
-										is_default: config.is_default,
-										created_at: config.created_at,
-										last_updated_at: config.last_updated_at,
-										owner_id: config.owner_id,
-										updated_by: config.updated_by,
-									})),
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error fetching configurations: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			const configs = await service.listConfigs();
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								total: configs.total,
+								configurations: (configs.data ?? []).map((config) => ({
+									id: config.id,
+									name: config.name,
+									slug: config.slug,
+									workspace_id: config.workspace_id,
+									status: config.status,
+									is_default: config.is_default,
+									created_at: config.created_at,
+									last_updated_at: config.last_updated_at,
+									owner_id: config.owner_id,
+									updated_by: config.updated_by,
+								})),
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -66,56 +55,54 @@ export function registerConfigsTools(
 				),
 		},
 		async (params) => {
-			try {
-				const config = await service.getConfig(params.slug);
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									success: config.success,
-									config: {
-										cache: config.data?.config?.cache && {
-											mode: config.data.config.cache.mode,
-											max_age: config.data.config.cache.max_age,
-										},
-										retry: config.data?.config?.retry && {
-											attempts: config.data.config.retry.attempts,
-											on_status_codes: config.data.config.retry.on_status_codes,
-										},
-										strategy: config.data?.config?.strategy && {
-											mode: config.data.config.strategy.mode,
-										},
-										targets: config.data?.config?.targets?.map((target) => ({
+			const response = await service.getConfig(params.slug);
+			const details = JSON.parse(response.config || "{}");
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								id: response.id,
+								slug: response.slug,
+								name: response.name,
+								status: response.status,
+								config: {
+									cache: details.cache && {
+										mode: details.cache.mode,
+										max_age: details.cache.max_age,
+									},
+									retry: details.retry && {
+										attempts: details.retry.attempts,
+										on_status_codes: details.retry.on_status_codes,
+									},
+									strategy: details.strategy && {
+										mode: details.strategy.mode,
+									},
+									targets: details.targets?.map(
+										(target: {
+											provider?: string;
+											virtual_key?: string;
+										}) => ({
 											provider: target.provider,
 											virtual_key: target.virtual_key,
-										})),
-									},
+										}),
+									),
 								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error fetching configuration details: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
 	// Phase 1: Create configuration tool
 	server.tool(
 		"create_config",
-		"Create a new configuration with cache, retry, and routing settings",
+		"Create a new configuration with cache, retry, and routing settings. At least one config setting (cache, retry, strategy, or targets) is required.",
 		{
 			name: z.string().describe("Name for the new configuration"),
 			workspace_id: z
@@ -160,66 +147,74 @@ export function registerConfigsTools(
 				.describe("Array of target providers with virtual keys"),
 		},
 		async (params) => {
-			try {
-				const config = {
-					cache:
-						params.cache_mode || params.cache_max_age
-							? {
-									...(params.cache_mode && { mode: params.cache_mode }),
-									...(params.cache_max_age && {
-										max_age: params.cache_max_age,
-									}),
-								}
-							: undefined,
-					retry:
-						params.retry_attempts || params.retry_on_status_codes
-							? {
-									...(params.retry_attempts && {
-										attempts: params.retry_attempts,
-									}),
-									...(params.retry_on_status_codes && {
-										on_status_codes: params.retry_on_status_codes,
-									}),
-								}
-							: undefined,
-					strategy: params.strategy_mode
-						? { mode: params.strategy_mode }
+			const config = {
+				cache:
+					params.cache_mode || params.cache_max_age
+						? {
+								...(params.cache_mode && { mode: params.cache_mode }),
+								...(params.cache_max_age && {
+									max_age: params.cache_max_age,
+								}),
+							}
 						: undefined,
-					targets: params.targets,
-				};
+				retry:
+					params.retry_attempts || params.retry_on_status_codes
+						? {
+								...(params.retry_attempts && {
+									attempts: params.retry_attempts,
+								}),
+								...(params.retry_on_status_codes && {
+									on_status_codes: params.retry_on_status_codes,
+								}),
+							}
+						: undefined,
+				strategy: params.strategy_mode
+					? { mode: params.strategy_mode }
+					: undefined,
+				targets: params.targets,
+			};
 
-				const result = await service.createConfig({
-					name: params.name,
-					config,
-					workspace_id: params.workspace_id,
-				});
-
+			// API requires config to have at least one non-empty setting
+			if (
+				!config.cache &&
+				!config.retry &&
+				!config.strategy &&
+				!config.targets
+			) {
 				return {
 					content: [
 						{
 							type: "text",
-							text: JSON.stringify(
-								{
-									message: `Successfully created configuration "${params.name}"`,
-									success: result.success,
-									config: result.data?.config,
-								},
-								null,
-								2,
-							),
+							text: "Error creating configuration: At least one config setting (cache_mode, retry_attempts, strategy_mode, or targets) must be provided",
 						},
 					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error creating configuration: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
+					isError: true,
 				};
 			}
+
+			const result = await service.createConfig({
+				name: params.name,
+				config,
+				workspace_id: params.workspace_id,
+			});
+
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: `Successfully created configuration "${params.name}"`,
+								id: result.id,
+								slug: result.slug,
+								version_id: result.version_id,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -272,70 +267,61 @@ export function registerConfigsTools(
 				.describe("Array of target providers"),
 		},
 		async (params) => {
-			try {
-				const config = {
-					cache:
-						params.cache_mode || params.cache_max_age
-							? {
-									...(params.cache_mode && { mode: params.cache_mode }),
-									...(params.cache_max_age && {
-										max_age: params.cache_max_age,
-									}),
-								}
-							: undefined,
-					retry:
-						params.retry_attempts || params.retry_on_status_codes
-							? {
-									...(params.retry_attempts && {
-										attempts: params.retry_attempts,
-									}),
-									...(params.retry_on_status_codes && {
-										on_status_codes: params.retry_on_status_codes,
-									}),
-								}
-							: undefined,
-					strategy: params.strategy_mode
-						? { mode: params.strategy_mode }
+			const config = {
+				cache:
+					params.cache_mode || params.cache_max_age
+						? {
+								...(params.cache_mode && { mode: params.cache_mode }),
+								...(params.cache_max_age && {
+									max_age: params.cache_max_age,
+								}),
+							}
 						: undefined,
-					targets: params.targets,
-				};
+				retry:
+					params.retry_attempts || params.retry_on_status_codes
+						? {
+								...(params.retry_attempts && {
+									attempts: params.retry_attempts,
+								}),
+								...(params.retry_on_status_codes && {
+									on_status_codes: params.retry_on_status_codes,
+								}),
+							}
+						: undefined,
+				strategy: params.strategy_mode
+					? { mode: params.strategy_mode }
+					: undefined,
+				targets: params.targets,
+			};
 
-				// Only include defined fields to avoid sending undefined to API
-				const updateData: Record<string, unknown> = {};
-				if (params.name !== undefined) updateData.name = params.name;
-				if (params.status !== undefined) updateData.status = params.status;
-				if (config.cache || config.retry || config.strategy || config.targets) {
-					updateData.config = config;
-				}
-
-				const result = await service.updateConfig(params.slug, updateData);
-
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									message: `Successfully updated configuration "${params.slug}"`,
-									success: result.success,
-									config: result.data?.config,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error updating configuration: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
+			// Only include defined fields to avoid sending undefined to API
+			const updateData: Record<string, unknown> = {};
+			if (params.name !== undefined) updateData.name = params.name;
+			if (params.status !== undefined) updateData.status = params.status;
+			if (config.cache || config.retry || config.strategy || config.targets) {
+				updateData.config = config;
 			}
+
+			const result = await service.updateConfig(params.slug, updateData);
+			const updatedConfig = JSON.parse(result.config || "{}");
+
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: `Successfully updated configuration "${params.slug}"`,
+								id: result.id,
+								slug: result.slug,
+								config: updatedConfig,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -347,33 +333,22 @@ export function registerConfigsTools(
 			slug: z.string().describe("Configuration slug to delete"),
 		},
 		async (params) => {
-			try {
-				const result = await service.deleteConfig(params.slug);
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									message: `Successfully deleted configuration "${params.slug}"`,
-									success: result.success,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error deleting configuration: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			const result = await service.deleteConfig(params.slug);
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: `Successfully deleted configuration "${params.slug}"`,
+								success: result.success,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -385,39 +360,28 @@ export function registerConfigsTools(
 			slug: z.string().describe("Configuration slug to list versions for"),
 		},
 		async (params) => {
-			try {
-				const result = await service.listConfigVersions(params.slug);
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									total: result.total,
-									versions: (result.data ?? []).map((version) => ({
-										id: version.id,
-										version: version.version,
-										config: version.config,
-										created_at: version.created_at,
-										created_by: version.created_by,
-									})),
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error listing configuration versions: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			const result = await service.listConfigVersions(params.slug);
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								total: result.total,
+								versions: (result.data ?? []).map((version) => ({
+									id: version.id,
+									version: version.version,
+									config: version.config,
+									created_at: version.created_at,
+									created_by: version.created_by,
+								})),
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 }

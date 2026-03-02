@@ -19,43 +19,32 @@ export function registerLimitsTools(
 				.describe("Filter usage limits by workspace ID"),
 		},
 		async (params) => {
-			try {
-				const result = await service.listUsageLimits(params.workspace_id);
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									success: result.success,
-									usage_limits: result.data.map((limit) => ({
-										id: limit.id,
-										name: limit.name,
-										workspace_id: limit.workspace_id,
-										status: limit.status,
-										value: limit.value,
-										metric: limit.metric,
-										period: limit.period,
-										created_at: limit.created_at,
-										updated_at: limit.updated_at,
-									})),
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error fetching usage limits: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			const result = await service.listUsageLimits(params.workspace_id);
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								success: result.success,
+								usage_limits: result.data.map((limit) => ({
+									id: limit.id,
+									name: limit.name,
+									workspace_id: limit.workspace_id,
+									status: limit.status,
+									value: limit.value,
+									metric: limit.metric,
+									period: limit.period,
+									created_at: limit.created_at,
+									updated_at: limit.updated_at,
+								})),
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -67,45 +56,34 @@ export function registerLimitsTools(
 			id: z.string().describe("The unique identifier of the usage limit"),
 		},
 		async (params) => {
-			try {
-				const result = await service.getUsageLimit(params.id);
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									success: result.success,
-									usage_limit: {
-										id: result.data.id,
-										name: result.data.name,
-										workspace_id: result.data.workspace_id,
-										status: result.data.status,
-										value: result.data.value,
-										metric: result.data.metric,
-										period: result.data.period,
-										created_at: result.data.created_at,
-										updated_at: result.data.updated_at,
-										created_by: result.data.created_by,
-										updated_by: result.data.updated_by,
-									},
+			const result = await service.getUsageLimit(params.id);
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								success: result.success,
+								usage_limit: {
+									id: result.data.id,
+									name: result.data.name,
+									workspace_id: result.data.workspace_id,
+									status: result.data.status,
+									value: result.data.value,
+									metric: result.data.metric,
+									period: result.data.period,
+									created_at: result.data.created_at,
+									updated_at: result.data.updated_at,
+									created_by: result.data.created_by,
+									updated_by: result.data.updated_by,
 								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error fetching usage limit: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -131,40 +109,29 @@ export function registerLimitsTools(
 				.describe("The time period for the limit"),
 		},
 		async (params) => {
-			try {
-				const result = await service.createUsageLimit({
-					name: params.name,
-					workspace_id: params.workspace_id,
-					value: params.value,
-					metric: params.metric,
-					period: params.period,
-				});
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									message: `Successfully created usage limit "${params.name}"`,
-									success: result.success,
-									usage_limit: result.data,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error creating usage limit: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			const result = await service.createUsageLimit({
+				name: params.name,
+				workspace_id: params.workspace_id,
+				value: params.value,
+				metric: params.metric,
+				period: params.period,
+			});
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: `Successfully created usage limit "${params.name}"`,
+								success: result.success,
+								usage_limit: result.data,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -190,40 +157,29 @@ export function registerLimitsTools(
 				.describe("Usage limit status"),
 		},
 		async (params) => {
-			try {
-				const result = await service.updateUsageLimit(params.id, {
-					name: params.name,
-					value: params.value,
-					metric: params.metric,
-					period: params.period,
-					status: params.status,
-				});
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									message: `Successfully updated usage limit "${params.id}"`,
-									success: result.success,
-									usage_limit: result.data,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error updating usage limit: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			const result = await service.updateUsageLimit(params.id, {
+				name: params.name,
+				value: params.value,
+				metric: params.metric,
+				period: params.period,
+				status: params.status,
+			});
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: `Successfully updated usage limit "${params.id}"`,
+								success: result.success,
+								usage_limit: result.data,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -235,33 +191,22 @@ export function registerLimitsTools(
 			id: z.string().describe("The unique identifier of the usage limit"),
 		},
 		async (params) => {
-			try {
-				const result = await service.deleteUsageLimit(params.id);
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									message: `Successfully deleted usage limit "${params.id}"`,
-									success: result.success,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error deleting usage limit: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			const result = await service.deleteUsageLimit(params.id);
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: `Successfully deleted usage limit "${params.id}"`,
+								success: result.success,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -278,43 +223,32 @@ export function registerLimitsTools(
 				.describe("Filter rate limits by workspace ID"),
 		},
 		async (params) => {
-			try {
-				const result = await service.listRateLimits(params.workspace_id);
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									success: result.success,
-									rate_limits: result.data.map((limit) => ({
-										id: limit.id,
-										name: limit.name,
-										workspace_id: limit.workspace_id,
-										status: limit.status,
-										value: limit.value,
-										metric: limit.metric,
-										window: limit.window,
-										created_at: limit.created_at,
-										updated_at: limit.updated_at,
-									})),
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error fetching rate limits: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			const result = await service.listRateLimits(params.workspace_id);
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								success: result.success,
+								rate_limits: result.data.map((limit) => ({
+									id: limit.id,
+									name: limit.name,
+									workspace_id: limit.workspace_id,
+									status: limit.status,
+									value: limit.value,
+									metric: limit.metric,
+									window: limit.window,
+									created_at: limit.created_at,
+									updated_at: limit.updated_at,
+								})),
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -326,45 +260,34 @@ export function registerLimitsTools(
 			id: z.string().describe("The unique identifier of the rate limit"),
 		},
 		async (params) => {
-			try {
-				const result = await service.getRateLimit(params.id);
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									success: result.success,
-									rate_limit: {
-										id: result.data.id,
-										name: result.data.name,
-										workspace_id: result.data.workspace_id,
-										status: result.data.status,
-										value: result.data.value,
-										metric: result.data.metric,
-										window: result.data.window,
-										created_at: result.data.created_at,
-										updated_at: result.data.updated_at,
-										created_by: result.data.created_by,
-										updated_by: result.data.updated_by,
-									},
+			const result = await service.getRateLimit(params.id);
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								success: result.success,
+								rate_limit: {
+									id: result.data.id,
+									name: result.data.name,
+									workspace_id: result.data.workspace_id,
+									status: result.data.status,
+									value: result.data.value,
+									metric: result.data.metric,
+									window: result.data.window,
+									created_at: result.data.created_at,
+									updated_at: result.data.updated_at,
+									created_by: result.data.created_by,
+									updated_by: result.data.updated_by,
 								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error fetching rate limit: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -390,40 +313,29 @@ export function registerLimitsTools(
 				.describe("The time window for the rate limit"),
 		},
 		async (params) => {
-			try {
-				const result = await service.createRateLimit({
-					name: params.name,
-					workspace_id: params.workspace_id,
-					value: params.value,
-					metric: params.metric,
-					window: params.window,
-				});
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									message: `Successfully created rate limit "${params.name}"`,
-									success: result.success,
-									rate_limit: result.data,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error creating rate limit: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			const result = await service.createRateLimit({
+				name: params.name,
+				workspace_id: params.workspace_id,
+				value: params.value,
+				metric: params.metric,
+				window: params.window,
+			});
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: `Successfully created rate limit "${params.name}"`,
+								success: result.success,
+								rate_limit: result.data,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -453,40 +365,29 @@ export function registerLimitsTools(
 				.describe("Rate limit status"),
 		},
 		async (params) => {
-			try {
-				const result = await service.updateRateLimit(params.id, {
-					name: params.name,
-					value: params.value,
-					metric: params.metric,
-					window: params.window,
-					status: params.status,
-				});
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									message: `Successfully updated rate limit "${params.id}"`,
-									success: result.success,
-									rate_limit: result.data,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error updating rate limit: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			const result = await service.updateRateLimit(params.id, {
+				name: params.name,
+				value: params.value,
+				metric: params.metric,
+				window: params.window,
+				status: params.status,
+			});
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: `Successfully updated rate limit "${params.id}"`,
+								success: result.success,
+								rate_limit: result.data,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -498,33 +399,22 @@ export function registerLimitsTools(
 			id: z.string().describe("The unique identifier of the rate limit"),
 		},
 		async (params) => {
-			try {
-				const result = await service.deleteRateLimit(params.id);
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									message: `Successfully deleted rate limit "${params.id}"`,
-									success: result.success,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error deleting rate limit: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			const result = await service.deleteRateLimit(params.id);
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: `Successfully deleted rate limit "${params.id}"`,
+								success: result.success,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 }

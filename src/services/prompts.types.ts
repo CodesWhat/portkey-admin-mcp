@@ -55,6 +55,8 @@ export interface CreatePromptRequest {
 	tools?: PromptToolDefinition[];
 	tool_choice?: ToolChoice;
 	model?: string;
+	ai_model_id?: string;
+	finetune_id?: string;
 	version_description?: string;
 	template_metadata?: PromptTemplateMetadata;
 }

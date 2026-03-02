@@ -55,13 +55,39 @@ export function buildQueryString(params?: object): string {
 }
 
 /**
- * Parse error response from API
+ * Portkey API error shape returned in non-2xx responses
  */
-export async function parseErrorResponse(response: Response): Promise<string> {
+export interface PortkeyApiError {
+	status_code: number;
+	message: string;
+	slug?: string;
+	code?: string;
+	type?: string;
+}
+
+/**
+ * Parse error response from Portkey API, preserving the full error structure.
+ * Portkey returns errors as: { status_code, error: { message, slug, code, type }, success: false }
+ * or sometimes: { message, ... } at the top level.
+ */
+export async function parseErrorResponse(
+	response: Response,
+): Promise<PortkeyApiError> {
 	try {
-		const error = await response.json();
-		return error.message || `HTTP error! status: ${response.status}`;
+		const body = await response.json();
+		// Portkey wraps errors in an `error` object
+		const err = body.error ?? body;
+		return {
+			status_code: body.status_code ?? response.status,
+			message: err.message ?? `HTTP error! status: ${response.status}`,
+			slug: err.slug,
+			code: err.code,
+			type: err.type,
+		};
 	} catch {
-		return `HTTP error! status: ${response.status}`;
+		return {
+			status_code: response.status,
+			message: `HTTP error! status: ${response.status}`,
+		};
 	}
 }

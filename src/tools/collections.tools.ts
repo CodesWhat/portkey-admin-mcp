@@ -26,40 +26,29 @@ export function registerCollectionsTools(
 				.describe("Results per page (max 100)"),
 		},
 		async (params) => {
-			try {
-				const collections = await service.listCollections(params);
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									total: collections.total,
-									collections: collections.data.map((collection) => ({
-										id: collection.id,
-										name: collection.name,
-										slug: collection.slug,
-										workspace_id: collection.workspace_id,
-										created_at: collection.created_at,
-										last_updated_at: collection.last_updated_at,
-									})),
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error listing collections: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			const collections = await service.listCollections(params);
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								total: collections.total,
+								collections: collections.data.map((collection) => ({
+									id: collection.id,
+									name: collection.name,
+									slug: collection.slug,
+									workspace_id: collection.workspace_id,
+									created_at: collection.created_at,
+									last_updated_at: collection.last_updated_at,
+								})),
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -79,34 +68,23 @@ export function registerCollectionsTools(
 				.describe("Workspace ID to create collection in"),
 		},
 		async (params) => {
-			try {
-				const result = await service.createCollection(params);
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									message: `Successfully created collection "${params.name}"`,
-									id: result.id,
-									slug: result.slug,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error creating collection: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			const result = await service.createCollection(params);
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: `Successfully created collection "${params.name}"`,
+								id: result.id,
+								slug: result.slug,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -118,37 +96,26 @@ export function registerCollectionsTools(
 			collection_id: z.string().describe("Collection ID or slug to retrieve"),
 		},
 		async (params) => {
-			try {
-				const collection = await service.getCollection(params.collection_id);
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									id: collection.id,
-									name: collection.name,
-									slug: collection.slug,
-									workspace_id: collection.workspace_id,
-									created_at: collection.created_at,
-									last_updated_at: collection.last_updated_at,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error fetching collection: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			const collection = await service.getCollection(params.collection_id);
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								id: collection.id,
+								name: collection.name,
+								slug: collection.slug,
+								workspace_id: collection.workspace_id,
+								created_at: collection.created_at,
+								last_updated_at: collection.last_updated_at,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -165,40 +132,29 @@ export function registerCollectionsTools(
 				.describe("New description for the collection"),
 		},
 		async (params) => {
-			try {
-				const result = await service.updateCollection(params.collection_id, {
-					name: params.name,
-					description: params.description,
-				});
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									message: `Successfully updated collection`,
-									id: result.id,
-									name: result.name,
-									slug: result.slug,
-									workspace_id: result.workspace_id,
-									last_updated_at: result.last_updated_at,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error updating collection: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			const result = await service.updateCollection(params.collection_id, {
+				name: params.name,
+				description: params.description,
+			});
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: `Successfully updated collection`,
+								id: result.id,
+								name: result.name,
+								slug: result.slug,
+								workspace_id: result.workspace_id,
+								last_updated_at: result.last_updated_at,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -210,33 +166,22 @@ export function registerCollectionsTools(
 			collection_id: z.string().describe("Collection ID to delete"),
 		},
 		async (params) => {
-			try {
-				const result = await service.deleteCollection(params.collection_id);
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									message: `Successfully deleted collection "${params.collection_id}"`,
-									success: result.success,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error deleting collection: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			const result = await service.deleteCollection(params.collection_id);
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: `Successfully deleted collection "${params.collection_id}"`,
+								success: result.success,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 }

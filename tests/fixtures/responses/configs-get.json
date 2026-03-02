@@ -1,0 +1,18 @@
+{
+  "id": "298be7aa-764e-40d3-b322-5cf239a392d3",
+  "name": "e2e-test-config",
+  "workspace_id": "6e5a9f93-ae3a-46b4-a87d-2464d373ef7e",
+  "slug": "pc-e2e-te-687c8d",
+  "organisation_id": "02dc3530-8fba-409d-9d39-9d90a345a0bf",
+  "is_default": 0,
+  "status": "active",
+  "owner_id": "2a0b8d6f-988f-44a6-a253-5fb2e58d5004",
+  "updated_by": "2a0b8d6f-988f-44a6-a253-5fb2e58d5004",
+  "created_at": "2026-03-02T16:56:32.000Z",
+  "last_updated_at": "2026-03-02T16:56:32.000Z",
+  "config": "{\"retry\":{\"attempts\":2}}",
+  "format": "json",
+  "type": "ORG_CONFIG",
+  "version_id": "a711da35-1dd1-401c-8109-9c11f6787fbd",
+  "object": "config"
+}

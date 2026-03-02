@@ -86,8 +86,11 @@ export const OrgRoleSchema = z.enum(["admin", "member"]);
 export const WorkspaceRoleSchema = z.enum(["admin", "member", "manager"]);
 
 // ===== API Error Schema =====
+// Matches Portkey API error shape: { status_code, error: { message, slug, code, type }, success: false }
 export const ApiErrorSchema = z.object({
+	status_code: z.number(),
 	message: z.string(),
+	slug: z.string().optional(),
 	code: z.string().optional(),
-	details: z.unknown().optional(),
+	type: z.string().optional(),
 });

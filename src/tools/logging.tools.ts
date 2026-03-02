@@ -106,60 +106,49 @@ export function registerLoggingTools(
 				.describe("Additional custom metadata key-value pairs"),
 		},
 		async (params) => {
-			try {
-				const entry = {
-					request: {
-						url: params.request_url,
-						provider: params.request_provider,
-						method: params.request_method,
-						headers: params.request_headers,
-						body: params.request_body,
-					},
-					response: {
-						status: params.response_status,
-						headers: params.response_headers,
-						body: params.response_body,
-						response_time: params.response_time,
-						streamingMode: params.streaming_mode,
-					},
-					metadata: {
-						organization: params.metadata_organization,
-						user: params.metadata_user,
-						traceId: params.metadata_trace_id,
-						spanId: params.metadata_span_id,
-						spanName: params.metadata_span_name,
-						parentSpanId: params.metadata_parent_span_id,
-						...params.metadata_custom,
-					},
-				};
+			const entry = {
+				request: {
+					url: params.request_url,
+					provider: params.request_provider,
+					method: params.request_method,
+					headers: params.request_headers,
+					body: params.request_body,
+				},
+				response: {
+					status: params.response_status,
+					headers: params.response_headers,
+					body: params.response_body,
+					response_time: params.response_time,
+					streamingMode: params.streaming_mode,
+				},
+				metadata: {
+					organization: params.metadata_organization,
+					user: params.metadata_user,
+					traceId: params.metadata_trace_id,
+					spanId: params.metadata_span_id,
+					spanName: params.metadata_span_name,
+					parentSpanId: params.metadata_parent_span_id,
+					...params.metadata_custom,
+				},
+			};
 
-				const result = await service.insertLog(entry);
+			const result = await service.insertLog(entry);
 
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									message: "Successfully inserted log entry",
-									success: result.success,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error inserting log: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: "Successfully inserted log entry",
+								success: result.success,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -201,49 +190,38 @@ export function registerLoggingTools(
 				),
 		},
 		async (params) => {
-			try {
-				const result = await service.createLogExport({
-					workspace_id: params.workspace_id,
-					description: params.description,
-					filters: {
-						time_of_generation_min: params.time_min,
-						time_of_generation_max: params.time_max,
-						cost_min: params.cost_min,
-						cost_max: params.cost_max,
-						tokens_min: params.tokens_min,
-						tokens_max: params.tokens_max,
-						model: params.models,
-					},
-					requested_data: params.requested_fields,
-				});
+			const result = await service.createLogExport({
+				workspace_id: params.workspace_id,
+				description: params.description,
+				filters: {
+					time_of_generation_min: params.time_min,
+					time_of_generation_max: params.time_max,
+					cost_min: params.cost_min,
+					cost_max: params.cost_max,
+					tokens_min: params.tokens_min,
+					tokens_max: params.tokens_max,
+					model: params.models,
+				},
+				requested_data: params.requested_fields,
+			});
 
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									message: "Successfully created log export",
-									id: result.id,
-									total: result.total,
-									object: result.object,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error creating log export: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: "Successfully created log export",
+								id: result.id,
+								total: result.total,
+								object: result.object,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -257,46 +235,35 @@ export function registerLoggingTools(
 				.describe("Workspace ID to list exports for (required)"),
 		},
 		async (params) => {
-			try {
-				const result = await service.listLogExports({
-					workspace_id: params.workspace_id,
-				});
+			const result = await service.listLogExports({
+				workspace_id: params.workspace_id,
+			});
 
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									total: result.total,
-									exports: result.data.map((exp) => ({
-										id: exp.id,
-										status: exp.status,
-										description: exp.description,
-										filters: exp.filters,
-										requested_data: exp.requested_data,
-										workspace_id: exp.workspace_id,
-										created_at: exp.created_at,
-										last_updated_at: exp.last_updated_at,
-										created_by: exp.created_by,
-									})),
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error listing log exports: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								total: result.total,
+								exports: result.data.map((exp) => ({
+									id: exp.id,
+									status: exp.status,
+									description: exp.description,
+									filters: exp.filters,
+									requested_data: exp.requested_data,
+									workspace_id: exp.workspace_id,
+									created_at: exp.created_at,
+									last_updated_at: exp.last_updated_at,
+									created_by: exp.created_by,
+								})),
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -308,42 +275,31 @@ export function registerLoggingTools(
 			export_id: z.string().describe("The unique ID of the log export"),
 		},
 		async (params) => {
-			try {
-				const result = await service.getLogExport(params.export_id);
+			const result = await service.getLogExport(params.export_id);
 
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									id: result.id,
-									status: result.status,
-									description: result.description,
-									filters: result.filters,
-									requested_data: result.requested_data,
-									organisation_id: result.organisation_id,
-									workspace_id: result.workspace_id,
-									created_at: result.created_at,
-									last_updated_at: result.last_updated_at,
-									created_by: result.created_by,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error getting log export: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								id: result.id,
+								status: result.status,
+								description: result.description,
+								filters: result.filters,
+								requested_data: result.requested_data,
+								organisation_id: result.organisation_id,
+								workspace_id: result.workspace_id,
+								created_at: result.created_at,
+								last_updated_at: result.last_updated_at,
+								created_by: result.created_by,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -357,35 +313,24 @@ export function registerLoggingTools(
 				.describe("The unique ID of the log export to start"),
 		},
 		async (params) => {
-			try {
-				const result = await service.startLogExport(params.export_id);
+			const result = await service.startLogExport(params.export_id);
 
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									message: result.message,
-									export_id: params.export_id,
-									status: "started",
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error starting log export: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: result.message,
+								export_id: params.export_id,
+								status: "started",
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -399,35 +344,24 @@ export function registerLoggingTools(
 				.describe("The unique ID of the log export to cancel"),
 		},
 		async (params) => {
-			try {
-				const result = await service.cancelLogExport(params.export_id);
+			const result = await service.cancelLogExport(params.export_id);
 
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									message: result.message,
-									export_id: params.export_id,
-									status: "cancelled",
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error cancelling log export: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: result.message,
+								export_id: params.export_id,
+								status: "cancelled",
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -441,35 +375,24 @@ export function registerLoggingTools(
 				.describe("The unique ID of the log export to download"),
 		},
 		async (params) => {
-			try {
-				const result = await service.downloadLogExport(params.export_id);
+			const result = await service.downloadLogExport(params.export_id);
 
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									message: "Download URL generated successfully",
-									export_id: params.export_id,
-									signed_url: result.signed_url,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error getting download URL: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
-				};
-			}
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: "Download URL generated successfully",
+								export_id: params.export_id,
+								signed_url: result.signed_url,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 
@@ -499,59 +422,48 @@ export function registerLoggingTools(
 				),
 		},
 		async (params) => {
-			try {
-				const updateData: {
-					filters?: { time_of_generation_max?: string };
-					workspace_id?: string;
-					requested_data?: LogExportField[];
-				} = {};
+			const updateData: {
+				filters?: { time_of_generation_max?: string };
+				workspace_id?: string;
+				requested_data?: LogExportField[];
+			} = {};
 
-				if (params.time_of_generation_max) {
-					updateData.filters = {
-						time_of_generation_max: params.time_of_generation_max,
-					};
-				}
-
-				if (params.workspace_id) {
-					updateData.workspace_id = params.workspace_id;
-				}
-
-				if (params.requested_fields) {
-					updateData.requested_data = params.requested_fields;
-				}
-
-				const result = await service.updateLogExport(
-					params.export_id,
-					updateData,
-				);
-
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									message: "Successfully updated log export",
-									id: result.id,
-									total: result.total,
-									object: result.object,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			} catch (error) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error updating log export: ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					],
+			if (params.time_of_generation_max) {
+				updateData.filters = {
+					time_of_generation_max: params.time_of_generation_max,
 				};
 			}
+
+			if (params.workspace_id) {
+				updateData.workspace_id = params.workspace_id;
+			}
+
+			if (params.requested_fields) {
+				updateData.requested_data = params.requested_fields;
+			}
+
+			const result = await service.updateLogExport(
+				params.export_id,
+				updateData,
+			);
+
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: "Successfully updated log export",
+								id: result.id,
+								total: result.total,
+								object: result.object,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
 		},
 	);
 }
