@@ -6,7 +6,7 @@ This document lists all API endpoints used by the Portkey Admin MCP Server, veri
 
 - **Base URL**: `https://api.portkey.ai/v1`
 - **Authentication**: `x-portkey-api-key` header
-- **Total Endpoints**: 107
+- **Total Endpoints**: 140+
 
 ## Verification Legend
 
@@ -369,9 +369,9 @@ This document lists all API endpoints used by the Portkey Admin MCP Server, veri
 
 | Status | Count | Description |
 |--------|-------|-------------|
-| [x] Verified | 87 | Working paths confirmed via API testing |
+| [x] Verified | 107+ | Working paths confirmed via API testing |
 | [!] Discrepancy | 0 | None - all tested paths work |
-| [?] Unable to verify | 20 | 9 return 403 (permission denied) + 11 new analytics endpoints pending testing |
+| [?] Unable to verify | 20 | All return 403 (permission denied) — analytics endpoints require org-admin permissions |
 
 ### Key Findings
 
@@ -518,9 +518,51 @@ GET  /v1/log-exports/{id}/download
 | `/analytics/graphs/error-rate` | `/analytics/graphs/errors/rate` | ✓ Tested - works (403) |
 | `/analytics/graphs/cache-hit-latency` | `/analytics/graphs/cache/latency` | ✓ Tested - works (403) |
 | `/analytics/graphs/cache-hit-rate` | `/analytics/graphs/cache/hit-rate` | ✓ Tested - works (403) |
-| `/analytics/graphs/feedback` | N/A | ✗ Returns 404 - not implemented |
-| `/analytics/graphs/feedback-*` | N/A | ✗ Returns 404 - not implemented |
-| `/analytics/groups/metadata` | N/A | ✗ Returns 404 - not implemented |
-| `/analytics/groups/models` | N/A | ✗ Returns 404 - not implemented |
+| `/analytics/graphs/feedbacks` | `/analytics/graphs/feedbacks` | ✓ Returns 403 (permissions) - endpoint exists (verified 2026-03-23) |
+| `/analytics/graphs/feedbacks/*` | `/analytics/graphs/feedbacks/{ai-models,scores,weighted}` | ✓ Returns 403 - endpoints exist (verified 2026-03-23) |
+| `/analytics/groups/metadata/{key}` | `/analytics/groups/metadata/{key}` | ✓ Returns 403 - endpoint exists (verified 2026-03-23) |
+| `/analytics/groups/ai-models` | `/analytics/groups/ai-models` | ✓ Returns 403 - endpoint exists (verified 2026-03-23) |
+
+**Note**: All analytics endpoints return 403 with workspace-level API keys. They require org-admin analytics permissions.
 
 **Recommendation**: Trust the tested paths. The Portkey docs may be outdated or describe a different API version.
+
+---
+
+## New: MCP Integrations (added 2026-03-23)
+
+**Service**: `src/services/mcp-integrations.service.ts`
+
+| Status | Method | Path | Description |
+|--------|--------|------|-------------|
+| [x] | POST | `/mcp-integrations` | Create MCP integration (requires `name`, `url`, `auth_type`, `transport`) |
+| [x] | GET | `/mcp-integrations` | List MCP integrations |
+| [x] | GET | `/mcp-integrations/{id}` | Get MCP integration |
+| [x] | PUT | `/mcp-integrations/{id}` | Update MCP integration |
+| [x] | DELETE | `/mcp-integrations/{id}` | Delete MCP integration |
+| [x] | GET | `/mcp-integrations/{id}/metadata` | Get sync metadata |
+| [x] | GET | `/mcp-integrations/{id}/capabilities` | List capabilities |
+| [x] | PUT | `/mcp-integrations/{id}/capabilities` | Update capabilities |
+| [x] | GET | `/mcp-integrations/{id}/workspaces` | List workspace access |
+| [x] | PUT | `/mcp-integrations/{id}/workspaces` | Update workspace access |
+
+All verified with live API 2026-03-23. List returns `{ object: "list", total, has_more, data }`. Workspaces returns `{ workspaces, global_workspace_access, object: "integration" }`.
+
+## New: MCP Servers (added 2026-03-23)
+
+**Service**: `src/services/mcp-servers.service.ts`
+
+| Status | Method | Path | Description |
+|--------|--------|------|-------------|
+| [x] | POST | `/mcp-servers` | Create MCP server (requires `name`, `mcp_integration_id`) |
+| [x] | GET | `/mcp-servers` | List MCP servers |
+| [x] | GET | `/mcp-servers/{id}` | Get MCP server |
+| [x] | PUT | `/mcp-servers/{id}` | Update MCP server |
+| [x] | DELETE | `/mcp-servers/{id}` | Delete MCP server |
+| [x] | POST | `/mcp-servers/{id}/test` | Test server connectivity |
+| [x] | GET | `/mcp-servers/{id}/capabilities` | List capabilities |
+| [x] | PUT | `/mcp-servers/{id}/capabilities` | Update capabilities |
+| [x] | GET | `/mcp-servers/{id}/user-access` | List user access |
+| [x] | PUT | `/mcp-servers/{id}/user-access` | Update user access |
+
+All verified with live API 2026-03-23. List returns `{ object: "list", total, data }`. User access returns `{ object: "list", default_user_access, total, has_more, data }`.

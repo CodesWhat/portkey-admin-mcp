@@ -6,6 +6,8 @@ import { registerCollectionsTools } from "./collections.tools.js";
 import { registerConfigsTools } from "./configs.tools.js";
 import { registerGuardrailsTools } from "./guardrails.tools.js";
 import { registerIntegrationsTools } from "./integrations.tools.js";
+import { registerMcpIntegrationsTools } from "./mcp-integrations.tools.js";
+import { registerMcpServersTools } from "./mcp-servers.tools.js";
 import { registerKeysTools } from "./keys.tools.js";
 import { registerLabelsTools } from "./labels.tools.js";
 import { registerLimitsTools } from "./limits.tools.js";
@@ -43,6 +45,8 @@ export function registerAllTools(
 	registerLoggingTools(server, service);
 	registerProvidersTools(server, service);
 	registerIntegrationsTools(server, service);
+	registerMcpIntegrationsTools(server, service);
+	registerMcpServersTools(server, service);
 }
 
 // Re-export individual registration functions for selective use
@@ -63,4 +67,6 @@ export {
 	registerLoggingTools,
 	registerProvidersTools,
 	registerIntegrationsTools,
+	registerMcpIntegrationsTools,
+	registerMcpServersTools,
 };

@@ -3,12 +3,12 @@
 # Portkey Admin MCP Server
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://readme-typing-svg.demolab.com?font=Fira+Code&pause=1000&color=FFFFFF&center=true&vCenter=true&width=500&lines=116+tools+for+Portkey+Admin+API;Prompts%2C+Configs%2C+Analytics;Full+MCP+Protocol+1.0+Server">
-  <source media="(prefers-color-scheme: light)" srcset="https://readme-typing-svg.demolab.com?font=Fira+Code&pause=1000&color=000000&center=true&vCenter=true&width=500&lines=116+tools+for+Portkey+Admin+API;Prompts%2C+Configs%2C+Analytics;Full+MCP+Protocol+1.0+Server">
-  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&pause=1000&color=000000&center=true&vCenter=true&width=500&lines=116+tools+for+Portkey+Admin+API;Prompts%2C+Configs%2C+Analytics;Full+MCP+Protocol+1.0+Server" alt="Typing SVG">
+  <source media="(prefers-color-scheme: dark)" srcset="https://readme-typing-svg.demolab.com?font=Fira+Code&pause=1000&color=FFFFFF&center=true&vCenter=true&width=500&lines=151+tools+for+Portkey+Admin+API;Prompts%2C+Configs%2C+Analytics;Full+MCP+Protocol+1.0+Server">
+  <source media="(prefers-color-scheme: light)" srcset="https://readme-typing-svg.demolab.com?font=Fira+Code&pause=1000&color=000000&center=true&vCenter=true&width=500&lines=151+tools+for+Portkey+Admin+API;Prompts%2C+Configs%2C+Analytics;Full+MCP+Protocol+1.0+Server">
+  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&pause=1000&color=000000&center=true&vCenter=true&width=500&lines=151+tools+for+Portkey+Admin+API;Prompts%2C+Configs%2C+Analytics;Full+MCP+Protocol+1.0+Server" alt="Typing SVG">
 </picture>
 
-MCP server for [Portkey](https://portkey.ai/) Admin API. **116 tools** for prompts, configs, analytics & more.
+MCP server for [Portkey](https://portkey.ai/) Admin API. **151 tools** for prompts, configs, analytics, MCP server management & more.
 
 </div>
 
@@ -28,7 +28,7 @@ MCP server for [Portkey](https://portkey.ai/) Admin API. **116 tools** for promp
 
 - [🚀 Quick Start](#-quick-start)
 - [✨ Features](#-features)
-- [🔧 Tools](#-tools-116)
+- [🔧 Tools](#-tools-151)
 - [🏗️ Architecture](#-architecture)
 - [🚢 Deployment](#-deployment)
 - [▲ Vercel Guide](./docs/VERCEL_DEPLOYMENT.md)
@@ -148,7 +148,7 @@ Users, workspaces, API keys
 
 ---
 
-## 🔧 Tools (116)
+## 🔧 Tools (151)
 
 <details>
 <summary><strong>👥 User & Access</strong> (10 tools)</summary>
@@ -232,7 +232,7 @@ Users, workspaces, API keys
 </details>
 
 <details>
-<summary><strong>📝 Prompts</strong> (12 tools)</summary>
+<summary><strong>📝 Prompts</strong> (14 tools)</summary>
 
 | Tool | Description |
 |------|-------------|
@@ -243,6 +243,8 @@ Users, workspaces, API keys
 | `delete_prompt` | Delete prompt |
 | `publish_prompt` | Publish prompt version |
 | `list_prompt_versions` | List version history |
+| `get_prompt_version` | Get specific version details |
+| `update_prompt_version` | Update version (assign label) |
 | `render_prompt` | Render prompt with variables |
 | `run_prompt_completion` | Execute prompt completion |
 | `migrate_prompt` | Create-or-update prompt |
@@ -293,7 +295,7 @@ Users, workspaces, API keys
 </details>
 
 <details>
-<summary><strong>📏 Usage Limits</strong> (5 tools)</summary>
+<summary><strong>📏 Usage Limits</strong> (7 tools)</summary>
 
 | Tool | Description |
 |------|-------------|
@@ -302,6 +304,8 @@ Users, workspaces, API keys
 | `get_usage_limit` | Get limit details |
 | `update_usage_limit` | Update limit |
 | `delete_usage_limit` | Delete limit |
+| `list_usage_limit_entities` | List entities tracked against a limit |
+| `reset_usage_limit_entity` | Reset entity usage |
 
 </details>
 
@@ -328,19 +332,30 @@ Users, workspaces, API keys
 </details>
 
 <details>
-<summary><strong>📊 Analytics</strong> (9 tools)</summary>
+<summary><strong>📊 Analytics</strong> (20 tools)</summary>
 
 | Tool | Description |
 |------|-------------|
-| `get_cost_analytics` | Get cost analytics data |
-| `get_request_analytics` | Request analytics |
+| `get_cost_analytics` | Cost analytics over time |
+| `get_request_analytics` | Request count analytics |
 | `get_token_analytics` | Token usage analytics |
 | `get_latency_analytics` | Latency analytics |
-| `get_error_analytics` | Error analytics |
+| `get_error_analytics` | Error count analytics |
 | `get_error_rate_analytics` | Error rate analytics |
-| `get_users_analytics` | Per-user analytics |
+| `get_error_stacks_analytics` | Error status code stacks |
+| `get_error_status_codes_analytics` | Unique error status codes |
+| `get_users_analytics` | User activity metrics |
+| `get_user_requests_analytics` | Per-user request counts |
 | `get_cache_hit_latency` | Cache hit latency |
 | `get_cache_hit_rate` | Cache hit rate |
+| `get_rescued_requests_analytics` | Rescued requests (retry/fallback) |
+| `get_feedback_analytics` | Feedback submissions over time |
+| `get_feedback_models_analytics` | Feedback by AI model |
+| `get_feedback_scores_analytics` | Feedback score distribution |
+| `get_feedback_weighted_analytics` | Weighted feedback metrics |
+| `get_analytics_group_users` | Analytics grouped by user |
+| `get_analytics_group_models` | Analytics grouped by model |
+| `get_analytics_group_metadata` | Analytics grouped by metadata key |
 
 </details>
 
@@ -399,6 +414,42 @@ Users, workspaces, API keys
 | `delete_integration_model` | Delete custom model |
 | `list_integration_workspaces` | List workspace access |
 | `update_integration_workspaces` | Update workspace access |
+
+</details>
+
+<details>
+<summary><strong>🔌 MCP Integrations</strong> (10 tools)</summary>
+
+| Tool | Description |
+|------|-------------|
+| `list_mcp_integrations` | List MCP integrations |
+| `create_mcp_integration` | Create MCP integration |
+| `get_mcp_integration` | Get integration details |
+| `update_mcp_integration` | Update integration |
+| `delete_mcp_integration` | Delete integration |
+| `get_mcp_integration_metadata` | Get sync metadata |
+| `list_mcp_integration_capabilities` | List capabilities |
+| `update_mcp_integration_capabilities` | Enable/disable capabilities |
+| `list_mcp_integration_workspaces` | List workspace access |
+| `update_mcp_integration_workspaces` | Update workspace access |
+
+</details>
+
+<details>
+<summary><strong>🖥️ MCP Servers</strong> (10 tools)</summary>
+
+| Tool | Description |
+|------|-------------|
+| `list_mcp_servers` | List MCP servers |
+| `create_mcp_server` | Register MCP server |
+| `get_mcp_server` | Get server details |
+| `update_mcp_server` | Update server |
+| `delete_mcp_server` | Delete server |
+| `test_mcp_server` | Test server connectivity |
+| `list_mcp_server_capabilities` | List capabilities |
+| `update_mcp_server_capabilities` | Enable/disable capabilities |
+| `list_mcp_server_user_access` | List user access |
+| `update_mcp_server_user_access` | Update user access |
 
 </details>
 

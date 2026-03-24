@@ -93,12 +93,12 @@ const baseAnalyticsSchema = {
 	metadata: z
 		.string()
 		.optional()
-		.describe("Filter by metadata (stringified JSON object)"),
+		.describe("Stringified JSON object for metadata filtering, e.g. '{\"env\":\"prod\",\"app\":\"myapp\"}'."),
 	ai_org_model: z
 		.string()
 		.optional()
 		.describe(
-			"Filter by AI provider and model (comma-separated, use __ as separator)",
+			"Filter by provider and model, format: 'provider__model' with double underscore, e.g. 'openai__gpt-4' or 'anthropic__claude-3-opus'. Comma-separated for multiple.",
 		),
 	trace_id: z
 		.string()
@@ -412,6 +412,169 @@ export function registerAnalyticsTools(
 						),
 					},
 				],
+			};
+		},
+	);
+
+	// ==================== Extended Graph Analytics ====================
+
+	server.tool(
+		"get_error_stacks_analytics",
+		"Retrieve error analytics broken down by status code stacks over time",
+		baseAnalyticsSchema,
+		async (params) => {
+			const analytics = await service.getErrorStacksAnalytics(params);
+			return {
+				content: [{ type: "text", text: JSON.stringify(analytics, null, 2) }],
+			};
+		},
+	);
+
+	server.tool(
+		"get_error_status_codes_analytics",
+		"Retrieve unique error status code distribution analytics over time",
+		baseAnalyticsSchema,
+		async (params) => {
+			const analytics = await service.getErrorStatusCodesAnalytics(params);
+			return {
+				content: [{ type: "text", text: JSON.stringify(analytics, null, 2) }],
+			};
+		},
+	);
+
+	server.tool(
+		"get_user_requests_analytics",
+		"Retrieve per-user request count analytics over time",
+		baseAnalyticsSchema,
+		async (params) => {
+			const analytics = await service.getUserRequestsAnalytics(params);
+			return {
+				content: [{ type: "text", text: JSON.stringify(analytics, null, 2) }],
+			};
+		},
+	);
+
+	server.tool(
+		"get_rescued_requests_analytics",
+		"Retrieve analytics for requests rescued by retry or fallback strategies over time",
+		baseAnalyticsSchema,
+		async (params) => {
+			const analytics = await service.getRescuedRequestsAnalytics(params);
+			return {
+				content: [{ type: "text", text: JSON.stringify(analytics, null, 2) }],
+			};
+		},
+	);
+
+	server.tool(
+		"get_feedback_analytics",
+		"Retrieve feedback submission analytics over time",
+		baseAnalyticsSchema,
+		async (params) => {
+			const analytics = await service.getFeedbackAnalytics(params);
+			return {
+				content: [{ type: "text", text: JSON.stringify(analytics, null, 2) }],
+			};
+		},
+	);
+
+	server.tool(
+		"get_feedback_models_analytics",
+		"Retrieve feedback analytics grouped by AI model over time",
+		baseAnalyticsSchema,
+		async (params) => {
+			const analytics = await service.getFeedbackModelsAnalytics(params);
+			return {
+				content: [{ type: "text", text: JSON.stringify(analytics, null, 2) }],
+			};
+		},
+	);
+
+	server.tool(
+		"get_feedback_scores_analytics",
+		"Retrieve feedback score distribution analytics over time",
+		baseAnalyticsSchema,
+		async (params) => {
+			const analytics = await service.getFeedbackScoresAnalytics(params);
+			return {
+				content: [{ type: "text", text: JSON.stringify(analytics, null, 2) }],
+			};
+		},
+	);
+
+	server.tool(
+		"get_feedback_weighted_analytics",
+		"Retrieve weighted feedback analytics over time",
+		baseAnalyticsSchema,
+		async (params) => {
+			const analytics = await service.getFeedbackWeightedAnalytics(params);
+			return {
+				content: [{ type: "text", text: JSON.stringify(analytics, null, 2) }],
+			};
+		},
+	);
+
+	// ==================== Analytics Groups (Paginated) ====================
+
+	const paginatedAnalyticsSchema = {
+		...baseAnalyticsSchema,
+		current_page: z
+			.number()
+			.positive()
+			.optional()
+			.describe("Page number for pagination"),
+		page_size: z
+			.number()
+			.int()
+			.positive()
+			.max(100)
+			.optional()
+			.describe("Results per page (max 100)"),
+	};
+
+	server.tool(
+		"get_analytics_group_users",
+		"Retrieve analytics data grouped by user with pagination",
+		paginatedAnalyticsSchema,
+		async (params) => {
+			const analytics = await service.getAnalyticsGroupUsers(params);
+			return {
+				content: [{ type: "text", text: JSON.stringify(analytics, null, 2) }],
+			};
+		},
+	);
+
+	server.tool(
+		"get_analytics_group_models",
+		"Retrieve analytics data grouped by AI model with pagination",
+		paginatedAnalyticsSchema,
+		async (params) => {
+			const analytics = await service.getAnalyticsGroupModels(params);
+			return {
+				content: [{ type: "text", text: JSON.stringify(analytics, null, 2) }],
+			};
+		},
+	);
+
+	server.tool(
+		"get_analytics_group_metadata",
+		"Retrieve analytics data grouped by a specific metadata key with pagination",
+		{
+			...paginatedAnalyticsSchema,
+			metadata_key: z
+				.string()
+				.describe(
+					"The metadata key to group by (e.g., 'env', 'app', 'client_id')",
+				),
+		},
+		async (params) => {
+			const { metadata_key, ...analyticsParams } = params;
+			const analytics = await service.getAnalyticsGroupMetadata(
+				metadata_key,
+				analyticsParams,
+			);
+			return {
+				content: [{ type: "text", text: JSON.stringify(analytics, null, 2) }],
 			};
 		},
 	);

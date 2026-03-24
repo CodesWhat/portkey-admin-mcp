@@ -89,18 +89,18 @@ export function registerKeysTools(
 				.number()
 				.positive()
 				.optional()
-				.describe("Credit limit for usage"),
+				.describe("Maximum usage cost threshold"),
 			alert_threshold: z
 				.number()
 				.min(0)
 				.max(100)
 				.optional()
-				.describe("Alert threshold percentage (0-100)"),
+				.describe("Percentage of credit_limit at which to send alert emails (0-100)"),
 			rate_limit_rpm: z
 				.number()
 				.positive()
 				.optional()
-				.describe("Rate limit in requests per minute"),
+				.describe("Requests per minute limit"),
 		},
 		async (params) => {
 			const result = await service.createVirtualKey({
@@ -276,7 +276,7 @@ export function registerKeysTools(
 	// Phase 2: Create API key tool
 	server.tool(
 		"create_api_key",
-		"Create a new Portkey API key for authentication. Organisation-level keys provide full access, workspace keys are scoped.",
+		"Create a new Portkey API key for authentication. Organisation-level keys provide full access, workspace keys are scoped. Scopes control read/write permissions to specific resources (logs, analytics, prompts, etc.).",
 		{
 			type: z
 				.enum(["organisation", "workspace"])
@@ -579,6 +579,13 @@ export function registerKeysTools(
 				.array(z.string())
 				.optional()
 				.describe("New email addresses for alerts"),
+			expires_at: z
+				.string()
+				.nullable()
+				.optional()
+				.describe(
+					"New expiration date in ISO 8601 format, or null to remove expiration",
+				),
 		},
 		async (params) => {
 			const result = await service.updateApiKey(params.id, {
@@ -599,6 +606,7 @@ export function registerKeysTools(
 							}
 						: undefined,
 				alert_emails: params.alert_emails,
+				expires_at: params.expires_at,
 			});
 
 			return {

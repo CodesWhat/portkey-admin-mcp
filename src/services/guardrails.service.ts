@@ -28,7 +28,7 @@ export interface GuardrailAction {
 	async?: boolean;
 	on_success?: GuardrailFeedback;
 	on_fail?: GuardrailFeedback;
-	onFail?: string;
+	on_fail_action?: string;
 	message?: string;
 }
 

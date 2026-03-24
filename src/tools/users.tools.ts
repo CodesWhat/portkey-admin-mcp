@@ -22,7 +22,7 @@ export function registerUsersTools(
 	// Invite user tool
 	server.tool(
 		"invite_user",
-		"Invite a new user to your Portkey organization with specific workspace access and API key permissions",
+		"Invite a new user to your Portkey organization with specific workspace access and API key permissions. After the invite is accepted, use add_workspace_member to assign workspace roles.",
 		{
 			email: z.string().email().describe("Email address of the user to invite"),
 			role: z
@@ -206,7 +206,7 @@ export function registerUsersTools(
 	// Phase 1: Delete user tool
 	server.tool(
 		"delete_user",
-		"Remove a user from your Portkey organization. This action cannot be undone.",
+		"Remove a user from your Portkey organization. Permanently removes the user and all their org/workspace memberships. Cannot be undone.",
 		{
 			user_id: z.string().describe("The user ID to delete"),
 		},

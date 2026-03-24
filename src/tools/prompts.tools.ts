@@ -16,7 +16,14 @@ export function registerPromptsTools(
 	// Create prompt tool
 	server.tool(
 		"create_prompt",
-		"Create a new prompt template in Portkey. Prompts are versioned message templates with variable substitution support.",
+		`Create a new prompt template in Portkey. Supports both single-message and multi-message (chat) templates.
+
+IMPORTANT: The "string" parameter accepts TWO formats:
+1. Plain text: "Hello {{name}}, how can I help?"
+2. Multi-message JSON array (MUST be a JSON-encoded string):
+   '[{"role":"system","content":[{"type":"text","text":"You are a helpful assistant."}]},{"role":"user","content":[{"type":"text","text":"{{user_input}}"}]}]'
+
+Most production prompts use format #2 (multi-message). Use get_prompt to see examples of the format.`,
 		{
 			name: z.string().describe("Display name for the prompt"),
 			collection_id: z
@@ -26,7 +33,7 @@ export function registerPromptsTools(
 				),
 			string: z
 				.string()
-				.describe("Prompt template string with {{variable}} mustache syntax"),
+				.describe('The prompt template. Plain text OR a JSON-encoded messages array string for multi-message chat prompts: \'[{"role":"system","content":[{"type":"text","text":"..."}]},{"role":"user","content":[{"type":"text","text":"{{input}}"}]}]\'. Use get_prompt on an existing prompt to see the exact format.'),
 			parameters: z
 				.record(z.string(), z.unknown())
 				.describe("Default values for template variables"),
@@ -204,12 +211,42 @@ export function registerPromptsTools(
 	// Get prompt tool
 	server.tool(
 		"get_prompt",
-		"Retrieve detailed information about a specific prompt including its template, parameters, and version history",
+		`Retrieve detailed information about a specific prompt including its template, parameters, and version history.
+
+The template field shows the raw "string" value stored in Portkey:
+- If it starts with "[", it is a JSON-encoded messages array (multi-message prompt with roles).
+- Otherwise it is a plain string template.
+When updating a prompt, pass the same format back in the "string" field of update_prompt.`,
 		{
 			prompt_id: z.string().describe("Prompt ID or slug to retrieve"),
 		},
 		async (params) => {
 			const prompt = await service.getPrompt(params.prompt_id);
+
+			// Resolve the raw template string — Portkey may return it as a nested { string: "..." } object
+			const rawTemplate = prompt.current_version?.string;
+			const inner =
+				typeof rawTemplate === "object" && rawTemplate !== null && "string" in rawTemplate
+					? (rawTemplate as Record<string, unknown>).string
+					: rawTemplate;
+			const templateString = typeof inner === "string" ? inner : JSON.stringify(inner);
+
+			// Detect format for caller guidance
+			let templateFormat = "plain string";
+			if (typeof templateString === "string") {
+				const trimmed = templateString.trim();
+				if (trimmed.startsWith("[")) {
+					try {
+						const parsed = JSON.parse(trimmed);
+						if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].role) {
+							templateFormat = "multi-message (JSON messages array)";
+						}
+					} catch {
+						// Not valid JSON — treat as plain string
+					}
+				}
+			}
+
 			return {
 				content: [
 					{
@@ -228,7 +265,8 @@ export function registerPromptsTools(
 											version_number: prompt.current_version.version_number,
 											description: prompt.current_version.version_description,
 											model: prompt.current_version.model,
-											template: prompt.current_version.string,
+											template_format: templateFormat,
+											template: templateString,
 											parameters: prompt.current_version.parameters,
 											metadata: prompt.current_version.template_metadata,
 											has_tools: !!prompt.current_version.tools?.length,
@@ -256,7 +294,14 @@ export function registerPromptsTools(
 	// Update prompt tool
 	server.tool(
 		"update_prompt",
-		"Update an existing prompt template. Creates a new version with the changes.",
+		`Update an existing prompt template. Creates a new version. Uses patch mode — only provided fields are updated, others are kept from the current version.
+
+IMPORTANT: The "string" parameter accepts the same two formats as create_prompt:
+1. Plain text: "Hello {{name}}"
+2. Multi-message JSON array (MUST be a JSON-encoded string):
+   '[{"role":"system","content":[{"type":"text","text":"..."}]},{"role":"user","content":[{"type":"text","text":"{{input}}"}]}]'
+
+Use get_prompt first to see the current format, then pass the same format back. New versions are created in "archived" status — use publish_prompt to make active.`,
 		{
 			prompt_id: z.string().describe("Prompt ID or slug to update"),
 			name: z.string().optional().describe("New display name for the prompt"),
@@ -268,7 +313,7 @@ export function registerPromptsTools(
 				.string()
 				.optional()
 				.describe(
-					"New prompt template string with {{variable}} mustache syntax",
+					'Updated prompt template. Plain text OR a JSON-encoded messages array string for multi-message chat prompts. Use get_prompt to see the current format before updating.',
 				),
 			parameters: z
 				.record(z.string(), z.unknown())
@@ -421,20 +466,7 @@ export function registerPromptsTools(
 			prompt_id: z.string().describe("Prompt ID or slug to list versions for"),
 		},
 		async (params) => {
-			const response = await service.listPromptVersions(params.prompt_id);
-			// Handle both response formats: array directly or { data: [...], total: N }
-			type VersionItem = {
-				id: string;
-				prompt_version: number;
-				prompt_description?: string;
-				status?: string;
-				label_id?: string;
-				created_at: string;
-				prompt_template?: string | object;
-			};
-			const versions: VersionItem[] = Array.isArray(response)
-				? response
-				: (response as { data?: VersionItem[] }).data || [];
+			const versions = await service.listPromptVersions(params.prompt_id);
 			return {
 				content: [
 					{
@@ -512,7 +544,7 @@ export function registerPromptsTools(
 	// Run prompt completion tool
 	server.tool(
 		"run_prompt_completion",
-		"Execute a prompt template with variables and get the model completion response. REQUIRES billing metadata (client_id, app, env).",
+		"Execute a prompt template with variables and get the model completion response. REQUIRES billing metadata (client_id, app, env). Use validate_completion_metadata first if uncertain.",
 		{
 			prompt_id: z.string().describe("Prompt ID or slug to execute"),
 			variables: z
@@ -564,7 +596,7 @@ export function registerPromptsTools(
 	// Migrate prompt tool
 	server.tool(
 		"migrate_prompt",
-		"Create or update a prompt based on whether it exists. Useful for CI/CD and prompt-as-code workflows. Finds existing prompts by name within the collection.",
+		"Create or update a prompt based on whether it exists. Useful for CI/CD and prompt-as-code workflows. Finds existing prompts by name within the collection. The app and env values are added to template_metadata automatically.",
 		{
 			name: z.string().describe("Prompt name to create or find for update"),
 			app: z
@@ -646,7 +678,7 @@ export function registerPromptsTools(
 	// Promote prompt tool
 	server.tool(
 		"promote_prompt",
-		"Promote a prompt from one environment to another (e.g., staging -> prod). Copies the current version to the target environment.",
+		"Promote a prompt from one environment to another (e.g., staging -> prod). Copies the current version to the target environment. If the target prompt already exists it is updated with a new version; otherwise a new prompt is created.",
 		{
 			source_prompt_id: z
 				.string()
@@ -742,6 +774,63 @@ export function registerPromptsTools(
 								errors: result.errors,
 								warnings: result.warnings,
 								metadata: params,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
+		},
+	);
+
+	// ==================== Individual Version Management ====================
+
+	server.tool(
+		"get_prompt_version",
+		"Retrieve a specific version of a prompt by its version ID",
+		{
+			prompt_id: z.string().describe("Prompt ID or slug"),
+			version_id: z.string().describe("Version UUID to retrieve"),
+		},
+		async (params) => {
+			const version = await service.getPromptVersion(
+				params.prompt_id,
+				params.version_id,
+			);
+			return {
+				content: [
+					{ type: "text", text: JSON.stringify(version, null, 2) },
+				],
+			};
+		},
+	);
+
+	server.tool(
+		"update_prompt_version",
+		"Update a specific prompt version, e.g. to assign or remove a label",
+		{
+			prompt_id: z.string().describe("Prompt ID or slug"),
+			version_id: z.string().describe("Version UUID to update"),
+			label_id: z
+				.string()
+				.nullable()
+				.describe(
+					"Label ID to assign to this version, or null to remove the label",
+				),
+		},
+		async (params) => {
+			await service.updatePromptVersion(params.prompt_id, params.version_id, {
+				label_id: params.label_id,
+			});
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: `Successfully updated version "${params.version_id}" of prompt "${params.prompt_id}"`,
+								success: true,
 							},
 							null,
 							2,

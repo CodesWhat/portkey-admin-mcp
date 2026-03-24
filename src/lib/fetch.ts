@@ -75,14 +75,17 @@ export async function parseErrorResponse(
 ): Promise<PortkeyApiError> {
 	try {
 		const body = await response.json();
-		// Portkey wraps errors in an `error` object
-		const err = body.error ?? body;
+		// Portkey wraps errors in `error`, `data`, or top-level depending on endpoint
+		const err = body.error ?? body.data ?? body ?? {};
+		const code = err?.errorCode ?? err?.code;
 		return {
-			status_code: body.status_code ?? response.status,
-			message: err.message ?? `HTTP error! status: ${response.status}`,
-			slug: err.slug,
-			code: err.code,
-			type: err.type,
+			status_code: body?.status_code ?? response.status,
+			message:
+				err?.message ??
+				`HTTP error! status: ${response.status}${code ? ` (${code})` : ""}`,
+			slug: err?.slug,
+			code,
+			type: err?.type,
 		};
 	} catch {
 		return {

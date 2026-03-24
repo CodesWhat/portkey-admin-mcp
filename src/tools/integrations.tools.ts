@@ -74,7 +74,7 @@ export function registerIntegrationsTools(
 	// Create integration tool
 	server.tool(
 		"create_integration",
-		"Create a new integration with an AI provider (e.g., OpenAI, Anthropic, Azure OpenAI, AWS Bedrock)",
+		"Create a new integration with an AI provider (e.g., OpenAI, Anthropic, Azure OpenAI, AWS Bedrock). Provider-specific params: Azure needs api_version + resource_name + deployment_name. AWS needs aws_region. Vertex AI needs vertex_project_id + vertex_region.",
 		{
 			name: z.string().describe("Human-readable name for the integration"),
 			ai_provider_id: z

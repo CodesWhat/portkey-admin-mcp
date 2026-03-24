@@ -82,6 +82,21 @@ export interface UpdateRateLimitRequest {
 	status?: string;
 }
 
+// Usage Limit Entity Types
+export interface UsageLimitEntity {
+	id: string;
+	entity_id: string;
+	entity_type: string;
+	usage: number;
+	limit_id: string;
+	last_reset_at?: string;
+}
+
+export interface ListUsageLimitEntitiesResponse {
+	success: boolean;
+	data: UsageLimitEntity[];
+}
+
 export class LimitsService extends BaseService {
 	// Usage Limits Methods
 
@@ -147,5 +162,35 @@ export class LimitsService extends BaseService {
 
 	async deleteRateLimit(id: string): Promise<{ success: boolean }> {
 		return this.delete<{ success: boolean }>(`/policies/rate-limits/${id}`);
+	}
+
+	// Usage Limit Entity Methods
+
+	async listUsageLimitEntities(
+		limitId: string,
+	): Promise<ListUsageLimitEntitiesResponse> {
+		if (!limitId?.trim()) {
+			throw new Error("Usage limit ID is required");
+		}
+		return this.get<ListUsageLimitEntitiesResponse>(
+			`/policies/usage-limits/${limitId}/entities`,
+		);
+	}
+
+	async resetUsageLimitEntity(
+		limitId: string,
+		entityId: string,
+	): Promise<{ success: boolean }> {
+		if (!limitId?.trim()) {
+			throw new Error("Usage limit ID is required");
+		}
+		if (!entityId?.trim()) {
+			throw new Error("Entity ID is required");
+		}
+		await this.put(
+			`/policies/usage-limits/${limitId}/entities/${entityId}/reset`,
+			{},
+		);
+		return { success: true };
 	}
 }

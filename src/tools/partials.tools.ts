@@ -56,7 +56,7 @@ export function registerPartialsTools(
 		"list_prompt_partials",
 		"List all prompt partials in your Portkey organization with optional filtering by collection",
 		{
-			collection_id: z.string().optional().describe("Filter by collection ID"),
+			collection_id: z.string().optional().describe("Filter by collection ID. Optional — omit to list all partials across collections"),
 		},
 		async (params) => {
 			const partials = await service.listPromptPartials(params);
@@ -129,7 +129,7 @@ export function registerPartialsTools(
 	// Update partial tool
 	server.tool(
 		"update_prompt_partial",
-		"Update an existing prompt partial. Creates a new version with the changes.",
+		"Update an existing prompt partial. A new version is created in archived status — use publish_partial to make it active.",
 		{
 			prompt_partial_id: z
 				.string()

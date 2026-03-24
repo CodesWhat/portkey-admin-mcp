@@ -34,6 +34,20 @@ export interface PromptPartialListItem {
 	object: "partial";
 }
 
+/** Wrapped list response from GET /prompts/partials */
+export interface ListPromptPartialsResponse {
+	object: "list";
+	total: number;
+	data: PromptPartialListItem[];
+}
+
+/** Wrapped list response from GET /prompts/partials/:id/versions */
+export interface ListPartialVersionsResponse {
+	object: "list";
+	total: number;
+	data: PromptPartialVersion[];
+}
+
 // ===== Get Partial =====
 
 export interface GetPromptPartialResponse {
@@ -55,6 +69,7 @@ export interface GetPromptPartialResponse {
 export interface UpdatePromptPartialRequest {
 	name?: string;
 	string?: string;
+	/** Version description — remapped to version_description before sending to API */
 	description?: string;
 	status?: string;
 }

@@ -19,6 +19,11 @@ export type * from "./integrations.service.js";
 export { IntegrationsService } from "./integrations.service.js";
 export type * from "./keys.service.js";
 export { KeysService } from "./keys.service.js";
+// MCP resource management
+export type * from "./mcp-integrations.service.js";
+export { McpIntegrationsService } from "./mcp-integrations.service.js";
+export type * from "./mcp-servers.service.js";
+export { McpServersService } from "./mcp-servers.service.js";
 // Phase 3: Labels and Partials
 export type * from "./labels.service.js";
 export { LabelsService } from "./labels.service.js";
@@ -51,6 +56,8 @@ import { GuardrailsService } from "./guardrails.service.js";
 import { HealthService } from "./health.service.js";
 import { IntegrationsService } from "./integrations.service.js";
 import { KeysService } from "./keys.service.js";
+import { McpIntegrationsService } from "./mcp-integrations.service.js";
+import { McpServersService } from "./mcp-servers.service.js";
 // Import services for facade
 import { LabelsService } from "./labels.service.js";
 import { LimitsService } from "./limits.service.js";
@@ -83,6 +90,8 @@ export class PortkeyService {
 	private tracing: TracingService;
 	private logging: LoggingService;
 	private providers: ProvidersService;
+	private mcpIntegrations: McpIntegrationsService;
+	private mcpServers: McpServersService;
 	private health: HealthService;
 
 	constructor(apiKey?: string) {
@@ -109,6 +118,8 @@ export class PortkeyService {
 		this.tracing = new TracingService(resolvedApiKey);
 		this.logging = new LoggingService(resolvedApiKey);
 		this.providers = new ProvidersService(resolvedApiKey);
+		this.mcpIntegrations = new McpIntegrationsService(resolvedApiKey);
+		this.mcpServers = new McpServersService(resolvedApiKey);
 		this.health = new HealthService(resolvedApiKey);
 	}
 
@@ -425,6 +436,121 @@ export class PortkeyService {
 	updateIntegrationWorkspaces = (
 		...args: Parameters<IntegrationsService["updateIntegrationWorkspaces"]>
 	) => this.integrations.updateIntegrationWorkspaces(...args);
+
+	// MCP Integrations delegation
+	listMcpIntegrations = (
+		...args: Parameters<McpIntegrationsService["listMcpIntegrations"]>
+	) => this.mcpIntegrations.listMcpIntegrations(...args);
+	createMcpIntegration = (
+		...args: Parameters<McpIntegrationsService["createMcpIntegration"]>
+	) => this.mcpIntegrations.createMcpIntegration(...args);
+	getMcpIntegration = (
+		...args: Parameters<McpIntegrationsService["getMcpIntegration"]>
+	) => this.mcpIntegrations.getMcpIntegration(...args);
+	updateMcpIntegration = (
+		...args: Parameters<McpIntegrationsService["updateMcpIntegration"]>
+	) => this.mcpIntegrations.updateMcpIntegration(...args);
+	deleteMcpIntegration = (
+		...args: Parameters<McpIntegrationsService["deleteMcpIntegration"]>
+	) => this.mcpIntegrations.deleteMcpIntegration(...args);
+	getMcpIntegrationMetadata = (
+		...args: Parameters<McpIntegrationsService["getMcpIntegrationMetadata"]>
+	) => this.mcpIntegrations.getMcpIntegrationMetadata(...args);
+	listMcpIntegrationCapabilities = (
+		...args: Parameters<McpIntegrationsService["listMcpIntegrationCapabilities"]>
+	) => this.mcpIntegrations.listMcpIntegrationCapabilities(...args);
+	updateMcpIntegrationCapabilities = (
+		...args: Parameters<McpIntegrationsService["updateMcpIntegrationCapabilities"]>
+	) => this.mcpIntegrations.updateMcpIntegrationCapabilities(...args);
+	listMcpIntegrationWorkspaces = (
+		...args: Parameters<McpIntegrationsService["listMcpIntegrationWorkspaces"]>
+	) => this.mcpIntegrations.listMcpIntegrationWorkspaces(...args);
+	updateMcpIntegrationWorkspaces = (
+		...args: Parameters<McpIntegrationsService["updateMcpIntegrationWorkspaces"]>
+	) => this.mcpIntegrations.updateMcpIntegrationWorkspaces(...args);
+
+	// MCP Servers delegation
+	listMcpServers = (
+		...args: Parameters<McpServersService["listMcpServers"]>
+	) => this.mcpServers.listMcpServers(...args);
+	createMcpServer = (
+		...args: Parameters<McpServersService["createMcpServer"]>
+	) => this.mcpServers.createMcpServer(...args);
+	getMcpServer = (
+		...args: Parameters<McpServersService["getMcpServer"]>
+	) => this.mcpServers.getMcpServer(...args);
+	updateMcpServer = (
+		...args: Parameters<McpServersService["updateMcpServer"]>
+	) => this.mcpServers.updateMcpServer(...args);
+	deleteMcpServer = (
+		...args: Parameters<McpServersService["deleteMcpServer"]>
+	) => this.mcpServers.deleteMcpServer(...args);
+	testMcpServer = (
+		...args: Parameters<McpServersService["testMcpServer"]>
+	) => this.mcpServers.testMcpServer(...args);
+	listMcpServerCapabilities = (
+		...args: Parameters<McpServersService["listMcpServerCapabilities"]>
+	) => this.mcpServers.listMcpServerCapabilities(...args);
+	updateMcpServerCapabilities = (
+		...args: Parameters<McpServersService["updateMcpServerCapabilities"]>
+	) => this.mcpServers.updateMcpServerCapabilities(...args);
+	listMcpServerUserAccess = (
+		...args: Parameters<McpServersService["listMcpServerUserAccess"]>
+	) => this.mcpServers.listMcpServerUserAccess(...args);
+	updateMcpServerUserAccess = (
+		...args: Parameters<McpServersService["updateMcpServerUserAccess"]>
+	) => this.mcpServers.updateMcpServerUserAccess(...args);
+
+	// Extended Analytics delegation
+	getErrorStacksAnalytics = (
+		...args: Parameters<AnalyticsService["getErrorStacksAnalytics"]>
+	) => this.analytics.getErrorStacksAnalytics(...args);
+	getErrorStatusCodesAnalytics = (
+		...args: Parameters<AnalyticsService["getErrorStatusCodesAnalytics"]>
+	) => this.analytics.getErrorStatusCodesAnalytics(...args);
+	getUserRequestsAnalytics = (
+		...args: Parameters<AnalyticsService["getUserRequestsAnalytics"]>
+	) => this.analytics.getUserRequestsAnalytics(...args);
+	getRescuedRequestsAnalytics = (
+		...args: Parameters<AnalyticsService["getRescuedRequestsAnalytics"]>
+	) => this.analytics.getRescuedRequestsAnalytics(...args);
+	getFeedbackAnalytics = (
+		...args: Parameters<AnalyticsService["getFeedbackAnalytics"]>
+	) => this.analytics.getFeedbackAnalytics(...args);
+	getFeedbackModelsAnalytics = (
+		...args: Parameters<AnalyticsService["getFeedbackModelsAnalytics"]>
+	) => this.analytics.getFeedbackModelsAnalytics(...args);
+	getFeedbackScoresAnalytics = (
+		...args: Parameters<AnalyticsService["getFeedbackScoresAnalytics"]>
+	) => this.analytics.getFeedbackScoresAnalytics(...args);
+	getFeedbackWeightedAnalytics = (
+		...args: Parameters<AnalyticsService["getFeedbackWeightedAnalytics"]>
+	) => this.analytics.getFeedbackWeightedAnalytics(...args);
+	getAnalyticsGroupUsers = (
+		...args: Parameters<AnalyticsService["getAnalyticsGroupUsers"]>
+	) => this.analytics.getAnalyticsGroupUsers(...args);
+	getAnalyticsGroupModels = (
+		...args: Parameters<AnalyticsService["getAnalyticsGroupModels"]>
+	) => this.analytics.getAnalyticsGroupModels(...args);
+	getAnalyticsGroupMetadata = (
+		...args: Parameters<AnalyticsService["getAnalyticsGroupMetadata"]>
+	) => this.analytics.getAnalyticsGroupMetadata(...args);
+
+	// Prompt version management delegation
+	getPromptVersion = (
+		...args: Parameters<PromptsService["getPromptVersion"]>
+	) => this.prompts.getPromptVersion(...args);
+	updatePromptVersion = (
+		...args: Parameters<PromptsService["updatePromptVersion"]>
+	) => this.prompts.updatePromptVersion(...args);
+
+	// Usage limit entity delegation
+	listUsageLimitEntities = (
+		...args: Parameters<LimitsService["listUsageLimitEntities"]>
+	) => this.limits.listUsageLimitEntities(...args);
+	resetUsageLimitEntity = (
+		...args: Parameters<LimitsService["resetUsageLimitEntity"]>
+	) => this.limits.resetUsageLimitEntity(...args);
 
 	// Phase 8: Health delegation
 	ping = () => this.health.ping();

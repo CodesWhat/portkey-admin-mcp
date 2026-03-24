@@ -153,7 +153,7 @@ export function registerGuardrailsTools(
 	// Create guardrail tool
 	server.tool(
 		"create_guardrail",
-		"Create a new guardrail with specified checks and actions for content moderation and security",
+		"Create a new guardrail with specified checks and actions for content moderation and security. checks is an array of check objects with id (e.g. 'default.jwt', 'default.pii'), optional name, is_enabled boolean, and parameters object.",
 		{
 			name: z.string().describe("Name of the guardrail"),
 			checks: z

@@ -207,6 +207,20 @@ export interface UsersAnalyticsResponse {
 	summary: UsersSummary;
 }
 
+// ==================== Generic Response Types ====================
+
+export interface GenericGraphAnalyticsResponse {
+	object: "analytics-graph";
+	data_points: Record<string, unknown>[];
+	summary: Record<string, unknown>;
+}
+
+export interface GroupAnalyticsResponse {
+	object: "analytics-group";
+	data: Record<string, unknown>[];
+	total: number;
+}
+
 export class AnalyticsService extends BaseService {
 	/**
 	 * Helper method to build query params from analytics parameters
@@ -342,6 +356,113 @@ export class AnalyticsService extends BaseService {
 	): Promise<UsersAnalyticsResponse> {
 		return this.get<UsersAnalyticsResponse>(
 			"/analytics/graphs/users",
+			this.buildAnalyticsParams(params),
+		);
+	}
+
+	// ==================== Extended Graph Analytics ====================
+
+	async getErrorStacksAnalytics(
+		params: BaseAnalyticsParams,
+	): Promise<GenericGraphAnalyticsResponse> {
+		return this.get<GenericGraphAnalyticsResponse>(
+			"/analytics/graphs/errors/stacks",
+			this.buildAnalyticsParams(params),
+		);
+	}
+
+	async getErrorStatusCodesAnalytics(
+		params: BaseAnalyticsParams,
+	): Promise<GenericGraphAnalyticsResponse> {
+		return this.get<GenericGraphAnalyticsResponse>(
+			"/analytics/graphs/errors/status-codes",
+			this.buildAnalyticsParams(params),
+		);
+	}
+
+	async getUserRequestsAnalytics(
+		params: BaseAnalyticsParams,
+	): Promise<GenericGraphAnalyticsResponse> {
+		return this.get<GenericGraphAnalyticsResponse>(
+			"/analytics/graphs/users/requests",
+			this.buildAnalyticsParams(params),
+		);
+	}
+
+	async getRescuedRequestsAnalytics(
+		params: BaseAnalyticsParams,
+	): Promise<GenericGraphAnalyticsResponse> {
+		return this.get<GenericGraphAnalyticsResponse>(
+			"/analytics/graphs/requests/rescued",
+			this.buildAnalyticsParams(params),
+		);
+	}
+
+	async getFeedbackAnalytics(
+		params: BaseAnalyticsParams,
+	): Promise<GenericGraphAnalyticsResponse> {
+		return this.get<GenericGraphAnalyticsResponse>(
+			"/analytics/graphs/feedbacks",
+			this.buildAnalyticsParams(params),
+		);
+	}
+
+	async getFeedbackModelsAnalytics(
+		params: BaseAnalyticsParams,
+	): Promise<GenericGraphAnalyticsResponse> {
+		return this.get<GenericGraphAnalyticsResponse>(
+			"/analytics/graphs/feedbacks/ai-models",
+			this.buildAnalyticsParams(params),
+		);
+	}
+
+	async getFeedbackScoresAnalytics(
+		params: BaseAnalyticsParams,
+	): Promise<GenericGraphAnalyticsResponse> {
+		return this.get<GenericGraphAnalyticsResponse>(
+			"/analytics/graphs/feedbacks/scores",
+			this.buildAnalyticsParams(params),
+		);
+	}
+
+	async getFeedbackWeightedAnalytics(
+		params: BaseAnalyticsParams,
+	): Promise<GenericGraphAnalyticsResponse> {
+		return this.get<GenericGraphAnalyticsResponse>(
+			"/analytics/graphs/feedbacks/weighted",
+			this.buildAnalyticsParams(params),
+		);
+	}
+
+	// ==================== Analytics Groups (Paginated) ====================
+
+	async getAnalyticsGroupUsers(
+		params: PaginatedAnalyticsParams,
+	): Promise<GroupAnalyticsResponse> {
+		return this.get<GroupAnalyticsResponse>(
+			"/analytics/groups/users",
+			this.buildAnalyticsParams(params),
+		);
+	}
+
+	async getAnalyticsGroupModels(
+		params: PaginatedAnalyticsParams,
+	): Promise<GroupAnalyticsResponse> {
+		return this.get<GroupAnalyticsResponse>(
+			"/analytics/groups/ai-models",
+			this.buildAnalyticsParams(params),
+		);
+	}
+
+	async getAnalyticsGroupMetadata(
+		metadataKey: string,
+		params: PaginatedAnalyticsParams,
+	): Promise<GroupAnalyticsResponse> {
+		if (!metadataKey.trim()) {
+			throw new Error("metadataKey is required");
+		}
+		return this.get<GroupAnalyticsResponse>(
+			`/analytics/groups/metadata/${encodeURIComponent(metadataKey)}`,
 			this.buildAnalyticsParams(params),
 		);
 	}

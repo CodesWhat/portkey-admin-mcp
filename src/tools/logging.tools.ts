@@ -34,7 +34,7 @@ export function registerLoggingTools(
 	// Insert log tool
 	server.tool(
 		"insert_log",
-		"Insert a log entry (or multiple entries) into Portkey for tracking AI requests and responses",
+		"Insert a log entry (or multiple entries) into Portkey for tracking AI requests and responses. request_provider must match a configured integration (e.g. 'openai', 'anthropic'). Use metadata_span_id and metadata_parent_span_id to create trace hierarchies.",
 		{
 			request_url: z
 				.string()
@@ -155,7 +155,7 @@ export function registerLoggingTools(
 	// Create log export tool
 	server.tool(
 		"create_log_export",
-		"Create a new log export job to export logs matching specified filters",
+		"Create a new log export job to export logs matching specified filters. time_min/time_max accept ISO 8601 format ('2024-01-01T00:00:00Z'). requested_fields selects which columns to include.",
 		{
 			workspace_id: z
 				.string()
@@ -368,7 +368,7 @@ export function registerLoggingTools(
 	// Download log export tool
 	server.tool(
 		"download_log_export",
-		"Get the download URL for a completed log export",
+		"Get the download URL for a completed log export. Export must be in 'completed' status. Workflow: create_log_export -> start_log_export -> poll get_log_export until completed -> download_log_export.",
 		{
 			export_id: z
 				.string()
@@ -399,7 +399,7 @@ export function registerLoggingTools(
 	// Update log export tool
 	server.tool(
 		"update_log_export",
-		"Update an existing log export configuration. Note: Only time_of_generation_max filter can be modified after creation - other filters (time_min, cost, tokens, models) must be set at creation time. You can also update workspace_id and requested data fields.",
+		"Update an existing log export configuration. Only time_of_generation_max, requested_fields, and workspace_id can be modified after creation.",
 		{
 			export_id: z
 				.string()

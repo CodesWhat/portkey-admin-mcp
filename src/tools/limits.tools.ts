@@ -417,4 +417,56 @@ export function registerLimitsTools(
 			};
 		},
 	);
+
+	// ==================== Usage Limit Entities ====================
+
+	server.tool(
+		"list_usage_limit_entities",
+		"List all entities tracked against a usage limit policy, showing current usage per entity",
+		{
+			limit_id: z.string().describe("Usage limit policy ID"),
+		},
+		async (params) => {
+			const result = await service.listUsageLimitEntities(params.limit_id);
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{ entities: result.data },
+							null,
+							2,
+						),
+					},
+				],
+			};
+		},
+	);
+
+	server.tool(
+		"reset_usage_limit_entity",
+		"Reset accumulated usage for a specific entity on a usage limit policy",
+		{
+			limit_id: z.string().describe("Usage limit policy ID"),
+			entity_id: z.string().describe("Entity ID to reset usage for"),
+		},
+		async (params) => {
+			await service.resetUsageLimitEntity(params.limit_id, params.entity_id);
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							{
+								message: `Successfully reset usage for entity "${params.entity_id}" on limit "${params.limit_id}"`,
+								success: true,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
+		},
+	);
 }

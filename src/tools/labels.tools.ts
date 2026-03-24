@@ -25,7 +25,7 @@ export function registerLabelsTools(
 				.string()
 				.regex(/^#[0-9A-Fa-f]{6}$/)
 				.optional()
-				.describe("Hex color code for the label (e.g., '#FF5733')"),
+				.describe("Hex format, e.g. '#FF5733'. Optional — omit for default color."),
 		},
 		async (params) => {
 			if (!params.organisation_id && !params.workspace_id) {

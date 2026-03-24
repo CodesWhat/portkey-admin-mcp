@@ -121,12 +121,12 @@ export function registerProvidersTools(
 				.number()
 				.positive()
 				.optional()
-				.describe("Rate limit value"),
+				.describe("Must be provided together with rate_limit_unit."),
 			rate_limit_unit: z
 				.enum(["rpm", "rpd"])
 				.optional()
 				.describe(
-					"Rate limit unit: 'rpm' (requests per minute) or 'rpd' (requests per day)",
+					"Must be provided together with rate_limit_value. Values: 'rpm' (requests/min) or 'rpd' (requests/day).",
 				),
 			expires_at: z
 				.string()

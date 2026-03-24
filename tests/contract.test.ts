@@ -194,18 +194,22 @@ describe("Contract: Prompts API", () => {
 	});
 
 	it("ListPromptVersionsResponse schema validates expected shape", () => {
-		const synthetic = [
-			{
-				id: "pv_001",
-				prompt_id: "pp_test123",
-				prompt_template: "Hello {{name}}",
-				prompt_version: 1,
-				prompt_description: "Initial version",
-				created_at: "2025-12-01T10:00:00.000Z",
-				status: "active",
-				object: "prompt" as const,
-			},
-		];
+		const synthetic = {
+			object: "list" as const,
+			total: 1,
+			data: [
+				{
+					id: "pv_001",
+					prompt_id: "pp_test123",
+					prompt_template: "Hello {{name}}",
+					prompt_version: 1,
+					prompt_description: "Initial version",
+					created_at: "2025-12-01T10:00:00.000Z",
+					status: "active",
+					object: "prompt" as const,
+				},
+			],
+		};
 		const result = ListPromptVersionsResponseSchema.safeParse(synthetic);
 		assert.ok(result.success, "ListPromptVersionsResponse should parse");
 	});

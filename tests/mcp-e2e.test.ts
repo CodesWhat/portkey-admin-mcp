@@ -15,7 +15,7 @@ const PKG = JSON.parse(
 	readFileSync(new URL("../package.json", import.meta.url), "utf-8"),
 );
 
-// All 116 expected tool names across 16 domains
+// All 151 expected tool names across 18 domains
 const EXPECTED_TOOLS = [
 	// users (10)
 	"list_all_users",
@@ -63,7 +63,7 @@ const EXPECTED_TOOLS = [
 	"get_collection",
 	"update_collection",
 	"delete_collection",
-	// prompts (12)
+	// prompts (14)
 	"create_prompt",
 	"list_prompts",
 	"get_prompt",
@@ -71,12 +71,14 @@ const EXPECTED_TOOLS = [
 	"delete_prompt",
 	"publish_prompt",
 	"list_prompt_versions",
+	"get_prompt_version",
+	"update_prompt_version",
 	"render_prompt",
 	"run_prompt_completion",
 	"migrate_prompt",
 	"promote_prompt",
 	"validate_completion_metadata",
-	// analytics (9)
+	// analytics (20)
 	"get_cost_analytics",
 	"get_request_analytics",
 	"get_token_analytics",
@@ -86,18 +88,31 @@ const EXPECTED_TOOLS = [
 	"get_cache_hit_latency",
 	"get_cache_hit_rate",
 	"get_users_analytics",
+	"get_error_stacks_analytics",
+	"get_error_status_codes_analytics",
+	"get_user_requests_analytics",
+	"get_rescued_requests_analytics",
+	"get_feedback_analytics",
+	"get_feedback_models_analytics",
+	"get_feedback_scores_analytics",
+	"get_feedback_weighted_analytics",
+	"get_analytics_group_users",
+	"get_analytics_group_models",
+	"get_analytics_group_metadata",
 	// guardrails (5)
 	"list_guardrails",
 	"get_guardrail",
 	"create_guardrail",
 	"update_guardrail",
 	"delete_guardrail",
-	// limits (10)
+	// limits (12)
 	"list_usage_limits",
 	"get_usage_limit",
 	"create_usage_limit",
 	"update_usage_limit",
 	"delete_usage_limit",
+	"list_usage_limit_entities",
+	"reset_usage_limit_entity",
 	"list_rate_limits",
 	"get_rate_limit",
 	"create_rate_limit",
@@ -149,6 +164,28 @@ const EXPECTED_TOOLS = [
 	"delete_integration_model",
 	"list_integration_workspaces",
 	"update_integration_workspaces",
+	// mcp-integrations (10)
+	"list_mcp_integrations",
+	"create_mcp_integration",
+	"get_mcp_integration",
+	"update_mcp_integration",
+	"delete_mcp_integration",
+	"get_mcp_integration_metadata",
+	"list_mcp_integration_capabilities",
+	"update_mcp_integration_capabilities",
+	"list_mcp_integration_workspaces",
+	"update_mcp_integration_workspaces",
+	// mcp-servers (10)
+	"list_mcp_servers",
+	"create_mcp_server",
+	"get_mcp_server",
+	"update_mcp_server",
+	"delete_mcp_server",
+	"test_mcp_server",
+	"list_mcp_server_capabilities",
+	"update_mcp_server_capabilities",
+	"list_mcp_server_user_access",
+	"update_mcp_server_user_access",
 ];
 
 describe("MCP E2E Protocol Tests", () => {

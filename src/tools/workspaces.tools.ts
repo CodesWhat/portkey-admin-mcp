@@ -187,7 +187,7 @@ export function registerWorkspacesTools(
 	// Phase 1: Delete workspace tool
 	server.tool(
 		"delete_workspace",
-		"Delete a workspace from your organization. This action cannot be undone.",
+		"Delete a workspace from your organization. Permanently deletes the workspace and all its members, configs, API keys, and resources. Cannot be undone.",
 		{
 			workspace_id: z.string().describe("The workspace ID to delete"),
 		},

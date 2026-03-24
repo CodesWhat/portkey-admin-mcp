@@ -103,6 +103,8 @@ export const PromptVersionListItemSchema = z.object({
 	object: z.literal("prompt"),
 });
 
-export const ListPromptVersionsResponseSchema = z.array(
-	PromptVersionListItemSchema,
-);
+export const ListPromptVersionsResponseSchema = z.object({
+	object: z.literal("list"),
+	total: z.number(),
+	data: z.array(PromptVersionListItemSchema),
+});

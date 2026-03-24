@@ -141,6 +141,7 @@ export interface UpdateApiKeyRequest {
 	scopes?: string[];
 	defaults?: ApiKeyDefaults;
 	alert_emails?: string[];
+	expires_at?: string | null;
 }
 
 export class KeysService extends BaseService {

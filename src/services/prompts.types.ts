@@ -294,4 +294,8 @@ export interface PromptVersionListItem {
 	object: "prompt";
 }
 
-export type ListPromptVersionsResponse = PromptVersionListItem[];
+export interface ListPromptVersionsResponse {
+	object: "list";
+	total: number;
+	data: PromptVersionListItem[];
+}

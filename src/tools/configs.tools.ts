@@ -102,7 +102,7 @@ export function registerConfigsTools(
 	// Phase 1: Create configuration tool
 	server.tool(
 		"create_config",
-		"Create a new configuration with cache, retry, and routing settings. At least one config setting (cache, retry, strategy, or targets) is required.",
+		"Create a new configuration with cache, retry, and routing settings. At least one setting is required: cache (cache_mode/cache_max_age), retry (retry_attempts/retry_on_status_codes), strategy_mode, or targets.",
 		{
 			name: z.string().describe("Name for the new configuration"),
 			workspace_id: z

@@ -14,6 +14,7 @@ import type {
 	PromotePromptResponse,
 	PromptCompletionRequest,
 	PromptCompletionResponse,
+	PromptVersionListItem,
 	PublishPromptRequest,
 	PublishPromptResponse,
 	RenderPromptRequest,
@@ -53,7 +54,24 @@ export class PromptsService extends BaseService {
 		promptId: string,
 		data: UpdatePromptRequest,
 	): Promise<UpdatePromptResponse> {
-		return this.put<UpdatePromptResponse>(`/prompts/${promptId}`, data);
+		// Portkey API inconsistencies between POST /prompts and PUT /prompts/:id:
+		//   • POST accepts "string"            → PUT expects "prompt_template"
+		//   • POST accepts "template_metadata"  → PUT expects "prompt_metadata"
+		// We keep the POST-style names in our public interface for consistency
+		// and remap here before sending to the API.
+		const { template_metadata, string: promptTemplate, ...rest } = data;
+		const body: Record<string, unknown> = {
+			...rest,
+			// Enable partial updates so missing version fields are backfilled from latest version
+			patch: true,
+		};
+		if (promptTemplate !== undefined) {
+			body.prompt_template = promptTemplate;
+		}
+		if (template_metadata !== undefined) {
+			body.prompt_metadata = template_metadata;
+		}
+		return this.put<UpdatePromptResponse>(`/prompts/${promptId}`, body);
 	}
 
 	async deletePrompt(promptId: string): Promise<DeletePromptResponse> {
@@ -70,12 +88,33 @@ export class PromptsService extends BaseService {
 		);
 	}
 
+	async getPromptVersion(
+		promptId: string,
+		versionId: string,
+	): Promise<Record<string, unknown>> {
+		// Returns the full prompt object with version fields flattened in
+		return this.get<Record<string, unknown>>(
+			`/prompts/${promptId}/versions/${versionId}`,
+		);
+	}
+
+	async updatePromptVersion(
+		promptId: string,
+		versionId: string,
+		data: { label_id?: string | null },
+	): Promise<{ success: boolean }> {
+		await this.put(`/prompts/${promptId}/versions/${versionId}`, data);
+		return { success: true };
+	}
+
 	async listPromptVersions(
 		promptId: string,
-	): Promise<ListPromptVersionsResponse> {
-		return this.get<ListPromptVersionsResponse>(
+	): Promise<PromptVersionListItem[]> {
+		// API returns { object: "list", total, data: [...] } — unwrap to plain array
+		const response = await this.get<ListPromptVersionsResponse>(
 			`/prompts/${promptId}/versions`,
 		);
+		return response.data;
 	}
 
 	async renderPrompt(
@@ -116,6 +155,9 @@ export class PromptsService extends BaseService {
 		);
 	}
 
+	// Note: listPrompts() + getPrompt() is two API calls per invocation.
+	// Portkey doesn't offer get-by-name, so the list-then-get pattern is required.
+	// Acceptable at current scale; consider caching if this becomes a hot path.
 	async migratePrompt(
 		data: MigratePromptRequest,
 	): Promise<MigratePromptResponse> {
@@ -230,6 +272,8 @@ export class PromptsService extends BaseService {
 		};
 	}
 
+	// Note: Two API calls (getPrompt + listPrompts) per invocation — same
+	// list-then-get pattern as migratePrompt. See note above.
 	async promotePrompt(
 		data: PromotePromptRequest,
 	): Promise<PromotePromptResponse> {
