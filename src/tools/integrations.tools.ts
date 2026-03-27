@@ -13,12 +13,12 @@ export function registerIntegrationsTools(
 		"List all integrations in your Portkey organization with optional filtering by workspace or type",
 		{
 			current_page: z
-				.number()
+				.coerce.number()
 				.positive()
 				.optional()
 				.describe("Page number for pagination"),
 			page_size: z
-				.number()
+				.coerce.number()
 				.int()
 				.positive()
 				.max(100)
@@ -386,12 +386,12 @@ export function registerIntegrationsTools(
 		{
 			slug: z.string().describe("The slug of the integration"),
 			current_page: z
-				.number()
+				.coerce.number()
 				.positive()
 				.optional()
 				.describe("Page number for pagination"),
 			page_size: z
-				.number()
+				.coerce.number()
 				.int()
 				.positive()
 				.max(100)
@@ -440,7 +440,7 @@ export function registerIntegrationsTools(
 			models: z
 				.array(
 					z.object({
-						model_id: z.string().describe("The model identifier"),
+						slug: z.string().describe("The model slug identifier"),
 						model_name: z
 							.string()
 							.optional()
@@ -448,7 +448,7 @@ export function registerIntegrationsTools(
 								"Display name for the model (required for custom models)",
 							),
 						enabled: z.boolean().describe("Whether the model is enabled"),
-						custom: z
+						is_custom: z
 							.boolean()
 							.optional()
 							.describe("Whether this is a custom model (default: false)"),
@@ -486,12 +486,12 @@ export function registerIntegrationsTools(
 		"Delete a specific custom model from an integration",
 		{
 			slug: z.string().describe("The slug of the integration"),
-			model_id: z.string().describe("The ID of the model to delete"),
+			model_slug: z.string().describe("The slug of the model to delete"),
 		},
 		async (params) => {
 			const result = await service.deleteIntegrationModel(
 				params.slug,
-				params.model_id,
+				params.model_slug,
 			);
 
 			return {
@@ -500,7 +500,7 @@ export function registerIntegrationsTools(
 						type: "text",
 						text: JSON.stringify(
 							{
-								message: `Successfully deleted model "${params.model_id}" from integration "${params.slug}"`,
+								message: `Successfully deleted model "${params.model_slug}" from integration "${params.slug}"`,
 								success: result.success,
 							},
 							null,
@@ -519,12 +519,12 @@ export function registerIntegrationsTools(
 		{
 			slug: z.string().describe("The slug of the integration"),
 			current_page: z
-				.number()
+				.coerce.number()
 				.positive()
 				.optional()
 				.describe("Page number for pagination"),
 			page_size: z
-				.number()
+				.coerce.number()
 				.int()
 				.positive()
 				.max(100)
@@ -577,23 +577,23 @@ export function registerIntegrationsTools(
 			workspaces: z
 				.array(
 					z.object({
-						workspace_id: z.string().describe("The workspace ID"),
+						id: z.string().describe("The workspace ID"),
 						enabled: z
 							.boolean()
 							.describe("Whether the workspace has access to this integration"),
 						credit_limit: z
-							.number()
+							.coerce.number()
 							.positive()
 							.optional()
 							.describe("Credit limit for this workspace"),
 						alert_threshold: z
-							.number()
+							.coerce.number()
 							.min(0)
 							.max(100)
 							.optional()
 							.describe("Alert threshold percentage (0-100)"),
 						rate_limit_rpm: z
-							.number()
+							.coerce.number()
 							.positive()
 							.optional()
 							.describe("Rate limit in requests per minute"),
@@ -603,15 +603,18 @@ export function registerIntegrationsTools(
 		},
 		async (params) => {
 			const result = await service.updateIntegrationWorkspaces(params.slug, {
-				workspaces: params.workspaces.map((ws) => ({
-					workspace_id: ws.workspace_id,
-					enabled: ws.enabled,
-					usage_limits: buildUsageLimits({
+				workspaces: params.workspaces.map((ws) => {
+					const usageLimits = buildUsageLimits({
 						credit_limit: ws.credit_limit,
 						alert_threshold: ws.alert_threshold,
-					}),
-					rate_limits: buildRateLimitsRpm(ws.rate_limit_rpm),
-				})),
+					});
+					return {
+						id: ws.id,
+						enabled: ws.enabled,
+						usage_limits: usageLimits ? [usageLimits] : undefined,
+						rate_limits: buildRateLimitsRpm(ws.rate_limit_rpm),
+					};
+				}),
 			});
 
 			return {

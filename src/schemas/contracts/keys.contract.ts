@@ -13,9 +13,10 @@ const VirtualKeyRateLimitSchema = z.object({
 });
 
 const VirtualKeyUsageLimitsSchema = z.object({
+	type: z.enum(["cost", "tokens"]),
 	alert_threshold: z.number(),
 	credit_limit: z.number(),
-	periodic_reset: z.literal("monthly"),
+	periodic_reset: z.enum(["monthly", "weekly"]),
 });
 
 export const VirtualKeySchema = z.object({
@@ -64,8 +65,9 @@ const ApiKeyRateLimitSchema = z.object({
 });
 
 const ApiKeyUsageLimitsSchema = z.object({
+	type: z.enum(["cost", "tokens"]),
 	credit_limit: z.number(),
-	periodic_reset: z.literal("monthly"),
+	periodic_reset: z.enum(["monthly", "weekly"]),
 	alert_threshold: z.number(),
 });
 

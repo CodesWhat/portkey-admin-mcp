@@ -31,9 +31,9 @@ export interface ListAuditLogsParams {
 }
 
 export interface ListAuditLogsResponse {
-	success: boolean;
+	object: "list";
 	data: AuditLogEntry[];
-	total?: number;
+	total: number;
 	current_page?: number;
 	page_size?: number;
 }

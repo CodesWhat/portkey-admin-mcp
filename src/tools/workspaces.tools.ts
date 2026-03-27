@@ -12,14 +12,14 @@ export function registerWorkspacesTools(
 		"Retrieve all workspaces in your Portkey organization, including their configurations and metadata",
 		{
 			page_size: z
-				.number()
+				.coerce.number()
 				.positive()
 				.optional()
 				.describe(
 					"Number of workspaces to return per page (default varies by endpoint)",
 				),
 			current_page: z
-				.number()
+				.coerce.number()
 				.positive()
 				.optional()
 				.describe("Page number to retrieve when results are paginated"),
@@ -98,7 +98,7 @@ export function registerWorkspacesTools(
 				.optional()
 				.describe("Description of the workspace"),
 			is_default: z
-				.number()
+				.coerce.number()
 				.optional()
 				.describe("Set as default workspace (1 = yes, 0 = no)"),
 			metadata: z
@@ -147,7 +147,7 @@ export function registerWorkspacesTools(
 			slug: z.string().optional().describe("New slug for the workspace"),
 			description: z.string().optional().describe("New description"),
 			is_default: z
-				.number()
+				.coerce.number()
 				.optional()
 				.describe("Set as default workspace (1 = yes, 0 = no)"),
 			metadata: z

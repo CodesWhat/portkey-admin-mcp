@@ -86,18 +86,18 @@ export function registerKeysTools(
 				.optional()
 				.describe("Deployment name (for Azure OpenAI)"),
 			credit_limit: z
-				.number()
+				.coerce.number()
 				.positive()
 				.optional()
 				.describe("Maximum usage cost threshold"),
 			alert_threshold: z
-				.number()
+				.coerce.number()
 				.min(0)
 				.max(100)
 				.optional()
 				.describe("Percentage of credit_limit at which to send alert emails (0-100)"),
 			rate_limit_rpm: z
-				.number()
+				.coerce.number()
 				.positive()
 				.optional()
 				.describe("Requests per minute limit"),
@@ -198,18 +198,18 @@ export function registerKeysTools(
 			key: z.string().optional().describe("New provider API key value"),
 			note: z.string().optional().describe("New note or description"),
 			credit_limit: z
-				.number()
+				.coerce.number()
 				.positive()
 				.optional()
 				.describe("New credit limit for usage"),
 			alert_threshold: z
-				.number()
+				.coerce.number()
 				.min(0)
 				.max(100)
 				.optional()
 				.describe("New alert threshold percentage (0-100)"),
 			rate_limit_rpm: z
-				.number()
+				.coerce.number()
 				.positive()
 				.optional()
 				.describe("New rate limit in requests per minute"),
@@ -307,18 +307,18 @@ export function registerKeysTools(
 					"Permission scopes for the key (e.g., ['logs.read', 'analytics.read'])",
 				),
 			credit_limit: z
-				.number()
+				.coerce.number()
 				.positive()
 				.optional()
 				.describe("Credit limit for usage"),
 			alert_threshold: z
-				.number()
+				.coerce.number()
 				.min(0)
 				.max(100)
 				.optional()
 				.describe("Alert threshold percentage (0-100)"),
 			rate_limit_rpm: z
-				.number()
+				.coerce.number()
 				.positive()
 				.optional()
 				.describe("Rate limit in requests per minute"),
@@ -416,13 +416,13 @@ export function registerKeysTools(
 		"List all API keys in your Portkey organization with optional pagination and workspace filtering",
 		{
 			page_size: z
-				.number()
+				.coerce.number()
 				.positive()
 				.max(100)
 				.optional()
 				.describe("Number of results per page (max 100)"),
 			current_page: z
-				.number()
+				.coerce.number()
 				.positive()
 				.optional()
 				.describe("Page number for pagination"),
@@ -552,18 +552,18 @@ export function registerKeysTools(
 				.optional()
 				.describe("New permission scopes for the key"),
 			credit_limit: z
-				.number()
+				.coerce.number()
 				.positive()
 				.optional()
 				.describe("New credit limit for usage"),
 			alert_threshold: z
-				.number()
+				.coerce.number()
 				.min(0)
 				.max(100)
 				.optional()
 				.describe("New alert threshold percentage (0-100)"),
 			rate_limit_rpm: z
-				.number()
+				.coerce.number()
 				.positive()
 				.optional()
 				.describe("New rate limit in requests per minute"),

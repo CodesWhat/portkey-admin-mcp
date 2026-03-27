@@ -76,12 +76,12 @@ export function registerLabelsTools(
 			workspace_id: z.string().optional().describe("Filter by workspace ID"),
 			search: z.string().optional().describe("Search labels by name"),
 			current_page: z
-				.number()
+				.coerce.number()
 				.positive()
 				.optional()
 				.describe("Page number for pagination"),
 			page_size: z
-				.number()
+				.coerce.number()
 				.positive()
 				.max(100)
 				.optional()

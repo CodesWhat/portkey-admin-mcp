@@ -14,12 +14,12 @@ export function registerCollectionsTools(
 			workspace_id: z.string().optional().describe("Filter by workspace ID"),
 			search: z.string().optional().describe("Search collections by name"),
 			current_page: z
-				.number()
+				.coerce.number()
 				.positive()
 				.optional()
 				.describe("Page number for pagination"),
 			page_size: z
-				.number()
+				.coerce.number()
 				.positive()
 				.max(100)
 				.optional()
@@ -132,7 +132,7 @@ export function registerCollectionsTools(
 				.describe("New description for the collection"),
 		},
 		async (params) => {
-			const result = await service.updateCollection(params.collection_id, {
+			await service.updateCollection(params.collection_id, {
 				name: params.name,
 				description: params.description,
 			});
@@ -142,12 +142,8 @@ export function registerCollectionsTools(
 						type: "text",
 						text: JSON.stringify(
 							{
-								message: `Successfully updated collection`,
-								id: result.id,
-								name: result.name,
-								slug: result.slug,
-								workspace_id: result.workspace_id,
-								last_updated_at: result.last_updated_at,
+								message: `Successfully updated collection "${params.collection_id}"`,
+								success: true,
 							},
 							null,
 							2,

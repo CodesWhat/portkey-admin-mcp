@@ -58,7 +58,7 @@ export function registerLoggingTools(
 				.optional()
 				.describe("Request payload/body"),
 			response_status: z
-				.number()
+				.coerce.number()
 				.optional()
 				.default(200)
 				.describe("HTTP response status code (defaults to 200)"),
@@ -71,7 +71,7 @@ export function registerLoggingTools(
 				.optional()
 				.describe("Response payload/body"),
 			response_time: z
-				.number()
+				.coerce.number()
 				.optional()
 				.describe("Response latency in milliseconds"),
 			streaming_mode: z
@@ -175,14 +175,20 @@ export function registerLoggingTools(
 				.describe(
 					"Maximum time filter in date format (e.g., '2024-01-31' or ISO 8601)",
 				),
-			cost_min: z.number().optional().describe("Minimum cost filter"),
-			cost_max: z.number().optional().describe("Maximum cost filter"),
-			tokens_min: z.number().optional().describe("Minimum tokens filter"),
-			tokens_max: z.number().optional().describe("Maximum tokens filter"),
-			models: z
+			cost_min: z.coerce.number().optional().describe("Minimum cost filter"),
+			cost_max: z.coerce.number().optional().describe("Maximum cost filter"),
+			total_units_min: z
+				.coerce.number()
+				.optional()
+				.describe("Minimum total units (tokens) filter"),
+			total_units_max: z
+				.coerce.number()
+				.optional()
+				.describe("Maximum total units (tokens) filter"),
+			ai_model: z
 				.array(z.string())
 				.optional()
-				.describe("Filter by specific model names"),
+				.describe("Filter by specific AI model names"),
 			requested_fields: z
 				.array(logExportFieldSchema)
 				.describe(
@@ -198,9 +204,9 @@ export function registerLoggingTools(
 					time_of_generation_max: params.time_max,
 					cost_min: params.cost_min,
 					cost_max: params.cost_max,
-					tokens_min: params.tokens_min,
-					tokens_max: params.tokens_max,
-					model: params.models,
+					total_units_min: params.total_units_min,
+					total_units_max: params.total_units_max,
+					ai_model: params.ai_model,
 				},
 				requested_data: params.requested_fields,
 			});

@@ -3,13 +3,14 @@ import { BaseService } from "./base.service.js";
 // Provider Types
 export interface ProviderRateLimit {
 	type: "requests";
-	unit: "rpm" | "rpd";
+	unit: "rpm" | "rph" | "rpd";
 	value: number;
 }
 
 export interface ProviderUsageLimits {
+	type: "cost" | "tokens";
 	credit_limit: number;
-	periodic_reset: "monthly";
+	periodic_reset: "monthly" | "weekly";
 	alert_threshold: number;
 }
 

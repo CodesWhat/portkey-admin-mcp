@@ -44,10 +44,10 @@ export interface UpdateMcpServerRequest {
 
 // Sub-resource: Capabilities
 export interface McpServerCapability {
-	id: string;
 	name: string;
+	type: "tool" | "prompt" | "resource" | "resource_template";
 	enabled: boolean;
-	type?: string;
+	description?: string | null;
 	created_at?: string;
 	last_updated_at?: string | null;
 }
@@ -69,7 +69,8 @@ export interface ListMcpServerCapabilitiesResponse {
 
 export interface UpdateMcpServerCapabilitiesRequest {
 	capabilities: Array<{
-		id: string;
+		name: string;
+		type: "tool" | "prompt" | "resource";
 		enabled: boolean;
 	}>;
 }
@@ -94,7 +95,7 @@ export interface ListMcpServerUserAccessResponse {
 }
 
 export interface UpdateMcpServerUserAccessRequest {
-	users: Array<{
+	user_access: Array<{
 		user_id: string;
 		enabled: boolean;
 	}>;
@@ -106,6 +107,8 @@ export interface TestMcpServerResponse {
 	error?: string;
 	url?: string;
 	server_name?: string;
+	status_code?: number;
+	response_time_ms?: number;
 	object: "mcp-server";
 }
 

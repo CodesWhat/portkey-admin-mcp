@@ -60,7 +60,7 @@ export const PromptVersionSchema = z.object({
 	created_at: z.string(),
 });
 
-// GET /prompts/:id
+// GET /prompts/:id (after service remapping from flat API response)
 export const GetPromptResponseSchema = z.object({
 	id: z.string(),
 	name: z.string(),
@@ -69,7 +69,7 @@ export const GetPromptResponseSchema = z.object({
 	workspace_id: z.string().optional(),
 	created_at: z.string(),
 	last_updated_at: z.string(),
-	current_version: PromptVersionSchema,
+	current_version: PromptVersionSchema.optional(),
 	versions: z.array(PromptVersionSchema),
 	object: z.literal("prompt"),
 });
@@ -94,7 +94,7 @@ export const UpdatePromptResponseSchema = z.object({
 export const PromptVersionListItemSchema = z.object({
 	id: z.string(),
 	prompt_id: z.string(),
-	prompt_template: z.string(),
+	prompt_template: z.union([z.string(), z.object({ string: z.string() })]),
 	prompt_version: z.number(),
 	prompt_description: z.string().optional(),
 	label_id: z.string().optional(),

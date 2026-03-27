@@ -74,9 +74,9 @@ export interface LogExportFilters {
 	time_of_generation_max?: string;
 	cost_min?: number;
 	cost_max?: number;
-	tokens_min?: number;
-	tokens_max?: number;
-	model?: string[];
+	total_units_min?: number;
+	total_units_max?: number;
+	ai_model?: string[];
 	metadata?: Record<string, unknown>;
 }
 

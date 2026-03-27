@@ -11,12 +11,12 @@ export function registerMcpIntegrationsTools(
 		"List all MCP integrations in your Portkey organization with optional pagination and workspace filtering",
 		{
 			current_page: z
-				.number()
+				.coerce.number()
 				.positive()
 				.optional()
 				.describe("Page number for pagination"),
 			page_size: z
-				.number()
+				.coerce.number()
 				.int()
 				.positive()
 				.max(100)
@@ -55,11 +55,11 @@ export function registerMcpIntegrationsTools(
 			name: z.string().describe("Display name for the MCP integration"),
 			url: z.string().describe("URL endpoint of the MCP server to integrate"),
 			auth_type: z
-				.enum(["none", "bearer", "header"])
-				.describe("Authentication type: 'none', 'bearer' (token), or 'header' (custom header)"),
+				.enum(["oauth_auto", "headers", "none"])
+				.describe("Authentication type: 'none', 'headers' (custom headers), or 'oauth_auto' (OAuth)"),
 			transport: z
-				.enum(["sse", "streamable-http", "stdio"])
-				.describe("MCP transport protocol: 'sse', 'streamable-http', or 'stdio'"),
+				.enum(["http", "sse"])
+				.describe("MCP transport protocol: 'http' (streamable HTTP) or 'sse' (server-sent events)"),
 			slug: z
 				.string()
 				.optional()
@@ -68,14 +68,10 @@ export function registerMcpIntegrationsTools(
 				.string()
 				.optional()
 				.describe("Description of the MCP integration"),
-			auth_token: z
-				.string()
+			custom_headers: z
+				.record(z.string(), z.string())
 				.optional()
-				.describe("Auth token (required when auth_type is 'bearer')"),
-			auth_header_name: z
-				.string()
-				.optional()
-				.describe("Custom header name (required when auth_type is 'header')"),
+				.describe("Custom headers for authentication (e.g. { \"Authorization\": \"Bearer xxx\" }). Sent via configurations.custom_headers"),
 			workspace_id: z
 				.string()
 				.optional()
@@ -84,23 +80,11 @@ export function registerMcpIntegrationsTools(
 				),
 		},
 		async (params) => {
-			if (params.auth_type === "bearer" && !params.auth_token) {
-				return {
-					isError: true,
-					content: [
-						{ type: "text", text: "auth_token is required when auth_type is 'bearer'" },
-					],
-				};
-			}
-			if (params.auth_type === "header" && !params.auth_header_name) {
-				return {
-					isError: true,
-					content: [
-						{ type: "text", text: "auth_header_name is required when auth_type is 'header'" },
-					],
-				};
-			}
-			const result = await service.createMcpIntegration(params);
+			const { custom_headers, ...rest } = params;
+			const result = await service.createMcpIntegration({
+				...rest,
+				...(custom_headers ? { configurations: { custom_headers } } : {}),
+			});
 			return {
 				content: [
 					{
@@ -150,22 +134,24 @@ export function registerMcpIntegrationsTools(
 			description: z.string().optional().describe("New description"),
 			url: z.string().optional().describe("New URL endpoint"),
 			auth_type: z
-				.enum(["none", "bearer", "header"])
+				.enum(["oauth_auto", "headers", "none"])
 				.optional()
 				.describe("New authentication type"),
 			transport: z
-				.enum(["sse", "streamable-http", "stdio"])
+				.enum(["http", "sse"])
 				.optional()
 				.describe("New transport protocol"),
-			auth_token: z.string().optional().describe("New auth token"),
-			auth_header_name: z
-				.string()
+			custom_headers: z
+				.record(z.string(), z.string())
 				.optional()
-				.describe("New custom auth header name"),
+				.describe("New custom headers for authentication. Sent via configurations.custom_headers"),
 		},
 		async (params) => {
-			const { id, ...data } = params;
-			await service.updateMcpIntegration(id, data);
+			const { id, custom_headers, ...rest } = params;
+			await service.updateMcpIntegration(id, {
+				...rest,
+				...(custom_headers ? { configurations: { custom_headers } } : {}),
+			});
 			return {
 				content: [
 					{
@@ -268,7 +254,10 @@ export function registerMcpIntegrationsTools(
 			capabilities: z
 				.array(
 					z.object({
-						id: z.string().describe("Capability ID"),
+						name: z.string().describe("Capability name"),
+						type: z
+							.enum(["tool", "prompt", "resource"])
+							.describe("Capability type"),
 						enabled: z
 							.boolean()
 							.describe("Whether to enable the capability"),
@@ -332,7 +321,7 @@ export function registerMcpIntegrationsTools(
 			workspaces: z
 				.array(
 					z.object({
-						workspace_id: z.string().describe("Workspace ID"),
+						id: z.string().describe("Workspace ID"),
 						enabled: z
 							.boolean()
 							.describe("Whether workspace has access"),

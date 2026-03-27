@@ -68,8 +68,11 @@ export class CollectionsService extends BaseService {
 	async updateCollection(
 		collectionId: string,
 		data: UpdateCollectionRequest,
-	): Promise<Collection> {
-		return this.put<Collection>(`/collections/${collectionId}`, data);
+	): Promise<Record<string, never>> {
+		return this.put<Record<string, never>>(
+			`/collections/${collectionId}`,
+			data,
+		);
 	}
 
 	async deleteCollection(collectionId: string): Promise<{ success: boolean }> {

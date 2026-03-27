@@ -5,15 +5,21 @@
 
 export const PERIODIC_RESET_DEFAULT = "monthly" as const;
 
+export type PeriodicReset = "monthly" | "weekly";
+export type UsageLimitType = "cost" | "tokens";
+
 export interface UsageLimitsParams {
 	credit_limit?: number;
 	alert_threshold?: number;
+	type?: UsageLimitType;
+	periodic_reset?: PeriodicReset;
 }
 
 export interface UsageLimits {
+	type: UsageLimitType;
 	credit_limit?: number;
 	alert_threshold?: number;
-	periodic_reset: typeof PERIODIC_RESET_DEFAULT;
+	periodic_reset: PeriodicReset;
 }
 
 export interface RateLimitRpm {
@@ -22,7 +28,9 @@ export interface RateLimitRpm {
 	value: number;
 }
 
-export interface RateLimitWithUnit<U extends "rpm" | "rpd" = "rpm" | "rpd"> {
+export interface RateLimitWithUnit<
+	U extends "rpm" | "rph" | "rpd" = "rpm" | "rph" | "rpd",
+> {
 	type: "requests";
 	unit: U;
 	value: number;
@@ -41,7 +49,8 @@ export function buildUsageLimits(
 		params.alert_threshold !== undefined
 	) {
 		const limits: Partial<UsageLimits> = {
-			periodic_reset: PERIODIC_RESET_DEFAULT,
+			type: params.type ?? "cost",
+			periodic_reset: params.periodic_reset ?? PERIODIC_RESET_DEFAULT,
 		};
 		if (params.credit_limit !== undefined) {
 			limits.credit_limit = params.credit_limit;
@@ -75,9 +84,9 @@ export function buildRateLimitsRpm(
 
 /**
  * Builds a rate_limits array with a configurable unit.
- * Used by providers which support both rpm and rpd.
+ * Used by providers which support rpm, rph, and rpd.
  */
-export function buildRateLimits<U extends "rpm" | "rpd">(params: {
+export function buildRateLimits<U extends "rpm" | "rph" | "rpd">(params: {
 	value: number;
 	unit: U;
 }): RateLimitWithUnit<U>[] {

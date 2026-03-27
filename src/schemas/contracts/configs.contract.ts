@@ -76,12 +76,13 @@ export const GetConfigResponseSchema = z.object({
 	object: z.literal("config"),
 });
 
-// POST /configs
+// POST /configs — wrapped in { success, data }
 export const CreateConfigResponseSchema = z.object({
-	id: z.string(),
-	version_id: z.string(),
-	slug: z.string(),
-	object: z.literal("config"),
+	success: z.boolean(),
+	data: z.object({
+		id: z.string(),
+		version_id: z.string(),
+	}),
 });
 
 // GET /configs/:slug/versions

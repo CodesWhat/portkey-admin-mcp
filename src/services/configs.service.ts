@@ -67,11 +67,17 @@ export interface CreateConfigRequest {
 	workspace_id?: string;
 }
 
+export interface CreateConfigApiResponse {
+	success: boolean;
+	data: {
+		id: string;
+		version_id: string;
+	};
+}
+
 export interface CreateConfigResponse {
 	id: string;
 	version_id: string;
-	slug: string;
-	object: "config";
 }
 
 export interface UpdateConfigRequest {
@@ -105,7 +111,9 @@ export class ConfigsService extends BaseService {
 
 	// Phase 1: Config CRUD
 	async createConfig(data: CreateConfigRequest): Promise<CreateConfigResponse> {
-		return this.post<CreateConfigResponse>("/configs", data);
+		const response =
+			await this.post<CreateConfigApiResponse>("/configs", data);
+		return response.data;
 	}
 
 	async updateConfig(

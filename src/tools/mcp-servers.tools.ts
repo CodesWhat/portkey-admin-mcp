@@ -11,12 +11,12 @@ export function registerMcpServersTools(
 		"List all MCP servers in your Portkey organization with optional pagination and workspace filtering",
 		{
 			current_page: z
-				.number()
+				.coerce.number()
 				.positive()
 				.optional()
 				.describe("Page number for pagination"),
 			page_size: z
-				.number()
+				.coerce.number()
 				.int()
 				.positive()
 				.max(100)
@@ -211,7 +211,10 @@ export function registerMcpServersTools(
 			capabilities: z
 				.array(
 					z.object({
-						id: z.string().describe("Capability ID"),
+						name: z.string().describe("Capability name"),
+						type: z
+							.enum(["tool", "prompt", "resource"])
+							.describe("Capability type"),
 						enabled: z
 							.boolean()
 							.describe("Whether to enable the capability"),
@@ -284,7 +287,7 @@ export function registerMcpServersTools(
 		},
 		async (params) => {
 			await service.updateMcpServerUserAccess(params.id, {
-				users: params.users,
+				user_access: params.users,
 			});
 			return {
 				content: [

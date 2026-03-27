@@ -17,12 +17,12 @@ export function registerTracingTools(
 					"The trace ID to associate the feedback with. This links feedback to a specific request/generation.",
 				),
 			value: z
-				.number()
+				.coerce.number()
 				.describe(
 					"Feedback value/rating. Common patterns: 1 for positive (thumbs up), 0 for negative (thumbs down), or use a scale like 1-5.",
 				),
 			weight: z
-				.number()
+				.coerce.number()
 				.positive()
 				.optional()
 				.describe(
@@ -49,8 +49,8 @@ export function registerTracingTools(
 						text: JSON.stringify(
 							{
 								message: `Successfully created feedback for trace "${params.trace_id}"`,
-								success: result.success,
-								id: result.data?.id,
+								status: result.status,
+								feedback_ids: result.feedback_ids,
 							},
 							null,
 							2,
@@ -70,13 +70,13 @@ export function registerTracingTools(
 				.string()
 				.describe("The unique identifier of the feedback to update"),
 			value: z
-				.number()
+				.coerce.number()
 				.optional()
 				.describe(
 					"New feedback value/rating. Common patterns: 1 for positive, 0 for negative.",
 				),
 			weight: z
-				.number()
+				.coerce.number()
 				.positive()
 				.optional()
 				.describe("New weighting factor for the feedback"),
@@ -98,8 +98,8 @@ export function registerTracingTools(
 						text: JSON.stringify(
 							{
 								message: `Successfully updated feedback "${params.id}"`,
-								success: result.success,
-								id: result.data?.id,
+								status: result.status,
+								feedback_ids: result.feedback_ids,
 							},
 							null,
 							2,

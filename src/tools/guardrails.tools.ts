@@ -16,8 +16,8 @@ const guardrailCheckSchema = z.object({
 });
 
 const guardrailFeedbackSchema = z.object({
-	value: z.number().optional().describe("Feedback value"),
-	weight: z.number().optional().describe("Feedback weight"),
+	value: z.coerce.number().optional().describe("Feedback value"),
+	weight: z.coerce.number().optional().describe("Feedback weight"),
 	metadata: z
 		.record(z.string(), z.unknown())
 		.optional()
@@ -67,13 +67,13 @@ export function registerGuardrailsTools(
 				.optional()
 				.describe("Filter guardrails by organization ID"),
 			page_size: z
-				.number()
+				.coerce.number()
 				.min(1)
 				.max(1000)
 				.optional()
 				.describe("Number of items per page (1-1000, default: 100)"),
 			current_page: z
-				.number()
+				.coerce.number()
 				.positive()
 				.optional()
 				.describe("Page number for pagination"),

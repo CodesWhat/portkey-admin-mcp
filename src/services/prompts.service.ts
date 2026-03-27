@@ -17,6 +17,7 @@ import type {
 	PromptVersionListItem,
 	PublishPromptRequest,
 	PublishPromptResponse,
+	RawGetPromptResponse,
 	RenderPromptRequest,
 	RenderPromptResponse,
 	UpdatePromptRequest,
@@ -47,27 +48,52 @@ export class PromptsService extends BaseService {
 	}
 
 	async getPrompt(promptId: string): Promise<GetPromptResponse> {
-		return this.get<GetPromptResponse>(`/prompts/${promptId}`);
+		// API returns version fields flattened at top level, not nested under current_version
+		const raw = await this.get<RawGetPromptResponse>(
+			`/prompts/${promptId}`,
+		);
+		return {
+			id: raw.id,
+			name: raw.name,
+			slug: raw.slug,
+			collection_id: raw.collection_id,
+			workspace_id: raw.workspace_id,
+			created_at: raw.created_at,
+			last_updated_at: raw.last_updated_at,
+			current_version: raw.prompt_version_id
+				? {
+						id: raw.prompt_version_id,
+						version_number: raw.prompt_version!,
+						version_description: raw.prompt_version_description,
+						string: raw.string ?? "",
+						parameters: raw.parameters ?? {},
+						model: raw.model,
+						virtual_key: raw.virtual_key,
+						functions: raw.functions ?? undefined,
+						tools: raw.tools ?? undefined,
+						tool_choice: raw.tool_choice ?? undefined,
+						template_metadata: raw.template_metadata,
+						created_at: raw.created_at,
+					}
+				: undefined,
+			// Flat response doesn't include version history — use list_prompt_versions
+			versions: [],
+			object: "prompt",
+		};
 	}
 
 	async updatePrompt(
 		promptId: string,
 		data: UpdatePromptRequest,
 	): Promise<UpdatePromptResponse> {
-		// Portkey API inconsistencies between POST /prompts and PUT /prompts/:id:
-		//   • POST accepts "string"            → PUT expects "prompt_template"
-		//   • POST accepts "template_metadata"  → PUT expects "prompt_metadata"
-		// We keep the POST-style names in our public interface for consistency
-		// and remap here before sending to the API.
-		const { template_metadata, string: promptTemplate, ...rest } = data;
+		// PUT /prompts/:id accepts "string" (same as POST), NOT "prompt_template".
+		// "template_metadata" must be remapped to "prompt_metadata".
+		const { template_metadata, ...rest } = data;
 		const body: Record<string, unknown> = {
 			...rest,
 			// Enable partial updates so missing version fields are backfilled from latest version
 			patch: true,
 		};
-		if (promptTemplate !== undefined) {
-			body.prompt_template = promptTemplate;
-		}
 		if (template_metadata !== undefined) {
 			body.prompt_metadata = template_metadata;
 		}
@@ -175,6 +201,11 @@ export class PromptsService extends BaseService {
 		if (existingPrompt) {
 			const currentPrompt = await this.getPrompt(existingPrompt.id);
 			const currentVersion = currentPrompt.current_version;
+			if (!currentVersion) {
+				throw new Error(
+					`Prompt "${data.name}" exists but has no active version`,
+				);
+			}
 
 			const templateChanged =
 				JSON.stringify(currentVersion.string) !== JSON.stringify(data.string);
@@ -279,6 +310,11 @@ export class PromptsService extends BaseService {
 	): Promise<PromotePromptResponse> {
 		const sourcePrompt = await this.getPrompt(data.source_prompt_id);
 		const sourceVersion = sourcePrompt.current_version;
+		if (!sourceVersion) {
+			throw new Error(
+				`Source prompt has no active version to promote`,
+			);
+		}
 
 		const targetName =
 			data.target_name ||

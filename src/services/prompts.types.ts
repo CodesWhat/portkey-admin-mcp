@@ -114,6 +114,31 @@ export interface PromptVersion {
 	created_at: string;
 }
 
+// Raw API response from GET /prompts/:id — version fields are flattened at top level
+export interface RawGetPromptResponse {
+	id: string;
+	name: string;
+	slug: string;
+	collection_id: string;
+	workspace_id?: string;
+	created_at: string;
+	last_updated_at: string;
+	status?: string;
+	model?: string;
+	string?: string;
+	prompt_version_id?: string;
+	prompt_version?: number;
+	prompt_version_description?: string;
+	prompt_version_status?: string;
+	parameters?: Record<string, unknown>;
+	functions?: PromptFunctionDefinition[] | null;
+	tools?: PromptToolDefinition[] | null;
+	tool_choice?: ToolChoice | null;
+	template_metadata?: PromptTemplateMetadata;
+	virtual_key?: string;
+	object: "prompt";
+}
+
 export interface GetPromptResponse {
 	id: string;
 	name: string;
@@ -122,7 +147,7 @@ export interface GetPromptResponse {
 	workspace_id?: string;
 	created_at: string;
 	last_updated_at: string;
-	current_version: PromptVersion;
+	current_version?: PromptVersion;
 	versions: PromptVersion[];
 	object: "prompt";
 }
@@ -285,7 +310,7 @@ export type PublishPromptResponse = Record<string, never>;
 export interface PromptVersionListItem {
 	id: string;
 	prompt_id: string;
-	prompt_template: string;
+	prompt_template: string | { string: string };
 	prompt_version: number;
 	prompt_description?: string;
 	label_id?: string;

@@ -114,18 +114,18 @@ export function registerConfigsTools(
 				.optional()
 				.describe("Cache mode: 'simple' or 'semantic'"),
 			cache_max_age: z
-				.number()
+				.coerce.number()
 				.positive()
 				.optional()
 				.describe("Cache max age in seconds"),
 			retry_attempts: z
-				.number()
+				.coerce.number()
 				.positive()
 				.max(5)
 				.optional()
 				.describe("Number of retry attempts (1-5)"),
 			retry_on_status_codes: z
-				.array(z.number())
+				.array(z.coerce.number())
 				.optional()
 				.describe("HTTP status codes to retry on (e.g., [429, 500, 502, 503])"),
 			strategy_mode: z
@@ -206,7 +206,6 @@ export function registerConfigsTools(
 							{
 								message: `Successfully created configuration "${params.name}"`,
 								id: result.id,
-								slug: result.slug,
 								version_id: result.version_id,
 							},
 							null,
@@ -234,18 +233,18 @@ export function registerConfigsTools(
 				.optional()
 				.describe("Cache mode: 'simple' or 'semantic'"),
 			cache_max_age: z
-				.number()
+				.coerce.number()
 				.positive()
 				.optional()
 				.describe("Cache max age in seconds"),
 			retry_attempts: z
-				.number()
+				.coerce.number()
 				.positive()
 				.max(5)
 				.optional()
 				.describe("Number of retry attempts (1-5)"),
 			retry_on_status_codes: z
-				.array(z.number())
+				.array(z.coerce.number())
 				.optional()
 				.describe("HTTP status codes to retry on"),
 			strategy_mode: z

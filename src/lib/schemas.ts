@@ -5,8 +5,8 @@ import { z } from "zod";
 
 // ===== Pagination Schemas =====
 export const PaginationParamsSchema = z.object({
-	current_page: z.number().positive().optional(),
-	page_size: z.number().positive().max(100).optional(),
+	current_page: z.coerce.number().positive().optional(),
+	page_size: z.coerce.number().positive().max(100).optional(),
 });
 
 export type PaginationParams = z.infer<typeof PaginationParamsSchema>;
@@ -34,26 +34,26 @@ export const PromptToolSchema = z.object({
 
 export const HyperparametersSchema = z.object({
 	max_tokens: z
-		.number()
+		.coerce.number()
 		.positive()
 		.optional()
 		.describe("Maximum tokens to generate"),
 	temperature: z
-		.number()
+		.coerce.number()
 		.min(0)
 		.max(2)
 		.optional()
 		.describe("Sampling temperature (0-2)"),
-	top_p: z.number().min(0).max(1).optional().describe("Top-p sampling (0-1)"),
-	top_k: z.number().positive().optional().describe("Top-k sampling"),
+	top_p: z.coerce.number().min(0).max(1).optional().describe("Top-p sampling (0-1)"),
+	top_k: z.coerce.number().positive().optional().describe("Top-k sampling"),
 	presence_penalty: z
-		.number()
+		.coerce.number()
 		.min(-2)
 		.max(2)
 		.optional()
 		.describe("Presence penalty (-2 to 2)"),
 	frequency_penalty: z
-		.number()
+		.coerce.number()
 		.min(-2)
 		.max(2)
 		.optional()

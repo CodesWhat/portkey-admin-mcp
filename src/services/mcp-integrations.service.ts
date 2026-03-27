@@ -42,8 +42,9 @@ export interface CreateMcpIntegrationRequest {
 	slug?: string;
 	description?: string;
 	workspace_id?: string;
-	auth_token?: string;
-	auth_header_name?: string;
+	configurations?: {
+		custom_headers?: Record<string, string>;
+	};
 }
 
 export interface CreateMcpIntegrationResponse {
@@ -57,16 +58,17 @@ export interface UpdateMcpIntegrationRequest {
 	url?: string;
 	auth_type?: string;
 	transport?: string;
-	auth_token?: string;
-	auth_header_name?: string;
+	configurations?: {
+		custom_headers?: Record<string, string>;
+	};
 }
 
 // Sub-resource: Capabilities
 export interface McpIntegrationCapability {
-	id: string;
 	name: string;
+	type: "tool" | "prompt" | "resource" | "resource_template";
 	enabled: boolean;
-	type?: string;
+	description?: string | null;
 	created_at?: string;
 	last_updated_at?: string | null;
 }
@@ -88,7 +90,8 @@ export interface ListMcpIntegrationCapabilitiesResponse {
 
 export interface UpdateMcpIntegrationCapabilitiesRequest {
 	capabilities: Array<{
-		id: string;
+		name: string;
+		type: "tool" | "prompt" | "resource";
 		enabled: boolean;
 	}>;
 }
@@ -110,7 +113,7 @@ export interface ListMcpIntegrationWorkspacesResponse {
 
 export interface UpdateMcpIntegrationWorkspacesRequest {
 	workspaces: Array<{
-		workspace_id: string;
+		id: string;
 		enabled: boolean;
 	}>;
 }

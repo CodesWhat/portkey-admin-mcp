@@ -249,7 +249,7 @@ export function registerPartialsTools(
 		{
 			prompt_partial_id: z.string().describe("Prompt partial ID or slug"),
 			version: z
-				.number()
+				.coerce.number()
 				.positive()
 				.describe("Version number to publish as default"),
 		},

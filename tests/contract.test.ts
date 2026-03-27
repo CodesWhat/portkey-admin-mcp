@@ -81,10 +81,11 @@ describe("Contract: Configs API", () => {
 
 	it("CreateConfigResponse schema validates expected shape", () => {
 		const synthetic = {
-			id: "cfg_test123",
-			version_id: "ver_test456",
-			slug: "test-config-abc",
-			object: "config" as const,
+			success: true,
+			data: {
+				id: "cfg_test123",
+				version_id: "ver_test456",
+			},
 		};
 		const result = CreateConfigResponseSchema.safeParse(synthetic);
 		assert.ok(result.success, "CreateConfigResponse should parse");
@@ -193,7 +194,7 @@ describe("Contract: Prompts API", () => {
 		assert.ok(result.success, "UpdatePromptResponse should parse");
 	});
 
-	it("ListPromptVersionsResponse schema validates expected shape", () => {
+	it("ListPromptVersionsResponse schema validates plain string template", () => {
 		const synthetic = {
 			object: "list" as const,
 			total: 1,
@@ -211,7 +212,28 @@ describe("Contract: Prompts API", () => {
 			],
 		};
 		const result = ListPromptVersionsResponseSchema.safeParse(synthetic);
-		assert.ok(result.success, "ListPromptVersionsResponse should parse");
+		assert.ok(result.success, "ListPromptVersionsResponse should parse plain string template");
+	});
+
+	it("ListPromptVersionsResponse schema validates object-wrapped template", () => {
+		const synthetic = {
+			object: "list" as const,
+			total: 1,
+			data: [
+				{
+					id: "pv_001",
+					prompt_id: "pp_test123",
+					prompt_template: { string: '[{"role":"system","content":[{"type":"text","text":"Hello"}]}]' },
+					prompt_version: 1,
+					prompt_description: "Multi-message version",
+					created_at: "2025-12-01T10:00:00.000Z",
+					status: "active",
+					object: "prompt" as const,
+				},
+			],
+		};
+		const result = ListPromptVersionsResponseSchema.safeParse(synthetic);
+		assert.ok(result.success, "ListPromptVersionsResponse should parse object-wrapped template");
 	});
 });
 

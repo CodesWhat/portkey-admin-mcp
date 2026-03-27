@@ -13,12 +13,12 @@ export function registerProvidersTools(
 		"List all providers in your Portkey organization with optional pagination and workspace filtering",
 		{
 			current_page: z
-				.number()
+				.coerce.number()
 				.positive()
 				.optional()
 				.describe("Page number for pagination"),
 			page_size: z
-				.number()
+				.coerce.number()
 				.int()
 				.positive()
 				.max(100)
@@ -107,26 +107,38 @@ export function registerProvidersTools(
 				.optional()
 				.describe("Optional note or description for the provider"),
 			credit_limit: z
-				.number()
+				.coerce.number()
 				.positive()
 				.optional()
 				.describe("Credit limit for usage"),
 			alert_threshold: z
-				.number()
+				.coerce.number()
 				.min(0)
 				.max(100)
 				.optional()
 				.describe("Alert threshold percentage (0-100)"),
+			usage_limit_type: z
+				.enum(["cost", "tokens"])
+				.optional()
+				.describe(
+					"Type of usage limit: 'cost' (monetary) or 'tokens' (token count). Defaults to 'cost'.",
+				),
+			periodic_reset: z
+				.enum(["monthly", "weekly"])
+				.optional()
+				.describe(
+					"Period for resetting usage limits: 'monthly' or 'weekly'. Defaults to 'monthly'.",
+				),
 			rate_limit_value: z
-				.number()
+				.coerce.number()
 				.positive()
 				.optional()
 				.describe("Must be provided together with rate_limit_unit."),
 			rate_limit_unit: z
-				.enum(["rpm", "rpd"])
+				.enum(["rpm", "rph", "rpd"])
 				.optional()
 				.describe(
-					"Must be provided together with rate_limit_value. Values: 'rpm' (requests/min) or 'rpd' (requests/day).",
+					"Must be provided together with rate_limit_value. Values: 'rpm' (requests/min), 'rph' (requests/hour), or 'rpd' (requests/day).",
 				),
 			expires_at: z
 				.string()
@@ -143,6 +155,8 @@ export function registerProvidersTools(
 				usage_limits: buildUsageLimits({
 					credit_limit: params.credit_limit,
 					alert_threshold: params.alert_threshold,
+					type: params.usage_limit_type,
+					periodic_reset: params.periodic_reset,
 				}),
 				rate_limits:
 					params.rate_limit_value !== undefined &&
@@ -246,26 +260,38 @@ export function registerProvidersTools(
 				.optional()
 				.describe("New note or description for the provider"),
 			credit_limit: z
-				.number()
+				.coerce.number()
 				.positive()
 				.optional()
 				.describe("New credit limit for usage"),
 			alert_threshold: z
-				.number()
+				.coerce.number()
 				.min(0)
 				.max(100)
 				.optional()
 				.describe("New alert threshold percentage (0-100)"),
+			usage_limit_type: z
+				.enum(["cost", "tokens"])
+				.optional()
+				.describe(
+					"Type of usage limit: 'cost' (monetary) or 'tokens' (token count). Defaults to 'cost'.",
+				),
+			periodic_reset: z
+				.enum(["monthly", "weekly"])
+				.optional()
+				.describe(
+					"Period for resetting usage limits: 'monthly' or 'weekly'. Defaults to 'monthly'.",
+				),
 			rate_limit_value: z
-				.number()
+				.coerce.number()
 				.positive()
 				.optional()
 				.describe("New rate limit value"),
 			rate_limit_unit: z
-				.enum(["rpm", "rpd"])
+				.enum(["rpm", "rph", "rpd"])
 				.optional()
 				.describe(
-					"Rate limit unit: 'rpm' (requests per minute) or 'rpd' (requests per day)",
+					"Rate limit unit: 'rpm' (requests per minute), 'rph' (requests per hour), or 'rpd' (requests per day)",
 				),
 			expires_at: z
 				.string()
@@ -285,6 +311,8 @@ export function registerProvidersTools(
 					usage_limits: buildUsageLimits({
 						credit_limit: params.credit_limit,
 						alert_threshold: params.alert_threshold,
+						type: params.usage_limit_type,
+						periodic_reset: params.periodic_reset,
 					}),
 					rate_limits:
 						params.rate_limit_value !== undefined &&

@@ -1,7 +1,7 @@
 /**
  * Unit tests for isolated logic paths:
  * - parseErrorResponse: body.error / body.data / top-level fallback
- * - updatePrompt: string → prompt_template & template_metadata → prompt_metadata remaps + patch flag
+ * - updatePrompt: string stays as string & template_metadata → prompt_metadata remap + patch flag
  * - template unwrapping & format detection in get_prompt
  */
 import { describe, it } from "node:test";
@@ -58,11 +58,8 @@ function buildUpdateBody(data: {
 	model?: string;
 	version_description?: string;
 }): Record<string, unknown> {
-	const { template_metadata, string: promptTemplate, ...rest } = data;
+	const { template_metadata, ...rest } = data;
 	const body: Record<string, unknown> = { ...rest, patch: true };
-	if (promptTemplate !== undefined) {
-		body.prompt_template = promptTemplate;
-	}
 	if (template_metadata !== undefined) {
 		body.prompt_metadata = template_metadata;
 	}
@@ -162,15 +159,15 @@ describe("updatePrompt body building", () => {
 		assert.equal(body.patch, true);
 	});
 
-	it("remaps string to prompt_template", () => {
+	it("keeps string field as-is (not remapped)", () => {
 		const body = buildUpdateBody({ string: "hello {{name}}" });
-		assert.equal(body.prompt_template, "hello {{name}}");
-		assert.equal(body.string, undefined);
+		assert.equal(body.string, "hello {{name}}");
+		assert.equal("prompt_template" in body, false);
 	});
 
-	it("omits prompt_template when string is not provided", () => {
+	it("omits string when not provided", () => {
 		const body = buildUpdateBody({ model: "gpt-4" });
-		assert.equal("prompt_template" in body, false);
+		assert.equal("string" in body, false);
 	});
 
 	it("remaps template_metadata to prompt_metadata", () => {
@@ -185,7 +182,7 @@ describe("updatePrompt body building", () => {
 	it("omits prompt_metadata when template_metadata is not provided", () => {
 		const body = buildUpdateBody({ string: "test", model: "gpt-4" });
 		assert.equal("prompt_metadata" in body, false);
-		assert.equal(body.prompt_template, "test");
+		assert.equal(body.string, "test");
 		assert.equal(body.model, "gpt-4");
 	});
 
@@ -195,22 +192,21 @@ describe("updatePrompt body building", () => {
 			model: "claude-3-opus",
 			version_description: "v2",
 		});
-		assert.equal(body.prompt_template, "new template");
+		assert.equal(body.string, "new template");
 		assert.equal(body.model, "claude-3-opus");
 		assert.equal(body.version_description, "v2");
 	});
 
-	it("remaps both string and template_metadata together", () => {
+	it("keeps string and remaps template_metadata together", () => {
 		const body = buildUpdateBody({
 			string: '[{"role":"system","content":"Be helpful"}]',
 			template_metadata: { env: "dev" },
 		});
 		assert.equal(
-			body.prompt_template,
+			body.string,
 			'[{"role":"system","content":"Be helpful"}]',
 		);
 		assert.deepEqual(body.prompt_metadata, { env: "dev" });
-		assert.equal(body.string, undefined);
 		assert.equal(body.template_metadata, undefined);
 	});
 });

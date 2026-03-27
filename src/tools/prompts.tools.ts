@@ -168,12 +168,12 @@ Most production prompts use format #2 (multi-message). Use get_prompt to see exa
 			workspace_id: z.string().optional().describe("Filter by workspace ID"),
 			search: z.string().optional().describe("Search prompts by name"),
 			current_page: z
-				.number()
+				.coerce.number()
 				.positive()
 				.optional()
 				.describe("Page number for pagination"),
 			page_size: z
-				.number()
+				.coerce.number()
 				.positive()
 				.max(100)
 				.optional()
@@ -430,7 +430,7 @@ Use get_prompt first to see the current format, then pass the same format back. 
 		{
 			prompt_id: z.string().describe("Prompt ID or slug to publish"),
 			version: z
-				.number()
+				.coerce.number()
 				.positive()
 				.describe("Version number to publish as the default"),
 		},
@@ -482,11 +482,21 @@ Use get_prompt first to see the current format, then pass the same format back. 
 									status: v.status,
 									label_id: v.label_id,
 									created_at: v.created_at,
-									template_preview:
-										typeof v.prompt_template === "string"
-											? v.prompt_template.substring(0, 200) +
-												(v.prompt_template.length > 200 ? "..." : "")
-											: "[object]",
+									template_preview: (() => {
+									const tmpl = v.prompt_template;
+									const str =
+										typeof tmpl === "string"
+											? tmpl
+											: typeof tmpl === "object" &&
+													tmpl !== null &&
+													"string" in tmpl
+												? (tmpl as { string: string }).string
+												: JSON.stringify(tmpl);
+									return (
+										str.substring(0, 200) +
+										(str.length > 200 ? "..." : "")
+									);
+								})(),
 								})),
 							},
 							null,
@@ -505,7 +515,7 @@ Use get_prompt first to see the current format, then pass the same format back. 
 		{
 			prompt_id: z.string().describe("Prompt ID or slug to render"),
 			variables: z
-				.record(z.string(), z.union([z.string(), z.number(), z.boolean()]))
+				.record(z.string(), z.union([z.string(), z.coerce.number(), z.boolean()]))
 				.describe("Variable values to substitute into the template"),
 			hyperparameters: HyperparametersSchema.optional().describe(
 				"Override default hyperparameters",
@@ -548,7 +558,7 @@ Use get_prompt first to see the current format, then pass the same format back. 
 		{
 			prompt_id: z.string().describe("Prompt ID or slug to execute"),
 			variables: z
-				.record(z.string(), z.union([z.string(), z.number(), z.boolean()]))
+				.record(z.string(), z.union([z.string(), z.coerce.number(), z.boolean()]))
 				.describe("Variable values to substitute into the template"),
 			metadata: BillingMetadataSchema.describe(
 				"Billing metadata - client_id, app, env are REQUIRED for cost attribution",

@@ -9,10 +9,9 @@ export interface CreateFeedbackRequest {
 }
 
 export interface CreateFeedbackResponse {
-	success: boolean;
-	data: {
-		id: string;
-	};
+	status: "success" | "failure";
+	message: string;
+	feedback_ids: string[];
 }
 
 export interface UpdateFeedbackRequest {
@@ -22,10 +21,9 @@ export interface UpdateFeedbackRequest {
 }
 
 export interface UpdateFeedbackResponse {
-	success: boolean;
-	data: {
-		id: string;
-	};
+	status: "success" | "failure";
+	message: string;
+	feedback_ids: string[];
 }
 
 // Trace Types

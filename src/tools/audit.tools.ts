@@ -48,12 +48,12 @@ export function registerAuditTools(
 					"End of time range filter (ISO 8601 format, e.g., '2024-01-31T23:59:59Z')",
 				),
 			current_page: z
-				.number()
+				.coerce.number()
 				.positive()
 				.optional()
 				.describe("Page number for pagination (starts at 1)"),
 			page_size: z
-				.number()
+				.coerce.number()
 				.positive()
 				.max(100)
 				.optional()
@@ -77,7 +77,6 @@ export function registerAuditTools(
 						type: "text",
 						text: JSON.stringify(
 							{
-								success: result.success,
 								total: result.total,
 								current_page: result.current_page,
 								page_size: result.page_size,

@@ -27,6 +27,7 @@ export interface BaseAnalyticsParams {
 	ai_org_model?: string;
 	trace_id?: string;
 	span_id?: string;
+	prompt_slug?: string;
 }
 
 /**

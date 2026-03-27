@@ -19,42 +19,42 @@ const baseAnalyticsSchema = {
 			"End time for the analytics period (ISO8601 format, e.g., '2024-02-01T00:00:00Z')",
 		),
 	total_units_min: z
-		.number()
+		.coerce.number()
 		.positive()
 		.optional()
 		.describe("Minimum number of total tokens to filter by"),
 	total_units_max: z
-		.number()
+		.coerce.number()
 		.positive()
 		.optional()
 		.describe("Maximum number of total tokens to filter by"),
 	cost_min: z
-		.number()
+		.coerce.number()
 		.positive()
 		.optional()
 		.describe("Minimum cost in cents to filter by"),
 	cost_max: z
-		.number()
+		.coerce.number()
 		.positive()
 		.optional()
 		.describe("Maximum cost in cents to filter by"),
 	prompt_token_min: z
-		.number()
+		.coerce.number()
 		.positive()
 		.optional()
 		.describe("Minimum number of prompt tokens"),
 	prompt_token_max: z
-		.number()
+		.coerce.number()
 		.positive()
 		.optional()
 		.describe("Maximum number of prompt tokens"),
 	completion_token_min: z
-		.number()
+		.coerce.number()
 		.positive()
 		.optional()
 		.describe("Minimum number of completion tokens"),
 	completion_token_max: z
-		.number()
+		.coerce.number()
 		.positive()
 		.optional()
 		.describe("Maximum number of completion tokens"),
@@ -63,13 +63,13 @@ const baseAnalyticsSchema = {
 		.optional()
 		.describe("Filter by specific HTTP status codes (comma-separated)"),
 	weighted_feedback_min: z
-		.number()
+		.coerce.number()
 		.min(-10)
 		.max(10)
 		.optional()
 		.describe("Minimum weighted feedback score (-10 to 10)"),
 	weighted_feedback_max: z
-		.number()
+		.coerce.number()
 		.min(-10)
 		.max(10)
 		.optional()
@@ -108,6 +108,10 @@ const baseAnalyticsSchema = {
 		.string()
 		.optional()
 		.describe("Filter by span IDs (comma-separated)"),
+	prompt_slug: z
+		.string()
+		.optional()
+		.describe("Filter by prompt slug"),
 };
 
 export function registerAnalyticsTools(
@@ -519,12 +523,12 @@ export function registerAnalyticsTools(
 	const paginatedAnalyticsSchema = {
 		...baseAnalyticsSchema,
 		current_page: z
-			.number()
+			.coerce.number()
 			.positive()
 			.optional()
 			.describe("Page number for pagination"),
 		page_size: z
-			.number()
+			.coerce.number()
 			.int()
 			.positive()
 			.max(100)

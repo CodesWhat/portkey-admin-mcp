@@ -108,22 +108,22 @@ export function registerUsersTools(
 					"End time for the analytics period (ISO8601 format, e.g., '2024-02-01T00:00:00Z')",
 				),
 			total_units_min: z
-				.number()
+				.coerce.number()
 				.positive()
 				.optional()
 				.describe("Minimum number of total tokens to filter by"),
 			total_units_max: z
-				.number()
+				.coerce.number()
 				.positive()
 				.optional()
 				.describe("Maximum number of total tokens to filter by"),
 			cost_min: z
-				.number()
+				.coerce.number()
 				.positive()
 				.optional()
 				.describe("Minimum cost in cents to filter by"),
 			cost_max: z
-				.number()
+				.coerce.number()
 				.positive()
 				.optional()
 				.describe("Maximum cost in cents to filter by"),
@@ -136,7 +136,7 @@ export function registerUsersTools(
 				.optional()
 				.describe("Filter by specific virtual key slugs (comma-separated)"),
 			page_size: z
-				.number()
+				.coerce.number()
 				.positive()
 				.optional()
 				.describe("Number of results per page (for pagination)"),

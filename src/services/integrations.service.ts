@@ -22,9 +22,10 @@ export interface IntegrationConfigurations {
 }
 
 export interface IntegrationUsageLimits {
+	type?: "cost" | "tokens";
 	credit_limit?: number;
 	alert_threshold?: number;
-	periodic_reset?: "monthly";
+	periodic_reset?: "monthly" | "weekly";
 }
 
 export interface IntegrationRateLimits {
@@ -115,10 +116,10 @@ export interface ListIntegrationModelsParams {
 
 export interface UpdateIntegrationModelsRequest {
 	models: Array<{
-		model_id: string;
+		slug: string;
 		model_name?: string;
 		enabled: boolean;
-		custom?: boolean;
+		is_custom?: boolean;
 	}>;
 }
 
@@ -147,9 +148,9 @@ export interface ListIntegrationWorkspacesParams {
 
 export interface UpdateIntegrationWorkspacesRequest {
 	workspaces: Array<{
-		workspace_id: string;
+		id: string;
 		enabled: boolean;
-		usage_limits?: IntegrationUsageLimits | null;
+		usage_limits?: IntegrationUsageLimits[] | null;
 		rate_limits?: IntegrationRateLimits[] | null;
 	}>;
 }
@@ -220,9 +221,11 @@ export class IntegrationsService extends BaseService {
 	// Delete a specific model from an integration
 	async deleteIntegrationModel(
 		slug: string,
-		modelId: string,
+		modelSlug: string,
 	): Promise<{ success: boolean }> {
-		await this.delete(`/integrations/${slug}/models/${modelId}`);
+		await this.delete(
+			`/integrations/${slug}/models?slugs=${encodeURIComponent(modelSlug)}`,
+		);
 		return { success: true };
 	}
 
