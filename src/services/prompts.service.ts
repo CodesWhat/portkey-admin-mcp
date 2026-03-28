@@ -63,7 +63,7 @@ export class PromptsService extends BaseService {
 			current_version: raw.prompt_version_id
 				? {
 						id: raw.prompt_version_id,
-						version_number: raw.prompt_version!,
+						version_number: raw.prompt_version ?? 0,
 						version_description: raw.prompt_version_description,
 						string: raw.string ?? "",
 						parameters: raw.parameters ?? {},

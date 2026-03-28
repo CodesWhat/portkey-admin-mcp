@@ -1,8 +1,8 @@
 {
 	"type": "module",
 	"bin": {
-		"portkey-admin-mcp": "./build/index.js",
-		"portkey-admin-mcp-http": "./build/server.js"
+		"portkey-admin-mcp": "build/index.js",
+		"portkey-admin-mcp-http": "build/server.js"
 	},
 	"scripts": {
 		"build": "esbuild src/index.ts src/server.ts --bundle --platform=node --target=node24 --format=esm --outdir=build --packages=external && chmod 755 build/index.js build/server.js",
