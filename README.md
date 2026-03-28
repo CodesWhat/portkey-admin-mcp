@@ -2,17 +2,21 @@
 
 # Portkey Admin MCP Server
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://readme-typing-svg.demolab.com?font=Fira+Code&pause=1000&color=FFFFFF&center=true&vCenter=true&width=500&lines=151+tools+for+Portkey+Admin+API;Prompts%2C+Configs%2C+Analytics;Full+MCP+Protocol+1.0+Server">
+  <source media="(prefers-color-scheme: light)" srcset="https://readme-typing-svg.demolab.com?font=Fira+Code&pause=1000&color=000000&center=true&vCenter=true&width=500&lines=151+tools+for+Portkey+Admin+API;Prompts%2C+Configs%2C+Analytics;Full+MCP+Protocol+1.0+Server">
+  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&pause=1000&color=000000&center=true&vCenter=true&width=500&lines=151+tools+for+Portkey+Admin+API;Prompts%2C+Configs%2C+Analytics;Full+MCP+Protocol+1.0+Server" alt="Typing SVG">
+</picture>
+
 MCP server for the [Portkey](https://portkey.ai/) Admin API. Manage prompts, configs, analytics, API keys, and more from any MCP client.
 
+[![npm](https://img.shields.io/npm/v/portkey-admin-mcp.svg)](https://www.npmjs.com/package/portkey-admin-mcp)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)](https://nodejs.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+> **Beta** — Under active development. Most tools work, some edge cases in limits and MCP integrations may have issues. [Report bugs.](https://github.com/s-b-e-n-s-o-n/portkey-admin-mcp/issues)
+
 </div>
-
-<p align="center">
-  <a href="https://www.npmjs.com/package/portkey-admin-mcp"><img src="https://img.shields.io/npm/v/portkey-admin-mcp.svg" alt="npm"></a>
-  <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg" alt="Node.js"></a>
-  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
-</p>
-
-> **Beta** — This server is under active development. Most tools work, but some edge cases in limits, MCP integrations, and analytics may have issues. [Report bugs here.](https://github.com/SYPartners/portkey-admin-mcp/issues)
 
 ---
 
@@ -54,7 +58,7 @@ PORTKEY_API_KEY=your_key npx -y portkey-admin-mcp
 <summary><strong>Build from source</strong></summary>
 
 ```bash
-git clone https://github.com/SYPartners/portkey-admin-mcp.git
+git clone https://github.com/s-b-e-n-s-o-n/portkey-admin-mcp.git
 cd portkey-admin-mcp
 npm install && npm run build
 ```
