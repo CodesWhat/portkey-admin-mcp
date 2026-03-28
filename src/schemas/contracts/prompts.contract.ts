@@ -70,7 +70,7 @@ export const GetPromptResponseSchema = z.object({
 	created_at: z.string(),
 	last_updated_at: z.string(),
 	current_version: PromptVersionSchema.optional(),
-	versions: z.array(PromptVersionSchema),
+	versions: z.array(PromptVersionSchema).optional().default([]),
 	object: z.literal("prompt"),
 });
 

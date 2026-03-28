@@ -80,6 +80,12 @@ export function registerMcpIntegrationsTools(
 				),
 		},
 		async (params) => {
+			if (params.auth_type === "headers" && (!params.custom_headers || Object.keys(params.custom_headers).length === 0)) {
+				return {
+					content: [{ type: "text" as const, text: "Error: custom_headers must be provided when auth_type is 'headers'" }],
+					isError: true,
+				};
+			}
 			const { custom_headers, ...rest } = params;
 			const result = await service.createMcpIntegration({
 				...rest,

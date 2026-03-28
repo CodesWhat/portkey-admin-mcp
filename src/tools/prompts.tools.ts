@@ -830,6 +830,12 @@ Use get_prompt first to see the current format, then pass the same format back. 
 				),
 		},
 		async (params) => {
+			if (params.label_id === undefined) {
+				return {
+					content: [{ type: "text" as const, text: "Error: label_id is required — pass a label ID to assign, or null to remove the label" }],
+					isError: true,
+				};
+			}
 			await service.updatePromptVersion(params.prompt_id, params.version_id, {
 				label_id: params.label_id,
 			});

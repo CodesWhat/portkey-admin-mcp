@@ -172,6 +172,24 @@ describe("Contract: Prompts API", () => {
 		);
 	});
 
+	it("GetPromptResponse schema defaults versions to [] when omitted", () => {
+		const synthetic = {
+			id: "pp_test123",
+			name: "test-prompt",
+			slug: "test-prompt-abc",
+			collection_id: "coll_001",
+			created_at: "2025-12-01T10:00:00.000Z",
+			last_updated_at: "2025-12-15T14:00:00.000Z",
+			object: "prompt" as const,
+		};
+		const result = GetPromptResponseSchema.safeParse(synthetic);
+		assert.ok(
+			result.success,
+			`Schema validation failed: ${JSON.stringify(result.error?.issues, null, 2)}`,
+		);
+		assert.deepStrictEqual(result.data.versions, []);
+	});
+
 	it("CreatePromptResponse schema validates expected shape", () => {
 		const synthetic = {
 			id: "pp_test123",
