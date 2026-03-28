@@ -10,9 +10,9 @@
 
 MCP server for the [Portkey](https://portkey.ai/) Admin API. Manage prompts, configs, analytics, API keys, and more from any MCP client.
 
-[![npm](https://img.shields.io/npm/v/portkey-admin-mcp.svg)](https://www.npmjs.com/package/portkey-admin-mcp)
-[![Node.js](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)](https://nodejs.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+<a href="https://www.npmjs.com/package/portkey-admin-mcp"><img src="https://img.shields.io/npm/v/portkey-admin-mcp.svg" alt="npm"></a>
+<a href="https://nodejs.org/"><img src="https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg" alt="Node.js"></a>
+<a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
 
 > **Beta** — Under active development. Most tools work, some edge cases in limits and MCP integrations may have issues. [Report bugs.](https://github.com/s-b-e-n-s-o-n/portkey-admin-mcp/issues)
 
@@ -216,6 +216,10 @@ npm run ci            # full pipeline (lint + typecheck + test + build + e2e + v
 
 ---
 
-## License
+<div align="center">
 
-MIT -- Inspired by [r-huijts/portkey-admin-mcp-server](https://github.com/r-huijts/portkey-admin-mcp-server)
+**MIT License** · Inspired by [r-huijts/portkey-admin-mcp-server](https://github.com/r-huijts/portkey-admin-mcp-server)
+
+<a href="#portkey-admin-mcp-server">↑ Back to top</a>
+
+</div>
