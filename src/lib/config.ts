@@ -21,7 +21,7 @@ export interface ServerConfig {
 	protocol: "http" | "https";
 	/** Port number for HTTP transport (default: 3000) */
 	port: number;
-	/** Host address for HTTP transport (default: 0.0.0.0) */
+	/** Host address for HTTP transport (default: 127.0.0.1) */
 	host: string;
 	/** Maximum number of active stateful MCP sessions */
 	maxSessions: number;
@@ -88,7 +88,7 @@ export function getServerConfig(): ServerConfig {
 		}
 		host = trimmed;
 	} else {
-		host = "0.0.0.0";
+		host = "127.0.0.1";
 	}
 
 	const sessionTimeoutStr = (

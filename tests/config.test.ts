@@ -31,10 +31,18 @@ describe("getServerConfig", () => {
 		assert.equal(config.eventStore.ttlSeconds, 3600);
 		assert.equal(config.protocol, "http");
 		assert.equal(config.port, 3000);
-		assert.equal(config.host, "0.0.0.0");
+		assert.equal(config.host, "127.0.0.1");
 		assert.equal(config.maxSessions, 100);
 		assert.equal(config.sessionTimeout, 3_600_000);
 		assert.equal(config.tls.enabled, false);
+	});
+
+	it("allows explicitly binding HTTP transport to all interfaces", () => {
+		process.env.MCP_HOST = "0.0.0.0";
+
+		const config = getServerConfig();
+
+		assert.equal(config.host, "0.0.0.0");
 	});
 
 	it("prefers PORT over MCP_PORT", () => {

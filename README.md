@@ -133,7 +133,7 @@ The server supports Streamable HTTP for remote access:
 
 ```bash
 PORTKEY_API_KEY=your_key \
-MCP_HOST=0.0.0.0 \
+MCP_HOST=127.0.0.1 \
 MCP_PORT=3000 \
 MCP_PUBLIC_BASE_URL=https://mcp.example.com \
 MCP_AUTH_MODE=bearer \
@@ -146,6 +146,8 @@ Or via npx (the `portkey-admin-mcp` package includes the HTTP binary):
 PORTKEY_API_KEY=your_key MCP_AUTH_MODE=bearer MCP_AUTH_TOKEN=your_secret \
   npx -y -p portkey-admin-mcp portkey-admin-mcp-http
 ```
+
+For local-only HTTP use, leave `MCP_HOST` at its default `127.0.0.1`. Set `MCP_HOST=0.0.0.0` only when you intentionally need to accept connections from outside the local machine, such as Docker or a reverse proxy on another interface.
 
 ### Configuration
 
