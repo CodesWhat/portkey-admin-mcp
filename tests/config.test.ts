@@ -1,5 +1,5 @@
-import { afterEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { afterEach, describe, it } from "node:test";
 import { getServerConfig } from "../src/lib/config.js";
 
 const ORIGINAL_ENV = { ...process.env };
@@ -18,6 +18,7 @@ describe("getServerConfig", () => {
 		delete process.env.PORT;
 		delete process.env.MCP_PORT;
 		delete process.env.MCP_HOST;
+		delete process.env.MCP_MAX_SESSIONS;
 		delete process.env.MCP_SESSION_TIMEOUT;
 		delete process.env.MCP_TLS_KEY_PATH;
 		delete process.env.MCP_TLS_CERT_PATH;
@@ -31,6 +32,7 @@ describe("getServerConfig", () => {
 		assert.equal(config.protocol, "http");
 		assert.equal(config.port, 3000);
 		assert.equal(config.host, "0.0.0.0");
+		assert.equal(config.maxSessions, 100);
 		assert.equal(config.sessionTimeout, 3_600_000);
 		assert.equal(config.tls.enabled, false);
 	});
@@ -92,5 +94,19 @@ describe("getServerConfig", () => {
 			() => getServerConfig(),
 			/MCP_TLS_KEY_PATH and MCP_TLS_CERT_PATH must both be set/,
 		);
+	});
+
+	it("allows overriding the maximum active session count", () => {
+		process.env.MCP_MAX_SESSIONS = "250";
+
+		const config = getServerConfig();
+
+		assert.equal(config.maxSessions, 250);
+	});
+
+	it("throws on invalid maximum session count", () => {
+		process.env.MCP_MAX_SESSIONS = "0";
+
+		assert.throws(() => getServerConfig(), /Invalid MCP_MAX_SESSIONS value/);
 	});
 });
