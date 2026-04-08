@@ -7,14 +7,6 @@ import {
 } from "../lib/fetch.js";
 import { Logger } from "../lib/logger.js";
 
-export interface ApiResponse<T> {
-	data: T;
-	status: number;
-}
-
-// Re-export PaginationParams from schemas for backward compatibility
-export type { PaginationParams } from "../lib/schemas.js";
-
 const DEFAULT_BASE_URL = "https://api.portkey.ai/v1";
 
 function validateUrl(url: string): void {

@@ -19,7 +19,8 @@
 		"test:contract": "tsx --test tests/contract.test.ts",
 		"record:fixtures": "tsx tests/fixtures/record.ts",
 		"verify:readme-tools": "node scripts/verify-readme-tools.mjs",
-		"ci": "npm run lint && npm run typecheck && npm run test && npm run build && npm run test:e2e && npm run verify:readme-tools",
+		"knip": "knip",
+		"ci": "npm run lint && npm run knip && npm run typecheck && npm run test && npm run build && npm run test:e2e && npm run verify:readme-tools",
 		"start:http": "node build/server.js",
 		"prepublishOnly": "npm run ci"
 	},
@@ -72,6 +73,7 @@
 		"@types/node": "^25.5.2",
 		"dotenv": "^17.4.1",
 		"esbuild": "^0.28.0",
+		"knip": "^6.3.0",
 		"tsx": "^4.21.0",
 		"typescript": "^6.0.2"
 	}

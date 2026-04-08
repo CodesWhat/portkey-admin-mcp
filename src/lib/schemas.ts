@@ -3,20 +3,6 @@
  */
 import { z } from "zod";
 
-// ===== Pagination Schemas =====
-export const PaginationParamsSchema = z.object({
-	current_page: z.coerce.number().positive().optional(),
-	page_size: z.coerce.number().positive().max(100).optional(),
-});
-
-export type PaginationParams = z.infer<typeof PaginationParamsSchema>;
-
-// ===== Common Response Schemas =====
-export const ListResponseMetaSchema = z.object({
-	total: z.number(),
-	object: z.literal("list"),
-});
-
 // ===== Prompt-Related Schemas =====
 export const PromptFunctionSchema = z.object({
 	name: z.string().describe("Function name"),
@@ -81,16 +67,3 @@ export const ToolChoiceSchema = z.union([
 	}),
 ]);
 
-// ===== Role Schemas =====
-export const OrgRoleSchema = z.enum(["admin", "member"]);
-export const WorkspaceRoleSchema = z.enum(["admin", "member", "manager"]);
-
-// ===== API Error Schema =====
-// Matches Portkey API error shape: { status_code, error: { message, slug, code, type }, success: false }
-export const ApiErrorSchema = z.object({
-	status_code: z.number(),
-	message: z.string(),
-	slug: z.string().optional(),
-	code: z.string().optional(),
-	type: z.string().optional(),
-});
