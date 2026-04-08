@@ -135,6 +135,7 @@ The server supports Streamable HTTP for remote access:
 PORTKEY_API_KEY=your_key \
 MCP_HOST=0.0.0.0 \
 MCP_PORT=3000 \
+MCP_PUBLIC_BASE_URL=https://mcp.example.com \
 MCP_AUTH_MODE=bearer \
 MCP_AUTH_TOKEN=your_secret \
 node build/server.js
@@ -153,15 +154,19 @@ PORTKEY_API_KEY=your_key MCP_AUTH_MODE=bearer MCP_AUTH_TOKEN=your_secret \
 | `PORTKEY_API_KEY` | (required) | Your Portkey API key |
 | `MCP_HOST` | `127.0.0.1` | Bind address |
 | `MCP_PORT` | `3000` | Port |
-| `MCP_AUTH_MODE` | `none` | `none`, `bearer`, or `clerk` |
+| `MCP_PUBLIC_BASE_URL` | — | Public absolute base URL to advertise from `/auth/info` and the status page; recommended for hosted deployments |
+| `MCP_AUTH_MODE` | `none` | `none`, `bearer`, or `clerk` (`none` is blocked for HTTP unless explicitly overridden) |
 | `MCP_AUTH_TOKEN` | — | Secret for bearer auth |
+| `MCP_ALLOW_UNAUTHENTICATED_HTTP` | — | Set to `true` only for intentional local unauthenticated HTTP debugging |
 | `MCP_SESSION_MODE` | `stateful` | `stateful` or `stateless` |
+| `MCP_MAX_SESSIONS` | `100` | Maximum concurrent stateful MCP sessions before new initialize requests are rejected |
 | `MCP_EVENT_STORE` | `off` | `off`, `memory`, or `redis` |
 | `MCP_REDIS_URL` | — | Redis URL for shared event store |
 | `MCP_TLS_KEY_PATH` | — | TLS key for native HTTPS |
 | `MCP_TLS_CERT_PATH` | — | TLS cert for native HTTPS |
 | `ALLOWED_ORIGINS` | — | CORS allow-list |
 | `MCP_TRUST_PROXY` | `false` | Trust proxy headers (for reverse proxies) |
+| `RATE_LIMIT_MAX_BUCKETS` | `10000` | Maximum distinct in-memory rate-limit buckets before new clients share an overflow bucket |
 
 <details>
 <summary><strong>Vercel deployment</strong></summary>
@@ -172,6 +177,7 @@ Key points:
 - Uses stateless mode with Redis event store
 - Requires Clerk or bearer auth
 - Leave `MCP_TLS_*` unset (Vercel terminates HTTPS)
+- Set `MCP_PUBLIC_BASE_URL` to your deployment URL so advertised MCP endpoints never depend on request headers
 - Vercel does not support WebSockets — Streamable HTTP/SSE only
 
 </details>
@@ -213,6 +219,8 @@ npm run test:e2e      # MCP protocol tests
 npm run test:http     # HTTP endpoint smoke test
 npm run ci            # full pipeline (lint + typecheck + test + build + e2e + verify)
 ```
+
+`npm run dev:http` now requires `MCP_AUTH_MODE=bearer` or `MCP_AUTH_MODE=clerk` by default. For deliberate local-only unauthenticated testing, set `MCP_ALLOW_UNAUTHENTICATED_HTTP=true`.
 
 ---
 

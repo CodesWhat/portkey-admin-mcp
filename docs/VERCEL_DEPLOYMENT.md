@@ -44,6 +44,7 @@ Required:
 - `MCP_SESSION_MODE=stateless`
 - `MCP_EVENT_STORE=redis`
 - `MCP_REDIS_URL=redis://...`
+- `MCP_MAX_SESSIONS=100` (adjust for your expected concurrency and memory budget)
 - `ALLOWED_ORIGINS=https://your-app-domain`
 - `MCP_TRUST_PROXY=true`
 
@@ -51,6 +52,7 @@ Recommended:
 
 - `MCP_READY_CHECK_MODE=portkey`
 - `RATE_LIMIT_ENABLED=true`
+- `RATE_LIMIT_MAX_BUCKETS=10000` (lower or raise based on expected client cardinality and memory budget)
 
 Auth option A (recommended for teams): Clerk JWT
 
@@ -95,6 +97,10 @@ curl -sS https://<your-project>.vercel.app/ready
 curl -sS https://<your-project>.vercel.app/auth/info
 ```
 
+Set `MCP_PUBLIC_BASE_URL=https://<your-project>.vercel.app` in Vercel so `/auth/info`
+and the built-in status page advertise a fixed deployment URL instead of deriving it
+from incoming request headers.
+
 MCP endpoint check:
 
 ```bash
@@ -125,6 +131,7 @@ Treat this as required before making the repo public.
 3. Keep auth enabled in production
 
 - Do not run `MCP_AUTH_MODE=none` in hosted environments.
+- Do not set `MCP_ALLOW_UNAUTHENTICATED_HTTP=true` in hosted environments.
 
 4. Restrict origins
 
