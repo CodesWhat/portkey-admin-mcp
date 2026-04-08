@@ -8,36 +8,37 @@
  * If a test fails after updating fixtures, it means the Portkey API response shape
  * has changed and the corresponding contract schema needs updating.
  */
-import { describe, it } from "node:test";
+
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { dirname, join } from "node:path";
+import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 
 // Contract schemas
 import {
-	ListConfigsResponseSchema,
-	GetConfigResponseSchema,
 	ConfigDetailsSchema,
 	ConfigVersionsResponseSchema,
 	CreateConfigResponseSchema,
+	GetConfigResponseSchema,
+	ListConfigsResponseSchema,
 } from "../src/schemas/contracts/configs.contract.js";
 import {
-	ListPromptsResponseSchema,
-	PromptListItemSchema,
-	GetPromptResponseSchema,
-	CreatePromptResponseSchema,
-	UpdatePromptResponseSchema,
-	ListPromptVersionsResponseSchema,
-} from "../src/schemas/contracts/prompts.contract.js";
-import {
-	ListVirtualKeysResponseSchema,
-	VirtualKeySchema,
-	CreateVirtualKeyResponseSchema,
-	ListApiKeysResponseSchema,
 	ApiKeySchema,
 	CreateApiKeyResponseSchema,
+	CreateVirtualKeyResponseSchema,
+	ListApiKeysResponseSchema,
+	ListVirtualKeysResponseSchema,
+	VirtualKeySchema,
 } from "../src/schemas/contracts/keys.contract.js";
+import {
+	CreatePromptResponseSchema,
+	GetPromptResponseSchema,
+	ListPromptsResponseSchema,
+	ListPromptVersionsResponseSchema,
+	PromptListItemSchema,
+	UpdatePromptResponseSchema,
+} from "../src/schemas/contracts/prompts.contract.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = join(__dirname, "fixtures", "responses");
@@ -230,7 +231,10 @@ describe("Contract: Prompts API", () => {
 			],
 		};
 		const result = ListPromptVersionsResponseSchema.safeParse(synthetic);
-		assert.ok(result.success, "ListPromptVersionsResponse should parse plain string template");
+		assert.ok(
+			result.success,
+			"ListPromptVersionsResponse should parse plain string template",
+		);
 	});
 
 	it("ListPromptVersionsResponse schema validates object-wrapped template", () => {
@@ -241,7 +245,10 @@ describe("Contract: Prompts API", () => {
 				{
 					id: "pv_001",
 					prompt_id: "pp_test123",
-					prompt_template: { string: '[{"role":"system","content":[{"type":"text","text":"Hello"}]}]' },
+					prompt_template: {
+						string:
+							'[{"role":"system","content":[{"type":"text","text":"Hello"}]}]',
+					},
 					prompt_version: 1,
 					prompt_description: "Multi-message version",
 					created_at: "2025-12-01T10:00:00.000Z",
@@ -251,7 +258,10 @@ describe("Contract: Prompts API", () => {
 			],
 		};
 		const result = ListPromptVersionsResponseSchema.safeParse(synthetic);
-		assert.ok(result.success, "ListPromptVersionsResponse should parse object-wrapped template");
+		assert.ok(
+			result.success,
+			"ListPromptVersionsResponse should parse object-wrapped template",
+		);
 	});
 });
 
@@ -312,10 +322,7 @@ describe("Contract: Keys API", () => {
 			result.success,
 			`Schema validation failed: ${JSON.stringify(result.error?.issues, null, 2)}`,
 		);
-		assert.ok(
-			result.data.data.length > 0,
-			"Should have at least one API key",
-		);
+		assert.ok(result.data.data.length > 0, "Should have at least one API key");
 	});
 
 	it("ApiKey schema parses individual key from fixture", () => {

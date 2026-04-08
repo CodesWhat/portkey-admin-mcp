@@ -5,6 +5,8 @@ import { request as httpRequest } from "node:http";
 import net from "node:net";
 import { resolve } from "node:path";
 import { afterEach, describe, it } from "node:test";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 
 const TSX_CLI_PATH = resolve(process.cwd(), "node_modules/tsx/dist/cli.mjs");
 const AUTH_TOKEN = "test-secret";
@@ -334,5 +336,143 @@ describe("HTTP server integration", () => {
 				});
 			},
 		);
+	});
+
+	it("requires MCP-Protocol-Version on requests after initialization", async () => {
+		await withHttpServer({}, async ({ baseUrl }) => {
+			const initHeaders = {
+				authorization: `Bearer ${AUTH_TOKEN}`,
+				"content-type": "application/json",
+				accept: "text/event-stream, application/json",
+			};
+
+			const initialize = await fetch(`${baseUrl}/mcp`, {
+				method: "POST",
+				headers: initHeaders,
+				body: JSON.stringify(INIT_PAYLOAD),
+			});
+			assert.equal(initialize.status, 200);
+
+			const sessionId = initialize.headers.get("mcp-session-id");
+			assert.ok(
+				sessionId,
+				"expected initialize response to include mcp-session-id",
+			);
+
+			const missingHeader = await fetch(`${baseUrl}/mcp`, {
+				method: "POST",
+				headers: {
+					...initHeaders,
+					"mcp-session-id": sessionId,
+				},
+				body: JSON.stringify({
+					jsonrpc: "2.0",
+					id: 2,
+					method: "tools/list",
+					params: {},
+				}),
+			});
+			assert.equal(missingHeader.status, 400);
+			assert.deepEqual(await missingHeader.json(), {
+				jsonrpc: "2.0",
+				error: {
+					code: -32000,
+					message:
+						"Bad Request: MCP-Protocol-Version header is required for requests after initialization",
+				},
+				id: null,
+			});
+
+			const mismatchedHeader = await fetch(`${baseUrl}/mcp`, {
+				method: "POST",
+				headers: {
+					...initHeaders,
+					"mcp-session-id": sessionId,
+					"mcp-protocol-version": "2025-03-26",
+				},
+				body: JSON.stringify({
+					jsonrpc: "2.0",
+					id: 3,
+					method: "tools/list",
+					params: {},
+				}),
+			});
+			assert.equal(mismatchedHeader.status, 400);
+			assert.deepEqual(await mismatchedHeader.json(), {
+				jsonrpc: "2.0",
+				error: {
+					code: -32000,
+					message:
+						"Bad Request: MCP-Protocol-Version 2025-03-26 does not match negotiated session protocol version 2024-11-05",
+				},
+				id: null,
+			});
+		});
+	});
+
+	it("uses a fresh stateless MCP server and transport for each request", async () => {
+		await withHttpServer(
+			{
+				MCP_SESSION_MODE: "stateless",
+			},
+			async ({ baseUrl }) => {
+				const headers = {
+					authorization: `Bearer ${AUTH_TOKEN}`,
+					"content-type": "application/json",
+					accept: "text/event-stream, application/json",
+				};
+
+				const first = await fetch(`${baseUrl}/mcp`, {
+					method: "POST",
+					headers,
+					body: JSON.stringify(INIT_PAYLOAD),
+				});
+				const second = await fetch(`${baseUrl}/mcp`, {
+					method: "POST",
+					headers,
+					body: JSON.stringify({
+						...INIT_PAYLOAD,
+						id: 2,
+					}),
+				});
+
+				assert.equal(first.status, 200);
+				assert.equal(second.status, 200);
+				assert.equal(first.headers.get("mcp-session-id"), null);
+				assert.equal(second.headers.get("mcp-session-id"), null);
+			},
+		);
+	});
+
+	it("registers only the selected tool domains for an HTTP session", async () => {
+		await withHttpServer({}, async ({ baseUrl }) => {
+			const transport = new StreamableHTTPClientTransport(
+				new URL(`${baseUrl}/mcp?tools=prompts,analytics`),
+				{
+					requestInit: {
+						headers: {
+							authorization: `Bearer ${AUTH_TOKEN}`,
+						},
+					},
+				},
+			);
+			const client = new Client({
+				name: "http-tools-filter-test",
+				version: "1.0.0",
+			});
+
+			try {
+				await client.connect(transport);
+				const result = await client.listTools();
+				const toolNames = result.tools.map((tool) => tool.name);
+
+				assert.ok(toolNames.includes("create_prompt"));
+				assert.ok(toolNames.includes("get_request_analytics"));
+				assert.ok(!toolNames.includes("list_all_users"));
+				assert.ok(!toolNames.includes("list_workspaces"));
+			} finally {
+				await client.close();
+			}
+		});
 	});
 });

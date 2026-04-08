@@ -230,6 +230,20 @@ describe("MCP E2E Protocol Tests", () => {
 			assert.equal(version?.version, PKG.version);
 		});
 
+		it("publishes server instructions for tool selection guidance", () => {
+			const instructions = client.getInstructions();
+			assert.ok(instructions, "server instructions should be set");
+			assert.match(instructions, /Use list_\* tools for discovery/);
+			assert.match(
+				instructions,
+				/Prompt workflows: create_prompt -> publish_prompt/,
+			);
+			assert.match(
+				instructions,
+				/Always validate_completion_metadata before run_prompt_completion/,
+			);
+		});
+
 		it("advertises tools.listChanged capability", () => {
 			const caps = client.getServerCapabilities();
 			assert.ok(caps?.tools, "tools capability should be present");
@@ -276,6 +290,21 @@ describe("MCP E2E Protocol Tests", () => {
 					tool.inputSchema.type,
 					"object",
 					`Tool "${tool.name}" inputSchema.type should be "object"`,
+				);
+			}
+		});
+
+		it("all tools advertise an outputSchema", async () => {
+			const result = await client.listTools();
+			for (const tool of result.tools) {
+				assert.ok(
+					tool.outputSchema,
+					`Tool "${tool.name}" missing outputSchema`,
+				);
+				assert.equal(
+					tool.outputSchema.type,
+					"object",
+					`Tool "${tool.name}" outputSchema.type should be "object"`,
 				);
 			}
 		});

@@ -9,8 +9,8 @@
  *
  * NOTE: This script only calls non-destructive read endpoints.
  */
-import { writeFileSync, mkdirSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -80,10 +80,7 @@ async function fetchEndpoint(endpoint: Endpoint): Promise<void> {
 
 			if (detailResponse.ok) {
 				const detailData = await detailResponse.json();
-				const detailFilePath = join(
-					RESPONSES_DIR,
-					`${detailName}.json`,
-				);
+				const detailFilePath = join(RESPONSES_DIR, `${detailName}.json`);
 				writeFileSync(
 					detailFilePath,
 					JSON.stringify(detailData, null, 2) + "\n",

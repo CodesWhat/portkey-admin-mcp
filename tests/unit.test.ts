@@ -8,11 +8,16 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { syncBuiltinESMExports } from "node:module";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, it } from "node:test";
+import { fileURLToPath } from "node:url";
+import { toJsonSchemaCompat } from "@modelcontextprotocol/sdk/server/zod-json-schema-compat.js";
+import { z } from "zod";
 import { createManagedEventStore } from "../src/lib/event-store.js";
 import { parseErrorResponse } from "../src/lib/fetch.js";
 import { Logger } from "../src/lib/logger.js";
+import { ToolChoiceSchema, toPromptToolChoice } from "../src/lib/schemas.js";
 import { SessionStore } from "../src/lib/session-store.js";
 import { AnalyticsService } from "../src/services/analytics.service.js";
 import { BaseService } from "../src/services/base.service.js";
@@ -24,9 +29,11 @@ import { PromptsService } from "../src/services/prompts.service.js";
 import { ProvidersService } from "../src/services/providers.service.js";
 import { UsersService } from "../src/services/users.service.js";
 import { WorkspacesService } from "../src/services/workspaces.service.js";
+import { registerAnalyticsTools } from "../src/tools/analytics.tools.js";
 import { registerConfigsTools } from "../src/tools/configs.tools.js";
 import { registerAllTools } from "../src/tools/index.js";
 import { registerPromptsTools } from "../src/tools/prompts.tools.js";
+import { registerUsersTools } from "../src/tools/users.tools.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -494,6 +501,44 @@ describe("ConfigsService response parsing", () => {
 			basePrototype.get = originalGet;
 			basePrototype.put = originalPut;
 		}
+	});
+});
+
+describe("ToolChoiceSchema", () => {
+	it("emits a flat object JSON schema without union combinators", () => {
+		const jsonSchema = toJsonSchemaCompat(ToolChoiceSchema) as {
+			type?: string;
+			anyOf?: unknown;
+			oneOf?: unknown;
+			properties?: Record<string, unknown>;
+			required?: string[];
+		};
+
+		assert.equal(jsonSchema.type, "object");
+		assert.equal(jsonSchema.anyOf, undefined);
+		assert.equal(jsonSchema.oneOf, undefined);
+		assert.deepEqual(Object.keys(jsonSchema.properties ?? {}).sort(), [
+			"function_name",
+			"mode",
+		]);
+		assert.deepEqual(jsonSchema.required, ["mode"]);
+	});
+
+	it("maps flat MCP tool_choice input back to the Portkey API shape", () => {
+		assert.equal(toPromptToolChoice({ mode: "auto" }), "auto");
+		assert.equal(toPromptToolChoice({ mode: "none" }), "none");
+		assert.deepEqual(
+			toPromptToolChoice({
+				mode: "function",
+				function_name: "search_docs",
+			}),
+			{
+				type: "function",
+				function: {
+					name: "search_docs",
+				},
+			},
+		);
 	});
 });
 
@@ -1040,6 +1085,22 @@ describe("RedisEventStore replay batching", () => {
 	});
 });
 
+describe("PromptsService.validateBillingMetadata", () => {
+	it("accepts arbitrary app and env identifiers without unrecognized warnings", () => {
+		const service = new PromptsService("test-dummy-key");
+		const result = service.validateBillingMetadata({
+			client_id: "test-client",
+			app: "support-console",
+			env: "qa",
+			project_id: "project-1",
+		});
+
+		assert.equal(result.valid, true);
+		assert.deepEqual(result.errors, []);
+		assert.deepEqual(result.warnings, []);
+	});
+});
+
 // ---------------------------------------------------------------------------
 // MCP server package metadata caching
 // ---------------------------------------------------------------------------
@@ -1048,11 +1109,15 @@ describe("createMcpServer package metadata caching", () => {
 	it("reads package.json once per module load, not once per session", async () => {
 		const originalReadFileSync = fs.readFileSync;
 		const originalApiKey = process.env.PORTKEY_API_KEY;
-		const packageJsonPath = join(process.cwd(), "package.json");
+		const packageJsonPath = fileURLToPath(
+			new URL("../package.json", import.meta.url),
+		);
 		let readFileSyncCalls = 0;
 
 		fs.readFileSync = ((...args: Parameters<typeof fs.readFileSync>) => {
-			if (args[0] === packageJsonPath) {
+			const requestedPath =
+				args[0] instanceof URL ? fileURLToPath(args[0]) : args[0];
+			if (requestedPath === packageJsonPath) {
 				readFileSyncCalls += 1;
 			}
 			return originalReadFileSync(...args);
@@ -1072,6 +1137,41 @@ describe("createMcpServer package metadata caching", () => {
 		} finally {
 			fs.readFileSync = originalReadFileSync;
 			syncBuiltinESMExports();
+			if (originalApiKey === undefined) {
+				delete process.env.PORTKEY_API_KEY;
+			} else {
+				process.env.PORTKEY_API_KEY = originalApiKey;
+			}
+		}
+	});
+
+	it("resolves package.json relative to the module instead of process.cwd()", async () => {
+		const originalApiKey = process.env.PORTKEY_API_KEY;
+		const originalCwd = process.cwd();
+		const tempCwd = fs.mkdtempSync(join(tmpdir(), "portkey-admin-mcp-cwd-"));
+		const expectedVersion = JSON.parse(
+			fs.readFileSync(new URL("../package.json", import.meta.url), "utf-8"),
+		).version as string;
+
+		process.env.PORTKEY_API_KEY = "test-dummy-key";
+		process.chdir(tempCwd);
+
+		try {
+			const { createMcpServer } = await import(
+				`../src/lib/mcp-server.js?test=${Date.now()}-${Math.random()}`
+			);
+
+			const { server } = createMcpServer();
+			const version = (
+				server as unknown as {
+					server: { _serverInfo?: { version?: string } };
+				}
+			).server._serverInfo?.version;
+
+			assert.equal(version, expectedVersion);
+		} finally {
+			process.chdir(originalCwd);
+			fs.rmSync(tempCwd, { recursive: true, force: true });
 			if (originalApiKey === undefined) {
 				delete process.env.PORTKEY_API_KEY;
 			} else {
@@ -1123,6 +1223,316 @@ describe("AnalyticsService query params", () => {
 			(service.lastRequest?.params as Record<string, unknown>).prompt_slug,
 			"support-triage",
 		);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// Curated tool responses
+// ---------------------------------------------------------------------------
+
+describe("Curated tool responses", () => {
+	it("includes pagination metadata in list_prompts responses", async () => {
+		const listPromptsCallback = registerToolCallbacks((server) => {
+			registerPromptsTools(
+				server as never,
+				{
+					prompts: {
+						listPrompts: async () => ({
+							object: "list",
+							total: 5,
+							data: [
+								{
+									id: "prompt-3",
+									name: "Support Prompt",
+									slug: "support-prompt",
+									collection_id: "collection-1",
+									workspace_id: "workspace-1",
+									model: "gpt-4.1",
+									status: "active",
+									created_at: "2026-01-01T00:00:00.000Z",
+									last_updated_at: "2026-01-02T00:00:00.000Z",
+									object: "prompt",
+								},
+								{
+									id: "prompt-4",
+									name: "Billing Prompt",
+									slug: "billing-prompt",
+									collection_id: "collection-1",
+									workspace_id: "workspace-1",
+									model: "gpt-4.1-mini",
+									status: "archived",
+									created_at: "2026-01-03T00:00:00.000Z",
+									last_updated_at: "2026-01-04T00:00:00.000Z",
+									object: "prompt",
+								},
+							],
+						}),
+					},
+				} as never,
+			);
+		}).get("list_prompts");
+
+		assert.ok(listPromptsCallback, "expected list_prompts to be registered");
+
+		const result = (await listPromptsCallback({
+			current_page: 2,
+			page_size: 2,
+		})) as { content: Array<{ text: string }> };
+		const payload = JSON.parse(result.content[0]?.text || "{}") as {
+			total?: number;
+			current_page?: number;
+			page_size?: number;
+			returned_count?: number;
+			has_more?: boolean;
+			next_offset?: number | null;
+			prompts?: Array<Record<string, unknown>>;
+		};
+
+		assert.equal(payload.total, 5);
+		assert.equal(payload.current_page, 2);
+		assert.equal(payload.page_size, 2);
+		assert.equal(payload.returned_count, 2);
+		assert.equal(payload.has_more, true);
+		assert.equal(payload.next_offset, 4);
+		assert.deepEqual(payload.prompts, [
+			{
+				id: "prompt-3",
+				name: "Support Prompt",
+				slug: "support-prompt",
+				collection_id: "collection-1",
+				model: "gpt-4.1",
+				status: "active",
+				created_at: "2026-01-01T00:00:00.000Z",
+				last_updated_at: "2026-01-02T00:00:00.000Z",
+			},
+			{
+				id: "prompt-4",
+				name: "Billing Prompt",
+				slug: "billing-prompt",
+				collection_id: "collection-1",
+				model: "gpt-4.1-mini",
+				status: "archived",
+				created_at: "2026-01-03T00:00:00.000Z",
+				last_updated_at: "2026-01-04T00:00:00.000Z",
+			},
+		]);
+	});
+
+	it("summarizes user lists instead of returning raw API list wrappers", async () => {
+		const listUsersCallback = registerToolCallbacks((server) => {
+			registerUsersTools(
+				server as never,
+				{
+					users: {
+						listUsers: async () => ({
+							total: 2,
+							object: "list",
+							data: [
+								{
+									object: "user",
+									id: "user-1",
+									first_name: "Ada",
+									last_name: "Lovelace",
+									role: "admin",
+									email: "ada@example.com",
+									created_at: "2026-01-01T00:00:00.000Z",
+									last_updated_at: "2026-01-02T00:00:00.000Z",
+								},
+								{
+									object: "user",
+									id: "user-2",
+									first_name: "Grace",
+									last_name: "Hopper",
+									role: "member",
+									email: "grace@example.com",
+									created_at: "2026-01-03T00:00:00.000Z",
+									last_updated_at: "2026-01-04T00:00:00.000Z",
+								},
+							],
+						}),
+					},
+				} as never,
+			);
+		}).get("list_all_users");
+
+		assert.ok(listUsersCallback, "expected list_all_users to be registered");
+
+		const result = (await listUsersCallback()) as {
+			content: Array<{ text: string }>;
+		};
+		const payload = JSON.parse(result.content[0]?.text || "{}") as {
+			total?: number;
+			users?: Array<Record<string, unknown>>;
+			object?: string;
+			data?: unknown[];
+		};
+
+		assert.equal(payload.total, 2);
+		assert.equal(payload.object, undefined);
+		assert.equal(payload.data, undefined);
+		assert.deepEqual(payload.users, [
+			{
+				id: "user-1",
+				name: "Ada Lovelace",
+				email: "ada@example.com",
+				role: "admin",
+				created_at: "2026-01-01T00:00:00.000Z",
+				last_updated_at: "2026-01-02T00:00:00.000Z",
+			},
+			{
+				id: "user-2",
+				name: "Grace Hopper",
+				email: "grace@example.com",
+				role: "member",
+				created_at: "2026-01-03T00:00:00.000Z",
+				last_updated_at: "2026-01-04T00:00:00.000Z",
+			},
+		]);
+	});
+
+	it("returns compact generic analytics payloads", async () => {
+		const analyticsCallback = registerToolCallbacks((server) => {
+			registerAnalyticsTools(
+				server as never,
+				{
+					analytics: {
+						getErrorStacksAnalytics: async () => ({
+							object: "analytics-graph",
+							summary: { total_errors: 3, unique_stacks: 2 },
+							data_points: [
+								{
+									timestamp: "2026-01-01T00:00:00.000Z",
+									auth_error: 2,
+									timeout_error: 1,
+								},
+							],
+						}),
+					},
+				} as never,
+			);
+		}).get("get_error_stacks_analytics");
+
+		assert.ok(
+			analyticsCallback,
+			"expected get_error_stacks_analytics to be registered",
+		);
+
+		const result = (await analyticsCallback({
+			time_of_generation_min: "2026-01-01T00:00:00.000Z",
+			time_of_generation_max: "2026-01-02T00:00:00.000Z",
+		})) as { content: Array<{ text: string }> };
+		const payload = JSON.parse(result.content[0]?.text || "{}") as {
+			summary?: Record<string, unknown>;
+			point_count?: number;
+			data_points?: Array<Record<string, unknown>>;
+			object?: string;
+		};
+
+		assert.deepEqual(payload.summary, {
+			total_errors: 3,
+			unique_stacks: 2,
+		});
+		assert.equal(payload.point_count, 1);
+		assert.equal(payload.object, undefined);
+		assert.deepEqual(payload.data_points, [
+			{
+				timestamp: "2026-01-01T00:00:00.000Z",
+				auth_error: 2,
+				timeout_error: 1,
+			},
+		]);
+	});
+
+	it("summarizes prompt versions instead of returning flattened raw prompt objects", async () => {
+		const getPromptVersionCallback = registerToolCallbacks((server) => {
+			registerPromptsTools(
+				server as never,
+				{
+					prompts: {
+						getPromptVersion: async () => ({
+							id: "prompt-1",
+							name: "Support Prompt",
+							slug: "support-prompt",
+							collection_id: "collection-1",
+							workspace_id: "workspace-1",
+							created_at: "2026-01-01T00:00:00.000Z",
+							last_updated_at: "2026-01-02T00:00:00.000Z",
+							status: "active",
+							model: "gpt-4.1",
+							string: '[{"role":"system","content":"Be helpful"}]',
+							prompt_version_id: "version-2",
+							prompt_version: 2,
+							prompt_version_description: "Production",
+							prompt_version_status: "active",
+							parameters: { team: "support" },
+							functions: [
+								{
+									name: "lookup_ticket",
+									description: "Find a support ticket",
+								},
+							],
+							tools: [
+								{
+									type: "function",
+									function: {
+										name: "search_docs",
+										description: "Search documentation",
+									},
+								},
+							],
+							tool_choice: "auto",
+							template_metadata: { app: "hourlink", env: "prod" },
+							virtual_key: "vk_support",
+							object: "prompt",
+						}),
+					},
+				} as never,
+			);
+		}).get("get_prompt_version");
+
+		assert.ok(
+			getPromptVersionCallback,
+			"expected get_prompt_version to be registered",
+		);
+
+		const result = (await getPromptVersionCallback({
+			prompt_id: "prompt-1",
+			version_id: "version-2",
+		})) as { content: Array<{ text: string }> };
+		const payload = JSON.parse(result.content[0]?.text || "{}") as {
+			prompt?: Record<string, unknown>;
+			version?: Record<string, unknown>;
+			object?: string;
+			functions?: unknown[];
+			tools?: unknown[];
+		};
+
+		assert.equal(payload.object, undefined);
+		assert.deepEqual(payload.prompt, {
+			id: "prompt-1",
+			name: "Support Prompt",
+			slug: "support-prompt",
+			collection_id: "collection-1",
+			workspace_id: "workspace-1",
+		});
+		assert.deepEqual(payload.version, {
+			id: "version-2",
+			number: 2,
+			description: "Production",
+			status: "active",
+			model: "gpt-4.1",
+			virtual_key: "vk_support",
+			template: '[{"role":"system","content":"Be helpful"}]',
+			parameters: { team: "support" },
+			metadata: { app: "hourlink", env: "prod" },
+			function_names: ["lookup_ticket"],
+			tool_names: ["search_docs"],
+			tool_choice: "auto",
+			created_at: "2026-01-01T00:00:00.000Z",
+			last_updated_at: "2026-01-02T00:00:00.000Z",
+		});
+		assert.equal(payload.functions, undefined);
+		assert.equal(payload.tools, undefined);
 	});
 });
 
@@ -1337,6 +1747,124 @@ describe("Config tool payload assembly", () => {
 // ---------------------------------------------------------------------------
 
 describe("Tool callback error handling", () => {
+	it("registers a standard outputSchema when registerTool is available", () => {
+		const registrations = new Map<
+			string,
+			{
+				config: {
+					outputSchema?: unknown;
+					annotations?: unknown;
+				};
+				callback: (...args: unknown[]) => Promise<unknown>;
+			}
+		>();
+		const legacyToolCalls: string[] = [];
+
+		registerAllTools(
+			{
+				registerTool(
+					name: string,
+					config: {
+						outputSchema?: unknown;
+						annotations?: unknown;
+					},
+					callback: (...args: unknown[]) => Promise<unknown>,
+				) {
+					registrations.set(name, { config, callback });
+					return {} as never;
+				},
+				tool(name: string) {
+					legacyToolCalls.push(name);
+					return {} as never;
+				},
+			} as never,
+			{} as never,
+		);
+
+		assert.equal(
+			legacyToolCalls.length,
+			0,
+			"expected registerAllTools to prefer registerTool when available",
+		);
+
+		const listUsersRegistration = registrations.get("list_all_users");
+		assert.ok(
+			listUsersRegistration?.config.outputSchema,
+			"expected list_all_users to include an outputSchema",
+		);
+
+		const outputSchema =
+			listUsersRegistration.config.outputSchema instanceof z.ZodType
+				? listUsersRegistration.config.outputSchema
+				: z.object(listUsersRegistration.config.outputSchema as z.ZodRawShape);
+
+		assert.equal(
+			outputSchema.safeParse({
+				ok: true,
+				data: { total: 1, users: [] },
+			}).success,
+			true,
+		);
+		assert.equal(
+			outputSchema.safeParse({
+				ok: false,
+				error: { message: "boom" },
+			}).success,
+			true,
+		);
+	});
+
+	it("accepts arbitrary app and env identifiers in prompt tool schemas", () => {
+		const registrations = new Map<string, unknown[]>();
+
+		registerPromptsTools(
+			{
+				tool(name: string, ...rest: unknown[]) {
+					registrations.set(name, rest);
+					return {} as never;
+				},
+			} as never,
+			{} as never,
+		);
+
+		const migratePromptSchema = registrations.get("migrate_prompt")?.[1] as
+			| z.ZodRawShape
+			| undefined;
+		const runPromptCompletionSchema = registrations.get(
+			"run_prompt_completion",
+		)?.[1] as z.ZodRawShape | undefined;
+
+		assert.ok(migratePromptSchema, "expected migrate_prompt schema");
+		assert.ok(
+			runPromptCompletionSchema,
+			"expected run_prompt_completion schema",
+		);
+
+		const migratePromptResult = z.object(migratePromptSchema).safeParse({
+			name: "Support Prompt",
+			app: "support-console",
+			env: "qa",
+			collection_id: "collection-1",
+			string: "Hello {{name}}",
+			parameters: { name: "Ada" },
+			virtual_key: "vk_support",
+		});
+		assert.equal(migratePromptResult.success, true);
+
+		const runPromptCompletionResult = z
+			.object(runPromptCompletionSchema)
+			.safeParse({
+				prompt_id: "prompt-1",
+				variables: { name: "Ada" },
+				metadata: {
+					client_id: "test-client",
+					app: "support-console",
+					env: "qa",
+				},
+			});
+		assert.equal(runPromptCompletionResult.success, true);
+	});
+
 	it("wraps successful tool responses in a standard ok/data envelope", async () => {
 		const callbacks = new Map<
 			string,
@@ -1373,8 +1901,8 @@ describe("Tool callback error handling", () => {
 
 		const result = (await validateCallback({
 			client_id: "test-client",
-			app: "hourlink",
-			env: "dev",
+			app: "support-console",
+			env: "qa",
 		})) as {
 			content: Array<{ type: string; text: string }>;
 			structuredContent?: unknown;
@@ -1398,8 +1926,8 @@ describe("Tool callback error handling", () => {
 		assert.deepEqual(payload.data?.warnings, []);
 		assert.deepEqual(payload.data?.metadata, {
 			client_id: "test-client",
-			app: "hourlink",
-			env: "dev",
+			app: "support-console",
+			env: "qa",
 		});
 		assert.deepEqual(result.structuredContent, payload);
 	});
@@ -1457,6 +1985,124 @@ describe("Tool callback error handling", () => {
 			assert.equal(loggedErrors[0]?.message, "Tool callback failed");
 		} finally {
 			Logger.error = originalLoggerError;
+		}
+	});
+});
+
+describe("Tool annotations", () => {
+	it("adds inferred MCP annotations to every registered tool", () => {
+		const registrations = new Map<string, unknown[]>();
+
+		registerAllTools(
+			{
+				tool(name: string, ...rest: unknown[]) {
+					registrations.set(name, rest);
+					return {} as never;
+				},
+			} as never,
+			{} as never,
+		);
+
+		const getAnnotations = (name: string) => {
+			const registration = registrations.get(name);
+			assert.ok(registration, `expected ${name} to be registered`);
+
+			const annotations = registration.at(-2) as
+				| {
+						readOnlyHint?: boolean;
+						destructiveHint?: boolean;
+						idempotentHint?: boolean;
+						openWorldHint?: boolean;
+				  }
+				| undefined;
+
+			assert.equal(
+				typeof annotations,
+				"object",
+				`expected ${name} to include tool annotations`,
+			);
+			assert.equal(
+				typeof annotations?.readOnlyHint,
+				"boolean",
+				`expected ${name} readOnlyHint to be set`,
+			);
+			assert.equal(
+				typeof annotations?.destructiveHint,
+				"boolean",
+				`expected ${name} destructiveHint to be set`,
+			);
+			assert.equal(
+				typeof annotations?.idempotentHint,
+				"boolean",
+				`expected ${name} idempotentHint to be set`,
+			);
+			assert.equal(
+				typeof annotations?.openWorldHint,
+				"boolean",
+				`expected ${name} openWorldHint to be set`,
+			);
+
+			return annotations;
+		};
+
+		for (const toolName of registrations.keys()) {
+			getAnnotations(toolName);
+		}
+
+		assert.deepEqual(getAnnotations("list_all_users"), {
+			readOnlyHint: true,
+			destructiveHint: false,
+			idempotentHint: true,
+			openWorldHint: true,
+		});
+		assert.deepEqual(getAnnotations("create_prompt"), {
+			readOnlyHint: false,
+			destructiveHint: false,
+			idempotentHint: false,
+			openWorldHint: true,
+		});
+		assert.deepEqual(getAnnotations("delete_user"), {
+			readOnlyHint: false,
+			destructiveHint: true,
+			idempotentHint: false,
+			openWorldHint: true,
+		});
+		assert.deepEqual(getAnnotations("render_prompt"), {
+			readOnlyHint: true,
+			destructiveHint: false,
+			idempotentHint: true,
+			openWorldHint: true,
+		});
+	});
+
+	it("reuses module-level schema objects across tool registrations", () => {
+		const captureSchemas = () => {
+			const schemas = new Map<string, unknown>();
+
+			registerAllTools(
+				{
+					tool(name: string, ...rest: unknown[]) {
+						schemas.set(name, rest[1]);
+						return {} as never;
+					},
+				} as never,
+				{} as never,
+			);
+
+			return schemas;
+		};
+
+		const firstSchemas = captureSchemas();
+		const secondSchemas = captureSchemas();
+
+		assert.equal(firstSchemas.size, secondSchemas.size);
+
+		for (const [toolName, firstSchema] of firstSchemas) {
+			assert.strictEqual(
+				secondSchemas.get(toolName),
+				firstSchema,
+				`expected ${toolName} to reuse its module-level schema object`,
+			);
 		}
 	});
 });
