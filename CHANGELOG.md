@@ -7,6 +7,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-04-08
+
+Major hardening release. Fixes critical MCP spec compliance issues, adds tool annotations and structured responses, and significantly improves security defaults.
+
+### Added
+
+- **MCP tool annotations** on all 151 tools — `readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint` inferred from tool operation type
+- **`outputSchema`** on all tools via `registerTool()` — consistent `{ok, data}` / `{ok, error}` envelope for predictable LLM parsing
+- **Server instructions** — LLM guidance for tool selection ("Use list_\* tools for discovery…")
+- **`MCP-Protocol-Version` header validation** — rejects post-init requests missing or mismatching the negotiated protocol version (spec 2025-06-18)
+- **Per-request stateless MCP servers** — each stateless request creates a fresh `McpServer` + transport, preventing cross-client data leaks (GHSA-345p-7cg4-v4c7)
+- **Dynamic tool loading** via `?tools=prompts,analytics` query parameter — register only relevant tool domains per session to reduce token bloat
+- **Session capacity management** — `MCP_MAX_SESSIONS` config (default 100) with `tryReserve()`/`releaseReservation()` to prevent overcommit during concurrent initializations
+- **`MCP_PUBLIC_BASE_URL`** — explicit public URL for `/auth/info` and status page, avoiding Host header trust
+- **`MCP_ALLOW_UNAUTHENTICATED_HTTP`** — explicit opt-in for unauthenticated HTTP debugging (auth enforcement blocks `MCP_AUTH_MODE=none` by default)
+- **`RATE_LIMIT_MAX_BUCKETS`** — caps in-memory rate-limit buckets (default 10,000) with overflow sharing to bound memory
+- **Helmet** middleware for automatic HTTP security headers (CSP, HSTS, X-Content-Type-Options, etc.)
+- **Curated tool responses** — list results include pagination metadata (`total`, `has_more`, `next_offset`), analytics include `point_count`, prompt versions formatted compactly
+- **Global tool error wrapper** — unhandled exceptions in tool callbacks return `isError: true` instead of crashing the MCP protocol
+- **HTTP server integration tests** — protocol version, session capacity, tool domain filtering, HSTS, auth rejection
+- **108 tests total** (93 unit + 15 E2E), up from ~40
+
+### Fixed
+
+- **`z.union()` in `ToolChoiceSchema` silently produced empty schema** — replaced with flat `z.object()` + discriminator field (SDK bug #1643)
+- **Bearer token timing-safe comparison leaked token length** — now compares fixed-length SHA-256 digests
+- **Rate limiter used raw `X-Forwarded-For` instead of `req.ip`** — trivially spoofable; now respects Express `trust proxy` setting
+- **`ALLOWED_ORIGINS` re-parsed on every request** — now cached at module load
+- **Default HTTP bind address was `0.0.0.0`** — changed to `127.0.0.1` to prevent accidental network exposure
+- **Config JSON responses returned raw strings** — `getConfig()` and `updateConfig()` now parse `config` field into typed objects
+- **`getPromptVersion()` returned `Record<string, unknown>`** — now typed as `RawGetPromptResponse`
+- **CI badge pointed to wrong GitHub org** (SYPartners → s-b-e-n-s-o-n)
+- **Hardcoded `app`/`env` enums in prompt tools** — replaced with `z.string()` to allow arbitrary identifiers
+
+### Changed
+
+- **Default HTTP host**: `0.0.0.0` → `127.0.0.1` (set `MCP_HOST=0.0.0.0` explicitly for Docker/reverse proxy)
+- **Service facade**: `PortkeyService` no longer delegates 400+ methods — domain services are now public readonly properties (`service.users`, `service.analytics`, etc.)
+- **`BaseService`**: consolidated 4 HTTP methods into single `executeRequest()` with shared logging/error handling
+- **HTTP app architecture**: extracted from `server.ts` into `lib/http-app.ts` for testability and reuse (Vercel, standalone, tests)
+- **`InMemoryEventStore`**: throttled cleanup (every 30s instead of every write), per-event expiry checks, proper stream-index removal
+- **`RedisEventStore`**: batched replay reads into single pipeline
+- **Analytics tool responses**: shared formatting helpers hoisted to module level, all responses include `point_count`
+- All dependencies updated to latest (zod v4, express v5, MCP SDK v1.29+)
+- Removed dependabot config (replaced with manual dep management)
+- Added lefthook for pre-commit lint and pre-push checks
+- Added knip for unused code detection
+
 ## [0.1.0] - 2026-03-28
 
 First stable release. Graduates from beta with 151 tools covering ~98% of the Portkey Admin API surface.
@@ -62,7 +110,8 @@ First stable release. Graduates from beta with 151 tools covering ~98% of the Po
 - Vercel deployment support
 - Contract tests, E2E tests, security tests
 
-[Unreleased]: https://github.com/s-b-e-n-s-o-n/portkey-admin-mcp/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/s-b-e-n-s-o-n/portkey-admin-mcp/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/s-b-e-n-s-o-n/portkey-admin-mcp/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/s-b-e-n-s-o-n/portkey-admin-mcp/compare/v0.1.0-beta.4...v0.1.0
 [0.1.0-beta.4]: https://github.com/s-b-e-n-s-o-n/portkey-admin-mcp/compare/v0.1.0-beta.3...v0.1.0-beta.4
 [0.1.0-beta.3]: https://github.com/s-b-e-n-s-o-n/portkey-admin-mcp/releases/tag/v0.1.0-beta.3
