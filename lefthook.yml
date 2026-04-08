@@ -1,0 +1,16 @@
+pre-commit:
+  parallel: true
+  jobs:
+    - name: lint
+      run: npx biome check --staged --no-errors-on-unmatched
+      glob: "*.{js,ts,jsx,tsx,json}"
+
+pre-push:
+  parallel: true
+  jobs:
+    - name: typecheck
+      run: npm run typecheck
+    - name: knip
+      run: npm run knip
+    - name: test
+      run: npm run test
