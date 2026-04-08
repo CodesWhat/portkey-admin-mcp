@@ -16,6 +16,8 @@ MCP server for the [Portkey](https://portkey.ai/) Admin API. Manage prompts, con
 <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg" alt="Node.js"></a>
 <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
 
+<a href="https://glama.ai/mcp/servers/s-b-e-n-s-o-n/portkey-admin-mcp"><img src="https://glama.ai/mcp/servers/s-b-e-n-s-o-n/portkey-admin-mcp/badges/card.svg" alt="portkey-admin-mcp MCP server"></a>
+
 </div>
 
 ---
