@@ -96,6 +96,7 @@ export function validateOrigin(origin: string | undefined): boolean {
 
 /**
  * Check if a host is allowed
+ * @public — consumed by tests via dynamic import
  */
 export function isAllowedHost(host: string): boolean {
 	const allowedOrigins = getAllowedOrigins();
@@ -321,6 +322,7 @@ export function rateLimitMiddleware(
 	next();
 }
 
+/** @public — consumed by tests via dynamic import */
 export function getRateLimitBucketCountForTest(): number {
 	return buckets.size;
 }

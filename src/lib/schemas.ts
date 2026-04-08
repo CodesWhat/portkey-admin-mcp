@@ -120,7 +120,7 @@ export function toPromptToolChoice(
 		return {
 			type: "function",
 			function: {
-				name: toolChoice.function_name!,
+				name: toolChoice.function_name as string,
 			},
 		};
 	}
