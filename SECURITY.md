@@ -11,7 +11,7 @@ Please do not open public GitHub issues for suspected vulnerabilities.
 Preferred private channel:
 
 - GitHub private vulnerability reporting:
-  `https://github.com/SYPartners/portkey-admin-mcp/security/advisories/new`
+  `https://github.com/s-b-e-n-s-o-n/portkey-admin-mcp/security/advisories/new`
 
 If you cannot use GitHub advisories, contact maintainers privately through your organization's established security channel.
 
