@@ -1,7 +1,9 @@
-import app, { setServerReady } from "../src/server.js";
+import { createHttpAppRuntime } from "../src/server.js";
+
+const runtime = createHttpAppRuntime();
 
 // In Vercel's serverless runtime, there is no explicit "listen" callback.
 // Mark the app as ready during cold start so /ready works as expected.
-setServerReady(true);
+runtime.setServerReady(true);
 
-export default app;
+export default runtime.app;

@@ -23,6 +23,8 @@ export interface ServerConfig {
 	port: number;
 	/** Host address for HTTP transport (default: 0.0.0.0) */
 	host: string;
+	/** Maximum number of active stateful MCP sessions */
+	maxSessions: number;
 	/** Session timeout in milliseconds (default: 3600000 = 1 hour) */
 	sessionTimeout: number;
 	/** Optional native TLS config for HTTPS mode */
@@ -99,6 +101,14 @@ export function getServerConfig(): ServerConfig {
 		);
 	}
 
+	const maxSessionsStr = (process.env.MCP_MAX_SESSIONS || "100").trim();
+	const maxSessions = Number.parseInt(maxSessionsStr, 10);
+	if (!Number.isInteger(maxSessions) || maxSessions <= 0) {
+		throw new Error(
+			`Invalid MCP_MAX_SESSIONS value: ${maxSessionsStr}. Must be a positive integer`,
+		);
+	}
+
 	const eventStoreTtlStr = (process.env.MCP_EVENT_TTL_SECONDS || "3600").trim();
 	const eventStoreTtlSeconds = Number.parseInt(eventStoreTtlStr, 10);
 	if (Number.isNaN(eventStoreTtlSeconds) || eventStoreTtlSeconds <= 0) {
@@ -145,6 +155,7 @@ export function getServerConfig(): ServerConfig {
 		protocol,
 		port,
 		host,
+		maxSessions,
 		sessionTimeout,
 		tls: {
 			enabled: tlsEnabled,

@@ -3,6 +3,17 @@
  */
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 
+export const DEFAULT_MAX_SESSIONS = 100;
+
+export class SessionCapacityError extends Error {
+	constructor(maxSessions: number) {
+		super(
+			`Maximum active session limit reached (${maxSessions} concurrent sessions)`,
+		);
+		this.name = "SessionCapacityError";
+	}
+}
+
 /**
  * Session entry stored in the session store
  */
@@ -21,9 +32,13 @@ export interface SessionEntry {
  */
 export class SessionStore {
 	private sessions: Map<string, SessionEntry>;
+	private readonly maxSessions: number;
+	private pendingReservations: number;
 
-	constructor() {
+	constructor(maxSessions = DEFAULT_MAX_SESSIONS) {
 		this.sessions = new Map();
+		this.maxSessions = maxSessions;
+		this.pendingReservations = 0;
 	}
 
 	/**
@@ -50,7 +65,35 @@ export class SessionStore {
 	 * @param entry - The session entry to store
 	 */
 	set(sessionId: string, entry: SessionEntry): void {
+		if (!this.sessions.has(sessionId)) {
+			if (this.pendingReservations > 0) {
+				this.pendingReservations -= 1;
+			} else if (this.sessions.size >= this.maxSessions) {
+				throw new SessionCapacityError(this.maxSessions);
+			}
+		}
 		this.sessions.set(sessionId, entry);
+	}
+
+	/**
+	 * Reserve capacity for a session that is in the process of initializing.
+	 * @returns true when a slot was reserved, false when the store is at capacity
+	 */
+	tryReserve(): boolean {
+		if (this.sessions.size + this.pendingReservations >= this.maxSessions) {
+			return false;
+		}
+		this.pendingReservations += 1;
+		return true;
+	}
+
+	/**
+	 * Release an unused reservation after a failed initialization attempt.
+	 */
+	releaseReservation(): void {
+		if (this.pendingReservations > 0) {
+			this.pendingReservations -= 1;
+		}
 	}
 
 	/**
@@ -152,6 +195,7 @@ export class SessionStore {
 		await Promise.allSettled(closePromises);
 
 		this.sessions.clear();
+		this.pendingReservations = 0;
 	}
 
 	/**

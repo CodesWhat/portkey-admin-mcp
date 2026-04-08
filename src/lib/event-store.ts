@@ -20,19 +20,59 @@ interface MemoryEventRecord {
 	expiresAt: number;
 }
 
+const EVENT_STORE_CLEANUP_INTERVAL_MS = 30_000;
+
 class InMemoryEventStore implements EventStore {
 	private sequence = 0;
 	private readonly ttlMs: number;
 	private readonly events = new Map<EventId, MemoryEventRecord>();
 	private readonly streamEvents = new Map<StreamId, EventId[]>();
+	private lastCleanupAt = 0;
 
 	constructor(ttlSeconds: number) {
 		this.ttlMs = ttlSeconds * 1000;
 	}
 
-	private cleanupExpired(): void {
-		const now = Date.now();
+	private removeEvent(
+		eventId: EventId,
+		event: MemoryEventRecord | undefined = this.events.get(eventId),
+	): void {
+		if (!event) {
+			return;
+		}
 
+		this.events.delete(eventId);
+
+		const eventIds = this.streamEvents.get(event.streamId);
+		if (!eventIds) {
+			return;
+		}
+
+		const filtered = eventIds.filter((candidate) => candidate !== eventId);
+		if (filtered.length === 0) {
+			this.streamEvents.delete(event.streamId);
+		} else if (filtered.length !== eventIds.length) {
+			this.streamEvents.set(event.streamId, filtered);
+		}
+	}
+
+	private getEventIfUnexpired(
+		eventId: EventId,
+		now = Date.now(),
+	): MemoryEventRecord | undefined {
+		const event = this.events.get(eventId);
+		if (!event) {
+			return undefined;
+		}
+		if (event.expiresAt > now) {
+			return event;
+		}
+
+		this.removeEvent(eventId, event);
+		return undefined;
+	}
+
+	private cleanupExpired(now = Date.now()): void {
 		for (const [eventId, event] of this.events.entries()) {
 			if (event.expiresAt <= now) {
 				this.events.delete(eventId);
@@ -49,11 +89,20 @@ class InMemoryEventStore implements EventStore {
 		}
 	}
 
+	private maybeCleanupExpired(now = Date.now()): void {
+		if (now - this.lastCleanupAt < EVENT_STORE_CLEANUP_INTERVAL_MS) {
+			return;
+		}
+
+		this.cleanupExpired(now);
+		this.lastCleanupAt = now;
+	}
+
 	async storeEvent(
 		streamId: StreamId,
 		message: JSONRPCMessage,
 	): Promise<EventId> {
-		this.cleanupExpired();
+		this.maybeCleanupExpired();
 
 		this.sequence += 1;
 		const eventId = String(this.sequence);
@@ -71,8 +120,9 @@ class InMemoryEventStore implements EventStore {
 	}
 
 	async getStreamIdForEventId(eventId: EventId): Promise<StreamId | undefined> {
-		this.cleanupExpired();
-		return this.events.get(eventId)?.streamId;
+		const now = Date.now();
+		this.maybeCleanupExpired(now);
+		return this.getEventIfUnexpired(eventId, now)?.streamId;
 	}
 
 	async replayEventsAfter(
@@ -81,9 +131,10 @@ class InMemoryEventStore implements EventStore {
 			send,
 		}: { send: (eventId: EventId, message: JSONRPCMessage) => Promise<void> },
 	): Promise<StreamId> {
-		this.cleanupExpired();
+		const now = Date.now();
+		this.maybeCleanupExpired(now);
 
-		const lastEvent = this.events.get(lastEventId);
+		const lastEvent = this.getEventIfUnexpired(lastEventId, now);
 		if (!lastEvent) {
 			throw new Error(`Event not found for replay: ${lastEventId}`);
 		}
@@ -97,7 +148,7 @@ class InMemoryEventStore implements EventStore {
 		}
 
 		for (const eventId of eventIds.slice(index + 1)) {
-			const event = this.events.get(eventId);
+			const event = this.getEventIfUnexpired(eventId, now);
 			if (!event) {
 				continue;
 			}
@@ -214,9 +265,19 @@ class RedisEventStore implements EventStore {
 			"+inf",
 		);
 
+		if (eventIds.length === 0) {
+			return streamId;
+		}
+
+		const tx = this.client.multi();
 		for (const eventId of eventIds) {
-			const encoded = await this.client.hGet(this.eventKey(eventId), "message");
-			if (!encoded) {
+			tx.hGet(this.eventKey(eventId), "message");
+		}
+		const encodedMessages = await tx.exec();
+
+		for (const [index, eventId] of eventIds.entries()) {
+			const encoded = encodedMessages[index];
+			if (typeof encoded !== "string") {
 				continue;
 			}
 			let message: JSONRPCMessage;
