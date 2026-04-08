@@ -10,25 +10,22 @@ export function registerMcpServersTools(
 		"list_mcp_servers",
 		"List all MCP servers in your Portkey organization with optional pagination and workspace filtering",
 		{
-			current_page: z
-				.coerce.number()
+			current_page: z.coerce
+				.number()
 				.positive()
 				.optional()
 				.describe("Page number for pagination"),
-			page_size: z
-				.coerce.number()
+			page_size: z.coerce
+				.number()
 				.int()
 				.positive()
 				.max(100)
 				.optional()
 				.describe("Number of results per page (max 100)"),
-			workspace_id: z
-				.string()
-				.optional()
-				.describe("Filter by workspace ID"),
+			workspace_id: z.string().optional().describe("Filter by workspace ID"),
 		},
 		async (params) => {
-			const result = await service.listMcpServers(params);
+			const result = await service.mcpServers.listMcpServers(params);
 			return {
 				content: [
 					{
@@ -54,9 +51,7 @@ export function registerMcpServersTools(
 			name: z.string().describe("Display name for the MCP server"),
 			mcp_integration_id: z
 				.string()
-				.describe(
-					"ID or slug of the MCP integration this server belongs to",
-				),
+				.describe("ID or slug of the MCP integration this server belongs to"),
 			slug: z
 				.string()
 				.optional()
@@ -67,7 +62,7 @@ export function registerMcpServersTools(
 				.describe("Description of the MCP server"),
 		},
 		async (params) => {
-			const result = await service.createMcpServer(params);
+			const result = await service.mcpServers.createMcpServer(params);
 			return {
 				content: [
 					{
@@ -94,7 +89,7 @@ export function registerMcpServersTools(
 			id: z.string().describe("The MCP server ID or slug to retrieve"),
 		},
 		async (params) => {
-			const mcpServer = await service.getMcpServer(params.id);
+			const mcpServer = await service.mcpServers.getMcpServer(params.id);
 			return {
 				content: [
 					{
@@ -116,7 +111,7 @@ export function registerMcpServersTools(
 		},
 		async (params) => {
 			const { id, ...data } = params;
-			await service.updateMcpServer(id, data);
+			await service.mcpServers.updateMcpServer(id, data);
 			return {
 				content: [
 					{
@@ -142,7 +137,7 @@ export function registerMcpServersTools(
 			id: z.string().describe("The MCP server ID or slug to delete"),
 		},
 		async (params) => {
-			await service.deleteMcpServer(params.id);
+			await service.mcpServers.deleteMcpServer(params.id);
 			return {
 				content: [
 					{
@@ -168,7 +163,7 @@ export function registerMcpServersTools(
 			id: z.string().describe("The MCP server ID or slug to test"),
 		},
 		async (params) => {
-			const result = await service.testMcpServer(params.id);
+			const result = await service.mcpServers.testMcpServer(params.id);
 			return {
 				content: [
 					{
@@ -187,7 +182,9 @@ export function registerMcpServersTools(
 			id: z.string().describe("The MCP server ID or slug"),
 		},
 		async (params) => {
-			const result = await service.listMcpServerCapabilities(params.id);
+			const result = await service.mcpServers.listMcpServerCapabilities(
+				params.id,
+			);
 			return {
 				content: [
 					{
@@ -215,16 +212,14 @@ export function registerMcpServersTools(
 						type: z
 							.enum(["tool", "prompt", "resource"])
 							.describe("Capability type"),
-						enabled: z
-							.boolean()
-							.describe("Whether to enable the capability"),
+						enabled: z.boolean().describe("Whether to enable the capability"),
 					}),
 				)
 				.min(1)
 				.describe("Array of capability updates"),
 		},
 		async (params) => {
-			await service.updateMcpServerCapabilities(params.id, {
+			await service.mcpServers.updateMcpServerCapabilities(params.id, {
 				capabilities: params.capabilities,
 			});
 			return {
@@ -252,7 +247,9 @@ export function registerMcpServersTools(
 			id: z.string().describe("The MCP server ID or slug"),
 		},
 		async (params) => {
-			const result = await service.listMcpServerUserAccess(params.id);
+			const result = await service.mcpServers.listMcpServerUserAccess(
+				params.id,
+			);
 			return {
 				content: [
 					{
@@ -277,16 +274,14 @@ export function registerMcpServersTools(
 				.array(
 					z.object({
 						user_id: z.string().describe("User ID"),
-						enabled: z
-							.boolean()
-							.describe("Whether user has access"),
+						enabled: z.boolean().describe("Whether user has access"),
 					}),
 				)
 				.min(1)
 				.describe("Array of user access updates"),
 		},
 		async (params) => {
-			await service.updateMcpServerUserAccess(params.id, {
+			await service.mcpServers.updateMcpServerUserAccess(params.id, {
 				user_access: params.users,
 			});
 			return {

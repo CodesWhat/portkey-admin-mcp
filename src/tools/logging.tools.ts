@@ -57,8 +57,8 @@ export function registerLoggingTools(
 				.record(z.string(), z.unknown())
 				.optional()
 				.describe("Request payload/body"),
-			response_status: z
-				.coerce.number()
+			response_status: z.coerce
+				.number()
 				.optional()
 				.default(200)
 				.describe("HTTP response status code (defaults to 200)"),
@@ -70,8 +70,8 @@ export function registerLoggingTools(
 				.record(z.string(), z.unknown())
 				.optional()
 				.describe("Response payload/body"),
-			response_time: z
-				.coerce.number()
+			response_time: z.coerce
+				.number()
 				.optional()
 				.describe("Response latency in milliseconds"),
 			streaming_mode: z
@@ -132,7 +132,7 @@ export function registerLoggingTools(
 				},
 			};
 
-			const result = await service.insertLog(entry);
+			const result = await service.logging.insertLog(entry);
 
 			return {
 				content: [
@@ -177,12 +177,12 @@ export function registerLoggingTools(
 				),
 			cost_min: z.coerce.number().optional().describe("Minimum cost filter"),
 			cost_max: z.coerce.number().optional().describe("Maximum cost filter"),
-			total_units_min: z
-				.coerce.number()
+			total_units_min: z.coerce
+				.number()
 				.optional()
 				.describe("Minimum total units (tokens) filter"),
-			total_units_max: z
-				.coerce.number()
+			total_units_max: z.coerce
+				.number()
 				.optional()
 				.describe("Maximum total units (tokens) filter"),
 			ai_model: z
@@ -196,7 +196,7 @@ export function registerLoggingTools(
 				),
 		},
 		async (params) => {
-			const result = await service.createLogExport({
+			const result = await service.logging.createLogExport({
 				workspace_id: params.workspace_id,
 				description: params.description,
 				filters: {
@@ -241,7 +241,7 @@ export function registerLoggingTools(
 				.describe("Workspace ID to list exports for (required)"),
 		},
 		async (params) => {
-			const result = await service.listLogExports({
+			const result = await service.logging.listLogExports({
 				workspace_id: params.workspace_id,
 			});
 
@@ -281,7 +281,7 @@ export function registerLoggingTools(
 			export_id: z.string().describe("The unique ID of the log export"),
 		},
 		async (params) => {
-			const result = await service.getLogExport(params.export_id);
+			const result = await service.logging.getLogExport(params.export_id);
 
 			return {
 				content: [
@@ -319,7 +319,7 @@ export function registerLoggingTools(
 				.describe("The unique ID of the log export to start"),
 		},
 		async (params) => {
-			const result = await service.startLogExport(params.export_id);
+			const result = await service.logging.startLogExport(params.export_id);
 
 			return {
 				content: [
@@ -350,7 +350,7 @@ export function registerLoggingTools(
 				.describe("The unique ID of the log export to cancel"),
 		},
 		async (params) => {
-			const result = await service.cancelLogExport(params.export_id);
+			const result = await service.logging.cancelLogExport(params.export_id);
 
 			return {
 				content: [
@@ -381,7 +381,7 @@ export function registerLoggingTools(
 				.describe("The unique ID of the log export to download"),
 		},
 		async (params) => {
-			const result = await service.downloadLogExport(params.export_id);
+			const result = await service.logging.downloadLogExport(params.export_id);
 
 			return {
 				content: [
@@ -448,7 +448,7 @@ export function registerLoggingTools(
 				updateData.requested_data = params.requested_fields;
 			}
 
-			const result = await service.updateLogExport(
+			const result = await service.logging.updateLogExport(
 				params.export_id,
 				updateData,
 			);

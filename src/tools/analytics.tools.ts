@@ -18,43 +18,43 @@ const baseAnalyticsSchema = {
 		.describe(
 			"End time for the analytics period (ISO8601 format, e.g., '2024-02-01T00:00:00Z')",
 		),
-	total_units_min: z
-		.coerce.number()
+	total_units_min: z.coerce
+		.number()
 		.positive()
 		.optional()
 		.describe("Minimum number of total tokens to filter by"),
-	total_units_max: z
-		.coerce.number()
+	total_units_max: z.coerce
+		.number()
 		.positive()
 		.optional()
 		.describe("Maximum number of total tokens to filter by"),
-	cost_min: z
-		.coerce.number()
+	cost_min: z.coerce
+		.number()
 		.positive()
 		.optional()
 		.describe("Minimum cost in cents to filter by"),
-	cost_max: z
-		.coerce.number()
+	cost_max: z.coerce
+		.number()
 		.positive()
 		.optional()
 		.describe("Maximum cost in cents to filter by"),
-	prompt_token_min: z
-		.coerce.number()
+	prompt_token_min: z.coerce
+		.number()
 		.positive()
 		.optional()
 		.describe("Minimum number of prompt tokens"),
-	prompt_token_max: z
-		.coerce.number()
+	prompt_token_max: z.coerce
+		.number()
 		.positive()
 		.optional()
 		.describe("Maximum number of prompt tokens"),
-	completion_token_min: z
-		.coerce.number()
+	completion_token_min: z.coerce
+		.number()
 		.positive()
 		.optional()
 		.describe("Minimum number of completion tokens"),
-	completion_token_max: z
-		.coerce.number()
+	completion_token_max: z.coerce
+		.number()
 		.positive()
 		.optional()
 		.describe("Maximum number of completion tokens"),
@@ -62,14 +62,14 @@ const baseAnalyticsSchema = {
 		.string()
 		.optional()
 		.describe("Filter by specific HTTP status codes (comma-separated)"),
-	weighted_feedback_min: z
-		.coerce.number()
+	weighted_feedback_min: z.coerce
+		.number()
 		.min(-10)
 		.max(10)
 		.optional()
 		.describe("Minimum weighted feedback score (-10 to 10)"),
-	weighted_feedback_max: z
-		.coerce.number()
+	weighted_feedback_max: z.coerce
+		.number()
 		.min(-10)
 		.max(10)
 		.optional()
@@ -93,7 +93,9 @@ const baseAnalyticsSchema = {
 	metadata: z
 		.string()
 		.optional()
-		.describe("Stringified JSON object for metadata filtering, e.g. '{\"env\":\"prod\",\"app\":\"myapp\"}'."),
+		.describe(
+			'Stringified JSON object for metadata filtering, e.g. \'{"env":"prod","app":"myapp"}\'.',
+		),
 	ai_org_model: z
 		.string()
 		.optional()
@@ -108,10 +110,7 @@ const baseAnalyticsSchema = {
 		.string()
 		.optional()
 		.describe("Filter by span IDs (comma-separated)"),
-	prompt_slug: z
-		.string()
-		.optional()
-		.describe("Filter by prompt slug"),
+	prompt_slug: z.string().optional().describe("Filter by prompt slug"),
 };
 
 export function registerAnalyticsTools(
@@ -125,7 +124,7 @@ export function registerAnalyticsTools(
 		"Retrieve detailed cost analytics data over time, including total costs and averages per request",
 		baseAnalyticsSchema,
 		async (params) => {
-			const analytics = await service.getCostAnalytics(params);
+			const analytics = await service.analytics.getCostAnalytics(params);
 			return {
 				content: [
 					{
@@ -159,7 +158,7 @@ export function registerAnalyticsTools(
 		"Retrieve request analytics as time-series data, showing total, successful, and failed requests over time",
 		baseAnalyticsSchema,
 		async (params) => {
-			const analytics = await service.getRequestAnalytics(params);
+			const analytics = await service.analytics.getRequestAnalytics(params);
 			return {
 				content: [
 					{
@@ -193,7 +192,7 @@ export function registerAnalyticsTools(
 		"Retrieve token usage analytics as time-series data, showing total, prompt, and completion tokens over time",
 		baseAnalyticsSchema,
 		async (params) => {
-			const analytics = await service.getTokenAnalytics(params);
+			const analytics = await service.analytics.getTokenAnalytics(params);
 			return {
 				content: [
 					{
@@ -227,7 +226,7 @@ export function registerAnalyticsTools(
 		"Retrieve latency analytics as time-series data, showing average, p50, p90, and p99 latency percentiles over time",
 		baseAnalyticsSchema,
 		async (params) => {
-			const analytics = await service.getLatencyAnalytics(params);
+			const analytics = await service.analytics.getLatencyAnalytics(params);
 			return {
 				content: [
 					{
@@ -263,7 +262,7 @@ export function registerAnalyticsTools(
 		"Retrieve error count analytics as time-series data, showing total error counts over time",
 		baseAnalyticsSchema,
 		async (params) => {
-			const analytics = await service.getErrorAnalytics(params);
+			const analytics = await service.analytics.getErrorAnalytics(params);
 			return {
 				content: [
 					{
@@ -293,7 +292,7 @@ export function registerAnalyticsTools(
 		"Retrieve error rate analytics as time-series data, showing the percentage of failed requests over time",
 		baseAnalyticsSchema,
 		async (params) => {
-			const analytics = await service.getErrorRateAnalytics(params);
+			const analytics = await service.analytics.getErrorRateAnalytics(params);
 			return {
 				content: [
 					{
@@ -325,7 +324,7 @@ export function registerAnalyticsTools(
 		"Retrieve cache hit latency analytics as time-series data, showing total and average latency for cache hits over time",
 		baseAnalyticsSchema,
 		async (params) => {
-			const analytics = await service.getCacheHitLatency(params);
+			const analytics = await service.analytics.getCacheHitLatency(params);
 			return {
 				content: [
 					{
@@ -357,7 +356,7 @@ export function registerAnalyticsTools(
 		"Retrieve cache hit rate analytics as time-series data, showing hit rate percentage, total hits, and misses over time",
 		baseAnalyticsSchema,
 		async (params) => {
-			const analytics = await service.getCacheHitRate(params);
+			const analytics = await service.analytics.getCacheHitRate(params);
 			return {
 				content: [
 					{
@@ -393,7 +392,7 @@ export function registerAnalyticsTools(
 		"Retrieve user activity analytics over time, showing active and new user counts",
 		baseAnalyticsSchema,
 		async (params) => {
-			const analytics = await service.getUsersAnalytics(params);
+			const analytics = await service.analytics.getUsersAnalytics(params);
 			return {
 				content: [
 					{
@@ -427,7 +426,7 @@ export function registerAnalyticsTools(
 		"Retrieve error analytics broken down by status code stacks over time",
 		baseAnalyticsSchema,
 		async (params) => {
-			const analytics = await service.getErrorStacksAnalytics(params);
+			const analytics = await service.analytics.getErrorStacksAnalytics(params);
 			return {
 				content: [{ type: "text", text: JSON.stringify(analytics, null, 2) }],
 			};
@@ -439,7 +438,8 @@ export function registerAnalyticsTools(
 		"Retrieve unique error status code distribution analytics over time",
 		baseAnalyticsSchema,
 		async (params) => {
-			const analytics = await service.getErrorStatusCodesAnalytics(params);
+			const analytics =
+				await service.analytics.getErrorStatusCodesAnalytics(params);
 			return {
 				content: [{ type: "text", text: JSON.stringify(analytics, null, 2) }],
 			};
@@ -451,7 +451,8 @@ export function registerAnalyticsTools(
 		"Retrieve per-user request count analytics over time",
 		baseAnalyticsSchema,
 		async (params) => {
-			const analytics = await service.getUserRequestsAnalytics(params);
+			const analytics =
+				await service.analytics.getUserRequestsAnalytics(params);
 			return {
 				content: [{ type: "text", text: JSON.stringify(analytics, null, 2) }],
 			};
@@ -463,7 +464,8 @@ export function registerAnalyticsTools(
 		"Retrieve analytics for requests rescued by retry or fallback strategies over time",
 		baseAnalyticsSchema,
 		async (params) => {
-			const analytics = await service.getRescuedRequestsAnalytics(params);
+			const analytics =
+				await service.analytics.getRescuedRequestsAnalytics(params);
 			return {
 				content: [{ type: "text", text: JSON.stringify(analytics, null, 2) }],
 			};
@@ -475,7 +477,7 @@ export function registerAnalyticsTools(
 		"Retrieve feedback submission analytics over time",
 		baseAnalyticsSchema,
 		async (params) => {
-			const analytics = await service.getFeedbackAnalytics(params);
+			const analytics = await service.analytics.getFeedbackAnalytics(params);
 			return {
 				content: [{ type: "text", text: JSON.stringify(analytics, null, 2) }],
 			};
@@ -487,7 +489,8 @@ export function registerAnalyticsTools(
 		"Retrieve feedback analytics grouped by AI model over time",
 		baseAnalyticsSchema,
 		async (params) => {
-			const analytics = await service.getFeedbackModelsAnalytics(params);
+			const analytics =
+				await service.analytics.getFeedbackModelsAnalytics(params);
 			return {
 				content: [{ type: "text", text: JSON.stringify(analytics, null, 2) }],
 			};
@@ -499,7 +502,8 @@ export function registerAnalyticsTools(
 		"Retrieve feedback score distribution analytics over time",
 		baseAnalyticsSchema,
 		async (params) => {
-			const analytics = await service.getFeedbackScoresAnalytics(params);
+			const analytics =
+				await service.analytics.getFeedbackScoresAnalytics(params);
 			return {
 				content: [{ type: "text", text: JSON.stringify(analytics, null, 2) }],
 			};
@@ -511,7 +515,8 @@ export function registerAnalyticsTools(
 		"Retrieve weighted feedback analytics over time",
 		baseAnalyticsSchema,
 		async (params) => {
-			const analytics = await service.getFeedbackWeightedAnalytics(params);
+			const analytics =
+				await service.analytics.getFeedbackWeightedAnalytics(params);
 			return {
 				content: [{ type: "text", text: JSON.stringify(analytics, null, 2) }],
 			};
@@ -522,13 +527,13 @@ export function registerAnalyticsTools(
 
 	const paginatedAnalyticsSchema = {
 		...baseAnalyticsSchema,
-		current_page: z
-			.coerce.number()
+		current_page: z.coerce
+			.number()
 			.positive()
 			.optional()
 			.describe("Page number for pagination"),
-		page_size: z
-			.coerce.number()
+		page_size: z.coerce
+			.number()
 			.int()
 			.positive()
 			.max(100)
@@ -541,7 +546,7 @@ export function registerAnalyticsTools(
 		"Retrieve analytics data grouped by user with pagination",
 		paginatedAnalyticsSchema,
 		async (params) => {
-			const analytics = await service.getAnalyticsGroupUsers(params);
+			const analytics = await service.analytics.getAnalyticsGroupUsers(params);
 			return {
 				content: [{ type: "text", text: JSON.stringify(analytics, null, 2) }],
 			};
@@ -553,7 +558,7 @@ export function registerAnalyticsTools(
 		"Retrieve analytics data grouped by AI model with pagination",
 		paginatedAnalyticsSchema,
 		async (params) => {
-			const analytics = await service.getAnalyticsGroupModels(params);
+			const analytics = await service.analytics.getAnalyticsGroupModels(params);
 			return {
 				content: [{ type: "text", text: JSON.stringify(analytics, null, 2) }],
 			};
@@ -573,7 +578,7 @@ export function registerAnalyticsTools(
 		},
 		async (params) => {
 			const { metadata_key, ...analyticsParams } = params;
-			const analytics = await service.getAnalyticsGroupMetadata(
+			const analytics = await service.analytics.getAnalyticsGroupMetadata(
 				metadata_key,
 				analyticsParams,
 			);

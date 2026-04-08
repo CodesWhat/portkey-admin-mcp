@@ -10,25 +10,22 @@ export function registerMcpIntegrationsTools(
 		"list_mcp_integrations",
 		"List all MCP integrations in your Portkey organization with optional pagination and workspace filtering",
 		{
-			current_page: z
-				.coerce.number()
+			current_page: z.coerce
+				.number()
 				.positive()
 				.optional()
 				.describe("Page number for pagination"),
-			page_size: z
-				.coerce.number()
+			page_size: z.coerce
+				.number()
 				.int()
 				.positive()
 				.max(100)
 				.optional()
 				.describe("Number of results per page (max 100)"),
-			workspace_id: z
-				.string()
-				.optional()
-				.describe("Filter by workspace ID"),
+			workspace_id: z.string().optional().describe("Filter by workspace ID"),
 		},
 		async (params) => {
-			const result = await service.listMcpIntegrations(params);
+			const result = await service.mcpIntegrations.listMcpIntegrations(params);
 			return {
 				content: [
 					{
@@ -56,10 +53,14 @@ export function registerMcpIntegrationsTools(
 			url: z.string().describe("URL endpoint of the MCP server to integrate"),
 			auth_type: z
 				.enum(["oauth_auto", "headers", "none"])
-				.describe("Authentication type: 'none', 'headers' (custom headers), or 'oauth_auto' (OAuth)"),
+				.describe(
+					"Authentication type: 'none', 'headers' (custom headers), or 'oauth_auto' (OAuth)",
+				),
 			transport: z
 				.enum(["http", "sse"])
-				.describe("MCP transport protocol: 'http' (streamable HTTP) or 'sse' (server-sent events)"),
+				.describe(
+					"MCP transport protocol: 'http' (streamable HTTP) or 'sse' (server-sent events)",
+				),
 			slug: z
 				.string()
 				.optional()
@@ -71,7 +72,9 @@ export function registerMcpIntegrationsTools(
 			custom_headers: z
 				.record(z.string(), z.string())
 				.optional()
-				.describe("Custom headers for authentication (e.g. { \"Authorization\": \"Bearer xxx\" }). Sent via configurations.custom_headers"),
+				.describe(
+					'Custom headers for authentication (e.g. { "Authorization": "Bearer xxx" }). Sent via configurations.custom_headers',
+				),
 			workspace_id: z
 				.string()
 				.optional()
@@ -80,14 +83,23 @@ export function registerMcpIntegrationsTools(
 				),
 		},
 		async (params) => {
-			if (params.auth_type === "headers" && (!params.custom_headers || Object.keys(params.custom_headers).length === 0)) {
+			if (
+				params.auth_type === "headers" &&
+				(!params.custom_headers ||
+					Object.keys(params.custom_headers).length === 0)
+			) {
 				return {
-					content: [{ type: "text" as const, text: "Error: custom_headers must be provided when auth_type is 'headers'" }],
+					content: [
+						{
+							type: "text" as const,
+							text: "Error: custom_headers must be provided when auth_type is 'headers'",
+						},
+					],
 					isError: true,
 				};
 			}
 			const { custom_headers, ...rest } = params;
-			const result = await service.createMcpIntegration({
+			const result = await service.mcpIntegrations.createMcpIntegration({
 				...rest,
 				...(custom_headers ? { configurations: { custom_headers } } : {}),
 			});
@@ -114,12 +126,12 @@ export function registerMcpIntegrationsTools(
 		"get_mcp_integration",
 		"Retrieve detailed information about a specific MCP integration by ID or slug",
 		{
-			id: z
-				.string()
-				.describe("The MCP integration ID or slug to retrieve"),
+			id: z.string().describe("The MCP integration ID or slug to retrieve"),
 		},
 		async (params) => {
-			const integration = await service.getMcpIntegration(params.id);
+			const integration = await service.mcpIntegrations.getMcpIntegration(
+				params.id,
+			);
 			return {
 				content: [
 					{
@@ -150,11 +162,13 @@ export function registerMcpIntegrationsTools(
 			custom_headers: z
 				.record(z.string(), z.string())
 				.optional()
-				.describe("New custom headers for authentication. Sent via configurations.custom_headers"),
+				.describe(
+					"New custom headers for authentication. Sent via configurations.custom_headers",
+				),
 		},
 		async (params) => {
 			const { id, custom_headers, ...rest } = params;
-			await service.updateMcpIntegration(id, {
+			await service.mcpIntegrations.updateMcpIntegration(id, {
 				...rest,
 				...(custom_headers ? { configurations: { custom_headers } } : {}),
 			});
@@ -183,7 +197,7 @@ export function registerMcpIntegrationsTools(
 			id: z.string().describe("The MCP integration ID or slug to delete"),
 		},
 		async (params) => {
-			await service.deleteMcpIntegration(params.id);
+			await service.mcpIntegrations.deleteMcpIntegration(params.id);
 			return {
 				content: [
 					{
@@ -206,12 +220,12 @@ export function registerMcpIntegrationsTools(
 		"get_mcp_integration_metadata",
 		"Retrieve metadata for a specific MCP integration",
 		{
-			id: z
-				.string()
-				.describe("The MCP integration ID or slug"),
+			id: z.string().describe("The MCP integration ID or slug"),
 		},
 		async (params) => {
-			const metadata = await service.getMcpIntegrationMetadata(params.id);
+			const metadata = await service.mcpIntegrations.getMcpIntegrationMetadata(
+				params.id,
+			);
 			return {
 				content: [
 					{
@@ -227,14 +241,11 @@ export function registerMcpIntegrationsTools(
 		"list_mcp_integration_capabilities",
 		"List all capabilities (tools, resources, prompts) available on an MCP integration",
 		{
-			id: z
-				.string()
-				.describe("The MCP integration ID or slug"),
+			id: z.string().describe("The MCP integration ID or slug"),
 		},
 		async (params) => {
-			const result = await service.listMcpIntegrationCapabilities(
-				params.id,
-			);
+			const result =
+				await service.mcpIntegrations.listMcpIntegrationCapabilities(params.id);
 			return {
 				content: [
 					{
@@ -254,9 +265,7 @@ export function registerMcpIntegrationsTools(
 		"update_mcp_integration_capabilities",
 		"Bulk enable or disable capabilities on an MCP integration",
 		{
-			id: z
-				.string()
-				.describe("The MCP integration ID or slug"),
+			id: z.string().describe("The MCP integration ID or slug"),
 			capabilities: z
 				.array(
 					z.object({
@@ -264,18 +273,19 @@ export function registerMcpIntegrationsTools(
 						type: z
 							.enum(["tool", "prompt", "resource"])
 							.describe("Capability type"),
-						enabled: z
-							.boolean()
-							.describe("Whether to enable the capability"),
+						enabled: z.boolean().describe("Whether to enable the capability"),
 					}),
 				)
 				.min(1)
 				.describe("Array of capability updates"),
 		},
 		async (params) => {
-			await service.updateMcpIntegrationCapabilities(params.id, {
-				capabilities: params.capabilities,
-			});
+			await service.mcpIntegrations.updateMcpIntegrationCapabilities(
+				params.id,
+				{
+					capabilities: params.capabilities,
+				},
+			);
 			return {
 				content: [
 					{
@@ -298,12 +308,10 @@ export function registerMcpIntegrationsTools(
 		"list_mcp_integration_workspaces",
 		"List workspace access settings for an MCP integration",
 		{
-			id: z
-				.string()
-				.describe("The MCP integration ID or slug"),
+			id: z.string().describe("The MCP integration ID or slug"),
 		},
 		async (params) => {
-			const result = await service.listMcpIntegrationWorkspaces(
+			const result = await service.mcpIntegrations.listMcpIntegrationWorkspaces(
 				params.id,
 			);
 			return {
@@ -321,23 +329,19 @@ export function registerMcpIntegrationsTools(
 		"update_mcp_integration_workspaces",
 		"Bulk update workspace access for an MCP integration",
 		{
-			id: z
-				.string()
-				.describe("The MCP integration ID or slug"),
+			id: z.string().describe("The MCP integration ID or slug"),
 			workspaces: z
 				.array(
 					z.object({
 						id: z.string().describe("Workspace ID"),
-						enabled: z
-							.boolean()
-							.describe("Whether workspace has access"),
+						enabled: z.boolean().describe("Whether workspace has access"),
 					}),
 				)
 				.min(1)
 				.describe("Array of workspace access updates"),
 		},
 		async (params) => {
-			await service.updateMcpIntegrationWorkspaces(params.id, {
+			await service.mcpIntegrations.updateMcpIntegrationWorkspaces(params.id, {
 				workspaces: params.workspaces,
 			});
 			return {

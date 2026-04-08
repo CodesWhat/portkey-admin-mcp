@@ -12,13 +12,13 @@ export function registerProvidersTools(
 		"list_providers",
 		"List all providers in your Portkey organization with optional pagination and workspace filtering",
 		{
-			current_page: z
-				.coerce.number()
+			current_page: z.coerce
+				.number()
 				.positive()
 				.optional()
 				.describe("Page number for pagination"),
-			page_size: z
-				.coerce.number()
+			page_size: z.coerce
+				.number()
 				.int()
 				.positive()
 				.max(100)
@@ -32,7 +32,7 @@ export function registerProvidersTools(
 				),
 		},
 		async (params) => {
-			const providers = await service.listProviders({
+			const providers = await service.providers.listProviders({
 				current_page: params.current_page,
 				page_size: params.page_size,
 				workspace_id: params.workspace_id,
@@ -54,8 +54,7 @@ export function registerProvidersTools(
 									usage_limits: provider.usage_limits
 										? {
 												credit_limit: provider.usage_limits.credit_limit,
-												alert_threshold:
-													provider.usage_limits.alert_threshold,
+												alert_threshold: provider.usage_limits.alert_threshold,
 												periodic_reset: provider.usage_limits.periodic_reset,
 											}
 										: null,
@@ -106,13 +105,13 @@ export function registerProvidersTools(
 				.string()
 				.optional()
 				.describe("Optional note or description for the provider"),
-			credit_limit: z
-				.coerce.number()
+			credit_limit: z.coerce
+				.number()
 				.positive()
 				.optional()
 				.describe("Credit limit for usage"),
-			alert_threshold: z
-				.coerce.number()
+			alert_threshold: z.coerce
+				.number()
 				.min(0)
 				.max(100)
 				.optional()
@@ -129,8 +128,8 @@ export function registerProvidersTools(
 				.describe(
 					"Period for resetting usage limits: 'monthly' or 'weekly'. Defaults to 'monthly'.",
 				),
-			rate_limit_value: z
-				.coerce.number()
+			rate_limit_value: z.coerce
+				.number()
 				.positive()
 				.optional()
 				.describe("Must be provided together with rate_limit_unit."),
@@ -146,7 +145,7 @@ export function registerProvidersTools(
 				.describe("Expiration date in ISO 8601 format"),
 		},
 		async (params) => {
-			const result = await service.createProvider({
+			const result = await service.providers.createProvider({
 				name: params.name,
 				integration_id: params.integration_id,
 				workspace_id: params.workspace_id,
@@ -202,7 +201,7 @@ export function registerProvidersTools(
 				.describe("Workspace ID - required when using organization admin keys"),
 		},
 		async (params) => {
-			const provider = await service.getProvider(
+			const provider = await service.providers.getProvider(
 				params.slug,
 				params.workspace_id,
 			);
@@ -259,13 +258,13 @@ export function registerProvidersTools(
 				.string()
 				.optional()
 				.describe("New note or description for the provider"),
-			credit_limit: z
-				.coerce.number()
+			credit_limit: z.coerce
+				.number()
 				.positive()
 				.optional()
 				.describe("New credit limit for usage"),
-			alert_threshold: z
-				.coerce.number()
+			alert_threshold: z.coerce
+				.number()
 				.min(0)
 				.max(100)
 				.optional()
@@ -282,8 +281,8 @@ export function registerProvidersTools(
 				.describe(
 					"Period for resetting usage limits: 'monthly' or 'weekly'. Defaults to 'monthly'.",
 				),
-			rate_limit_value: z
-				.coerce.number()
+			rate_limit_value: z.coerce
+				.number()
 				.positive()
 				.optional()
 				.describe("New rate limit value"),
@@ -303,7 +302,7 @@ export function registerProvidersTools(
 				.describe("Set to true to reset accumulated usage metrics"),
 		},
 		async (params) => {
-			const result = await service.updateProvider(
+			const result = await service.providers.updateProvider(
 				params.slug,
 				{
 					name: params.name,
@@ -359,7 +358,7 @@ export function registerProvidersTools(
 				.describe("Workspace ID - required when using organization admin keys"),
 		},
 		async (params) => {
-			await service.deleteProvider(params.slug, params.workspace_id);
+			await service.providers.deleteProvider(params.slug, params.workspace_id);
 
 			return {
 				content: [

@@ -13,20 +13,20 @@ export function registerCollectionsTools(
 		{
 			workspace_id: z.string().optional().describe("Filter by workspace ID"),
 			search: z.string().optional().describe("Search collections by name"),
-			current_page: z
-				.coerce.number()
+			current_page: z.coerce
+				.number()
 				.positive()
 				.optional()
 				.describe("Page number for pagination"),
-			page_size: z
-				.coerce.number()
+			page_size: z.coerce
+				.number()
 				.positive()
 				.max(100)
 				.optional()
 				.describe("Results per page (max 100)"),
 		},
 		async (params) => {
-			const collections = await service.listCollections(params);
+			const collections = await service.collections.listCollections(params);
 			return {
 				content: [
 					{
@@ -68,7 +68,7 @@ export function registerCollectionsTools(
 				.describe("Workspace ID to create collection in"),
 		},
 		async (params) => {
-			const result = await service.createCollection(params);
+			const result = await service.collections.createCollection(params);
 			return {
 				content: [
 					{
@@ -96,7 +96,9 @@ export function registerCollectionsTools(
 			collection_id: z.string().describe("Collection ID or slug to retrieve"),
 		},
 		async (params) => {
-			const collection = await service.getCollection(params.collection_id);
+			const collection = await service.collections.getCollection(
+				params.collection_id,
+			);
 			return {
 				content: [
 					{
@@ -132,7 +134,7 @@ export function registerCollectionsTools(
 				.describe("New description for the collection"),
 		},
 		async (params) => {
-			await service.updateCollection(params.collection_id, {
+			await service.collections.updateCollection(params.collection_id, {
 				name: params.name,
 				description: params.description,
 			});
@@ -162,7 +164,9 @@ export function registerCollectionsTools(
 			collection_id: z.string().describe("Collection ID to delete"),
 		},
 		async (params) => {
-			const result = await service.deleteCollection(params.collection_id);
+			const result = await service.collections.deleteCollection(
+				params.collection_id,
+			);
 			return {
 				content: [
 					{

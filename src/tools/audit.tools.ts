@@ -47,20 +47,20 @@ export function registerAuditTools(
 				.describe(
 					"End of time range filter (ISO 8601 format, e.g., '2024-01-31T23:59:59Z')",
 				),
-			current_page: z
-				.coerce.number()
+			current_page: z.coerce
+				.number()
 				.positive()
 				.optional()
 				.describe("Page number for pagination (starts at 1)"),
-			page_size: z
-				.coerce.number()
+			page_size: z.coerce
+				.number()
 				.positive()
 				.max(100)
 				.optional()
 				.describe("Number of results per page (max 100)"),
 		},
 		async (params) => {
-			const result = await service.listAuditLogs({
+			const result = await service.audit.listAuditLogs({
 				workspace_id: params.workspace_id,
 				actor_id: params.actor_id,
 				action: params.action,

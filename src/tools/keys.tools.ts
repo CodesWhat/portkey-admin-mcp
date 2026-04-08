@@ -13,7 +13,7 @@ export function registerKeysTools(
 		"Retrieve all virtual keys in your Portkey organization, including their usage limits, rate limits, and status",
 		{},
 		async () => {
-			const virtualKeys = await service.listVirtualKeys();
+			const virtualKeys = await service.keys.listVirtualKeys();
 			return {
 				content: [
 					{
@@ -85,25 +85,27 @@ export function registerKeysTools(
 				.string()
 				.optional()
 				.describe("Deployment name (for Azure OpenAI)"),
-			credit_limit: z
-				.coerce.number()
+			credit_limit: z.coerce
+				.number()
 				.positive()
 				.optional()
 				.describe("Maximum usage cost threshold"),
-			alert_threshold: z
-				.coerce.number()
+			alert_threshold: z.coerce
+				.number()
 				.min(0)
 				.max(100)
 				.optional()
-				.describe("Percentage of credit_limit at which to send alert emails (0-100)"),
-			rate_limit_rpm: z
-				.coerce.number()
+				.describe(
+					"Percentage of credit_limit at which to send alert emails (0-100)",
+				),
+			rate_limit_rpm: z.coerce
+				.number()
 				.positive()
 				.optional()
 				.describe("Requests per minute limit"),
 		},
 		async (params) => {
-			const result = await service.createVirtualKey({
+			const result = await service.keys.createVirtualKey({
 				name: params.name,
 				provider: params.provider,
 				key: params.key,
@@ -150,7 +152,7 @@ export function registerKeysTools(
 				.describe("The unique slug identifier of the virtual key to retrieve"),
 		},
 		async (params) => {
-			const virtualKey = await service.getVirtualKey(params.slug);
+			const virtualKey = await service.keys.getVirtualKey(params.slug);
 			return {
 				content: [
 					{
@@ -164,8 +166,7 @@ export function registerKeysTools(
 								usage_limits: virtualKey.usage_limits
 									? {
 											credit_limit: virtualKey.usage_limits.credit_limit,
-											alert_threshold:
-												virtualKey.usage_limits.alert_threshold,
+											alert_threshold: virtualKey.usage_limits.alert_threshold,
 											periodic_reset: virtualKey.usage_limits.periodic_reset,
 										}
 									: null,
@@ -197,25 +198,25 @@ export function registerKeysTools(
 			name: z.string().optional().describe("New display name for the key"),
 			key: z.string().optional().describe("New provider API key value"),
 			note: z.string().optional().describe("New note or description"),
-			credit_limit: z
-				.coerce.number()
+			credit_limit: z.coerce
+				.number()
 				.positive()
 				.optional()
 				.describe("New credit limit for usage"),
-			alert_threshold: z
-				.coerce.number()
+			alert_threshold: z.coerce
+				.number()
 				.min(0)
 				.max(100)
 				.optional()
 				.describe("New alert threshold percentage (0-100)"),
-			rate_limit_rpm: z
-				.coerce.number()
+			rate_limit_rpm: z.coerce
+				.number()
 				.positive()
 				.optional()
 				.describe("New rate limit in requests per minute"),
 		},
 		async (params) => {
-			const result = await service.updateVirtualKey(params.slug, {
+			const result = await service.keys.updateVirtualKey(params.slug, {
 				name: params.name,
 				key: params.key,
 				note: params.note,
@@ -254,7 +255,7 @@ export function registerKeysTools(
 			slug: z.string().describe("The slug of the virtual key to delete"),
 		},
 		async (params) => {
-			const result = await service.deleteVirtualKey(params.slug);
+			const result = await service.keys.deleteVirtualKey(params.slug);
 			return {
 				content: [
 					{
@@ -306,19 +307,19 @@ export function registerKeysTools(
 				.describe(
 					"Permission scopes for the key (e.g., ['logs.read', 'analytics.read'])",
 				),
-			credit_limit: z
-				.coerce.number()
+			credit_limit: z.coerce
+				.number()
 				.positive()
 				.optional()
 				.describe("Credit limit for usage"),
-			alert_threshold: z
-				.coerce.number()
+			alert_threshold: z.coerce
+				.number()
 				.min(0)
 				.max(100)
 				.optional()
 				.describe("Alert threshold percentage (0-100)"),
-			rate_limit_rpm: z
-				.coerce.number()
+			rate_limit_rpm: z.coerce
+				.number()
 				.positive()
 				.optional()
 				.describe("Rate limit in requests per minute"),
@@ -364,7 +365,7 @@ export function registerKeysTools(
 				};
 			}
 
-			const result = await service.createApiKey(
+			const result = await service.keys.createApiKey(
 				params.type,
 				params.sub_type,
 				{
@@ -415,21 +416,21 @@ export function registerKeysTools(
 		"list_api_keys",
 		"List all API keys in your Portkey organization with optional pagination and workspace filtering",
 		{
-			page_size: z
-				.coerce.number()
+			page_size: z.coerce
+				.number()
 				.positive()
 				.max(100)
 				.optional()
 				.describe("Number of results per page (max 100)"),
-			current_page: z
-				.coerce.number()
+			current_page: z.coerce
+				.number()
 				.positive()
 				.optional()
 				.describe("Page number for pagination"),
 			workspace_id: z.string().optional().describe("Filter by workspace ID"),
 		},
 		async (params) => {
-			const apiKeys = await service.listApiKeys({
+			const apiKeys = await service.keys.listApiKeys({
 				page_size: params.page_size,
 				current_page: params.current_page,
 				workspace_id: params.workspace_id,
@@ -490,7 +491,7 @@ export function registerKeysTools(
 			id: z.string().uuid().describe("The UUID of the API key to retrieve"),
 		},
 		async (params) => {
-			const apiKey = await service.getApiKey(params.id);
+			const apiKey = await service.keys.getApiKey(params.id);
 			return {
 				content: [
 					{
@@ -551,19 +552,19 @@ export function registerKeysTools(
 				.array(z.string())
 				.optional()
 				.describe("New permission scopes for the key"),
-			credit_limit: z
-				.coerce.number()
+			credit_limit: z.coerce
+				.number()
 				.positive()
 				.optional()
 				.describe("New credit limit for usage"),
-			alert_threshold: z
-				.coerce.number()
+			alert_threshold: z.coerce
+				.number()
 				.min(0)
 				.max(100)
 				.optional()
 				.describe("New alert threshold percentage (0-100)"),
-			rate_limit_rpm: z
-				.coerce.number()
+			rate_limit_rpm: z.coerce
+				.number()
 				.positive()
 				.optional()
 				.describe("New rate limit in requests per minute"),
@@ -588,7 +589,7 @@ export function registerKeysTools(
 				),
 		},
 		async (params) => {
-			const result = await service.updateApiKey(params.id, {
+			const result = await service.keys.updateApiKey(params.id, {
 				name: params.name,
 				description: params.description,
 				scopes: params.scopes,
@@ -635,7 +636,7 @@ export function registerKeysTools(
 			id: z.string().uuid().describe("The UUID of the API key to delete"),
 		},
 		async (params) => {
-			const result = await service.deleteApiKey(params.id);
+			const result = await service.keys.deleteApiKey(params.id);
 			return {
 				content: [
 					{

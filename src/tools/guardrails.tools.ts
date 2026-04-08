@@ -66,20 +66,20 @@ export function registerGuardrailsTools(
 				.string()
 				.optional()
 				.describe("Filter guardrails by organization ID"),
-			page_size: z
-				.coerce.number()
+			page_size: z.coerce
+				.number()
 				.min(1)
 				.max(1000)
 				.optional()
 				.describe("Number of items per page (1-1000, default: 100)"),
-			current_page: z
-				.coerce.number()
+			current_page: z.coerce
+				.number()
 				.positive()
 				.optional()
 				.describe("Page number for pagination"),
 		},
 		async (params) => {
-			const result = await service.listGuardrails(params);
+			const result = await service.guardrails.listGuardrails(params);
 			return {
 				content: [
 					{
@@ -121,7 +121,9 @@ export function registerGuardrailsTools(
 				),
 		},
 		async (params) => {
-			const guardrail = await service.getGuardrail(params.guardrail_id);
+			const guardrail = await service.guardrails.getGuardrail(
+				params.guardrail_id,
+			);
 			return {
 				content: [
 					{
@@ -173,7 +175,7 @@ export function registerGuardrailsTools(
 				.describe("Organisation ID (required if workspace_id not provided)"),
 		},
 		async (params) => {
-			const result = await service.createGuardrail({
+			const result = await service.guardrails.createGuardrail({
 				name: params.name,
 				checks: params.checks,
 				actions: params.actions,
@@ -233,7 +235,7 @@ export function registerGuardrailsTools(
 				updateData.actions = params.actions;
 			}
 
-			const result = await service.updateGuardrail(
+			const result = await service.guardrails.updateGuardrail(
 				params.guardrail_id,
 				updateData,
 			);
@@ -265,7 +267,9 @@ export function registerGuardrailsTools(
 			guardrail_id: z.string().describe("The guardrail UUID or slug to delete"),
 		},
 		async (params) => {
-			const result = await service.deleteGuardrail(params.guardrail_id);
+			const result = await service.guardrails.deleteGuardrail(
+				params.guardrail_id,
+			);
 			return {
 				content: [
 					{

@@ -25,7 +25,9 @@ export function registerLabelsTools(
 				.string()
 				.regex(/^#[0-9A-Fa-f]{6}$/)
 				.optional()
-				.describe("Hex format, e.g. '#FF5733'. Optional — omit for default color."),
+				.describe(
+					"Hex format, e.g. '#FF5733'. Optional — omit for default color.",
+				),
 		},
 		async (params) => {
 			if (!params.organisation_id && !params.workspace_id) {
@@ -39,7 +41,7 @@ export function registerLabelsTools(
 					isError: true,
 				};
 			}
-			const result = await service.createLabel({
+			const result = await service.labels.createLabel({
 				name: params.name,
 				organisation_id: params.organisation_id,
 				workspace_id: params.workspace_id,
@@ -75,20 +77,20 @@ export function registerLabelsTools(
 				.describe("Filter by organisation ID"),
 			workspace_id: z.string().optional().describe("Filter by workspace ID"),
 			search: z.string().optional().describe("Search labels by name"),
-			current_page: z
-				.coerce.number()
+			current_page: z.coerce
+				.number()
 				.positive()
 				.optional()
 				.describe("Page number for pagination"),
-			page_size: z
-				.coerce.number()
+			page_size: z.coerce
+				.number()
 				.positive()
 				.max(100)
 				.optional()
 				.describe("Results per page (max 100)"),
 		},
 		async (params) => {
-			const result = await service.listLabels(params);
+			const result = await service.labels.listLabels(params);
 			return {
 				content: [
 					{
@@ -132,7 +134,7 @@ export function registerLabelsTools(
 				.describe("Workspace ID for filtering"),
 		},
 		async (params) => {
-			const label = await service.getLabel(params.label_id, {
+			const label = await service.labels.getLabel(params.label_id, {
 				organisation_id: params.organisation_id,
 				workspace_id: params.workspace_id,
 			});
@@ -178,7 +180,7 @@ export function registerLabelsTools(
 		},
 		async (params) => {
 			const { label_id, ...updateData } = params;
-			await service.updateLabel(label_id, updateData);
+			await service.labels.updateLabel(label_id, updateData);
 			return {
 				content: [
 					{
@@ -205,7 +207,7 @@ export function registerLabelsTools(
 			label_id: z.string().describe("Label ID to delete"),
 		},
 		async (params) => {
-			await service.deleteLabel(params.label_id);
+			await service.labels.deleteLabel(params.label_id);
 			return {
 				content: [
 					{

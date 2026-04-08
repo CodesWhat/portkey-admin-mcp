@@ -16,13 +16,13 @@ export function registerTracingTools(
 				.describe(
 					"The trace ID to associate the feedback with. This links feedback to a specific request/generation.",
 				),
-			value: z
-				.coerce.number()
+			value: z.coerce
+				.number()
 				.describe(
 					"Feedback value/rating. Common patterns: 1 for positive (thumbs up), 0 for negative (thumbs down), or use a scale like 1-5.",
 				),
-			weight: z
-				.coerce.number()
+			weight: z.coerce
+				.number()
 				.positive()
 				.optional()
 				.describe(
@@ -36,7 +36,7 @@ export function registerTracingTools(
 				),
 		},
 		async (params) => {
-			const result = await service.createFeedback({
+			const result = await service.tracing.createFeedback({
 				trace_id: params.trace_id,
 				value: params.value,
 				weight: params.weight,
@@ -69,14 +69,14 @@ export function registerTracingTools(
 			id: z
 				.string()
 				.describe("The unique identifier of the feedback to update"),
-			value: z
-				.coerce.number()
+			value: z.coerce
+				.number()
 				.optional()
 				.describe(
 					"New feedback value/rating. Common patterns: 1 for positive, 0 for negative.",
 				),
-			weight: z
-				.coerce.number()
+			weight: z.coerce
+				.number()
 				.positive()
 				.optional()
 				.describe("New weighting factor for the feedback"),
@@ -86,7 +86,7 @@ export function registerTracingTools(
 				.describe("New or updated custom metadata for the feedback"),
 		},
 		async (params) => {
-			const result = await service.updateFeedback(params.id, {
+			const result = await service.tracing.updateFeedback(params.id, {
 				value: params.value,
 				weight: params.weight,
 				metadata: params.metadata,
@@ -118,7 +118,7 @@ export function registerTracingTools(
 			id: z.string().describe("The unique identifier of the trace to retrieve"),
 		},
 		async (params) => {
-			const result = await service.getTrace(params.id);
+			const result = await service.tracing.getTrace(params.id);
 			const trace = result.data;
 			return {
 				content: [

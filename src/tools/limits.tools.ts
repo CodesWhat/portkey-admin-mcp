@@ -4,8 +4,14 @@ import type { PortkeyService } from "../services/index.js";
 
 // Reusable schema for limit conditions
 const conditionSchema = z.object({
-	field: z.string().describe("The field to match on (e.g., 'virtual_key', 'api_key', 'user_id', 'metadata.key')"),
-	operator: z.string().describe("The comparison operator (e.g., 'is', 'contains', 'is_not')"),
+	field: z
+		.string()
+		.describe(
+			"The field to match on (e.g., 'virtual_key', 'api_key', 'user_id', 'metadata.key')",
+		),
+	operator: z
+		.string()
+		.describe("The comparison operator (e.g., 'is', 'contains', 'is_not')"),
 	value: z.string().describe("The value to match against"),
 });
 
@@ -26,7 +32,7 @@ export function registerLimitsTools(
 				.describe("Filter rate limits by workspace ID"),
 		},
 		async (params) => {
-			const result = await service.listRateLimits(params.workspace_id);
+			const result = await service.limits.listRateLimits(params.workspace_id);
 			return {
 				content: [
 					{
@@ -46,7 +52,7 @@ export function registerLimitsTools(
 			id: z.string().describe("The unique identifier of the rate limit"),
 		},
 		async (params) => {
-			const result = await service.getRateLimit(params.id);
+			const result = await service.limits.getRateLimit(params.id);
 			return {
 				content: [
 					{
@@ -65,24 +71,27 @@ export function registerLimitsTools(
 		{
 			conditions: z
 				.array(conditionSchema)
-				.describe("Array of conditions that determine which requests this rate limit applies to"),
+				.describe(
+					"Array of conditions that determine which requests this rate limit applies to",
+				),
 			group_by: z
 				.array(z.string())
-				.describe("Array of fields to group the rate limit by (e.g., ['virtual_key'], ['api_key', 'user_id'])"),
+				.describe(
+					"Array of fields to group the rate limit by (e.g., ['virtual_key'], ['api_key', 'user_id'])",
+				),
 			type: z
 				.enum(["requests", "tokens"])
 				.describe("What to rate limit: 'requests' or 'tokens'"),
 			unit: z
 				.enum(["rpm", "rph", "rpd"])
-				.describe("Time unit: 'rpm' (per minute), 'rph' (per hour), or 'rpd' (per day)"),
-			value: z
-				.coerce.number()
+				.describe(
+					"Time unit: 'rpm' (per minute), 'rph' (per hour), or 'rpd' (per day)",
+				),
+			value: z.coerce
+				.number()
 				.positive()
 				.describe("The maximum allowed value per unit (e.g., 100 rpm)"),
-			name: z
-				.string()
-				.optional()
-				.describe("Optional name for the rate limit"),
+			name: z.string().optional().describe("Optional name for the rate limit"),
 			workspace_id: z
 				.string()
 				.optional()
@@ -93,7 +102,7 @@ export function registerLimitsTools(
 				.describe("Organisation ID to scope the limit to"),
 		},
 		async (params) => {
-			const result = await service.createRateLimit({
+			const result = await service.limits.createRateLimit({
 				conditions: params.conditions,
 				group_by: params.group_by,
 				type: params.type,
@@ -131,15 +140,17 @@ export function registerLimitsTools(
 			unit: z
 				.enum(["rpm", "rph", "rpd"])
 				.optional()
-				.describe("New time unit: 'rpm' (per minute), 'rph' (per hour), or 'rpd' (per day)"),
-			value: z
-				.coerce.number()
+				.describe(
+					"New time unit: 'rpm' (per minute), 'rph' (per hour), or 'rpd' (per day)",
+				),
+			value: z.coerce
+				.number()
 				.positive()
 				.optional()
 				.describe("New maximum allowed value per unit"),
 		},
 		async (params) => {
-			const result = await service.updateRateLimit(params.id, {
+			const result = await service.limits.updateRateLimit(params.id, {
 				name: params.name,
 				unit: params.unit,
 				value: params.value,
@@ -170,7 +181,7 @@ export function registerLimitsTools(
 			id: z.string().describe("The unique identifier of the rate limit"),
 		},
 		async (params) => {
-			await service.deleteRateLimit(params.id);
+			await service.limits.deleteRateLimit(params.id);
 			return {
 				content: [
 					{
@@ -202,7 +213,7 @@ export function registerLimitsTools(
 				.describe("Filter usage limits by workspace ID"),
 		},
 		async (params) => {
-			const result = await service.listUsageLimits(params.workspace_id);
+			const result = await service.limits.listUsageLimits(params.workspace_id);
 			return {
 				content: [
 					{
@@ -222,7 +233,7 @@ export function registerLimitsTools(
 			id: z.string().describe("The unique identifier of the usage limit"),
 		},
 		async (params) => {
-			const result = await service.getUsageLimit(params.id);
+			const result = await service.limits.getUsageLimit(params.id);
 			return {
 				content: [
 					{
@@ -241,23 +252,24 @@ export function registerLimitsTools(
 		{
 			conditions: z
 				.array(conditionSchema)
-				.describe("Array of conditions that determine which requests this usage limit applies to"),
+				.describe(
+					"Array of conditions that determine which requests this usage limit applies to",
+				),
 			group_by: z
 				.array(z.string())
-				.describe("Array of fields to group the usage limit by (e.g., ['virtual_key'], ['api_key', 'user_id'])"),
+				.describe(
+					"Array of fields to group the usage limit by (e.g., ['virtual_key'], ['api_key', 'user_id'])",
+				),
 			type: z
 				.enum(["cost", "tokens"])
 				.describe("What to limit: 'cost' (in dollars) or 'tokens'"),
-			credit_limit: z
-				.coerce.number()
+			credit_limit: z.coerce
+				.number()
 				.positive()
 				.describe("The maximum allowed usage (cost in dollars or token count)"),
-			name: z
-				.string()
-				.optional()
-				.describe("Optional name for the usage limit"),
-			alert_threshold: z
-				.coerce.number()
+			name: z.string().optional().describe("Optional name for the usage limit"),
+			alert_threshold: z.coerce
+				.number()
 				.optional()
 				.describe("Percentage threshold (0-100) at which to send an alert"),
 			periodic_reset: z
@@ -274,7 +286,7 @@ export function registerLimitsTools(
 				.describe("Organisation ID to scope the limit to"),
 		},
 		async (params) => {
-			const result = await service.createUsageLimit({
+			const result = await service.limits.createUsageLimit({
 				conditions: params.conditions,
 				group_by: params.group_by,
 				type: params.type,
@@ -310,13 +322,13 @@ export function registerLimitsTools(
 		{
 			id: z.string().describe("The unique identifier of the usage limit"),
 			name: z.string().optional().describe("New name for the usage limit"),
-			credit_limit: z
-				.coerce.number()
+			credit_limit: z.coerce
+				.number()
 				.positive()
 				.optional()
 				.describe("New maximum allowed usage value"),
-			alert_threshold: z
-				.coerce.number()
+			alert_threshold: z.coerce
+				.number()
 				.optional()
 				.describe("New alert threshold percentage (0-100)"),
 			periodic_reset: z
@@ -329,7 +341,7 @@ export function registerLimitsTools(
 				.describe("Reset usage counters for a specific group_by value"),
 		},
 		async (params) => {
-			const result = await service.updateUsageLimit(params.id, {
+			const result = await service.limits.updateUsageLimit(params.id, {
 				name: params.name,
 				credit_limit: params.credit_limit,
 				alert_threshold: params.alert_threshold,
@@ -362,7 +374,7 @@ export function registerLimitsTools(
 			id: z.string().describe("The unique identifier of the usage limit"),
 		},
 		async (params) => {
-			await service.deleteUsageLimit(params.id);
+			await service.limits.deleteUsageLimit(params.id);
 			return {
 				content: [
 					{
@@ -390,7 +402,9 @@ export function registerLimitsTools(
 			limit_id: z.string().describe("Usage limit policy ID"),
 		},
 		async (params) => {
-			const result = await service.listUsageLimitEntities(params.limit_id);
+			const result = await service.limits.listUsageLimitEntities(
+				params.limit_id,
+			);
 			return {
 				content: [
 					{
@@ -410,7 +424,10 @@ export function registerLimitsTools(
 			entity_id: z.string().describe("Entity ID to reset usage for"),
 		},
 		async (params) => {
-			await service.resetUsageLimitEntity(params.limit_id, params.entity_id);
+			await service.limits.resetUsageLimitEntity(
+				params.limit_id,
+				params.entity_id,
+			);
 			return {
 				content: [
 					{

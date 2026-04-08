@@ -33,7 +33,9 @@ Most production prompts use format #2 (multi-message). Use get_prompt to see exa
 				),
 			string: z
 				.string()
-				.describe('The prompt template. Plain text OR a JSON-encoded messages array string for multi-message chat prompts: \'[{"role":"system","content":[{"type":"text","text":"..."}]},{"role":"user","content":[{"type":"text","text":"{{input}}"}]}]\'. Use get_prompt on an existing prompt to see the exact format.'),
+				.describe(
+					'The prompt template. Plain text OR a JSON-encoded messages array string for multi-message chat prompts: \'[{"role":"system","content":[{"type":"text","text":"..."}]},{"role":"user","content":[{"type":"text","text":"{{input}}"}]}]\'. Use get_prompt on an existing prompt to see the exact format.',
+				),
 			parameters: z
 				.record(z.string(), z.unknown())
 				.describe("Default values for template variables"),
@@ -118,7 +120,7 @@ Most production prompts use format #2 (multi-message). Use get_prompt to see exa
 				};
 			}
 
-			const result = await service.createPrompt({
+			const result = await service.prompts.createPrompt({
 				name: params.name,
 				collection_id: params.collection_id,
 				string: params.string,
@@ -167,20 +169,20 @@ Most production prompts use format #2 (multi-message). Use get_prompt to see exa
 				),
 			workspace_id: z.string().optional().describe("Filter by workspace ID"),
 			search: z.string().optional().describe("Search prompts by name"),
-			current_page: z
-				.coerce.number()
+			current_page: z.coerce
+				.number()
 				.positive()
 				.optional()
 				.describe("Page number for pagination"),
-			page_size: z
-				.coerce.number()
+			page_size: z.coerce
+				.number()
 				.positive()
 				.max(100)
 				.optional()
 				.describe("Results per page (max 100)"),
 		},
 		async (params) => {
-			const prompts = await service.listPrompts(params);
+			const prompts = await service.prompts.listPrompts(params);
 			return {
 				content: [
 					{
@@ -221,15 +223,18 @@ When updating a prompt, pass the same format back in the "string" field of updat
 			prompt_id: z.string().describe("Prompt ID or slug to retrieve"),
 		},
 		async (params) => {
-			const prompt = await service.getPrompt(params.prompt_id);
+			const prompt = await service.prompts.getPrompt(params.prompt_id);
 
 			// Resolve the raw template string — Portkey may return it as a nested { string: "..." } object
 			const rawTemplate = prompt.current_version?.string;
 			const inner =
-				typeof rawTemplate === "object" && rawTemplate !== null && "string" in rawTemplate
+				typeof rawTemplate === "object" &&
+				rawTemplate !== null &&
+				"string" in rawTemplate
 					? (rawTemplate as Record<string, unknown>).string
 					: rawTemplate;
-			const templateString = typeof inner === "string" ? inner : JSON.stringify(inner);
+			const templateString =
+				typeof inner === "string" ? inner : JSON.stringify(inner);
 
 			// Detect format for caller guidance
 			let templateFormat = "plain string";
@@ -270,8 +275,7 @@ When updating a prompt, pass the same format back in the "string" field of updat
 											parameters: prompt.current_version.parameters,
 											metadata: prompt.current_version.template_metadata,
 											has_tools: !!prompt.current_version.tools?.length,
-											has_functions:
-												!!prompt.current_version.functions?.length,
+											has_functions: !!prompt.current_version.functions?.length,
 										}
 									: null,
 								version_count: (prompt.versions || []).length,
@@ -313,7 +317,7 @@ Use get_prompt first to see the current format, then pass the same format back. 
 				.string()
 				.optional()
 				.describe(
-					'Updated prompt template. Plain text OR a JSON-encoded messages array string for multi-message chat prompts. Use get_prompt to see the current format before updating.',
+					"Updated prompt template. Plain text OR a JSON-encoded messages array string for multi-message chat prompts. Use get_prompt to see the current format before updating.",
 				),
 			parameters: z
 				.record(z.string(), z.unknown())
@@ -349,7 +353,7 @@ Use get_prompt first to see the current format, then pass the same format back. 
 			const { prompt_id, dry_run, ...updateData } = params;
 
 			if (dry_run) {
-				const current = await service.getPrompt(prompt_id);
+				const current = await service.prompts.getPrompt(prompt_id);
 				return {
 					content: [
 						{
@@ -374,7 +378,7 @@ Use get_prompt first to see the current format, then pass the same format back. 
 				};
 			}
 
-			const result = await service.updatePrompt(prompt_id, updateData);
+			const result = await service.prompts.updatePrompt(prompt_id, updateData);
 
 			return {
 				content: [
@@ -404,7 +408,7 @@ Use get_prompt first to see the current format, then pass the same format back. 
 			prompt_id: z.string().describe("Prompt ID or slug to delete"),
 		},
 		async (params) => {
-			await service.deletePrompt(params.prompt_id);
+			await service.prompts.deletePrompt(params.prompt_id);
 			return {
 				content: [
 					{
@@ -429,13 +433,13 @@ Use get_prompt first to see the current format, then pass the same format back. 
 		"Publish a specific version of a prompt, making it the default version that will be used when the prompt is called. This is useful for promoting a tested version to production.",
 		{
 			prompt_id: z.string().describe("Prompt ID or slug to publish"),
-			version: z
-				.coerce.number()
+			version: z.coerce
+				.number()
 				.positive()
 				.describe("Version number to publish as the default"),
 		},
 		async (params) => {
-			await service.publishPrompt(params.prompt_id, {
+			await service.prompts.publishPrompt(params.prompt_id, {
 				version: params.version,
 			});
 			return {
@@ -466,7 +470,9 @@ Use get_prompt first to see the current format, then pass the same format back. 
 			prompt_id: z.string().describe("Prompt ID or slug to list versions for"),
 		},
 		async (params) => {
-			const versions = await service.listPromptVersions(params.prompt_id);
+			const versions = await service.prompts.listPromptVersions(
+				params.prompt_id,
+			);
 			return {
 				content: [
 					{
@@ -483,20 +489,19 @@ Use get_prompt first to see the current format, then pass the same format back. 
 									label_id: v.label_id,
 									created_at: v.created_at,
 									template_preview: (() => {
-									const tmpl = v.prompt_template;
-									const str =
-										typeof tmpl === "string"
-											? tmpl
-											: typeof tmpl === "object" &&
-													tmpl !== null &&
-													"string" in tmpl
-												? (tmpl as { string: string }).string
-												: JSON.stringify(tmpl);
-									return (
-										str.substring(0, 200) +
-										(str.length > 200 ? "..." : "")
-									);
-								})(),
+										const tmpl = v.prompt_template;
+										const str =
+											typeof tmpl === "string"
+												? tmpl
+												: typeof tmpl === "object" &&
+														tmpl !== null &&
+														"string" in tmpl
+													? (tmpl as { string: string }).string
+													: JSON.stringify(tmpl);
+										return (
+											str.substring(0, 200) + (str.length > 200 ? "..." : "")
+										);
+									})(),
 								})),
 							},
 							null,
@@ -515,14 +520,17 @@ Use get_prompt first to see the current format, then pass the same format back. 
 		{
 			prompt_id: z.string().describe("Prompt ID or slug to render"),
 			variables: z
-				.record(z.string(), z.union([z.string(), z.coerce.number(), z.boolean()]))
+				.record(
+					z.string(),
+					z.union([z.string(), z.coerce.number(), z.boolean()]),
+				)
 				.describe("Variable values to substitute into the template"),
 			hyperparameters: HyperparametersSchema.optional().describe(
 				"Override default hyperparameters",
 			),
 		},
 		async (params) => {
-			const result = await service.renderPrompt(params.prompt_id, {
+			const result = await service.prompts.renderPrompt(params.prompt_id, {
 				variables: params.variables,
 				hyperparameters: params.hyperparameters,
 			});
@@ -558,7 +566,10 @@ Use get_prompt first to see the current format, then pass the same format back. 
 		{
 			prompt_id: z.string().describe("Prompt ID or slug to execute"),
 			variables: z
-				.record(z.string(), z.union([z.string(), z.coerce.number(), z.boolean()]))
+				.record(
+					z.string(),
+					z.union([z.string(), z.coerce.number(), z.boolean()]),
+				)
 				.describe("Variable values to substitute into the template"),
 			metadata: BillingMetadataSchema.describe(
 				"Billing metadata - client_id, app, env are REQUIRED for cost attribution",
@@ -568,12 +579,15 @@ Use get_prompt first to see the current format, then pass the same format back. 
 			),
 		},
 		async (params) => {
-			const result = await service.runPromptCompletion(params.prompt_id, {
-				variables: params.variables,
-				metadata: params.metadata,
-				hyperparameters: params.hyperparameters,
-				stream: false,
-			});
+			const result = await service.prompts.runPromptCompletion(
+				params.prompt_id,
+				{
+					variables: params.variables,
+					metadata: params.metadata,
+					hyperparameters: params.hyperparameters,
+					stream: false,
+				},
+			);
 
 			const choice = result.choices?.[0];
 			return {
@@ -646,7 +660,7 @@ Use get_prompt first to see the current format, then pass the same format back. 
 				),
 		},
 		async (params) => {
-			const result = await service.migratePrompt({
+			const result = await service.prompts.migratePrompt({
 				name: params.name,
 				app: params.app,
 				env: params.env,
@@ -713,7 +727,7 @@ Use get_prompt first to see the current format, then pass the same format back. 
 				),
 		},
 		async (params) => {
-			const result = await service.promotePrompt({
+			const result = await service.prompts.promotePrompt({
 				source_prompt_id: params.source_prompt_id,
 				target_collection_id: params.target_collection_id,
 				target_name: params.target_name,
@@ -772,7 +786,7 @@ Use get_prompt first to see the current format, then pass the same format back. 
 			feature: z.string().optional().describe("Feature name for tracking"),
 		},
 		async (params) => {
-			const result = service.validateBillingMetadata(params);
+			const result = service.prompts.validateBillingMetadata(params);
 
 			return {
 				content: [
@@ -804,14 +818,12 @@ Use get_prompt first to see the current format, then pass the same format back. 
 			version_id: z.string().describe("Version UUID to retrieve"),
 		},
 		async (params) => {
-			const version = await service.getPromptVersion(
+			const version = await service.prompts.getPromptVersion(
 				params.prompt_id,
 				params.version_id,
 			);
 			return {
-				content: [
-					{ type: "text", text: JSON.stringify(version, null, 2) },
-				],
+				content: [{ type: "text", text: JSON.stringify(version, null, 2) }],
 			};
 		},
 	);
@@ -832,13 +844,22 @@ Use get_prompt first to see the current format, then pass the same format back. 
 		async (params) => {
 			if (params.label_id === undefined) {
 				return {
-					content: [{ type: "text" as const, text: "Error: label_id is required — pass a label ID to assign, or null to remove the label" }],
+					content: [
+						{
+							type: "text" as const,
+							text: "Error: label_id is required — pass a label ID to assign, or null to remove the label",
+						},
+					],
 					isError: true,
 				};
 			}
-			await service.updatePromptVersion(params.prompt_id, params.version_id, {
-				label_id: params.label_id,
-			});
+			await service.prompts.updatePromptVersion(
+				params.prompt_id,
+				params.version_id,
+				{
+					label_id: params.label_id,
+				},
+			);
 			return {
 				content: [
 					{

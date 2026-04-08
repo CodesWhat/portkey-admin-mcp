@@ -11,21 +11,21 @@ export function registerWorkspacesTools(
 		"list_workspaces",
 		"Retrieve all workspaces in your Portkey organization, including their configurations and metadata",
 		{
-			page_size: z
-				.coerce.number()
+			page_size: z.coerce
+				.number()
 				.positive()
 				.optional()
 				.describe(
 					"Number of workspaces to return per page (default varies by endpoint)",
 				),
-			current_page: z
-				.coerce.number()
+			current_page: z.coerce
+				.number()
 				.positive()
 				.optional()
 				.describe("Page number to retrieve when results are paginated"),
 		},
 		async (params) => {
-			const workspaces = await service.listWorkspaces(params);
+			const workspaces = await service.workspaces.listWorkspaces(params);
 			return {
 				content: [
 					{
@@ -50,7 +50,9 @@ export function registerWorkspacesTools(
 				),
 		},
 		async (params) => {
-			const workspace = await service.getWorkspace(params.workspace_id);
+			const workspace = await service.workspaces.getWorkspace(
+				params.workspace_id,
+			);
 			return {
 				content: [
 					{
@@ -97,8 +99,8 @@ export function registerWorkspacesTools(
 				.string()
 				.optional()
 				.describe("Description of the workspace"),
-			is_default: z
-				.coerce.number()
+			is_default: z.coerce
+				.number()
 				.optional()
 				.describe("Set as default workspace (1 = yes, 0 = no)"),
 			metadata: z
@@ -107,7 +109,7 @@ export function registerWorkspacesTools(
 				.describe("Custom metadata key-value pairs"),
 		},
 		async (params) => {
-			const workspace = await service.createWorkspace({
+			const workspace = await service.workspaces.createWorkspace({
 				name: params.name,
 				slug: params.slug,
 				description: params.description,
@@ -146,8 +148,8 @@ export function registerWorkspacesTools(
 			name: z.string().optional().describe("New name for the workspace"),
 			slug: z.string().optional().describe("New slug for the workspace"),
 			description: z.string().optional().describe("New description"),
-			is_default: z
-				.coerce.number()
+			is_default: z.coerce
+				.number()
 				.optional()
 				.describe("Set as default workspace (1 = yes, 0 = no)"),
 			metadata: z
@@ -162,7 +164,7 @@ export function registerWorkspacesTools(
 			if (is_default !== undefined) defaults.is_default = is_default;
 			if (metadata !== undefined) defaults.metadata = metadata;
 
-			const workspace = await service.updateWorkspace(workspace_id, {
+			const workspace = await service.workspaces.updateWorkspace(workspace_id, {
 				...rest,
 				...(Object.keys(defaults).length > 0 ? { defaults } : {}),
 			});
@@ -192,7 +194,7 @@ export function registerWorkspacesTools(
 			workspace_id: z.string().describe("The workspace ID to delete"),
 		},
 		async (params) => {
-			await service.deleteWorkspace(params.workspace_id);
+			await service.workspaces.deleteWorkspace(params.workspace_id);
 			return {
 				content: [
 					{
@@ -232,10 +234,13 @@ export function registerWorkspacesTools(
 				.describe("Role in the workspace"),
 		},
 		async (params) => {
-			const member = await service.addWorkspaceMember(params.workspace_id, {
-				user_id: params.user_id,
-				role: params.role,
-			});
+			const member = await service.workspaces.addWorkspaceMember(
+				params.workspace_id,
+				{
+					user_id: params.user_id,
+					role: params.role,
+				},
+			);
 			return {
 				content: [
 					{
@@ -262,7 +267,9 @@ export function registerWorkspacesTools(
 			workspace_id: z.string().describe("The workspace ID to list members for"),
 		},
 		async (params) => {
-			const members = await service.listWorkspaceMembers(params.workspace_id);
+			const members = await service.workspaces.listWorkspaceMembers(
+				params.workspace_id,
+			);
 			return {
 				content: [{ type: "text", text: JSON.stringify(members, null, 2) }],
 			};
@@ -278,7 +285,7 @@ export function registerWorkspacesTools(
 			user_id: z.string().describe("The user ID to retrieve"),
 		},
 		async (params) => {
-			const member = await service.getWorkspaceMember(
+			const member = await service.workspaces.getWorkspaceMember(
 				params.workspace_id,
 				params.user_id,
 			);
@@ -300,7 +307,7 @@ export function registerWorkspacesTools(
 				.describe("New role in the workspace"),
 		},
 		async (params) => {
-			const member = await service.updateWorkspaceMember(
+			const member = await service.workspaces.updateWorkspaceMember(
 				params.workspace_id,
 				params.user_id,
 				{
@@ -334,7 +341,7 @@ export function registerWorkspacesTools(
 			user_id: z.string().describe("The user ID to remove"),
 		},
 		async (params) => {
-			await service.removeWorkspaceMember(
+			await service.workspaces.removeWorkspaceMember(
 				params.workspace_id,
 				params.user_id,
 			);

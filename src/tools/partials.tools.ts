@@ -25,7 +25,7 @@ export function registerPartialsTools(
 				.describe("Description for this version"),
 		},
 		async (params) => {
-			const result = await service.createPromptPartial({
+			const result = await service.partials.createPromptPartial({
 				name: params.name,
 				string: params.string,
 				workspace_id: params.workspace_id,
@@ -56,10 +56,15 @@ export function registerPartialsTools(
 		"list_prompt_partials",
 		"List all prompt partials in your Portkey organization with optional filtering by collection",
 		{
-			collection_id: z.string().optional().describe("Filter by collection ID. Optional — omit to list all partials across collections"),
+			collection_id: z
+				.string()
+				.optional()
+				.describe(
+					"Filter by collection ID. Optional — omit to list all partials across collections",
+				),
 		},
 		async (params) => {
-			const partials = await service.listPromptPartials(params);
+			const partials = await service.partials.listPromptPartials(params);
 			return {
 				content: [
 					{
@@ -96,7 +101,7 @@ export function registerPartialsTools(
 				.describe("Prompt partial ID or slug to retrieve"),
 		},
 		async (params) => {
-			const partial = await service.getPromptPartial(
+			const partial = await service.partials.getPromptPartial(
 				params.prompt_partial_id,
 			);
 			return {
@@ -147,7 +152,7 @@ export function registerPartialsTools(
 		},
 		async (params) => {
 			const { prompt_partial_id, ...updateData } = params;
-			const result = await service.updatePromptPartial(
+			const result = await service.partials.updatePromptPartial(
 				prompt_partial_id,
 				updateData,
 			);
@@ -179,7 +184,7 @@ export function registerPartialsTools(
 				.describe("Prompt partial ID or slug to delete"),
 		},
 		async (params) => {
-			await service.deletePromptPartial(params.prompt_partial_id);
+			await service.partials.deletePromptPartial(params.prompt_partial_id);
 			return {
 				content: [
 					{
@@ -208,7 +213,7 @@ export function registerPartialsTools(
 				.describe("Prompt partial ID or slug to list versions for"),
 		},
 		async (params) => {
-			const versions = await service.listPartialVersions(
+			const versions = await service.partials.listPartialVersions(
 				params.prompt_partial_id,
 			);
 			return {
@@ -248,13 +253,13 @@ export function registerPartialsTools(
 		"Publish a specific version of a prompt partial, making it the default version",
 		{
 			prompt_partial_id: z.string().describe("Prompt partial ID or slug"),
-			version: z
-				.coerce.number()
+			version: z.coerce
+				.number()
 				.positive()
 				.describe("Version number to publish as default"),
 		},
 		async (params) => {
-			await service.publishPartial(params.prompt_partial_id, {
+			await service.partials.publishPartial(params.prompt_partial_id, {
 				version: params.version,
 			});
 			return {

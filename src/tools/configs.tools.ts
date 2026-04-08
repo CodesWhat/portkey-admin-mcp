@@ -2,6 +2,65 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { PortkeyService } from "../services/index.js";
 
+type ConfigToolParams = {
+	cache_mode?: "simple" | "semantic";
+	cache_max_age?: number;
+	retry_attempts?: number;
+	retry_on_status_codes?: number[];
+	strategy_mode?: "loadbalance" | "fallback";
+	targets?: Array<{
+		provider?: string;
+		virtual_key?: string;
+	}>;
+};
+
+function buildConfigPayload(params: ConfigToolParams) {
+	const cache =
+		params.cache_mode !== undefined || params.cache_max_age !== undefined
+			? {
+					...(params.cache_mode !== undefined
+						? { mode: params.cache_mode }
+						: {}),
+					...(params.cache_max_age !== undefined
+						? { max_age: params.cache_max_age }
+						: {}),
+				}
+			: undefined;
+	const retry =
+		params.retry_attempts !== undefined ||
+		params.retry_on_status_codes !== undefined
+			? {
+					...(params.retry_attempts !== undefined
+						? { attempts: params.retry_attempts }
+						: {}),
+					...(params.retry_on_status_codes !== undefined
+						? { on_status_codes: params.retry_on_status_codes }
+						: {}),
+				}
+			: undefined;
+
+	return {
+		cache,
+		retry,
+		strategy:
+			params.strategy_mode !== undefined
+				? { mode: params.strategy_mode }
+				: undefined,
+		targets: params.targets,
+	};
+}
+
+function hasConfigSettings(
+	config: ReturnType<typeof buildConfigPayload>,
+): boolean {
+	return (
+		config.cache !== undefined ||
+		config.retry !== undefined ||
+		config.strategy !== undefined ||
+		config.targets !== undefined
+	);
+}
+
 export function registerConfigsTools(
 	server: McpServer,
 	service: PortkeyService,
@@ -12,7 +71,7 @@ export function registerConfigsTools(
 		"Retrieve all configurations in your Portkey organization, including their status and workspace associations",
 		{},
 		async () => {
-			const configs = await service.listConfigs();
+			const configs = await service.configs.listConfigs();
 			return {
 				content: [
 					{
@@ -55,7 +114,7 @@ export function registerConfigsTools(
 				),
 		},
 		async (params) => {
-			const response = await service.getConfig(params.slug);
+			const response = await service.configs.getConfig(params.slug);
 			const details = JSON.parse(response.config || "{}");
 			return {
 				content: [
@@ -80,10 +139,7 @@ export function registerConfigsTools(
 										mode: details.strategy.mode,
 									},
 									targets: details.targets?.map(
-										(target: {
-											provider?: string;
-											virtual_key?: string;
-										}) => ({
+										(target: { provider?: string; virtual_key?: string }) => ({
 											provider: target.provider,
 											virtual_key: target.virtual_key,
 										}),
@@ -113,13 +169,13 @@ export function registerConfigsTools(
 				.enum(["simple", "semantic"])
 				.optional()
 				.describe("Cache mode: 'simple' or 'semantic'"),
-			cache_max_age: z
-				.coerce.number()
+			cache_max_age: z.coerce
+				.number()
 				.positive()
 				.optional()
 				.describe("Cache max age in seconds"),
-			retry_attempts: z
-				.coerce.number()
+			retry_attempts: z.coerce
+				.number()
 				.positive()
 				.max(5)
 				.optional()
@@ -147,40 +203,10 @@ export function registerConfigsTools(
 				.describe("Array of target providers with virtual keys"),
 		},
 		async (params) => {
-			const config = {
-				cache:
-					params.cache_mode || params.cache_max_age
-						? {
-								...(params.cache_mode && { mode: params.cache_mode }),
-								...(params.cache_max_age && {
-									max_age: params.cache_max_age,
-								}),
-							}
-						: undefined,
-				retry:
-					params.retry_attempts || params.retry_on_status_codes
-						? {
-								...(params.retry_attempts && {
-									attempts: params.retry_attempts,
-								}),
-								...(params.retry_on_status_codes && {
-									on_status_codes: params.retry_on_status_codes,
-								}),
-							}
-						: undefined,
-				strategy: params.strategy_mode
-					? { mode: params.strategy_mode }
-					: undefined,
-				targets: params.targets,
-			};
+			const config = buildConfigPayload(params);
 
 			// API requires config to have at least one non-empty setting
-			if (
-				!config.cache &&
-				!config.retry &&
-				!config.strategy &&
-				!config.targets
-			) {
+			if (!hasConfigSettings(config)) {
 				return {
 					content: [
 						{
@@ -192,7 +218,7 @@ export function registerConfigsTools(
 				};
 			}
 
-			const result = await service.createConfig({
+			const result = await service.configs.createConfig({
 				name: params.name,
 				config,
 				workspace_id: params.workspace_id,
@@ -232,13 +258,13 @@ export function registerConfigsTools(
 				.enum(["simple", "semantic"])
 				.optional()
 				.describe("Cache mode: 'simple' or 'semantic'"),
-			cache_max_age: z
-				.coerce.number()
+			cache_max_age: z.coerce
+				.number()
 				.positive()
 				.optional()
 				.describe("Cache max age in seconds"),
-			retry_attempts: z
-				.coerce.number()
+			retry_attempts: z.coerce
+				.number()
 				.positive()
 				.max(5)
 				.optional()
@@ -266,42 +292,20 @@ export function registerConfigsTools(
 				.describe("Array of target providers"),
 		},
 		async (params) => {
-			const config = {
-				cache:
-					params.cache_mode || params.cache_max_age
-						? {
-								...(params.cache_mode && { mode: params.cache_mode }),
-								...(params.cache_max_age && {
-									max_age: params.cache_max_age,
-								}),
-							}
-						: undefined,
-				retry:
-					params.retry_attempts || params.retry_on_status_codes
-						? {
-								...(params.retry_attempts && {
-									attempts: params.retry_attempts,
-								}),
-								...(params.retry_on_status_codes && {
-									on_status_codes: params.retry_on_status_codes,
-								}),
-							}
-						: undefined,
-				strategy: params.strategy_mode
-					? { mode: params.strategy_mode }
-					: undefined,
-				targets: params.targets,
-			};
+			const config = buildConfigPayload(params);
 
 			// Only include defined fields to avoid sending undefined to API
 			const updateData: Record<string, unknown> = {};
 			if (params.name !== undefined) updateData.name = params.name;
 			if (params.status !== undefined) updateData.status = params.status;
-			if (config.cache || config.retry || config.strategy || config.targets) {
+			if (hasConfigSettings(config)) {
 				updateData.config = config;
 			}
 
-			const result = await service.updateConfig(params.slug, updateData);
+			const result = await service.configs.updateConfig(
+				params.slug,
+				updateData,
+			);
 			const updatedConfig = JSON.parse(result.config || "{}");
 
 			return {
@@ -332,7 +336,7 @@ export function registerConfigsTools(
 			slug: z.string().describe("Configuration slug to delete"),
 		},
 		async (params) => {
-			const result = await service.deleteConfig(params.slug);
+			const result = await service.configs.deleteConfig(params.slug);
 			return {
 				content: [
 					{
@@ -359,7 +363,7 @@ export function registerConfigsTools(
 			slug: z.string().describe("Configuration slug to list versions for"),
 		},
 		async (params) => {
-			const result = await service.listConfigVersions(params.slug);
+			const result = await service.configs.listConfigVersions(params.slug);
 			return {
 				content: [
 					{

@@ -12,7 +12,7 @@ export function registerUsersTools(
 		"List all users in your Portkey organization, including their roles and account details",
 		{},
 		async () => {
-			const users = await service.listUsers();
+			const users = await service.users.listUsers();
 			return {
 				content: [{ type: "text", text: JSON.stringify(users, null, 2) }],
 			};
@@ -72,7 +72,7 @@ export function registerUsersTools(
 				.describe("Optional API key to be created for the user"),
 		},
 		async (params) => {
-			const result = await service.inviteUser(params);
+			const result = await service.users.inviteUser(params);
 			return {
 				content: [
 					{
@@ -107,23 +107,23 @@ export function registerUsersTools(
 				.describe(
 					"End time for the analytics period (ISO8601 format, e.g., '2024-02-01T00:00:00Z')",
 				),
-			total_units_min: z
-				.coerce.number()
+			total_units_min: z.coerce
+				.number()
 				.positive()
 				.optional()
 				.describe("Minimum number of total tokens to filter by"),
-			total_units_max: z
-				.coerce.number()
+			total_units_max: z.coerce
+				.number()
 				.positive()
 				.optional()
 				.describe("Maximum number of total tokens to filter by"),
-			cost_min: z
-				.coerce.number()
+			cost_min: z.coerce
+				.number()
 				.positive()
 				.optional()
 				.describe("Minimum cost in cents to filter by"),
-			cost_max: z
-				.coerce.number()
+			cost_max: z.coerce
+				.number()
 				.positive()
 				.optional()
 				.describe("Maximum cost in cents to filter by"),
@@ -135,14 +135,14 @@ export function registerUsersTools(
 				.string()
 				.optional()
 				.describe("Filter by specific virtual key slugs (comma-separated)"),
-			page_size: z
-				.coerce.number()
+			page_size: z.coerce
+				.number()
 				.positive()
 				.optional()
 				.describe("Number of results per page (for pagination)"),
 		},
 		async (params) => {
-			const stats = await service.getUserGroupedData(params);
+			const stats = await service.users.getUserGroupedData(params);
 			return {
 				content: [
 					{
@@ -162,7 +162,7 @@ export function registerUsersTools(
 			user_id: z.string().describe("The user ID to retrieve"),
 		},
 		async (params) => {
-			const user = await service.getUser(params.user_id);
+			const user = await service.users.getUser(params.user_id);
 			return {
 				content: [{ type: "text", text: JSON.stringify(user, null, 2) }],
 			};
@@ -184,7 +184,7 @@ export function registerUsersTools(
 		},
 		async (params) => {
 			const { user_id, ...updateData } = params;
-			const user = await service.updateUser(user_id, updateData);
+			const user = await service.users.updateUser(user_id, updateData);
 			return {
 				content: [
 					{
@@ -211,7 +211,7 @@ export function registerUsersTools(
 			user_id: z.string().describe("The user ID to delete"),
 		},
 		async (params) => {
-			await service.deleteUser(params.user_id);
+			await service.users.deleteUser(params.user_id);
 			return {
 				content: [
 					{
@@ -236,7 +236,7 @@ export function registerUsersTools(
 		"List all pending and sent user invitations in your Portkey organization",
 		{},
 		async () => {
-			const invites = await service.listUserInvites();
+			const invites = await service.users.listUserInvites();
 			return {
 				content: [{ type: "text", text: JSON.stringify(invites, null, 2) }],
 			};
@@ -251,7 +251,7 @@ export function registerUsersTools(
 			invite_id: z.string().describe("The invite ID to retrieve"),
 		},
 		async (params) => {
-			const invite = await service.getUserInvite(params.invite_id);
+			const invite = await service.users.getUserInvite(params.invite_id);
 			return {
 				content: [{ type: "text", text: JSON.stringify(invite, null, 2) }],
 			};
@@ -266,7 +266,7 @@ export function registerUsersTools(
 			invite_id: z.string().describe("The invite ID to delete"),
 		},
 		async (params) => {
-			await service.deleteUserInvite(params.invite_id);
+			await service.users.deleteUserInvite(params.invite_id);
 			return {
 				content: [
 					{
@@ -293,7 +293,7 @@ export function registerUsersTools(
 			invite_id: z.string().describe("The invite ID to resend"),
 		},
 		async (params) => {
-			await service.resendUserInvite(params.invite_id);
+			await service.users.resendUserInvite(params.invite_id);
 			return {
 				content: [
 					{

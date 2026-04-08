@@ -12,13 +12,13 @@ export function registerIntegrationsTools(
 		"list_integrations",
 		"List all integrations in your Portkey organization with optional filtering by workspace or type",
 		{
-			current_page: z
-				.coerce.number()
+			current_page: z.coerce
+				.number()
 				.positive()
 				.optional()
 				.describe("Page number for pagination"),
-			page_size: z
-				.coerce.number()
+			page_size: z.coerce
+				.number()
 				.int()
 				.positive()
 				.max(100)
@@ -36,7 +36,7 @@ export function registerIntegrationsTools(
 				),
 		},
 		async (params) => {
-			const integrations = await service.listIntegrations({
+			const integrations = await service.integrations.listIntegrations({
 				current_page: params.current_page,
 				page_size: params.page_size,
 				workspace_id: params.workspace_id,
@@ -167,7 +167,7 @@ export function registerIntegrationsTools(
 			// Custom host
 			if (params.custom_host) configurations.custom_host = params.custom_host;
 
-			const result = await service.createIntegration({
+			const result = await service.integrations.createIntegration({
 				name: params.name,
 				ai_provider_id: params.ai_provider_id,
 				slug: params.slug,
@@ -207,7 +207,9 @@ export function registerIntegrationsTools(
 				.describe("The unique slug identifier of the integration to retrieve"),
 		},
 		async (params) => {
-			const integration = await service.getIntegration(params.slug);
+			const integration = await service.integrations.getIntegration(
+				params.slug,
+			);
 
 			return {
 				content: [
@@ -325,7 +327,7 @@ export function registerIntegrationsTools(
 			if (params.custom_host !== undefined)
 				configurations.custom_host = params.custom_host;
 
-			const result = await service.updateIntegration(params.slug, {
+			const result = await service.integrations.updateIntegration(params.slug, {
 				name: params.name,
 				key: params.key,
 				description: params.description,
@@ -359,7 +361,7 @@ export function registerIntegrationsTools(
 			slug: z.string().describe("The slug of the integration to delete"),
 		},
 		async (params) => {
-			const result = await service.deleteIntegration(params.slug);
+			const result = await service.integrations.deleteIntegration(params.slug);
 
 			return {
 				content: [
@@ -385,13 +387,13 @@ export function registerIntegrationsTools(
 		"List all models available for a specific integration with their enabled status",
 		{
 			slug: z.string().describe("The slug of the integration"),
-			current_page: z
-				.coerce.number()
+			current_page: z.coerce
+				.number()
 				.positive()
 				.optional()
 				.describe("Page number for pagination"),
-			page_size: z
-				.coerce.number()
+			page_size: z.coerce
+				.number()
 				.int()
 				.positive()
 				.max(100)
@@ -399,10 +401,13 @@ export function registerIntegrationsTools(
 				.describe("Number of results per page"),
 		},
 		async (params) => {
-			const models = await service.listIntegrationModels(params.slug, {
-				current_page: params.current_page,
-				page_size: params.page_size,
-			});
+			const models = await service.integrations.listIntegrationModels(
+				params.slug,
+				{
+					current_page: params.current_page,
+					page_size: params.page_size,
+				},
+			);
 
 			return {
 				content: [
@@ -457,9 +462,12 @@ export function registerIntegrationsTools(
 				.describe("Array of model configurations to update"),
 		},
 		async (params) => {
-			const result = await service.updateIntegrationModels(params.slug, {
-				models: params.models,
-			});
+			const result = await service.integrations.updateIntegrationModels(
+				params.slug,
+				{
+					models: params.models,
+				},
+			);
 
 			return {
 				content: [
@@ -489,7 +497,7 @@ export function registerIntegrationsTools(
 			model_slug: z.string().describe("The slug of the model to delete"),
 		},
 		async (params) => {
-			const result = await service.deleteIntegrationModel(
+			const result = await service.integrations.deleteIntegrationModel(
 				params.slug,
 				params.model_slug,
 			);
@@ -518,13 +526,13 @@ export function registerIntegrationsTools(
 		"List all workspaces that have access to a specific integration",
 		{
 			slug: z.string().describe("The slug of the integration"),
-			current_page: z
-				.coerce.number()
+			current_page: z.coerce
+				.number()
 				.positive()
 				.optional()
 				.describe("Page number for pagination"),
-			page_size: z
-				.coerce.number()
+			page_size: z.coerce
+				.number()
 				.int()
 				.positive()
 				.max(100)
@@ -532,7 +540,7 @@ export function registerIntegrationsTools(
 				.describe("Number of results per page"),
 		},
 		async (params) => {
-			const workspaces = await service.listIntegrationWorkspaces(
+			const workspaces = await service.integrations.listIntegrationWorkspaces(
 				params.slug,
 				{
 					current_page: params.current_page,
@@ -581,19 +589,19 @@ export function registerIntegrationsTools(
 						enabled: z
 							.boolean()
 							.describe("Whether the workspace has access to this integration"),
-						credit_limit: z
-							.coerce.number()
+						credit_limit: z.coerce
+							.number()
 							.positive()
 							.optional()
 							.describe("Credit limit for this workspace"),
-						alert_threshold: z
-							.coerce.number()
+						alert_threshold: z.coerce
+							.number()
 							.min(0)
 							.max(100)
 							.optional()
 							.describe("Alert threshold percentage (0-100)"),
-						rate_limit_rpm: z
-							.coerce.number()
+						rate_limit_rpm: z.coerce
+							.number()
 							.positive()
 							.optional()
 							.describe("Rate limit in requests per minute"),
@@ -602,20 +610,23 @@ export function registerIntegrationsTools(
 				.describe("Array of workspace configurations to update"),
 		},
 		async (params) => {
-			const result = await service.updateIntegrationWorkspaces(params.slug, {
-				workspaces: params.workspaces.map((ws) => {
-					const usageLimits = buildUsageLimits({
-						credit_limit: ws.credit_limit,
-						alert_threshold: ws.alert_threshold,
-					});
-					return {
-						id: ws.id,
-						enabled: ws.enabled,
-						usage_limits: usageLimits ? [usageLimits] : undefined,
-						rate_limits: buildRateLimitsRpm(ws.rate_limit_rpm),
-					};
-				}),
-			});
+			const result = await service.integrations.updateIntegrationWorkspaces(
+				params.slug,
+				{
+					workspaces: params.workspaces.map((ws) => {
+						const usageLimits = buildUsageLimits({
+							credit_limit: ws.credit_limit,
+							alert_threshold: ws.alert_threshold,
+						});
+						return {
+							id: ws.id,
+							enabled: ws.enabled,
+							usage_limits: usageLimits ? [usageLimits] : undefined,
+							rate_limits: buildRateLimitsRpm(ws.rate_limit_rpm),
+						};
+					}),
+				},
+			);
 
 			return {
 				content: [
