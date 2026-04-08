@@ -99,39 +99,39 @@ async function main() {
 	console.log("-".repeat(50));
 
 	await test("listWorkspaces", async () => {
-		const res = await portkey.listWorkspaces();
+		const res = await portkey.workspaces.listWorkspaces();
 		if (res.data?.[0]) ctx.workspaceId = res.data[0].id;
 	});
 
 	await test("listUsers", async () => {
-		const res = await portkey.listUsers();
+		const res = await portkey.users.listUsers();
 		if (res.data?.[0]) ctx.userId = res.data[0].id;
 	});
 
 	await test("listUserInvites", async () => {
-		const res = await portkey.listUserInvites();
+		const res = await portkey.users.listUserInvites();
 		if (res.data?.[0]) ctx.userInviteId = res.data[0].id;
 	});
 
 	await test("listConfigs", async () => {
-		const res = await portkey.listConfigs();
+		const res = await portkey.configs.listConfigs();
 		if (res.data?.[0]) ctx.configSlug = res.data[0].slug;
 	});
 
 	await test("listVirtualKeys", async () => {
-		const res = await portkey.listVirtualKeys();
+		const res = await portkey.keys.listVirtualKeys();
 		if (res.data?.[0]) ctx.virtualKeySlug = res.data[0].slug;
 	});
 
 	await test("listApiKeys", async () => {
-		const res = await portkey.listApiKeys();
+		const res = await portkey.keys.listApiKeys();
 		if (res.data?.[0]) ctx.apiKeyId = res.data[0].id;
 	});
 
 	await test(
 		"listCollections",
 		async () => {
-			const res = await portkey.listCollections({
+			const res = await portkey.collections.listCollections({
 				workspace_id: ctx.workspaceId!,
 			});
 			if (res.data?.[0]) ctx.collectionId = res.data[0].id;
@@ -142,7 +142,9 @@ async function main() {
 	await test(
 		"listPrompts",
 		async () => {
-			const res = await portkey.listPrompts({ workspace_id: ctx.workspaceId! });
+			const res = await portkey.prompts.listPrompts({
+				workspace_id: ctx.workspaceId!,
+			});
 			if (res.data?.[0]) ctx.promptId = res.data[0].id;
 		},
 		() => (ctx.workspaceId ? null : "no workspaceId"),
@@ -151,7 +153,7 @@ async function main() {
 	await test(
 		"listGuardrails",
 		async () => {
-			const res = await portkey.listGuardrails({
+			const res = await portkey.guardrails.listGuardrails({
 				workspace_id: ctx.workspaceId!,
 			});
 			if (res.data?.[0]) ctx.guardrailId = res.data[0].id;
@@ -162,7 +164,7 @@ async function main() {
 	await test(
 		"listUsageLimits",
 		async () => {
-			const res = await portkey.listUsageLimits(ctx.workspaceId);
+			const res = await portkey.limits.listUsageLimits(ctx.workspaceId);
 			if (res.data?.[0]) ctx.usageLimitId = res.data[0].id;
 		},
 		() => (ctx.workspaceId ? null : "no workspaceId"),
@@ -171,26 +173,26 @@ async function main() {
 	await test(
 		"listRateLimits",
 		async () => {
-			const res = await portkey.listRateLimits(ctx.workspaceId);
+			const res = await portkey.limits.listRateLimits(ctx.workspaceId);
 			if (res.data?.[0]) ctx.rateLimitId = res.data[0].id;
 		},
 		() => (ctx.workspaceId ? null : "no workspaceId"),
 	);
 
 	await test("listLabels", async () => {
-		const res = await portkey.listLabels();
+		const res = await portkey.labels.listLabels();
 		if (res.data?.[0]) ctx.labelId = res.data[0].id;
 	});
 
 	await test("listPromptPartials", async () => {
-		const res = await portkey.listPromptPartials();
+		const res = await portkey.partials.listPromptPartials();
 		if (res?.[0]) ctx.partialId = res[0].id;
 	});
 
 	await test(
 		"listLogExports",
 		async () => {
-			const res = await portkey.listLogExports({
+			const res = await portkey.logging.listLogExports({
 				workspace_id: ctx.workspaceId!,
 			});
 			if (res.data?.[0]) ctx.logExportId = res.data[0].id;
@@ -199,17 +201,17 @@ async function main() {
 	);
 
 	await test("listProviders", async () => {
-		const res = await portkey.listProviders();
+		const res = await portkey.providers.listProviders();
 		if (res.data?.[0]) ctx.providerSlug = res.data[0].slug;
 	});
 
 	await test("listIntegrations", async () => {
-		const res = await portkey.listIntegrations();
+		const res = await portkey.integrations.listIntegrations();
 		if (res.data?.[0]) ctx.integrationSlug = res.data[0].slug;
 	});
 
 	await test("listAuditLogs", async () => {
-		await portkey.listAuditLogs();
+		await portkey.audit.listAuditLogs();
 	});
 
 	// ============================================================
@@ -221,7 +223,7 @@ async function main() {
 	await test(
 		"getWorkspace",
 		async () => {
-			await portkey.getWorkspace(ctx.workspaceId!);
+			await portkey.workspaces.getWorkspace(ctx.workspaceId!);
 		},
 		() => (ctx.workspaceId ? null : "no workspaceId"),
 	);
@@ -229,7 +231,7 @@ async function main() {
 	await test(
 		"listWorkspaceMembers",
 		async () => {
-			await portkey.listWorkspaceMembers(ctx.workspaceId!);
+			await portkey.workspaces.listWorkspaceMembers(ctx.workspaceId!);
 		},
 		() => (ctx.workspaceId ? null : "no workspaceId"),
 	);
@@ -237,19 +239,19 @@ async function main() {
 	await test(
 		"getUser",
 		async () => {
-			await portkey.getUser(ctx.userId!);
+			await portkey.users.getUser(ctx.userId!);
 		},
 		() => (ctx.userId ? null : "no userId"),
 	);
 
 	await test("getUserGroupedData", async () => {
-		await portkey.getUserGroupedData(analyticsParams);
+		await portkey.users.getUserGroupedData(analyticsParams);
 	});
 
 	await test(
 		"getUserInvite",
 		async () => {
-			await portkey.getUserInvite(ctx.userInviteId!);
+			await portkey.users.getUserInvite(ctx.userInviteId!);
 		},
 		() => (ctx.userInviteId ? null : "no userInviteId"),
 	);
@@ -257,7 +259,7 @@ async function main() {
 	await test(
 		"getConfig",
 		async () => {
-			await portkey.getConfig(ctx.configSlug!);
+			await portkey.configs.getConfig(ctx.configSlug!);
 		},
 		() => (ctx.configSlug ? null : "no configSlug"),
 	);
@@ -265,7 +267,7 @@ async function main() {
 	await test(
 		"listConfigVersions",
 		async () => {
-			await portkey.listConfigVersions(ctx.configSlug!);
+			await portkey.configs.listConfigVersions(ctx.configSlug!);
 		},
 		() => (ctx.configSlug ? null : "no configSlug"),
 	);
@@ -273,7 +275,7 @@ async function main() {
 	await test(
 		"getVirtualKey",
 		async () => {
-			await portkey.getVirtualKey(ctx.virtualKeySlug!);
+			await portkey.keys.getVirtualKey(ctx.virtualKeySlug!);
 		},
 		() => (ctx.virtualKeySlug ? null : "no virtualKeySlug"),
 	);
@@ -281,7 +283,7 @@ async function main() {
 	await test(
 		"getApiKey",
 		async () => {
-			await portkey.getApiKey(ctx.apiKeyId!);
+			await portkey.keys.getApiKey(ctx.apiKeyId!);
 		},
 		() => (ctx.apiKeyId ? null : "no apiKeyId"),
 	);
@@ -289,7 +291,7 @@ async function main() {
 	await test(
 		"getCollection",
 		async () => {
-			await portkey.getCollection(ctx.collectionId!);
+			await portkey.collections.getCollection(ctx.collectionId!);
 		},
 		() => (ctx.collectionId ? null : "no collectionId"),
 	);
@@ -297,7 +299,7 @@ async function main() {
 	await test(
 		"getPrompt",
 		async () => {
-			await portkey.getPrompt(ctx.promptId!);
+			await portkey.prompts.getPrompt(ctx.promptId!);
 		},
 		() => (ctx.promptId ? null : "no promptId"),
 	);
@@ -305,7 +307,7 @@ async function main() {
 	await test(
 		"listPromptVersions",
 		async () => {
-			await portkey.listPromptVersions(ctx.promptId!);
+			await portkey.prompts.listPromptVersions(ctx.promptId!);
 		},
 		() => (ctx.promptId ? null : "no promptId"),
 	);
@@ -313,7 +315,7 @@ async function main() {
 	await test(
 		"getGuardrail",
 		async () => {
-			await portkey.getGuardrail(ctx.guardrailId!);
+			await portkey.guardrails.getGuardrail(ctx.guardrailId!);
 		},
 		() => (ctx.guardrailId ? null : "no guardrailId"),
 	);
@@ -321,7 +323,7 @@ async function main() {
 	await test(
 		"getUsageLimit",
 		async () => {
-			await portkey.getUsageLimit(ctx.usageLimitId!);
+			await portkey.limits.getUsageLimit(ctx.usageLimitId!);
 		},
 		() => (ctx.usageLimitId ? null : "no usageLimitId"),
 	);
@@ -329,7 +331,7 @@ async function main() {
 	await test(
 		"getRateLimit",
 		async () => {
-			await portkey.getRateLimit(ctx.rateLimitId!);
+			await portkey.limits.getRateLimit(ctx.rateLimitId!);
 		},
 		() => (ctx.rateLimitId ? null : "no rateLimitId"),
 	);
@@ -337,7 +339,7 @@ async function main() {
 	await test(
 		"getLabel",
 		async () => {
-			await portkey.getLabel(ctx.labelId!);
+			await portkey.labels.getLabel(ctx.labelId!);
 		},
 		() => (ctx.labelId ? null : "no labelId"),
 	);
@@ -345,7 +347,7 @@ async function main() {
 	await test(
 		"getPromptPartial",
 		async () => {
-			await portkey.getPromptPartial(ctx.partialId!);
+			await portkey.partials.getPromptPartial(ctx.partialId!);
 		},
 		() => (ctx.partialId ? null : "no partialId"),
 	);
@@ -353,7 +355,7 @@ async function main() {
 	await test(
 		"listPartialVersions",
 		async () => {
-			await portkey.listPartialVersions(ctx.partialId!);
+			await portkey.partials.listPartialVersions(ctx.partialId!);
 		},
 		() => (ctx.partialId ? null : "no partialId"),
 	);
@@ -361,7 +363,7 @@ async function main() {
 	await test(
 		"getTrace",
 		async () => {
-			await portkey.getTrace(ctx.traceId!);
+			await portkey.tracing.getTrace(ctx.traceId!);
 		},
 		() => (ctx.traceId ? null : "no traceId"),
 	);
@@ -369,7 +371,7 @@ async function main() {
 	await test(
 		"getLogExport",
 		async () => {
-			await portkey.getLogExport(ctx.logExportId!);
+			await portkey.logging.getLogExport(ctx.logExportId!);
 		},
 		() => (ctx.logExportId ? null : "no logExportId"),
 	);
@@ -377,7 +379,7 @@ async function main() {
 	await test(
 		"getProvider",
 		async () => {
-			await portkey.getProvider(ctx.providerSlug!);
+			await portkey.providers.getProvider(ctx.providerSlug!);
 		},
 		() => (ctx.providerSlug ? null : "no providerSlug"),
 	);
@@ -385,7 +387,7 @@ async function main() {
 	await test(
 		"getIntegration",
 		async () => {
-			await portkey.getIntegration(ctx.integrationSlug!);
+			await portkey.integrations.getIntegration(ctx.integrationSlug!);
 		},
 		() => (ctx.integrationSlug ? null : "no integrationSlug"),
 	);
@@ -393,7 +395,7 @@ async function main() {
 	await test(
 		"listIntegrationModels",
 		async () => {
-			await portkey.listIntegrationModels(ctx.integrationSlug!);
+			await portkey.integrations.listIntegrationModels(ctx.integrationSlug!);
 		},
 		() => (ctx.integrationSlug ? null : "no integrationSlug"),
 	);
@@ -401,7 +403,9 @@ async function main() {
 	await test(
 		"listIntegrationWorkspaces",
 		async () => {
-			await portkey.listIntegrationWorkspaces(ctx.integrationSlug!);
+			await portkey.integrations.listIntegrationWorkspaces(
+				ctx.integrationSlug!,
+			);
 		},
 		() => (ctx.integrationSlug ? null : "no integrationSlug"),
 	);
@@ -413,39 +417,39 @@ async function main() {
 	console.log("-".repeat(50));
 
 	await test("getCostAnalytics", async () => {
-		await portkey.getCostAnalytics(analyticsParams);
+		await portkey.analytics.getCostAnalytics(analyticsParams);
 	});
 
 	await test("getRequestAnalytics", async () => {
-		await portkey.getRequestAnalytics(analyticsParams);
+		await portkey.analytics.getRequestAnalytics(analyticsParams);
 	});
 
 	await test("getTokenAnalytics", async () => {
-		await portkey.getTokenAnalytics(analyticsParams);
+		await portkey.analytics.getTokenAnalytics(analyticsParams);
 	});
 
 	await test("getLatencyAnalytics", async () => {
-		await portkey.getLatencyAnalytics(analyticsParams);
+		await portkey.analytics.getLatencyAnalytics(analyticsParams);
 	});
 
 	await test("getErrorAnalytics", async () => {
-		await portkey.getErrorAnalytics(analyticsParams);
+		await portkey.analytics.getErrorAnalytics(analyticsParams);
 	});
 
 	await test("getErrorRateAnalytics", async () => {
-		await portkey.getErrorRateAnalytics(analyticsParams);
+		await portkey.analytics.getErrorRateAnalytics(analyticsParams);
 	});
 
 	await test("getCacheHitLatency", async () => {
-		await portkey.getCacheHitLatency(analyticsParams);
+		await portkey.analytics.getCacheHitLatency(analyticsParams);
 	});
 
 	await test("getCacheHitRate", async () => {
-		await portkey.getCacheHitRate(analyticsParams);
+		await portkey.analytics.getCacheHitRate(analyticsParams);
 	});
 
 	await test("getUsersAnalytics", async () => {
-		await portkey.getUsersAnalytics(analyticsParams);
+		await portkey.analytics.getUsersAnalytics(analyticsParams);
 	});
 
 	// ============================================================
