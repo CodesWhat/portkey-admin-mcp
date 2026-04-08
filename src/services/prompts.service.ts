@@ -28,10 +28,6 @@ import type {
 // Re-export types for consumers
 export type * from "./prompts.types.js";
 
-// Valid values for billing metadata validation
-const VALID_APPS = ["hourlink", "apizone", "research-pilot"] as const;
-const VALID_ENVS = ["dev", "staging", "prod"] as const;
-
 export class PromptsService extends BaseService {
 	async createPrompt(data: CreatePromptRequest): Promise<CreatePromptResponse> {
 		return this.post<CreatePromptResponse>("/prompts", data);
@@ -417,24 +413,6 @@ export class PromptsService extends BaseService {
 		}
 		if (!metadata.env) {
 			errors.push("Missing required field: env");
-		}
-
-		if (
-			metadata.app &&
-			!VALID_APPS.includes(metadata.app as (typeof VALID_APPS)[number])
-		) {
-			warnings.push(
-				`Unrecognized app: "${metadata.app}". Expected one of: ${VALID_APPS.join(", ")}`,
-			);
-		}
-
-		if (
-			metadata.env &&
-			!VALID_ENVS.includes(metadata.env as (typeof VALID_ENVS)[number])
-		) {
-			warnings.push(
-				`Unrecognized env: "${metadata.env}". Expected one of: ${VALID_ENVS.join(", ")}`,
-			);
 		}
 
 		if (!metadata.project_id) {
