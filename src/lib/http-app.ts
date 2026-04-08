@@ -9,11 +9,21 @@ import {
 	type Server as HttpsServer,
 } from "node:https";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
+import {
+	isInitializeRequest,
+	LATEST_PROTOCOL_VERSION,
+	SUPPORTED_PROTOCOL_VERSIONS,
+} from "@modelcontextprotocol/sdk/types.js";
 import cors from "cors";
 import express from "express";
 import helmet from "helmet";
 import { getSharedHealthService } from "../services/index.js";
+import {
+	isToolDomain,
+	normalizeToolDomains,
+	TOOL_DOMAIN_NAMES,
+	type ToolDomain,
+} from "../tools/index.js";
 import {
 	assertSafeHttpAuthConfig,
 	getHttpAuthConfig,
@@ -173,6 +183,123 @@ function respondJsonRpcInternalError(
 	});
 }
 
+function respondJsonRpcClientError(
+	res: express.Response,
+	statusCode: number,
+	message: string,
+	code = -32602,
+): void {
+	if (res.headersSent) {
+		return;
+	}
+
+	res.status(statusCode).json({
+		jsonrpc: "2.0",
+		error: {
+			code,
+			message,
+		},
+		id: null,
+	});
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null;
+}
+
+function parseRequestedToolDomains(
+	rawQuery: unknown,
+): ToolDomain[] | undefined {
+	if (rawQuery === undefined) {
+		return undefined;
+	}
+
+	const rawValues = Array.isArray(rawQuery) ? rawQuery : [rawQuery];
+	const requestedDomains = rawValues.flatMap((value) => {
+		if (typeof value !== "string") {
+			throw new Error(
+				"Invalid tools query parameter. Expected a comma-separated list of tool domains.",
+			);
+		}
+
+		return value.split(",");
+	});
+
+	const normalizedDomains = requestedDomains
+		.map((value) => value.trim().toLowerCase())
+		.filter((value) => value.length > 0);
+
+	if (normalizedDomains.length === 0) {
+		throw new Error(
+			`Invalid tools query parameter. Expected one or more tool domains from: ${TOOL_DOMAIN_NAMES.join(", ")}`,
+		);
+	}
+
+	const invalidDomains = normalizedDomains.filter(
+		(value): value is string => !isToolDomain(value),
+	);
+	if (invalidDomains.length > 0) {
+		throw new Error(
+			`Unknown tool domains: ${invalidDomains.join(", ")}. Valid domains: ${TOOL_DOMAIN_NAMES.join(", ")}`,
+		);
+	}
+
+	return normalizeToolDomains(normalizedDomains as ToolDomain[]);
+}
+
+function areToolDomainsEqual(
+	left?: readonly ToolDomain[],
+	right?: readonly ToolDomain[],
+): boolean {
+	const normalizedLeft = left ? normalizeToolDomains(left) : [];
+	const normalizedRight = right ? normalizeToolDomains(right) : [];
+
+	if (normalizedLeft.length !== normalizedRight.length) {
+		return false;
+	}
+
+	return normalizedLeft.every(
+		(value, index) => value === normalizedRight[index],
+	);
+}
+
+function getNegotiatedProtocolVersion(body: unknown): string | undefined {
+	if (!isRecord(body) || !isRecord(body.params)) {
+		return undefined;
+	}
+
+	const requestedVersion = body.params.protocolVersion;
+	if (typeof requestedVersion !== "string") {
+		return undefined;
+	}
+
+	return SUPPORTED_PROTOCOL_VERSIONS.includes(requestedVersion)
+		? requestedVersion
+		: LATEST_PROTOCOL_VERSION;
+}
+
+function validateRequiredProtocolVersion(
+	protocolVersion: string | undefined,
+	expectedProtocolVersion?: string,
+): string | undefined {
+	if (!protocolVersion) {
+		return "Bad Request: MCP-Protocol-Version header is required for requests after initialization";
+	}
+
+	if (!SUPPORTED_PROTOCOL_VERSIONS.includes(protocolVersion)) {
+		return `Bad Request: Unsupported protocol version: ${protocolVersion} (supported versions: ${SUPPORTED_PROTOCOL_VERSIONS.join(", ")})`;
+	}
+
+	if (
+		expectedProtocolVersion !== undefined &&
+		protocolVersion !== expectedProtocolVersion
+	) {
+		return `Bad Request: MCP-Protocol-Version ${protocolVersion} does not match negotiated session protocol version ${expectedProtocolVersion}`;
+	}
+
+	return undefined;
+}
+
 export function createHttpAppRuntime(): HttpAppRuntime {
 	const config = getServerConfig();
 	const authConfig = getHttpAuthConfig();
@@ -196,32 +323,49 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 
 	let isReady = false;
 	let server: HttpServer | HttpsServer | undefined;
-	let statelessTransportPromise:
-		| Promise<StreamableHTTPServerTransport>
-		| undefined;
 	let cleanupInterval: NodeJS.Timeout | undefined;
 	let closeRuntimeResourcesPromise: Promise<void> | undefined;
 	let sigintHandler: (() => void) | undefined;
 	let sigtermHandler: (() => void) | undefined;
 
-	async function getStatelessTransport(): Promise<StreamableHTTPServerTransport> {
-		if (!statelessTransportPromise) {
-			const initPromise = (async () => {
-				const transport = new StreamableHTTPServerTransport({
-					sessionIdGenerator: undefined,
-					eventStore: managedEventStore.eventStore,
+	async function handleStatelessRequest(
+		req: express.Request,
+		res: express.Response,
+		context: string,
+		parsedBody?: unknown,
+		toolDomains?: readonly ToolDomain[],
+	): Promise<void> {
+		const transport = new StreamableHTTPServerTransport({
+			sessionIdGenerator: undefined,
+			eventStore: managedEventStore.eventStore,
+		});
+		const { server: mcpServer } = createMcpServer({ toolDomains });
+		let closePromise: Promise<void> | undefined;
+		const closeConnection = () => {
+			if (!closePromise) {
+				closePromise = mcpServer.close().catch((error) => {
+					Logger.error("Failed to close stateless MCP connection", {
+						metadata: {
+							context,
+							error: error instanceof Error ? error.message : String(error),
+						},
+					});
 				});
-				const { server: mcpServer } = createMcpServer();
-				await mcpServer.connect(transport);
-				return transport;
-			})();
-			statelessTransportPromise = initPromise.catch((error) => {
-				statelessTransportPromise = undefined;
-				throw error;
-			});
-		}
+			}
+			return closePromise;
+		};
 
-		return statelessTransportPromise;
+		res.once("close", () => {
+			void closeConnection();
+		});
+
+		try {
+			await mcpServer.connect(transport);
+			await transport.handleRequest(req, res, parsedBody);
+		} catch (error) {
+			await closeConnection();
+			throw error;
+		}
 	}
 
 	app.set("trust proxy", resolveTrustProxy(process.env.MCP_TRUST_PROXY));
@@ -436,10 +580,41 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 	 * Creates new sessions on initialize requests, reuses existing sessions otherwise
 	 */
 	app.post("/mcp", async (req, res) => {
+		let requestedToolDomains: ToolDomain[] | undefined;
+		const protocolVersionHeader =
+			typeof req.headers["mcp-protocol-version"] === "string"
+				? req.headers["mcp-protocol-version"]
+				: undefined;
+		try {
+			requestedToolDomains = parseRequestedToolDomains(req.query.tools);
+		} catch (error) {
+			respondJsonRpcClientError(
+				res,
+				400,
+				error instanceof Error ? error.message : String(error),
+			);
+			return;
+		}
+
 		if (!isStatefulSessionMode) {
+			if (!isInitializeRequest(req.body)) {
+				const protocolError = validateRequiredProtocolVersion(
+					protocolVersionHeader,
+				);
+				if (protocolError) {
+					respondJsonRpcClientError(res, 400, protocolError, -32000);
+					return;
+				}
+			}
+
 			try {
-				const statelessTransport = await getStatelessTransport();
-				await statelessTransport.handleRequest(req, res, req.body);
+				await handleStatelessRequest(
+					req,
+					res,
+					"POST /mcp stateless",
+					req.body,
+					requestedToolDomains,
+				);
 			} catch (error) {
 				respondJsonRpcInternalError(res, "POST /mcp stateless", error);
 			}
@@ -449,12 +624,31 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 		const sessionId = req.headers["mcp-session-id"] as string | undefined;
 		let transport: StreamableHTTPServerTransport | undefined;
 		let hasReservedSessionSlot = false;
+		const sessionEntry = sessionId ? sessionStore.get(sessionId) : undefined;
 
-		if (sessionId) {
-			transport = sessionStore.getTransport(sessionId) as
-				| StreamableHTTPServerTransport
-				| undefined;
+		if (sessionId && sessionEntry) {
+			transport = sessionEntry.transport as StreamableHTTPServerTransport;
 			if (transport) {
+				const protocolError = validateRequiredProtocolVersion(
+					protocolVersionHeader,
+					sessionEntry.protocolVersion,
+				);
+				if (protocolError) {
+					respondJsonRpcClientError(res, 400, protocolError, -32000);
+					return;
+				}
+
+				if (
+					requestedToolDomains &&
+					!areToolDomainsEqual(requestedToolDomains, sessionEntry.toolDomains)
+				) {
+					respondJsonRpcClientError(
+						res,
+						400,
+						"Tool subset is fixed when a stateful session is initialized. Open a new session to change ?tools=.",
+					);
+					return;
+				}
 				sessionStore.touch(sessionId);
 			}
 		}
@@ -485,6 +679,8 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 				onsessioninitialized: (id) => {
 					sessionStore.set(id, {
 						transport: newTransport,
+						toolDomains: requestedToolDomains,
+						protocolVersion: getNegotiatedProtocolVersion(req.body),
 						createdAt: Date.now(),
 						lastActivity: Date.now(),
 					});
@@ -509,7 +705,9 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 			transport = newTransport;
 
 			try {
-				const { server: mcpServer } = createMcpServer();
+				const { server: mcpServer } = createMcpServer({
+					toolDomains: requestedToolDomains,
+				});
 				await mcpServer.connect(transport);
 			} catch (error) {
 				if (hasReservedSessionSlot) {
@@ -558,16 +756,33 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 	 */
 	app.get("/mcp", async (req, res) => {
 		if (!isStatefulSessionMode) {
-			try {
-				const statelessTransport = await getStatelessTransport();
-				await statelessTransport.handleRequest(req, res);
-			} catch (error) {
-				respondJsonRpcInternalError(res, "GET /mcp stateless", error);
-			}
+			res.status(405).json({
+				jsonrpc: "2.0",
+				error: {
+					code: -32000,
+					message: "GET /mcp is not used in stateless session mode",
+				},
+				id: null,
+			});
 			return;
 		}
 
 		const sessionId = req.headers["mcp-session-id"] as string | undefined;
+		const protocolVersionHeader =
+			typeof req.headers["mcp-protocol-version"] === "string"
+				? req.headers["mcp-protocol-version"]
+				: undefined;
+		let requestedToolDomains: ToolDomain[] | undefined;
+		try {
+			requestedToolDomains = parseRequestedToolDomains(req.query.tools);
+		} catch (error) {
+			respondJsonRpcClientError(
+				res,
+				400,
+				error instanceof Error ? error.message : String(error),
+			);
+			return;
+		}
 
 		if (!sessionId) {
 			res.status(400).json({
@@ -581,11 +796,32 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 			return;
 		}
 
-		const transport = sessionStore.getTransport(sessionId) as
+		const sessionEntry = sessionStore.get(sessionId);
+		const transport = sessionEntry?.transport as
 			| StreamableHTTPServerTransport
 			| undefined;
 
 		if (transport) {
+			const protocolError = validateRequiredProtocolVersion(
+				protocolVersionHeader,
+				sessionEntry?.protocolVersion,
+			);
+			if (protocolError) {
+				respondJsonRpcClientError(res, 400, protocolError, -32000);
+				return;
+			}
+
+			if (
+				requestedToolDomains &&
+				!areToolDomainsEqual(requestedToolDomains, sessionEntry?.toolDomains)
+			) {
+				respondJsonRpcClientError(
+					res,
+					400,
+					"Tool subset is fixed when a stateful session is initialized. Open a new session to change ?tools=.",
+				);
+				return;
+			}
 			sessionStore.touch(sessionId);
 			await transport.handleRequest(req, res);
 		} else {
@@ -617,6 +853,10 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 		}
 
 		const sessionId = req.headers["mcp-session-id"] as string | undefined;
+		const protocolVersionHeader =
+			typeof req.headers["mcp-protocol-version"] === "string"
+				? req.headers["mcp-protocol-version"]
+				: undefined;
 
 		if (!sessionId) {
 			res.status(400).json({
@@ -630,11 +870,21 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 			return;
 		}
 
-		const transport = sessionStore.getTransport(sessionId) as
+		const sessionEntry = sessionStore.get(sessionId);
+		const transport = sessionEntry?.transport as
 			| StreamableHTTPServerTransport
 			| undefined;
 
 		if (transport) {
+			const protocolError = validateRequiredProtocolVersion(
+				protocolVersionHeader,
+				sessionEntry?.protocolVersion,
+			);
+			if (protocolError) {
+				respondJsonRpcClientError(res, 400, protocolError, -32000);
+				return;
+			}
+
 			await transport.handleRequest(req, res);
 		} else {
 			res.status(400).json({
@@ -698,11 +948,6 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 				try {
 					if (isStatefulSessionMode) {
 						await sessionStore.closeAll();
-					} else if (statelessTransportPromise) {
-						const transportPromise = statelessTransportPromise;
-						statelessTransportPromise = undefined;
-						const statelessTransport = await transportPromise;
-						await statelessTransport.close();
 					}
 				} finally {
 					await managedEventStore.close();
@@ -755,7 +1000,9 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 		console.log("  GET  /health - Health check");
 		console.log("  GET  /ready  - Readiness check");
 		console.log("  POST /mcp    - MCP requests");
-		console.log("  GET  /mcp    - SSE notifications");
+		console.log(
+			`  GET  /mcp    - ${isStatefulSessionMode ? "SSE notifications" : "Not used in stateless mode"}`,
+		);
 		console.log(
 			`  DELETE /mcp  - ${isStatefulSessionMode ? "Close session" : "Not used in stateless mode"}`,
 		);

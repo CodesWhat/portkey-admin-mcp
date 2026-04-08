@@ -3,6 +3,7 @@ import type {
 	ToolCallback,
 } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import { z } from "zod";
 import { Logger } from "../lib/logger.js";
 import type { PortkeyService } from "../services/index.js";
 import { registerAnalyticsTools } from "./analytics.tools.js";
@@ -23,6 +24,155 @@ import { registerProvidersTools } from "./providers.tools.js";
 import { registerTracingTools } from "./tracing.tools.js";
 import { registerUsersTools } from "./users.tools.js";
 import { registerWorkspacesTools } from "./workspaces.tools.js";
+
+type ToolRegistrar = (server: McpServer, service: PortkeyService) => void;
+
+const TOOL_DOMAIN_REGISTRARS = [
+	["users", registerUsersTools],
+	["workspaces", registerWorkspacesTools],
+	["configs", registerConfigsTools],
+	["keys", registerKeysTools],
+	["collections", registerCollectionsTools],
+	["prompts", registerPromptsTools],
+	["analytics", registerAnalyticsTools],
+	["guardrails", registerGuardrailsTools],
+	["limits", registerLimitsTools],
+	["audit", registerAuditTools],
+	["labels", registerLabelsTools],
+	["partials", registerPartialsTools],
+	["tracing", registerTracingTools],
+	["logging", registerLoggingTools],
+	["providers", registerProvidersTools],
+	["integrations", registerIntegrationsTools],
+	["mcp-integrations", registerMcpIntegrationsTools],
+	["mcp-servers", registerMcpServersTools],
+] as const satisfies readonly (readonly [string, ToolRegistrar])[];
+
+export type ToolDomain = (typeof TOOL_DOMAIN_REGISTRARS)[number][0];
+
+export interface RegisterAllToolsOptions {
+	domains?: readonly ToolDomain[];
+}
+
+export const TOOL_DOMAIN_NAMES = TOOL_DOMAIN_REGISTRARS.map(
+	([domain]) => domain,
+) as ToolDomain[];
+
+const TOOL_DOMAIN_NAME_SET = new Set<string>(TOOL_DOMAIN_NAMES);
+
+export function isToolDomain(value: string): value is ToolDomain {
+	return TOOL_DOMAIN_NAME_SET.has(value);
+}
+
+export function normalizeToolDomains(
+	domains: Iterable<ToolDomain>,
+): ToolDomain[] {
+	const selectedDomains = new Set(domains);
+
+	return TOOL_DOMAIN_REGISTRARS.filter(([domain]) =>
+		selectedDomains.has(domain),
+	).map(([domain]) => domain);
+}
+
+type ToolAnnotations = {
+	title?: string;
+	readOnlyHint: boolean;
+	destructiveHint: boolean;
+	idempotentHint: boolean;
+	openWorldHint: boolean;
+};
+
+const TOOL_ANNOTATION_KEYS = new Set([
+	"title",
+	"readOnlyHint",
+	"destructiveHint",
+	"idempotentHint",
+	"openWorldHint",
+]);
+
+const READ_ONLY_IDEMPOTENT_TOOL_PREFIXES = [
+	"get_",
+	"list_",
+	"validate_",
+	"render_",
+	"download_",
+] as const;
+
+const READ_ONLY_NON_IDEMPOTENT_TOOL_PREFIXES = ["run_", "test_"] as const;
+
+const DESTRUCTIVE_TOOL_PREFIXES = [
+	"delete_",
+	"remove_",
+	"cancel_",
+	"reset_",
+] as const;
+
+function isToolAnnotationsLike(
+	value: unknown,
+): value is Partial<ToolAnnotations> {
+	if (!isRecord(value)) {
+		return false;
+	}
+
+	const keys = Object.keys(value);
+	if (
+		keys.length === 0 ||
+		!keys.every((key) => TOOL_ANNOTATION_KEYS.has(key))
+	) {
+		return false;
+	}
+
+	return Object.values(value).every(
+		(entry) =>
+			entry === undefined ||
+			typeof entry === "boolean" ||
+			typeof entry === "string",
+	);
+}
+
+function inferToolAnnotations(toolName: string): ToolAnnotations {
+	if (
+		READ_ONLY_IDEMPOTENT_TOOL_PREFIXES.some((prefix) =>
+			toolName.startsWith(prefix),
+		)
+	) {
+		return {
+			readOnlyHint: true,
+			destructiveHint: false,
+			idempotentHint: true,
+			openWorldHint: true,
+		};
+	}
+
+	if (
+		READ_ONLY_NON_IDEMPOTENT_TOOL_PREFIXES.some((prefix) =>
+			toolName.startsWith(prefix),
+		)
+	) {
+		return {
+			readOnlyHint: true,
+			destructiveHint: false,
+			idempotentHint: false,
+			openWorldHint: true,
+		};
+	}
+
+	if (DESTRUCTIVE_TOOL_PREFIXES.some((prefix) => toolName.startsWith(prefix))) {
+		return {
+			readOnlyHint: false,
+			destructiveHint: true,
+			idempotentHint: false,
+			openWorldHint: true,
+		};
+	}
+
+	return {
+		readOnlyHint: false,
+		destructiveHint: false,
+		idempotentHint: false,
+		openWorldHint: true,
+	};
+}
 
 function getToolErrorMessage(error: unknown): string {
 	if (error instanceof Error && error.message) {
@@ -48,6 +198,26 @@ type StandardToolErrorEnvelope = {
 type StandardToolEnvelope =
 	| StandardToolSuccessEnvelope
 	| StandardToolErrorEnvelope;
+
+const STANDARD_TOOL_OUTPUT_SCHEMA = {
+	ok: z
+		.boolean()
+		.describe("Whether the tool call succeeded and returned structured data"),
+	data: z
+		.unknown()
+		.optional()
+		.describe("Structured success payload when ok is true"),
+	error: z
+		.object({
+			message: z.string().describe("Human-readable error message"),
+			details: z
+				.unknown()
+				.optional()
+				.describe("Optional structured error details"),
+		})
+		.optional()
+		.describe("Structured error payload when ok is false"),
+} as const;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null;
@@ -158,8 +328,61 @@ function wrapToolCallback(
 	};
 }
 
+function buildToolRegistration(
+	name: string,
+	rest: unknown[],
+): {
+	description?: string;
+	inputSchema?: unknown;
+	annotations: ToolAnnotations;
+	callback: ToolCallback;
+} {
+	const maybeCallback = rest.at(-1);
+	const wrappedCallback = wrapToolCallback(name, maybeCallback as ToolCallback);
+	const inferredAnnotations = inferToolAnnotations(name);
+	const args = [...rest.slice(0, -1)];
+
+	let description: string | undefined;
+	if (typeof args[0] === "string") {
+		description = args.shift() as string;
+	}
+
+	let inputSchema: unknown;
+	let annotations = inferredAnnotations;
+
+	if (args.length === 1) {
+		if (isToolAnnotationsLike(args[0])) {
+			annotations = {
+				...inferredAnnotations,
+				...args[0],
+			};
+		} else {
+			inputSchema = args[0];
+		}
+	} else if (args.length >= 2) {
+		inputSchema = args[0];
+		if (isToolAnnotationsLike(args[1])) {
+			annotations = {
+				...inferredAnnotations,
+				...args[1],
+			};
+		}
+	}
+
+	return {
+		description,
+		inputSchema,
+		annotations,
+		callback: wrappedCallback,
+	};
+}
+
 function createSafeToolServer(server: McpServer): McpServer {
 	const originalTool = server.tool.bind(server);
+	const originalRegisterTool =
+		"registerTool" in server && typeof server.registerTool === "function"
+			? server.registerTool.bind(server)
+			: undefined;
 	const safeServer = Object.create(server) as McpServer;
 	const callOriginalTool = (...args: [string, ...unknown[]]) =>
 		Reflect.apply(
@@ -167,6 +390,21 @@ function createSafeToolServer(server: McpServer): McpServer {
 			server,
 			args,
 		);
+	const callOriginalRegisterTool = (
+		...args: [string, Record<string, unknown>, ToolCallback]
+	) => {
+		if (!originalRegisterTool) {
+			throw new Error("registerTool is not available on the MCP server");
+		}
+
+		return Reflect.apply(
+			originalRegisterTool as (
+				...toolArgs: [string, Record<string, unknown>, ToolCallback]
+			) => unknown,
+			server,
+			args,
+		);
+	};
 
 	safeServer.tool = ((name: string, ...rest: unknown[]) => {
 		const maybeCallback = rest.at(-1);
@@ -174,10 +412,46 @@ function createSafeToolServer(server: McpServer): McpServer {
 			return callOriginalTool(name, ...rest);
 		}
 
-		const wrappedRest = [
-			...rest.slice(0, -1),
-			wrapToolCallback(name, maybeCallback as ToolCallback),
-		];
+		const registration = buildToolRegistration(name, rest);
+
+		if (originalRegisterTool) {
+			return callOriginalRegisterTool(
+				name,
+				{
+					...(registration.description
+						? { description: registration.description }
+						: {}),
+					...(registration.inputSchema !== undefined
+						? { inputSchema: registration.inputSchema }
+						: {}),
+					outputSchema: STANDARD_TOOL_OUTPUT_SCHEMA,
+					annotations: registration.annotations,
+				},
+				registration.callback,
+			);
+		}
+
+		const wrappedRest =
+			registration.inputSchema !== undefined
+				? registration.description !== undefined
+					? [
+							registration.description,
+							registration.inputSchema,
+							registration.annotations,
+							registration.callback,
+						]
+					: [
+							registration.inputSchema,
+							registration.annotations,
+							registration.callback,
+						]
+				: registration.description !== undefined
+					? [
+							registration.description,
+							registration.annotations,
+							registration.callback,
+						]
+					: [registration.annotations, registration.callback];
 
 		return callOriginalTool(name, ...wrappedRest);
 	}) as McpServer["tool"];
@@ -193,28 +467,18 @@ function createSafeToolServer(server: McpServer): McpServer {
 export function registerAllTools(
 	server: McpServer,
 	service: PortkeyService,
+	options: RegisterAllToolsOptions = {},
 ): void {
 	const safeServer = createSafeToolServer(server);
+	const selectedDomains = options.domains
+		? new Set(normalizeToolDomains(options.domains))
+		: undefined;
 
-	// Register tools by domain
-	registerUsersTools(safeServer, service);
-	registerWorkspacesTools(safeServer, service);
-	registerConfigsTools(safeServer, service);
-	registerKeysTools(safeServer, service);
-	registerCollectionsTools(safeServer, service);
-	registerPromptsTools(safeServer, service);
-	registerAnalyticsTools(safeServer, service);
-	registerGuardrailsTools(safeServer, service);
-	registerLimitsTools(safeServer, service);
-	registerAuditTools(safeServer, service);
-	registerLabelsTools(safeServer, service);
-	registerPartialsTools(safeServer, service);
-	registerTracingTools(safeServer, service);
-	registerLoggingTools(safeServer, service);
-	registerProvidersTools(safeServer, service);
-	registerIntegrationsTools(safeServer, service);
-	registerMcpIntegrationsTools(safeServer, service);
-	registerMcpServersTools(safeServer, service);
+	for (const [domain, registerTools] of TOOL_DOMAIN_REGISTRARS) {
+		if (!selectedDomains || selectedDomains.has(domain)) {
+			registerTools(safeServer, service);
+		}
+	}
 }
 
 // Re-export individual registration functions for selective use

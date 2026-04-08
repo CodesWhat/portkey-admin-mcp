@@ -2,6 +2,7 @@
  * Session management for HTTP transport
  */
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
+import type { ToolDomain } from "../tools/index.js";
 
 export const DEFAULT_MAX_SESSIONS = 100;
 
@@ -20,6 +21,10 @@ export class SessionCapacityError extends Error {
 export interface SessionEntry {
 	/** The transport instance for this session */
 	transport: Transport;
+	/** Optional tool subset fixed for the lifetime of the session */
+	toolDomains?: readonly ToolDomain[];
+	/** Negotiated MCP protocol version for the session */
+	protocolVersion?: string;
 	/** Timestamp when the session was created */
 	createdAt: number;
 	/** Timestamp of last activity on this session */
