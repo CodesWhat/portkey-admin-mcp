@@ -5,11 +5,12 @@
  * the SDK's Client + StdioClientTransport. Spawns the real server binary
  * with a dummy API key (protocol-level tests don't need real Portkey access).
  */
-import { describe, it, after, before } from "node:test";
+
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { after, before, describe, it } from "node:test";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
-import { readFileSync } from "node:fs";
 
 const PKG = JSON.parse(
 	readFileSync(new URL("../package.json", import.meta.url), "utf-8"),
@@ -252,10 +253,7 @@ describe("MCP E2E Protocol Tests", () => {
 
 			// Check every expected tool is present
 			for (const expected of EXPECTED_TOOLS) {
-				assert.ok(
-					toolNames.includes(expected),
-					`Missing tool: ${expected}`,
-				);
+				assert.ok(toolNames.includes(expected), `Missing tool: ${expected}`);
 			}
 		});
 
@@ -302,10 +300,7 @@ describe("MCP E2E Protocol Tests", () => {
 				arguments: { name: "test-config" },
 			});
 			assert.equal(result.isError, true, "Should have isError: true");
-			assert.ok(
-				Array.isArray(result.content),
-				"content should be an array",
-			);
+			assert.ok(Array.isArray(result.content), "content should be an array");
 		});
 
 		it("returns isError for validation failure (create_prompt missing model)", async () => {
@@ -367,13 +362,15 @@ describe("MCP E2E Protocol Tests", () => {
 				"text",
 				"content type should be text",
 			);
-			assert.ok(
-				"text" in first,
-				"content item should have text",
-			);
+			assert.ok("text" in first, "content item should have text");
 			// Parse the JSON to verify it's valid
 			const parsed = JSON.parse((first as { text: string }).text);
-			assert.equal(parsed.valid, true, "metadata should be valid");
+			assert.equal(
+				parsed.ok,
+				true,
+				"tool response should use ok/data envelope",
+			);
+			assert.equal(parsed.data?.valid, true, "metadata should be valid");
 		});
 
 		it("API errors propagate as isError with message", async () => {

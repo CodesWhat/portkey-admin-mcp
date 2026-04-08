@@ -115,7 +115,6 @@ export function registerConfigsTools(
 		},
 		async (params) => {
 			const response = await service.configs.getConfig(params.slug);
-			const details = JSON.parse(response.config || "{}");
 			return {
 				content: [
 					{
@@ -127,18 +126,18 @@ export function registerConfigsTools(
 								name: response.name,
 								status: response.status,
 								config: {
-									cache: details.cache && {
-										mode: details.cache.mode,
-										max_age: details.cache.max_age,
+									cache: response.config.cache && {
+										mode: response.config.cache.mode,
+										max_age: response.config.cache.max_age,
 									},
-									retry: details.retry && {
-										attempts: details.retry.attempts,
-										on_status_codes: details.retry.on_status_codes,
+									retry: response.config.retry && {
+										attempts: response.config.retry.attempts,
+										on_status_codes: response.config.retry.on_status_codes,
 									},
-									strategy: details.strategy && {
-										mode: details.strategy.mode,
+									strategy: response.config.strategy && {
+										mode: response.config.strategy.mode,
 									},
-									targets: details.targets?.map(
+									targets: response.config.targets?.map(
 										(target: { provider?: string; virtual_key?: string }) => ({
 											provider: target.provider,
 											virtual_key: target.virtual_key,
@@ -306,7 +305,6 @@ export function registerConfigsTools(
 				params.slug,
 				updateData,
 			);
-			const updatedConfig = JSON.parse(result.config || "{}");
 
 			return {
 				content: [
@@ -317,7 +315,7 @@ export function registerConfigsTools(
 								message: `Successfully updated configuration "${params.slug}"`,
 								id: result.id,
 								slug: result.slug,
-								config: updatedConfig,
+								config: result.config,
 							},
 							null,
 							2,

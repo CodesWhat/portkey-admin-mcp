@@ -32,13 +32,114 @@ function getToolErrorMessage(error: unknown): string {
 	return String(error);
 }
 
+type StandardToolSuccessEnvelope = {
+	ok: true;
+	data: unknown;
+};
+
+type StandardToolErrorEnvelope = {
+	ok: false;
+	error: {
+		message: string;
+		details?: unknown;
+	};
+};
+
+type StandardToolEnvelope =
+	| StandardToolSuccessEnvelope
+	| StandardToolErrorEnvelope;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null;
+}
+
+function isStandardToolEnvelope(value: unknown): value is StandardToolEnvelope {
+	if (!isRecord(value) || typeof value.ok !== "boolean") {
+		return false;
+	}
+
+	if (value.ok) {
+		return "data" in value;
+	}
+
+	return isRecord(value.error) && typeof value.error.message === "string";
+}
+
+function tryParseJson(text: string): unknown {
+	try {
+		return JSON.parse(text);
+	} catch {
+		return undefined;
+	}
+}
+
+function getFirstTextContent(result: CallToolResult): string | undefined {
+	const first = result.content?.[0];
+	return first?.type === "text" ? first.text : undefined;
+}
+
+function getSuccessData(result: CallToolResult): unknown {
+	const text = getFirstTextContent(result);
+	if (text === undefined) {
+		return null;
+	}
+
+	const parsed = tryParseJson(text);
+	return parsed !== undefined ? parsed : { message: text };
+}
+
+function getErrorDetails(result: CallToolResult): {
+	message: string;
+	details?: unknown;
+} {
+	const text = getFirstTextContent(result);
+	if (text === undefined) {
+		return { message: "Tool execution failed" };
+	}
+
+	const parsed = tryParseJson(text);
+	if (parsed === undefined) {
+		return { message: text };
+	}
+
+	if (isRecord(parsed) && typeof parsed.message === "string") {
+		return { message: parsed.message, details: parsed };
+	}
+
+	return { message: text, details: parsed };
+}
+
+function formatToolEnvelope(envelope: StandardToolEnvelope): string {
+	return JSON.stringify(envelope, null, 2);
+}
+
+function normalizeToolResult(result: CallToolResult): CallToolResult {
+	const envelope = isStandardToolEnvelope(result.structuredContent)
+		? result.structuredContent
+		: result.isError
+			? ({
+					ok: false,
+					error: getErrorDetails(result),
+				} satisfies StandardToolErrorEnvelope)
+			: ({
+					ok: true,
+					data: getSuccessData(result),
+				} satisfies StandardToolSuccessEnvelope);
+
+	return {
+		...result,
+		content: [{ type: "text", text: formatToolEnvelope(envelope) }],
+		structuredContent: envelope,
+	};
+}
+
 function wrapToolCallback(
 	toolName: string,
 	callback: ToolCallback,
 ): ToolCallback {
 	return async (...args) => {
 		try {
-			return await callback(...args);
+			return normalizeToolResult((await callback(...args)) as CallToolResult);
 		} catch (error) {
 			const message = getToolErrorMessage(error);
 
@@ -47,12 +148,12 @@ function wrapToolCallback(
 				metadata: { toolName },
 			});
 
-			return {
+			return normalizeToolResult({
 				content: [
 					{ type: "text", text: `Tool "${toolName}" failed: ${message}` },
 				],
 				isError: true,
-			} satisfies CallToolResult;
+			} satisfies CallToolResult);
 		}
 	};
 }
