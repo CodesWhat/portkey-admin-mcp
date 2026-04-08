@@ -16,6 +16,7 @@ export interface HttpAuthConfig {
 const AUTH_SCHEMES = {
 	bearer: "Bearer",
 } as const;
+const ALLOW_UNAUTHENTICATED_HTTP_ENV = "MCP_ALLOW_UNAUTHENTICATED_HTTP";
 
 function parseCsv(raw: string | undefined): string[] | undefined {
 	if (!raw) {
@@ -48,6 +49,11 @@ function isValidHttpsUrl(value: string): boolean {
 	} catch {
 		return false;
 	}
+}
+
+function isExplicitlyEnabled(value: string | undefined): boolean {
+	const normalized = value?.trim().toLowerCase();
+	return normalized === "true" || normalized === "1";
 }
 
 function getHttpAuthConfigFromEnv(): HttpAuthConfig {
@@ -117,6 +123,20 @@ export function getHttpAuthConfig(): HttpAuthConfig {
 	return HTTP_AUTH_CONFIG;
 }
 
+export function assertSafeHttpAuthConfig(
+	config: HttpAuthConfig = getHttpAuthConfig(),
+): void {
+	if (config.mode !== "none") {
+		return;
+	}
+	if (isExplicitlyEnabled(process.env[ALLOW_UNAUTHENTICATED_HTTP_ENV])) {
+		return;
+	}
+	throw new Error(
+		`MCP_AUTH_MODE=none is not allowed for HTTP transport. Set MCP_AUTH_MODE=bearer or MCP_AUTH_MODE=clerk, or explicitly override with ${ALLOW_UNAUTHENTICATED_HTTP_ENV}=true for local-only debugging.`,
+	);
+}
+
 function extractBearerToken(req: Request): string | null {
 	const authHeader = req.headers.authorization;
 	if (!authHeader) {
@@ -136,12 +156,9 @@ function extractBearerToken(req: Request): string | null {
 }
 
 function timingSafeEqual(a: string, b: string): boolean {
-	const left = Buffer.from(a);
-	const right = Buffer.from(b);
-
-	if (left.length !== right.length) {
-		return false;
-	}
+	// Compare fixed-length digests so token length differences do not short-circuit.
+	const left = crypto.createHash("sha256").update(a, "utf8").digest();
+	const right = crypto.createHash("sha256").update(b, "utf8").digest();
 	return crypto.timingSafeEqual(left, right);
 }
 

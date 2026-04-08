@@ -62,7 +62,7 @@ function isOriginMatch(origin: string, allowedOrigin: string): boolean {
 	return true;
 }
 
-export function getAllowedOrigins(): string[] {
+function resolveAllowedOrigins(): string[] {
 	const envOrigins = process.env.ALLOWED_ORIGINS ?? process.env.CORS_ORIGIN;
 	if (envOrigins) {
 		const parsed = parseOrigins(envOrigins);
@@ -71,6 +71,12 @@ export function getAllowedOrigins(): string[] {
 		}
 	}
 	return ["http://localhost", "https://localhost"];
+}
+
+const ALLOWED_ORIGINS = resolveAllowedOrigins();
+
+export function getAllowedOrigins(): string[] {
+	return ALLOWED_ORIGINS;
 }
 
 /**
@@ -145,6 +151,7 @@ interface RateLimitConfig {
 	maxTokens: number;
 	windowMs: number;
 	refillRate: number;
+	maxBuckets: number;
 }
 
 interface TokenBucket {
@@ -179,6 +186,7 @@ const RATE_LIMIT_CONFIG: RateLimitConfig = {
 	maxTokens: parsePositiveIntegerEnv("RATE_LIMIT_MAX", 60),
 	windowMs: parsePositiveIntegerEnv("RATE_LIMIT_WINDOW_MS", 60000),
 	refillRate: parsePositiveIntegerEnv("RATE_LIMIT_REFILL", 60),
+	maxBuckets: parsePositiveIntegerEnv("RATE_LIMIT_MAX_BUCKETS", 10000),
 };
 
 function getRateLimitConfig(): RateLimitConfig {
@@ -187,14 +195,11 @@ function getRateLimitConfig(): RateLimitConfig {
 
 // In-memory token buckets (keyed by client identifier)
 const buckets = new Map<string, TokenBucket>();
+let overflowBucket: TokenBucket | undefined;
 
 function getClientIdentifier(req: Request): string {
-	// Use IP address as client identifier
-	return (
-		(req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ||
-		req.ip ||
-		"unknown"
-	);
+	// Use Express's resolved client IP so raw forwarding headers cannot spoof identity.
+	return req.ip || "unknown";
 }
 
 function refillBucket(bucket: TokenBucket, config: RateLimitConfig): void {
@@ -210,25 +215,67 @@ function refillBucket(bucket: TokenBucket, config: RateLimitConfig): void {
 	}
 }
 
-function consumeToken(clientId: string, config: RateLimitConfig): boolean {
-	let bucket = buckets.get(clientId);
+function getStaleBucketThreshold(config: RateLimitConfig): number {
+	return config.windowMs * 2;
+}
 
-	if (!bucket) {
-		bucket = {
-			tokens: config.maxTokens,
-			lastRefill: Date.now(),
-		};
-		buckets.set(clientId, bucket);
+function cleanupStaleBuckets(now: number, config: RateLimitConfig): void {
+	const staleThreshold = getStaleBucketThreshold(config);
+
+	for (const [clientId, bucket] of buckets.entries()) {
+		if (now - bucket.lastRefill > staleThreshold) {
+			buckets.delete(clientId);
+		}
 	}
+
+	if (overflowBucket && now - overflowBucket.lastRefill > staleThreshold) {
+		overflowBucket = undefined;
+	}
+}
+
+function resolveBucket(clientId: string, config: RateLimitConfig): TokenBucket {
+	const existingBucket = buckets.get(clientId);
+	if (existingBucket) {
+		return existingBucket;
+	}
+
+	const now = Date.now();
+	if (buckets.size >= config.maxBuckets) {
+		cleanupStaleBuckets(now, config);
+	}
+
+	if (buckets.size >= config.maxBuckets) {
+		if (!overflowBucket) {
+			overflowBucket = {
+				tokens: config.maxTokens,
+				lastRefill: now,
+			};
+		}
+		return overflowBucket;
+	}
+
+	const bucket = {
+		tokens: config.maxTokens,
+		lastRefill: now,
+	};
+	buckets.set(clientId, bucket);
+	return bucket;
+}
+
+function consumeToken(
+	clientId: string,
+	config: RateLimitConfig,
+): { allowed: boolean } {
+	const bucket = resolveBucket(clientId, config);
 
 	refillBucket(bucket, config);
 
 	if (bucket.tokens > 0) {
 		bucket.tokens -= 1;
-		return true;
+		return { allowed: true };
 	}
 
-	return false;
+	return { allowed: false };
 }
 
 /**
@@ -255,11 +302,10 @@ export function rateLimitMiddleware(
 
 	const clientId = getClientIdentifier(req);
 
-	if (!consumeToken(clientId, config)) {
-		const bucket = buckets.get(clientId);
-		const retryAfterMs = bucket
-			? Math.ceil(config.windowMs / config.refillRate)
-			: config.windowMs;
+	const { allowed } = consumeToken(clientId, config);
+
+	if (!allowed) {
+		const retryAfterMs = Math.ceil(config.windowMs / config.refillRate);
 
 		Logger.warn("Rate limit exceeded", {
 			path: req.path,
@@ -275,19 +321,15 @@ export function rateLimitMiddleware(
 	next();
 }
 
+export function getRateLimitBucketCountForTest(): number {
+	return buckets.size;
+}
+
 // Cleanup old buckets periodically (every 5 minutes).
 // unref() prevents this background timer from blocking process shutdown.
 const cleanupTimer = setInterval(
 	() => {
-		const now = Date.now();
-		const config = getRateLimitConfig();
-		const staleThreshold = config.windowMs * 2;
-
-		for (const [clientId, bucket] of buckets.entries()) {
-			if (now - bucket.lastRefill > staleThreshold) {
-				buckets.delete(clientId);
-			}
-		}
+		cleanupStaleBuckets(Date.now(), getRateLimitConfig());
 	},
 	5 * 60 * 1000,
 );
