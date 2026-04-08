@@ -4,7 +4,10 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { PortkeyService } from "../services/index.js";
+import {
+	getSharedPortkeyService,
+	type PortkeyService,
+} from "../services/index.js";
 import { registerAllTools } from "../tools/index.js";
 
 function readPackageVersion(): string {
@@ -16,6 +19,8 @@ function readPackageVersion(): string {
 		return "0.0.0";
 	}
 }
+
+const PACKAGE_VERSION = readPackageVersion();
 
 /**
  * Result of creating an MCP server
@@ -32,14 +37,15 @@ export interface McpServerResult {
  * @returns McpServerResult with server and service instances
  */
 export function createMcpServer(): McpServerResult {
-	// Create service instance
-	const service = new PortkeyService();
+	// Reuse the service facade across MCP server instances to avoid rebuilding
+	// the entire domain-service graph for each stateless/request-scoped server.
+	const service = getSharedPortkeyService();
 
 	// Create MCP server
 	const server = new McpServer(
 		{
 			name: "portkey-admin-mcp",
-			version: readPackageVersion(),
+			version: PACKAGE_VERSION,
 		},
 		{
 			capabilities: {

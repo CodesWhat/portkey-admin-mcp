@@ -50,7 +50,7 @@ export class PromptsService extends BaseService {
 	async getPrompt(promptId: string): Promise<GetPromptResponse> {
 		// API returns version fields flattened at top level, not nested under current_version
 		const raw = await this.get<RawGetPromptResponse>(
-			`/prompts/${promptId}`,
+			`/prompts/${this.encodePathSegment(promptId)}`,
 		);
 		return {
 			id: raw.id,
@@ -97,11 +97,16 @@ export class PromptsService extends BaseService {
 		if (template_metadata !== undefined) {
 			body.prompt_metadata = template_metadata;
 		}
-		return this.put<UpdatePromptResponse>(`/prompts/${promptId}`, body);
+		return this.put<UpdatePromptResponse>(
+			`/prompts/${this.encodePathSegment(promptId)}`,
+			body,
+		);
 	}
 
 	async deletePrompt(promptId: string): Promise<DeletePromptResponse> {
-		return this.delete<DeletePromptResponse>(`/prompts/${promptId}`);
+		return this.delete<DeletePromptResponse>(
+			`/prompts/${this.encodePathSegment(promptId)}`,
+		);
 	}
 
 	async publishPrompt(
@@ -109,7 +114,7 @@ export class PromptsService extends BaseService {
 		data: PublishPromptRequest,
 	): Promise<PublishPromptResponse> {
 		return this.put<PublishPromptResponse>(
-			`/prompts/${promptId}/makeDefault`,
+			`/prompts/${this.encodePathSegment(promptId)}/makeDefault`,
 			data,
 		);
 	}
@@ -120,7 +125,7 @@ export class PromptsService extends BaseService {
 	): Promise<Record<string, unknown>> {
 		// Returns the full prompt object with version fields flattened in
 		return this.get<Record<string, unknown>>(
-			`/prompts/${promptId}/versions/${versionId}`,
+			`/prompts/${this.encodePathSegment(promptId)}/versions/${this.encodePathSegment(versionId)}`,
 		);
 	}
 
@@ -129,16 +134,17 @@ export class PromptsService extends BaseService {
 		versionId: string,
 		data: { label_id?: string | null },
 	): Promise<{ success: boolean }> {
-		await this.put(`/prompts/${promptId}/versions/${versionId}`, data);
+		await this.put(
+			`/prompts/${this.encodePathSegment(promptId)}/versions/${this.encodePathSegment(versionId)}`,
+			data,
+		);
 		return { success: true };
 	}
 
-	async listPromptVersions(
-		promptId: string,
-	): Promise<PromptVersionListItem[]> {
+	async listPromptVersions(promptId: string): Promise<PromptVersionListItem[]> {
 		// API returns { object: "list", total, data: [...] } — unwrap to plain array
 		const response = await this.get<ListPromptVersionsResponse>(
-			`/prompts/${promptId}/versions`,
+			`/prompts/${this.encodePathSegment(promptId)}/versions`,
 		);
 		return response.data;
 	}
@@ -148,10 +154,13 @@ export class PromptsService extends BaseService {
 		data: RenderPromptRequest,
 	): Promise<RenderPromptResponse> {
 		// Flatten hyperparameters like runPromptCompletion does
-		return this.post<RenderPromptResponse>(`/prompts/${promptId}/render`, {
-			...data.hyperparameters,
-			variables: data.variables,
-		});
+		return this.post<RenderPromptResponse>(
+			`/prompts/${this.encodePathSegment(promptId)}/render`,
+			{
+				...data.hyperparameters,
+				variables: data.variables,
+			},
+		);
 	}
 
 	async runPromptCompletion(
@@ -171,7 +180,7 @@ export class PromptsService extends BaseService {
 		// Note: stream is always false because MCP protocol uses request-response pattern,
 		// not streaming. The MCP SDK handles its own transport-level streaming if needed.
 		return this.post<PromptCompletionResponse>(
-			`/prompts/${promptId}/completions`,
+			`/prompts/${this.encodePathSegment(promptId)}/completions`,
 			{
 				...data.hyperparameters,
 				variables: data.variables,
@@ -311,9 +320,7 @@ export class PromptsService extends BaseService {
 		const sourcePrompt = await this.getPrompt(data.source_prompt_id);
 		const sourceVersion = sourcePrompt.current_version;
 		if (!sourceVersion) {
-			throw new Error(
-				`Source prompt has no active version to promote`,
-			);
+			throw new Error(`Source prompt has no active version to promote`);
 		}
 
 		const targetName =

@@ -106,13 +106,14 @@ export class ConfigsService extends BaseService {
 	}
 
 	async getConfig(slug: string): Promise<GetConfigResponse> {
-		return this.get<GetConfigResponse>(`/configs/${slug}`);
+		return this.get<GetConfigResponse>(
+			`/configs/${this.encodePathSegment(slug)}`,
+		);
 	}
 
 	// Phase 1: Config CRUD
 	async createConfig(data: CreateConfigRequest): Promise<CreateConfigResponse> {
-		const response =
-			await this.post<CreateConfigApiResponse>("/configs", data);
+		const response = await this.post<CreateConfigApiResponse>("/configs", data);
 		return response.data;
 	}
 
@@ -120,14 +121,21 @@ export class ConfigsService extends BaseService {
 		slug: string,
 		data: UpdateConfigRequest,
 	): Promise<GetConfigResponse> {
-		return this.put<GetConfigResponse>(`/configs/${slug}`, data);
+		return this.put<GetConfigResponse>(
+			`/configs/${this.encodePathSegment(slug)}`,
+			data,
+		);
 	}
 
 	async deleteConfig(slug: string): Promise<{ success: boolean }> {
-		return this.delete<{ success: boolean }>(`/configs/${slug}`);
+		return this.delete<{ success: boolean }>(
+			`/configs/${this.encodePathSegment(slug)}`,
+		);
 	}
 
 	async listConfigVersions(slug: string): Promise<ConfigVersionsResponse> {
-		return this.get<ConfigVersionsResponse>(`/configs/${slug}/versions`);
+		return this.get<ConfigVersionsResponse>(
+			`/configs/${this.encodePathSegment(slug)}/versions`,
+		);
 	}
 }

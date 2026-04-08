@@ -101,7 +101,7 @@ export class WorkspacesService extends BaseService {
 
 	async getWorkspace(workspaceId: string): Promise<SingleWorkspaceResponse> {
 		return this.get<SingleWorkspaceResponse>(
-			`/admin/workspaces/${workspaceId}`,
+			`/admin/workspaces/${this.encodePathSegment(workspaceId)}`,
 		);
 	}
 
@@ -113,11 +113,16 @@ export class WorkspacesService extends BaseService {
 		workspaceId: string,
 		data: UpdateWorkspaceRequest,
 	): Promise<Workspace> {
-		return this.put<Workspace>(`/admin/workspaces/${workspaceId}`, data);
+		return this.put<Workspace>(
+			`/admin/workspaces/${this.encodePathSegment(workspaceId)}`,
+			data,
+		);
 	}
 
 	async deleteWorkspace(workspaceId: string): Promise<{ success: boolean }> {
-		await this.delete(`/admin/workspaces/${workspaceId}`);
+		await this.delete(
+			`/admin/workspaces/${this.encodePathSegment(workspaceId)}`,
+		);
 		return { success: true };
 	}
 
@@ -126,7 +131,7 @@ export class WorkspacesService extends BaseService {
 		data: AddWorkspaceMemberRequest,
 	): Promise<WorkspaceUser> {
 		return this.post<WorkspaceUser>(
-			`/admin/workspaces/${workspaceId}/users`,
+			`/admin/workspaces/${this.encodePathSegment(workspaceId)}/users`,
 			data,
 		);
 	}
@@ -135,7 +140,7 @@ export class WorkspacesService extends BaseService {
 		workspaceId: string,
 	): Promise<WorkspaceMembersResponse> {
 		return this.get<WorkspaceMembersResponse>(
-			`/admin/workspaces/${workspaceId}/users`,
+			`/admin/workspaces/${this.encodePathSegment(workspaceId)}/users`,
 		);
 	}
 
@@ -144,7 +149,7 @@ export class WorkspacesService extends BaseService {
 		userId: string,
 	): Promise<WorkspaceUser> {
 		return this.get<WorkspaceUser>(
-			`/admin/workspaces/${workspaceId}/users/${userId}`,
+			`/admin/workspaces/${this.encodePathSegment(workspaceId)}/users/${this.encodePathSegment(userId)}`,
 		);
 	}
 
@@ -154,7 +159,7 @@ export class WorkspacesService extends BaseService {
 		data: UpdateWorkspaceMemberRequest,
 	): Promise<WorkspaceUser> {
 		return this.put<WorkspaceUser>(
-			`/admin/workspaces/${workspaceId}/users/${userId}`,
+			`/admin/workspaces/${this.encodePathSegment(workspaceId)}/users/${this.encodePathSegment(userId)}`,
 			data,
 		);
 	}
@@ -163,7 +168,9 @@ export class WorkspacesService extends BaseService {
 		workspaceId: string,
 		userId: string,
 	): Promise<{ success: boolean }> {
-		await this.delete(`/admin/workspaces/${workspaceId}/users/${userId}`);
+		await this.delete(
+			`/admin/workspaces/${this.encodePathSegment(workspaceId)}/users/${this.encodePathSegment(userId)}`,
+		);
 		return { success: true };
 	}
 }

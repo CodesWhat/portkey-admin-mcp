@@ -251,6 +251,7 @@ export class AnalyticsService extends BaseService {
 			ai_org_model: params.ai_org_model,
 			trace_id: params.trace_id,
 			span_id: params.span_id,
+			prompt_slug: params.prompt_slug,
 		};
 
 		// Add pagination params if present

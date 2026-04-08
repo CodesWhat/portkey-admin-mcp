@@ -84,7 +84,7 @@ export class ProvidersService extends BaseService {
 	}
 
 	async getProvider(slug: string, workspaceId?: string): Promise<Provider> {
-		return this.get<Provider>(`/providers/${slug}`, {
+		return this.get<Provider>(`/providers/${this.encodePathSegment(slug)}`, {
 			workspace_id: workspaceId,
 		});
 	}
@@ -95,8 +95,8 @@ export class ProvidersService extends BaseService {
 		workspaceId?: string,
 	): Promise<UpdateProviderResponse> {
 		const path = workspaceId
-			? `/providers/${slug}?workspace_id=${encodeURIComponent(workspaceId)}`
-			: `/providers/${slug}`;
+			? `/providers/${this.encodePathSegment(slug)}?workspace_id=${encodeURIComponent(workspaceId)}`
+			: `/providers/${this.encodePathSegment(slug)}`;
 		return this.put<UpdateProviderResponse>(path, data);
 	}
 
@@ -105,8 +105,8 @@ export class ProvidersService extends BaseService {
 		workspaceId?: string,
 	): Promise<Record<string, never>> {
 		const path = workspaceId
-			? `/providers/${slug}?workspace_id=${encodeURIComponent(workspaceId)}`
-			: `/providers/${slug}`;
+			? `/providers/${this.encodePathSegment(slug)}?workspace_id=${encodeURIComponent(workspaceId)}`
+			: `/providers/${this.encodePathSegment(slug)}`;
 		return this.delete<Record<string, never>>(path);
 	}
 }

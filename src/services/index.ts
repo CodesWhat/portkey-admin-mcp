@@ -19,11 +19,6 @@ export type * from "./integrations.service.js";
 export { IntegrationsService } from "./integrations.service.js";
 export type * from "./keys.service.js";
 export { KeysService } from "./keys.service.js";
-// MCP resource management
-export type * from "./mcp-integrations.service.js";
-export { McpIntegrationsService } from "./mcp-integrations.service.js";
-export type * from "./mcp-servers.service.js";
-export { McpServersService } from "./mcp-servers.service.js";
 // Phase 3: Labels and Partials
 export type * from "./labels.service.js";
 export { LabelsService } from "./labels.service.js";
@@ -32,6 +27,11 @@ export { LimitsService } from "./limits.service.js";
 // Phase 4: Logging
 export type * from "./logging.service.js";
 export { LoggingService } from "./logging.service.js";
+// MCP resource management
+export type * from "./mcp-integrations.service.js";
+export { McpIntegrationsService } from "./mcp-integrations.service.js";
+export type * from "./mcp-servers.service.js";
+export { McpServersService } from "./mcp-servers.service.js";
 export type * from "./partials.service.js";
 export { PartialsService } from "./partials.service.js";
 export type * from "./prompts.service.js";
@@ -56,12 +56,12 @@ import { GuardrailsService } from "./guardrails.service.js";
 import { HealthService } from "./health.service.js";
 import { IntegrationsService } from "./integrations.service.js";
 import { KeysService } from "./keys.service.js";
-import { McpIntegrationsService } from "./mcp-integrations.service.js";
-import { McpServersService } from "./mcp-servers.service.js";
 // Import services for facade
 import { LabelsService } from "./labels.service.js";
 import { LimitsService } from "./limits.service.js";
 import { LoggingService } from "./logging.service.js";
+import { McpIntegrationsService } from "./mcp-integrations.service.js";
+import { McpServersService } from "./mcp-servers.service.js";
 import { PartialsService } from "./partials.service.js";
 import { PromptsService } from "./prompts.service.js";
 import { ProvidersService } from "./providers.service.js";
@@ -69,39 +69,52 @@ import { TracingService } from "./tracing.service.js";
 import { UsersService } from "./users.service.js";
 import { WorkspacesService } from "./workspaces.service.js";
 
+function resolvePortkeyApiKey(apiKey?: string): string {
+	const resolvedApiKey = apiKey ?? process.env.PORTKEY_API_KEY;
+	if (!resolvedApiKey) {
+		throw new Error(
+			"Portkey API key is required. Either pass it to the PortkeyService constructor " +
+				"or set the PORTKEY_API_KEY environment variable.",
+		);
+	}
+	return resolvedApiKey;
+}
+
+function getSharedServiceCacheKey(apiKey?: string): string {
+	return JSON.stringify({
+		apiKey: resolvePortkeyApiKey(apiKey),
+		baseUrl: process.env.PORTKEY_BASE_URL?.trim() || "",
+	});
+}
+
+const sharedPortkeyServices = new Map<string, PortkeyService>();
+
 /**
- * PortkeyService - Facade that delegates to domain-specific services
- * Maintains backward compatibility with existing tool implementations
+ * PortkeyService - container for domain-specific service clients
  */
 export class PortkeyService {
-	private users: UsersService;
-	private workspaces: WorkspacesService;
-	private configs: ConfigsService;
-	private keys: KeysService;
-	private collections: CollectionsService;
-	private prompts: PromptsService;
-	private analytics: AnalyticsService;
-	private guardrails: GuardrailsService;
-	private integrations: IntegrationsService;
-	private limits: LimitsService;
-	private audit: AuditService;
-	private labels: LabelsService;
-	private partials: PartialsService;
-	private tracing: TracingService;
-	private logging: LoggingService;
-	private providers: ProvidersService;
-	private mcpIntegrations: McpIntegrationsService;
-	private mcpServers: McpServersService;
-	private health: HealthService;
+	public readonly users: UsersService;
+	public readonly workspaces: WorkspacesService;
+	public readonly configs: ConfigsService;
+	public readonly keys: KeysService;
+	public readonly collections: CollectionsService;
+	public readonly prompts: PromptsService;
+	public readonly analytics: AnalyticsService;
+	public readonly guardrails: GuardrailsService;
+	public readonly integrations: IntegrationsService;
+	public readonly limits: LimitsService;
+	public readonly audit: AuditService;
+	public readonly labels: LabelsService;
+	public readonly partials: PartialsService;
+	public readonly tracing: TracingService;
+	public readonly logging: LoggingService;
+	public readonly providers: ProvidersService;
+	public readonly mcpIntegrations: McpIntegrationsService;
+	public readonly mcpServers: McpServersService;
+	public readonly health: HealthService;
 
 	constructor(apiKey?: string) {
-		const resolvedApiKey = apiKey ?? process.env.PORTKEY_API_KEY;
-		if (!resolvedApiKey) {
-			throw new Error(
-				"Portkey API key is required. Either pass it to the PortkeyService constructor " +
-					"or set the PORTKEY_API_KEY environment variable.",
-			);
-		}
+		const resolvedApiKey = resolvePortkeyApiKey(apiKey);
 		this.users = new UsersService(resolvedApiKey);
 		this.workspaces = new WorkspacesService(resolvedApiKey);
 		this.configs = new ConfigsService(resolvedApiKey);
@@ -122,436 +135,16 @@ export class PortkeyService {
 		this.mcpServers = new McpServersService(resolvedApiKey);
 		this.health = new HealthService(resolvedApiKey);
 	}
+}
 
-	// Users delegation
-	listUsers = () => this.users.listUsers();
-	inviteUser = (...args: Parameters<UsersService["inviteUser"]>) =>
-		this.users.inviteUser(...args);
-	getUserGroupedData = (
-		...args: Parameters<UsersService["getUserGroupedData"]>
-	) => this.users.getUserGroupedData(...args);
-	// Phase 1: User Management
-	getUser = (...args: Parameters<UsersService["getUser"]>) =>
-		this.users.getUser(...args);
-	updateUser = (...args: Parameters<UsersService["updateUser"]>) =>
-		this.users.updateUser(...args);
-	deleteUser = (...args: Parameters<UsersService["deleteUser"]>) =>
-		this.users.deleteUser(...args);
-	listUserInvites = () => this.users.listUserInvites();
-	getUserInvite = (...args: Parameters<UsersService["getUserInvite"]>) =>
-		this.users.getUserInvite(...args);
-	deleteUserInvite = (...args: Parameters<UsersService["deleteUserInvite"]>) =>
-		this.users.deleteUserInvite(...args);
-	resendUserInvite = (...args: Parameters<UsersService["resendUserInvite"]>) =>
-		this.users.resendUserInvite(...args);
+export function getSharedPortkeyService(apiKey?: string): PortkeyService {
+	const cacheKey = getSharedServiceCacheKey(apiKey);
+	const cached = sharedPortkeyServices.get(cacheKey);
+	if (cached) {
+		return cached;
+	}
 
-	// Workspaces delegation
-	listWorkspaces = (...args: Parameters<WorkspacesService["listWorkspaces"]>) =>
-		this.workspaces.listWorkspaces(...args);
-	getWorkspace = (...args: Parameters<WorkspacesService["getWorkspace"]>) =>
-		this.workspaces.getWorkspace(...args);
-	// Phase 1: Workspace CRUD
-	createWorkspace = (
-		...args: Parameters<WorkspacesService["createWorkspace"]>
-	) => this.workspaces.createWorkspace(...args);
-	updateWorkspace = (
-		...args: Parameters<WorkspacesService["updateWorkspace"]>
-	) => this.workspaces.updateWorkspace(...args);
-	deleteWorkspace = (
-		...args: Parameters<WorkspacesService["deleteWorkspace"]>
-	) => this.workspaces.deleteWorkspace(...args);
-	addWorkspaceMember = (
-		...args: Parameters<WorkspacesService["addWorkspaceMember"]>
-	) => this.workspaces.addWorkspaceMember(...args);
-	listWorkspaceMembers = (
-		...args: Parameters<WorkspacesService["listWorkspaceMembers"]>
-	) => this.workspaces.listWorkspaceMembers(...args);
-	getWorkspaceMember = (
-		...args: Parameters<WorkspacesService["getWorkspaceMember"]>
-	) => this.workspaces.getWorkspaceMember(...args);
-	updateWorkspaceMember = (
-		...args: Parameters<WorkspacesService["updateWorkspaceMember"]>
-	) => this.workspaces.updateWorkspaceMember(...args);
-	removeWorkspaceMember = (
-		...args: Parameters<WorkspacesService["removeWorkspaceMember"]>
-	) => this.workspaces.removeWorkspaceMember(...args);
-
-	// Configs delegation
-	listConfigs = () => this.configs.listConfigs();
-	getConfig = (...args: Parameters<ConfigsService["getConfig"]>) =>
-		this.configs.getConfig(...args);
-	// Phase 1: Config CRUD
-	createConfig = (...args: Parameters<ConfigsService["createConfig"]>) =>
-		this.configs.createConfig(...args);
-	updateConfig = (...args: Parameters<ConfigsService["updateConfig"]>) =>
-		this.configs.updateConfig(...args);
-	deleteConfig = (...args: Parameters<ConfigsService["deleteConfig"]>) =>
-		this.configs.deleteConfig(...args);
-	listConfigVersions = (
-		...args: Parameters<ConfigsService["listConfigVersions"]>
-	) => this.configs.listConfigVersions(...args);
-
-	// Keys delegation
-	listVirtualKeys = () => this.keys.listVirtualKeys();
-	// Phase 2: Virtual Keys CRUD
-	createVirtualKey = (...args: Parameters<KeysService["createVirtualKey"]>) =>
-		this.keys.createVirtualKey(...args);
-	getVirtualKey = (...args: Parameters<KeysService["getVirtualKey"]>) =>
-		this.keys.getVirtualKey(...args);
-	updateVirtualKey = (...args: Parameters<KeysService["updateVirtualKey"]>) =>
-		this.keys.updateVirtualKey(...args);
-	deleteVirtualKey = (...args: Parameters<KeysService["deleteVirtualKey"]>) =>
-		this.keys.deleteVirtualKey(...args);
-	// Phase 2: API Keys CRUD
-	createApiKey = (...args: Parameters<KeysService["createApiKey"]>) =>
-		this.keys.createApiKey(...args);
-	listApiKeys = (...args: Parameters<KeysService["listApiKeys"]>) =>
-		this.keys.listApiKeys(...args);
-	getApiKey = (...args: Parameters<KeysService["getApiKey"]>) =>
-		this.keys.getApiKey(...args);
-	updateApiKey = (...args: Parameters<KeysService["updateApiKey"]>) =>
-		this.keys.updateApiKey(...args);
-	deleteApiKey = (...args: Parameters<KeysService["deleteApiKey"]>) =>
-		this.keys.deleteApiKey(...args);
-
-	// Collections delegation
-	listCollections = (
-		...args: Parameters<CollectionsService["listCollections"]>
-	) => this.collections.listCollections(...args);
-	createCollection = (
-		...args: Parameters<CollectionsService["createCollection"]>
-	) => this.collections.createCollection(...args);
-	getCollection = (...args: Parameters<CollectionsService["getCollection"]>) =>
-		this.collections.getCollection(...args);
-	// Phase 1: Collection CRUD
-	updateCollection = (
-		...args: Parameters<CollectionsService["updateCollection"]>
-	) => this.collections.updateCollection(...args);
-	deleteCollection = (
-		...args: Parameters<CollectionsService["deleteCollection"]>
-	) => this.collections.deleteCollection(...args);
-
-	// Prompts delegation
-	createPrompt = (...args: Parameters<PromptsService["createPrompt"]>) =>
-		this.prompts.createPrompt(...args);
-	listPrompts = (...args: Parameters<PromptsService["listPrompts"]>) =>
-		this.prompts.listPrompts(...args);
-	getPrompt = (...args: Parameters<PromptsService["getPrompt"]>) =>
-		this.prompts.getPrompt(...args);
-	updatePrompt = (...args: Parameters<PromptsService["updatePrompt"]>) =>
-		this.prompts.updatePrompt(...args);
-	renderPrompt = (...args: Parameters<PromptsService["renderPrompt"]>) =>
-		this.prompts.renderPrompt(...args);
-	runPromptCompletion = (
-		...args: Parameters<PromptsService["runPromptCompletion"]>
-	) => this.prompts.runPromptCompletion(...args);
-	migratePrompt = (...args: Parameters<PromptsService["migratePrompt"]>) =>
-		this.prompts.migratePrompt(...args);
-	promotePrompt = (...args: Parameters<PromptsService["promotePrompt"]>) =>
-		this.prompts.promotePrompt(...args);
-	validateBillingMetadata = (
-		...args: Parameters<PromptsService["validateBillingMetadata"]>
-	) => this.prompts.validateBillingMetadata(...args);
-	// Phase 3: Prompts++ delegation
-	deletePrompt = (...args: Parameters<PromptsService["deletePrompt"]>) =>
-		this.prompts.deletePrompt(...args);
-	publishPrompt = (...args: Parameters<PromptsService["publishPrompt"]>) =>
-		this.prompts.publishPrompt(...args);
-	listPromptVersions = (
-		...args: Parameters<PromptsService["listPromptVersions"]>
-	) => this.prompts.listPromptVersions(...args);
-
-	// Analytics delegation
-	getCostAnalytics = (
-		...args: Parameters<AnalyticsService["getCostAnalytics"]>
-	) => this.analytics.getCostAnalytics(...args);
-	getRequestAnalytics = (
-		...args: Parameters<AnalyticsService["getRequestAnalytics"]>
-	) => this.analytics.getRequestAnalytics(...args);
-	getTokenAnalytics = (
-		...args: Parameters<AnalyticsService["getTokenAnalytics"]>
-	) => this.analytics.getTokenAnalytics(...args);
-	getLatencyAnalytics = (
-		...args: Parameters<AnalyticsService["getLatencyAnalytics"]>
-	) => this.analytics.getLatencyAnalytics(...args);
-	getErrorAnalytics = (
-		...args: Parameters<AnalyticsService["getErrorAnalytics"]>
-	) => this.analytics.getErrorAnalytics(...args);
-	getErrorRateAnalytics = (
-		...args: Parameters<AnalyticsService["getErrorRateAnalytics"]>
-	) => this.analytics.getErrorRateAnalytics(...args);
-	getCacheHitLatency = (
-		...args: Parameters<AnalyticsService["getCacheHitLatency"]>
-	) => this.analytics.getCacheHitLatency(...args);
-	getCacheHitRate = (
-		...args: Parameters<AnalyticsService["getCacheHitRate"]>
-	) => this.analytics.getCacheHitRate(...args);
-	getUsersAnalytics = (
-		...args: Parameters<AnalyticsService["getUsersAnalytics"]>
-	) => this.analytics.getUsersAnalytics(...args);
-
-	// Phase 2: Guardrails delegation
-	listGuardrails = (...args: Parameters<GuardrailsService["listGuardrails"]>) =>
-		this.guardrails.listGuardrails(...args);
-	getGuardrail = (...args: Parameters<GuardrailsService["getGuardrail"]>) =>
-		this.guardrails.getGuardrail(...args);
-	createGuardrail = (
-		...args: Parameters<GuardrailsService["createGuardrail"]>
-	) => this.guardrails.createGuardrail(...args);
-	updateGuardrail = (
-		...args: Parameters<GuardrailsService["updateGuardrail"]>
-	) => this.guardrails.updateGuardrail(...args);
-	deleteGuardrail = (
-		...args: Parameters<GuardrailsService["deleteGuardrail"]>
-	) => this.guardrails.deleteGuardrail(...args);
-
-	// Phase 2: Limits delegation
-	listUsageLimits = (...args: Parameters<LimitsService["listUsageLimits"]>) =>
-		this.limits.listUsageLimits(...args);
-	getUsageLimit = (...args: Parameters<LimitsService["getUsageLimit"]>) =>
-		this.limits.getUsageLimit(...args);
-	createUsageLimit = (...args: Parameters<LimitsService["createUsageLimit"]>) =>
-		this.limits.createUsageLimit(...args);
-	updateUsageLimit = (...args: Parameters<LimitsService["updateUsageLimit"]>) =>
-		this.limits.updateUsageLimit(...args);
-	deleteUsageLimit = (...args: Parameters<LimitsService["deleteUsageLimit"]>) =>
-		this.limits.deleteUsageLimit(...args);
-	listRateLimits = (...args: Parameters<LimitsService["listRateLimits"]>) =>
-		this.limits.listRateLimits(...args);
-	getRateLimit = (...args: Parameters<LimitsService["getRateLimit"]>) =>
-		this.limits.getRateLimit(...args);
-	createRateLimit = (...args: Parameters<LimitsService["createRateLimit"]>) =>
-		this.limits.createRateLimit(...args);
-	updateRateLimit = (...args: Parameters<LimitsService["updateRateLimit"]>) =>
-		this.limits.updateRateLimit(...args);
-	deleteRateLimit = (...args: Parameters<LimitsService["deleteRateLimit"]>) =>
-		this.limits.deleteRateLimit(...args);
-
-	// Phase 2: Audit delegation
-	listAuditLogs = (...args: Parameters<AuditService["listAuditLogs"]>) =>
-		this.audit.listAuditLogs(...args);
-
-	// Phase 3: Labels delegation
-	createLabel = (...args: Parameters<LabelsService["createLabel"]>) =>
-		this.labels.createLabel(...args);
-	listLabels = (...args: Parameters<LabelsService["listLabels"]>) =>
-		this.labels.listLabels(...args);
-	getLabel = (...args: Parameters<LabelsService["getLabel"]>) =>
-		this.labels.getLabel(...args);
-	updateLabel = (...args: Parameters<LabelsService["updateLabel"]>) =>
-		this.labels.updateLabel(...args);
-	deleteLabel = (...args: Parameters<LabelsService["deleteLabel"]>) =>
-		this.labels.deleteLabel(...args);
-
-	// Phase 3: Partials delegation
-	createPromptPartial = (
-		...args: Parameters<PartialsService["createPromptPartial"]>
-	) => this.partials.createPromptPartial(...args);
-	listPromptPartials = (
-		...args: Parameters<PartialsService["listPromptPartials"]>
-	) => this.partials.listPromptPartials(...args);
-	getPromptPartial = (
-		...args: Parameters<PartialsService["getPromptPartial"]>
-	) => this.partials.getPromptPartial(...args);
-	updatePromptPartial = (
-		...args: Parameters<PartialsService["updatePromptPartial"]>
-	) => this.partials.updatePromptPartial(...args);
-	deletePromptPartial = (
-		...args: Parameters<PartialsService["deletePromptPartial"]>
-	) => this.partials.deletePromptPartial(...args);
-	listPartialVersions = (
-		...args: Parameters<PartialsService["listPartialVersions"]>
-	) => this.partials.listPartialVersions(...args);
-	publishPartial = (...args: Parameters<PartialsService["publishPartial"]>) =>
-		this.partials.publishPartial(...args);
-
-	// Phase 4: Tracing delegation
-	createFeedback = (...args: Parameters<TracingService["createFeedback"]>) =>
-		this.tracing.createFeedback(...args);
-	updateFeedback = (...args: Parameters<TracingService["updateFeedback"]>) =>
-		this.tracing.updateFeedback(...args);
-	getTrace = (...args: Parameters<TracingService["getTrace"]>) =>
-		this.tracing.getTrace(...args);
-
-	// Phase 4: Logging delegation
-	insertLog = (...args: Parameters<LoggingService["insertLog"]>) =>
-		this.logging.insertLog(...args);
-	createLogExport = (...args: Parameters<LoggingService["createLogExport"]>) =>
-		this.logging.createLogExport(...args);
-	listLogExports = (...args: Parameters<LoggingService["listLogExports"]>) =>
-		this.logging.listLogExports(...args);
-	getLogExport = (...args: Parameters<LoggingService["getLogExport"]>) =>
-		this.logging.getLogExport(...args);
-	startLogExport = (...args: Parameters<LoggingService["startLogExport"]>) =>
-		this.logging.startLogExport(...args);
-	cancelLogExport = (...args: Parameters<LoggingService["cancelLogExport"]>) =>
-		this.logging.cancelLogExport(...args);
-	downloadLogExport = (
-		...args: Parameters<LoggingService["downloadLogExport"]>
-	) => this.logging.downloadLogExport(...args);
-	// Phase 7: Log Export Update
-	updateLogExport = (...args: Parameters<LoggingService["updateLogExport"]>) =>
-		this.logging.updateLogExport(...args);
-
-	// Phase 5: Providers delegation
-	listProviders = (...args: Parameters<ProvidersService["listProviders"]>) =>
-		this.providers.listProviders(...args);
-	createProvider = (...args: Parameters<ProvidersService["createProvider"]>) =>
-		this.providers.createProvider(...args);
-	getProvider = (...args: Parameters<ProvidersService["getProvider"]>) =>
-		this.providers.getProvider(...args);
-	updateProvider = (...args: Parameters<ProvidersService["updateProvider"]>) =>
-		this.providers.updateProvider(...args);
-	deleteProvider = (...args: Parameters<ProvidersService["deleteProvider"]>) =>
-		this.providers.deleteProvider(...args);
-
-	// Phase 5: Integrations delegation
-	listIntegrations = (
-		...args: Parameters<IntegrationsService["listIntegrations"]>
-	) => this.integrations.listIntegrations(...args);
-	createIntegration = (
-		...args: Parameters<IntegrationsService["createIntegration"]>
-	) => this.integrations.createIntegration(...args);
-	getIntegration = (
-		...args: Parameters<IntegrationsService["getIntegration"]>
-	) => this.integrations.getIntegration(...args);
-	updateIntegration = (
-		...args: Parameters<IntegrationsService["updateIntegration"]>
-	) => this.integrations.updateIntegration(...args);
-	deleteIntegration = (
-		...args: Parameters<IntegrationsService["deleteIntegration"]>
-	) => this.integrations.deleteIntegration(...args);
-	listIntegrationModels = (
-		...args: Parameters<IntegrationsService["listIntegrationModels"]>
-	) => this.integrations.listIntegrationModels(...args);
-	updateIntegrationModels = (
-		...args: Parameters<IntegrationsService["updateIntegrationModels"]>
-	) => this.integrations.updateIntegrationModels(...args);
-	deleteIntegrationModel = (
-		...args: Parameters<IntegrationsService["deleteIntegrationModel"]>
-	) => this.integrations.deleteIntegrationModel(...args);
-	listIntegrationWorkspaces = (
-		...args: Parameters<IntegrationsService["listIntegrationWorkspaces"]>
-	) => this.integrations.listIntegrationWorkspaces(...args);
-	updateIntegrationWorkspaces = (
-		...args: Parameters<IntegrationsService["updateIntegrationWorkspaces"]>
-	) => this.integrations.updateIntegrationWorkspaces(...args);
-
-	// MCP Integrations delegation
-	listMcpIntegrations = (
-		...args: Parameters<McpIntegrationsService["listMcpIntegrations"]>
-	) => this.mcpIntegrations.listMcpIntegrations(...args);
-	createMcpIntegration = (
-		...args: Parameters<McpIntegrationsService["createMcpIntegration"]>
-	) => this.mcpIntegrations.createMcpIntegration(...args);
-	getMcpIntegration = (
-		...args: Parameters<McpIntegrationsService["getMcpIntegration"]>
-	) => this.mcpIntegrations.getMcpIntegration(...args);
-	updateMcpIntegration = (
-		...args: Parameters<McpIntegrationsService["updateMcpIntegration"]>
-	) => this.mcpIntegrations.updateMcpIntegration(...args);
-	deleteMcpIntegration = (
-		...args: Parameters<McpIntegrationsService["deleteMcpIntegration"]>
-	) => this.mcpIntegrations.deleteMcpIntegration(...args);
-	getMcpIntegrationMetadata = (
-		...args: Parameters<McpIntegrationsService["getMcpIntegrationMetadata"]>
-	) => this.mcpIntegrations.getMcpIntegrationMetadata(...args);
-	listMcpIntegrationCapabilities = (
-		...args: Parameters<McpIntegrationsService["listMcpIntegrationCapabilities"]>
-	) => this.mcpIntegrations.listMcpIntegrationCapabilities(...args);
-	updateMcpIntegrationCapabilities = (
-		...args: Parameters<McpIntegrationsService["updateMcpIntegrationCapabilities"]>
-	) => this.mcpIntegrations.updateMcpIntegrationCapabilities(...args);
-	listMcpIntegrationWorkspaces = (
-		...args: Parameters<McpIntegrationsService["listMcpIntegrationWorkspaces"]>
-	) => this.mcpIntegrations.listMcpIntegrationWorkspaces(...args);
-	updateMcpIntegrationWorkspaces = (
-		...args: Parameters<McpIntegrationsService["updateMcpIntegrationWorkspaces"]>
-	) => this.mcpIntegrations.updateMcpIntegrationWorkspaces(...args);
-
-	// MCP Servers delegation
-	listMcpServers = (
-		...args: Parameters<McpServersService["listMcpServers"]>
-	) => this.mcpServers.listMcpServers(...args);
-	createMcpServer = (
-		...args: Parameters<McpServersService["createMcpServer"]>
-	) => this.mcpServers.createMcpServer(...args);
-	getMcpServer = (
-		...args: Parameters<McpServersService["getMcpServer"]>
-	) => this.mcpServers.getMcpServer(...args);
-	updateMcpServer = (
-		...args: Parameters<McpServersService["updateMcpServer"]>
-	) => this.mcpServers.updateMcpServer(...args);
-	deleteMcpServer = (
-		...args: Parameters<McpServersService["deleteMcpServer"]>
-	) => this.mcpServers.deleteMcpServer(...args);
-	testMcpServer = (
-		...args: Parameters<McpServersService["testMcpServer"]>
-	) => this.mcpServers.testMcpServer(...args);
-	listMcpServerCapabilities = (
-		...args: Parameters<McpServersService["listMcpServerCapabilities"]>
-	) => this.mcpServers.listMcpServerCapabilities(...args);
-	updateMcpServerCapabilities = (
-		...args: Parameters<McpServersService["updateMcpServerCapabilities"]>
-	) => this.mcpServers.updateMcpServerCapabilities(...args);
-	listMcpServerUserAccess = (
-		...args: Parameters<McpServersService["listMcpServerUserAccess"]>
-	) => this.mcpServers.listMcpServerUserAccess(...args);
-	updateMcpServerUserAccess = (
-		...args: Parameters<McpServersService["updateMcpServerUserAccess"]>
-	) => this.mcpServers.updateMcpServerUserAccess(...args);
-
-	// Extended Analytics delegation
-	getErrorStacksAnalytics = (
-		...args: Parameters<AnalyticsService["getErrorStacksAnalytics"]>
-	) => this.analytics.getErrorStacksAnalytics(...args);
-	getErrorStatusCodesAnalytics = (
-		...args: Parameters<AnalyticsService["getErrorStatusCodesAnalytics"]>
-	) => this.analytics.getErrorStatusCodesAnalytics(...args);
-	getUserRequestsAnalytics = (
-		...args: Parameters<AnalyticsService["getUserRequestsAnalytics"]>
-	) => this.analytics.getUserRequestsAnalytics(...args);
-	getRescuedRequestsAnalytics = (
-		...args: Parameters<AnalyticsService["getRescuedRequestsAnalytics"]>
-	) => this.analytics.getRescuedRequestsAnalytics(...args);
-	getFeedbackAnalytics = (
-		...args: Parameters<AnalyticsService["getFeedbackAnalytics"]>
-	) => this.analytics.getFeedbackAnalytics(...args);
-	getFeedbackModelsAnalytics = (
-		...args: Parameters<AnalyticsService["getFeedbackModelsAnalytics"]>
-	) => this.analytics.getFeedbackModelsAnalytics(...args);
-	getFeedbackScoresAnalytics = (
-		...args: Parameters<AnalyticsService["getFeedbackScoresAnalytics"]>
-	) => this.analytics.getFeedbackScoresAnalytics(...args);
-	getFeedbackWeightedAnalytics = (
-		...args: Parameters<AnalyticsService["getFeedbackWeightedAnalytics"]>
-	) => this.analytics.getFeedbackWeightedAnalytics(...args);
-	getAnalyticsGroupUsers = (
-		...args: Parameters<AnalyticsService["getAnalyticsGroupUsers"]>
-	) => this.analytics.getAnalyticsGroupUsers(...args);
-	getAnalyticsGroupModels = (
-		...args: Parameters<AnalyticsService["getAnalyticsGroupModels"]>
-	) => this.analytics.getAnalyticsGroupModels(...args);
-	getAnalyticsGroupMetadata = (
-		...args: Parameters<AnalyticsService["getAnalyticsGroupMetadata"]>
-	) => this.analytics.getAnalyticsGroupMetadata(...args);
-
-	// Prompt version management delegation
-	getPromptVersion = (
-		...args: Parameters<PromptsService["getPromptVersion"]>
-	) => this.prompts.getPromptVersion(...args);
-	updatePromptVersion = (
-		...args: Parameters<PromptsService["updatePromptVersion"]>
-	) => this.prompts.updatePromptVersion(...args);
-
-	// Usage limit entity delegation
-	listUsageLimitEntities = (
-		...args: Parameters<LimitsService["listUsageLimitEntities"]>
-	) => this.limits.listUsageLimitEntities(...args);
-	resetUsageLimitEntity = (
-		...args: Parameters<LimitsService["resetUsageLimitEntity"]>
-	) => this.limits.resetUsageLimitEntity(...args);
-
-	// Phase 8: Health delegation
-	ping = () => this.health.ping();
+	const service = new PortkeyService(apiKey);
+	sharedPortkeyServices.set(cacheKey, service);
+	return service;
 }

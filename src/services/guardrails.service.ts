@@ -108,7 +108,9 @@ export class GuardrailsService extends BaseService {
 	 * Get a single guardrail by ID or slug
 	 */
 	async getGuardrail(guardrailId: string): Promise<GuardrailDetail> {
-		return this.get<GuardrailDetail>(`/guardrails/${guardrailId}`);
+		return this.get<GuardrailDetail>(
+			`/guardrails/${this.encodePathSegment(guardrailId)}`,
+		);
 	}
 
 	/**
@@ -128,7 +130,7 @@ export class GuardrailsService extends BaseService {
 		data: UpdateGuardrailRequest,
 	): Promise<GuardrailMutationResponse> {
 		return this.put<GuardrailMutationResponse>(
-			`/guardrails/${guardrailId}`,
+			`/guardrails/${this.encodePathSegment(guardrailId)}`,
 			data,
 		);
 	}
@@ -137,7 +139,7 @@ export class GuardrailsService extends BaseService {
 	 * Delete a guardrail
 	 */
 	async deleteGuardrail(guardrailId: string): Promise<{ success: boolean }> {
-		await this.delete(`/guardrails/${guardrailId}`);
+		await this.delete(`/guardrails/${this.encodePathSegment(guardrailId)}`);
 		return { success: true };
 	}
 }

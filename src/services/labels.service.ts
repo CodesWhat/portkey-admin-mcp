@@ -75,7 +75,7 @@ export class LabelsService extends BaseService {
 	}
 
 	async getLabel(labelId: string, params?: GetLabelParams): Promise<Label> {
-		return this.get<Label>(`/labels/${labelId}`, {
+		return this.get<Label>(`/labels/${this.encodePathSegment(labelId)}`, {
 			organisation_id: params?.organisation_id,
 			workspace_id: params?.workspace_id,
 		});
@@ -85,10 +85,15 @@ export class LabelsService extends BaseService {
 		labelId: string,
 		data: UpdateLabelRequest,
 	): Promise<UpdateLabelResponse> {
-		return this.put<UpdateLabelResponse>(`/labels/${labelId}`, data);
+		return this.put<UpdateLabelResponse>(
+			`/labels/${this.encodePathSegment(labelId)}`,
+			data,
+		);
 	}
 
 	async deleteLabel(labelId: string): Promise<DeleteLabelResponse> {
-		return this.delete<DeleteLabelResponse>(`/labels/${labelId}`);
+		return this.delete<DeleteLabelResponse>(
+			`/labels/${this.encodePathSegment(labelId)}`,
+		);
 	}
 }

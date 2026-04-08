@@ -132,31 +132,34 @@ export class McpServersService extends BaseService {
 	}
 
 	async getMcpServer(id: string): Promise<McpServer> {
-		return this.get<McpServer>(`/mcp-servers/${id}`);
+		return this.get<McpServer>(`/mcp-servers/${this.encodePathSegment(id)}`);
 	}
 
 	async updateMcpServer(
 		id: string,
 		data: UpdateMcpServerRequest,
 	): Promise<{ success: boolean }> {
-		await this.put(`/mcp-servers/${id}`, data);
+		await this.put(`/mcp-servers/${this.encodePathSegment(id)}`, data);
 		return { success: true };
 	}
 
 	async deleteMcpServer(id: string): Promise<{ success: boolean }> {
-		await this.delete(`/mcp-servers/${id}`);
+		await this.delete(`/mcp-servers/${this.encodePathSegment(id)}`);
 		return { success: true };
 	}
 
 	async testMcpServer(id: string): Promise<TestMcpServerResponse> {
-		return this.post<TestMcpServerResponse>(`/mcp-servers/${id}/test`, {});
+		return this.post<TestMcpServerResponse>(
+			`/mcp-servers/${this.encodePathSegment(id)}/test`,
+			{},
+		);
 	}
 
 	async listMcpServerCapabilities(
 		id: string,
 	): Promise<ListMcpServerCapabilitiesResponse> {
 		return this.get<ListMcpServerCapabilitiesResponse>(
-			`/mcp-servers/${id}/capabilities`,
+			`/mcp-servers/${this.encodePathSegment(id)}/capabilities`,
 		);
 	}
 
@@ -164,7 +167,10 @@ export class McpServersService extends BaseService {
 		id: string,
 		data: UpdateMcpServerCapabilitiesRequest,
 	): Promise<{ success: boolean }> {
-		await this.put(`/mcp-servers/${id}/capabilities`, data);
+		await this.put(
+			`/mcp-servers/${this.encodePathSegment(id)}/capabilities`,
+			data,
+		);
 		return { success: true };
 	}
 
@@ -172,7 +178,7 @@ export class McpServersService extends BaseService {
 		id: string,
 	): Promise<ListMcpServerUserAccessResponse> {
 		return this.get<ListMcpServerUserAccessResponse>(
-			`/mcp-servers/${id}/user-access`,
+			`/mcp-servers/${this.encodePathSegment(id)}/user-access`,
 		);
 	}
 
@@ -180,7 +186,10 @@ export class McpServersService extends BaseService {
 		id: string,
 		data: UpdateMcpServerUserAccessRequest,
 	): Promise<{ success: boolean }> {
-		await this.put(`/mcp-servers/${id}/user-access`, data);
+		await this.put(
+			`/mcp-servers/${this.encodePathSegment(id)}/user-access`,
+			data,
+		);
 		return { success: true };
 	}
 }

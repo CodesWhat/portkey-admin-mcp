@@ -40,7 +40,7 @@ export class PartialsService extends BaseService {
 		promptPartialId: string,
 	): Promise<GetPromptPartialResponse> {
 		return this.get<GetPromptPartialResponse>(
-			`/prompts/partials/${promptPartialId}`,
+			`/prompts/partials/${this.encodePathSegment(promptPartialId)}`,
 		);
 	}
 
@@ -57,7 +57,7 @@ export class PartialsService extends BaseService {
 			body.version_description = description;
 		}
 		return this.put<UpdatePromptPartialResponse>(
-			`/prompts/partials/${promptPartialId}`,
+			`/prompts/partials/${this.encodePathSegment(promptPartialId)}`,
 			body,
 		);
 	}
@@ -66,7 +66,7 @@ export class PartialsService extends BaseService {
 		promptPartialId: string,
 	): Promise<DeletePromptPartialResponse> {
 		return this.delete<DeletePromptPartialResponse>(
-			`/prompts/partials/${promptPartialId}`,
+			`/prompts/partials/${this.encodePathSegment(promptPartialId)}`,
 		);
 	}
 
@@ -75,7 +75,7 @@ export class PartialsService extends BaseService {
 	): Promise<PromptPartialVersion[]> {
 		// API returns { object: "list", total, data: [...] } — unwrap to plain array
 		const response = await this.get<ListPartialVersionsResponse>(
-			`/prompts/partials/${promptPartialId}/versions`,
+			`/prompts/partials/${this.encodePathSegment(promptPartialId)}/versions`,
 		);
 		return response.data;
 	}
@@ -85,7 +85,7 @@ export class PartialsService extends BaseService {
 		data: PublishPartialRequest,
 	): Promise<PublishPartialResponse> {
 		return this.put<PublishPartialResponse>(
-			`/prompts/partials/${promptPartialId}/makeDefault`,
+			`/prompts/partials/${this.encodePathSegment(promptPartialId)}/makeDefault`,
 			data,
 		);
 	}

@@ -174,7 +174,9 @@ export class LoggingService extends BaseService {
 	 * Get details of a specific log export
 	 */
 	async getLogExport(exportId: string): Promise<LogExport> {
-		return this.get<LogExport>(`/logs/exports/${exportId}`);
+		return this.get<LogExport>(
+			`/logs/exports/${this.encodePathSegment(exportId)}`,
+		);
 	}
 
 	/**
@@ -182,7 +184,7 @@ export class LoggingService extends BaseService {
 	 */
 	async startLogExport(exportId: string): Promise<LogExportActionResponse> {
 		return this.post<LogExportActionResponse>(
-			`/logs/exports/${exportId}/start`,
+			`/logs/exports/${this.encodePathSegment(exportId)}/start`,
 		);
 	}
 
@@ -191,7 +193,7 @@ export class LoggingService extends BaseService {
 	 */
 	async cancelLogExport(exportId: string): Promise<LogExportActionResponse> {
 		return this.post<LogExportActionResponse>(
-			`/logs/exports/${exportId}/cancel`,
+			`/logs/exports/${this.encodePathSegment(exportId)}/cancel`,
 		);
 	}
 
@@ -202,7 +204,7 @@ export class LoggingService extends BaseService {
 		exportId: string,
 	): Promise<DownloadLogExportResponse> {
 		return this.get<DownloadLogExportResponse>(
-			`/logs/exports/${exportId}/download`,
+			`/logs/exports/${this.encodePathSegment(exportId)}/download`,
 		);
 	}
 
@@ -213,6 +215,9 @@ export class LoggingService extends BaseService {
 		exportId: string,
 		data: UpdateLogExportRequest,
 	): Promise<LogExportResponse> {
-		return this.put<LogExportResponse>(`/logs/exports/${exportId}`, data);
+		return this.put<LogExportResponse>(
+			`/logs/exports/${this.encodePathSegment(exportId)}`,
+			data,
+		);
 	}
 }

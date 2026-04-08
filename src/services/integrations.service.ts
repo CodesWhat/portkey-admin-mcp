@@ -177,7 +177,9 @@ export class IntegrationsService extends BaseService {
 
 	// Get a specific integration by slug
 	async getIntegration(slug: string): Promise<Integration> {
-		return this.get<Integration>(`/integrations/${slug}`);
+		return this.get<Integration>(
+			`/integrations/${this.encodePathSegment(slug)}`,
+		);
 	}
 
 	// Update an integration
@@ -185,13 +187,13 @@ export class IntegrationsService extends BaseService {
 		slug: string,
 		data: UpdateIntegrationRequest,
 	): Promise<{ success: boolean }> {
-		await this.put(`/integrations/${slug}`, data);
+		await this.put(`/integrations/${this.encodePathSegment(slug)}`, data);
 		return { success: true };
 	}
 
 	// Delete an integration
 	async deleteIntegration(slug: string): Promise<{ success: boolean }> {
-		await this.delete(`/integrations/${slug}`);
+		await this.delete(`/integrations/${this.encodePathSegment(slug)}`);
 		return { success: true };
 	}
 
@@ -201,7 +203,7 @@ export class IntegrationsService extends BaseService {
 		params?: ListIntegrationModelsParams,
 	): Promise<ListIntegrationModelsResponse> {
 		return this.get<ListIntegrationModelsResponse>(
-			`/integrations/${slug}/models`,
+			`/integrations/${this.encodePathSegment(slug)}/models`,
 			{
 				current_page: params?.current_page,
 				page_size: params?.page_size,
@@ -214,7 +216,10 @@ export class IntegrationsService extends BaseService {
 		slug: string,
 		data: UpdateIntegrationModelsRequest,
 	): Promise<{ success: boolean }> {
-		await this.put(`/integrations/${slug}/models`, data);
+		await this.put(
+			`/integrations/${this.encodePathSegment(slug)}/models`,
+			data,
+		);
 		return { success: true };
 	}
 
@@ -224,7 +229,7 @@ export class IntegrationsService extends BaseService {
 		modelSlug: string,
 	): Promise<{ success: boolean }> {
 		await this.delete(
-			`/integrations/${slug}/models?slugs=${encodeURIComponent(modelSlug)}`,
+			`/integrations/${this.encodePathSegment(slug)}/models?slugs=${encodeURIComponent(modelSlug)}`,
 		);
 		return { success: true };
 	}
@@ -235,7 +240,7 @@ export class IntegrationsService extends BaseService {
 		params?: ListIntegrationWorkspacesParams,
 	): Promise<ListIntegrationWorkspacesResponse> {
 		return this.get<ListIntegrationWorkspacesResponse>(
-			`/integrations/${slug}/workspaces`,
+			`/integrations/${this.encodePathSegment(slug)}/workspaces`,
 			{
 				current_page: params?.current_page,
 				page_size: params?.page_size,
@@ -248,7 +253,10 @@ export class IntegrationsService extends BaseService {
 		slug: string,
 		data: UpdateIntegrationWorkspacesRequest,
 	): Promise<{ success: boolean }> {
-		await this.put(`/integrations/${slug}/workspaces`, data);
+		await this.put(
+			`/integrations/${this.encodePathSegment(slug)}/workspaces`,
+			data,
+		);
 		return { success: true };
 	}
 }

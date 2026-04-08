@@ -151,34 +151,31 @@ export class McpIntegrationsService extends BaseService {
 	async createMcpIntegration(
 		data: CreateMcpIntegrationRequest,
 	): Promise<CreateMcpIntegrationResponse> {
-		return this.post<CreateMcpIntegrationResponse>(
-			"/mcp-integrations",
-			data,
-		);
+		return this.post<CreateMcpIntegrationResponse>("/mcp-integrations", data);
 	}
 
 	async getMcpIntegration(id: string): Promise<McpIntegration> {
-		return this.get<McpIntegration>(`/mcp-integrations/${id}`);
+		return this.get<McpIntegration>(
+			`/mcp-integrations/${this.encodePathSegment(id)}`,
+		);
 	}
 
 	async updateMcpIntegration(
 		id: string,
 		data: UpdateMcpIntegrationRequest,
 	): Promise<{ success: boolean }> {
-		await this.put(`/mcp-integrations/${id}`, data);
+		await this.put(`/mcp-integrations/${this.encodePathSegment(id)}`, data);
 		return { success: true };
 	}
 
 	async deleteMcpIntegration(id: string): Promise<{ success: boolean }> {
-		await this.delete(`/mcp-integrations/${id}`);
+		await this.delete(`/mcp-integrations/${this.encodePathSegment(id)}`);
 		return { success: true };
 	}
 
-	async getMcpIntegrationMetadata(
-		id: string,
-	): Promise<McpIntegrationMetadata> {
+	async getMcpIntegrationMetadata(id: string): Promise<McpIntegrationMetadata> {
 		return this.get<McpIntegrationMetadata>(
-			`/mcp-integrations/${id}/metadata`,
+			`/mcp-integrations/${this.encodePathSegment(id)}/metadata`,
 		);
 	}
 
@@ -186,7 +183,7 @@ export class McpIntegrationsService extends BaseService {
 		id: string,
 	): Promise<ListMcpIntegrationCapabilitiesResponse> {
 		return this.get<ListMcpIntegrationCapabilitiesResponse>(
-			`/mcp-integrations/${id}/capabilities`,
+			`/mcp-integrations/${this.encodePathSegment(id)}/capabilities`,
 		);
 	}
 
@@ -194,7 +191,10 @@ export class McpIntegrationsService extends BaseService {
 		id: string,
 		data: UpdateMcpIntegrationCapabilitiesRequest,
 	): Promise<{ success: boolean }> {
-		await this.put(`/mcp-integrations/${id}/capabilities`, data);
+		await this.put(
+			`/mcp-integrations/${this.encodePathSegment(id)}/capabilities`,
+			data,
+		);
 		return { success: true };
 	}
 
@@ -202,7 +202,7 @@ export class McpIntegrationsService extends BaseService {
 		id: string,
 	): Promise<ListMcpIntegrationWorkspacesResponse> {
 		return this.get<ListMcpIntegrationWorkspacesResponse>(
-			`/mcp-integrations/${id}/workspaces`,
+			`/mcp-integrations/${this.encodePathSegment(id)}/workspaces`,
 		);
 	}
 
@@ -210,7 +210,10 @@ export class McpIntegrationsService extends BaseService {
 		id: string,
 		data: UpdateMcpIntegrationWorkspacesRequest,
 	): Promise<{ success: boolean }> {
-		await this.put(`/mcp-integrations/${id}/workspaces`, data);
+		await this.put(
+			`/mcp-integrations/${this.encodePathSegment(id)}/workspaces`,
+			data,
+		);
 		return { success: true };
 	}
 }

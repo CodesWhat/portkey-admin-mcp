@@ -145,18 +145,23 @@ export class UsersService extends BaseService {
 
 	// Phase 1: User Management CRUD
 	async getUser(userId: string): Promise<PortkeyUser> {
-		return this.get<PortkeyUser>(`/admin/users/${userId}`);
+		return this.get<PortkeyUser>(
+			`/admin/users/${this.encodePathSegment(userId)}`,
+		);
 	}
 
 	async updateUser(
 		userId: string,
 		data: UpdateUserRequest,
 	): Promise<PortkeyUser> {
-		return this.put<PortkeyUser>(`/admin/users/${userId}`, data);
+		return this.put<PortkeyUser>(
+			`/admin/users/${this.encodePathSegment(userId)}`,
+			data,
+		);
 	}
 
 	async deleteUser(userId: string): Promise<{ success: boolean }> {
-		await this.delete(`/admin/users/${userId}`);
+		await this.delete(`/admin/users/${this.encodePathSegment(userId)}`);
 		return { success: true };
 	}
 
@@ -166,16 +171,22 @@ export class UsersService extends BaseService {
 	}
 
 	async getUserInvite(inviteId: string): Promise<UserInvite> {
-		return this.get<UserInvite>(`/admin/users/invites/${inviteId}`);
+		return this.get<UserInvite>(
+			`/admin/users/invites/${this.encodePathSegment(inviteId)}`,
+		);
 	}
 
 	async deleteUserInvite(inviteId: string): Promise<{ success: boolean }> {
-		await this.delete(`/admin/users/invites/${inviteId}`);
+		await this.delete(
+			`/admin/users/invites/${this.encodePathSegment(inviteId)}`,
+		);
 		return { success: true };
 	}
 
 	async resendUserInvite(inviteId: string): Promise<{ success: boolean }> {
-		await this.post(`/admin/users/invites/${inviteId}/resend`);
+		await this.post(
+			`/admin/users/invites/${this.encodePathSegment(inviteId)}/resend`,
+		);
 		return { success: true };
 	}
 }

@@ -115,9 +115,7 @@ export interface ListUsageLimitEntitiesResponse {
 export class LimitsService extends BaseService {
 	// ── Rate Limits ──
 
-	async listRateLimits(
-		workspace_id?: string,
-	): Promise<ListRateLimitsResponse> {
+	async listRateLimits(workspace_id?: string): Promise<ListRateLimitsResponse> {
 		return this.get<ListRateLimitsResponse>("/policies/rate-limits", {
 			workspace_id,
 		});
@@ -127,7 +125,9 @@ export class LimitsService extends BaseService {
 		if (!id?.trim()) {
 			throw new Error("Rate limit ID is required");
 		}
-		return this.get<RateLimit>(`/policies/rate-limits/${id}`);
+		return this.get<RateLimit>(
+			`/policies/rate-limits/${this.encodePathSegment(id)}`,
+		);
 	}
 
 	async createRateLimit(data: CreateRateLimitRequest): Promise<RateLimit> {
@@ -141,14 +141,19 @@ export class LimitsService extends BaseService {
 		if (!id?.trim()) {
 			throw new Error("Rate limit ID is required");
 		}
-		return this.put<RateLimit>(`/policies/rate-limits/${id}`, data);
+		return this.put<RateLimit>(
+			`/policies/rate-limits/${this.encodePathSegment(id)}`,
+			data,
+		);
 	}
 
 	async deleteRateLimit(id: string): Promise<{ success: boolean }> {
 		if (!id?.trim()) {
 			throw new Error("Rate limit ID is required");
 		}
-		return this.delete<{ success: boolean }>(`/policies/rate-limits/${id}`);
+		return this.delete<{ success: boolean }>(
+			`/policies/rate-limits/${this.encodePathSegment(id)}`,
+		);
 	}
 
 	// ── Usage Limits ──
@@ -165,7 +170,9 @@ export class LimitsService extends BaseService {
 		if (!id?.trim()) {
 			throw new Error("Usage limit ID is required");
 		}
-		return this.get<UsageLimit>(`/policies/usage-limits/${id}`);
+		return this.get<UsageLimit>(
+			`/policies/usage-limits/${this.encodePathSegment(id)}`,
+		);
 	}
 
 	async createUsageLimit(data: CreateUsageLimitRequest): Promise<UsageLimit> {
@@ -179,14 +186,19 @@ export class LimitsService extends BaseService {
 		if (!id?.trim()) {
 			throw new Error("Usage limit ID is required");
 		}
-		return this.put<UsageLimit>(`/policies/usage-limits/${id}`, data);
+		return this.put<UsageLimit>(
+			`/policies/usage-limits/${this.encodePathSegment(id)}`,
+			data,
+		);
 	}
 
 	async deleteUsageLimit(id: string): Promise<{ success: boolean }> {
 		if (!id?.trim()) {
 			throw new Error("Usage limit ID is required");
 		}
-		return this.delete<{ success: boolean }>(`/policies/usage-limits/${id}`);
+		return this.delete<{ success: boolean }>(
+			`/policies/usage-limits/${this.encodePathSegment(id)}`,
+		);
 	}
 
 	// ── Usage Limit Entities ──
@@ -198,7 +210,7 @@ export class LimitsService extends BaseService {
 			throw new Error("Usage limit ID is required");
 		}
 		return this.get<ListUsageLimitEntitiesResponse>(
-			`/policies/usage-limits/${limitId}/entities`,
+			`/policies/usage-limits/${this.encodePathSegment(limitId)}/entities`,
 		);
 	}
 
@@ -213,7 +225,7 @@ export class LimitsService extends BaseService {
 			throw new Error("Entity ID is required");
 		}
 		return this.post<{ success: boolean }>(
-			`/policies/usage-limits/${limitId}/entities/reset`,
+			`/policies/usage-limits/${this.encodePathSegment(limitId)}/entities/reset`,
 			{ entity_id: entityId },
 		);
 	}

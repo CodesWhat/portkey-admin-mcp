@@ -160,18 +160,23 @@ export class KeysService extends BaseService {
 	}
 
 	async getVirtualKey(slug: string): Promise<VirtualKey> {
-		return this.get<VirtualKey>(`/virtual-keys/${slug}`);
+		return this.get<VirtualKey>(
+			`/virtual-keys/${this.encodePathSegment(slug)}`,
+		);
 	}
 
 	async updateVirtualKey(
 		slug: string,
 		data: UpdateVirtualKeyRequest,
 	): Promise<VirtualKey> {
-		return this.put<VirtualKey>(`/virtual-keys/${slug}`, data);
+		return this.put<VirtualKey>(
+			`/virtual-keys/${this.encodePathSegment(slug)}`,
+			data,
+		);
 	}
 
 	async deleteVirtualKey(slug: string): Promise<{ success: boolean }> {
-		await this.delete(`/virtual-keys/${slug}`);
+		await this.delete(`/virtual-keys/${this.encodePathSegment(slug)}`);
 		return { success: true };
 	}
 
@@ -182,7 +187,7 @@ export class KeysService extends BaseService {
 		data: CreateApiKeyRequest,
 	): Promise<CreateApiKeyResponse> {
 		return this.post<CreateApiKeyResponse>(
-			`/api-keys/${type}/${subType}`,
+			`/api-keys/${this.encodePathSegment(type)}/${this.encodePathSegment(subType)}`,
 			data,
 		);
 	}
@@ -196,19 +201,19 @@ export class KeysService extends BaseService {
 	}
 
 	async getApiKey(id: string): Promise<ApiKey> {
-		return this.get<ApiKey>(`/api-keys/${id}`);
+		return this.get<ApiKey>(`/api-keys/${this.encodePathSegment(id)}`);
 	}
 
 	async updateApiKey(
 		id: string,
 		data: UpdateApiKeyRequest,
 	): Promise<{ success: boolean }> {
-		await this.put(`/api-keys/${id}`, data);
+		await this.put(`/api-keys/${this.encodePathSegment(id)}`, data);
 		return { success: true };
 	}
 
 	async deleteApiKey(id: string): Promise<{ success: boolean }> {
-		await this.delete(`/api-keys/${id}`);
+		await this.delete(`/api-keys/${this.encodePathSegment(id)}`);
 		return { success: true };
 	}
 }

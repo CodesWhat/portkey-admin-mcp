@@ -61,7 +61,9 @@ export class CollectionsService extends BaseService {
 	}
 
 	async getCollection(collectionId: string): Promise<Collection> {
-		return this.get<Collection>(`/collections/${collectionId}`);
+		return this.get<Collection>(
+			`/collections/${this.encodePathSegment(collectionId)}`,
+		);
 	}
 
 	// Phase 1: Collection CRUD
@@ -70,12 +72,14 @@ export class CollectionsService extends BaseService {
 		data: UpdateCollectionRequest,
 	): Promise<Record<string, never>> {
 		return this.put<Record<string, never>>(
-			`/collections/${collectionId}`,
+			`/collections/${this.encodePathSegment(collectionId)}`,
 			data,
 		);
 	}
 
 	async deleteCollection(collectionId: string): Promise<{ success: boolean }> {
-		return this.delete<{ success: boolean }>(`/collections/${collectionId}`);
+		return this.delete<{ success: boolean }>(
+			`/collections/${this.encodePathSegment(collectionId)}`,
+		);
 	}
 }

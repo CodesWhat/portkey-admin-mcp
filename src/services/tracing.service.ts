@@ -88,10 +88,13 @@ export class TracingService extends BaseService {
 		id: string,
 		data: UpdateFeedbackRequest,
 	): Promise<UpdateFeedbackResponse> {
-		return this.put<UpdateFeedbackResponse>(`/feedback/${id}`, data);
+		return this.put<UpdateFeedbackResponse>(
+			`/feedback/${this.encodePathSegment(id)}`,
+			data,
+		);
 	}
 
 	async getTrace(id: string): Promise<GetTraceResponse> {
-		return this.get<GetTraceResponse>(`/logs/${id}`);
+		return this.get<GetTraceResponse>(`/logs/${this.encodePathSegment(id)}`);
 	}
 }
