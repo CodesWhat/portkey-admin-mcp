@@ -3,11 +3,376 @@ import { z } from "zod";
 import {
 	BillingMetadataSchema,
 	HyperparametersSchema,
+	PromptAppIdentifierSchema,
+	PromptEnvironmentIdentifierSchema,
 	PromptFunctionSchema,
 	PromptToolSchema,
 	ToolChoiceSchema,
+	toPromptToolChoice,
 } from "../lib/schemas.js";
 import type { PortkeyService } from "../services/index.js";
+import type { RawGetPromptResponse } from "../services/prompts.types.js";
+
+const PROMPT_VARIABLES_SCHEMA = z
+	.record(z.string(), z.union([z.string(), z.coerce.number(), z.boolean()]))
+	.describe("Variable values to substitute into the template");
+
+const PROMPTS_TOOL_SCHEMAS = {
+	createPrompt: {
+		name: z.string().describe("Display name for the prompt"),
+		collection_id: z
+			.string()
+			.describe(
+				"Collection ID to organize the prompt in (use list_collections to find)",
+			),
+		string: z
+			.string()
+			.describe(
+				'The prompt template. Plain text OR a JSON-encoded messages array string for multi-message chat prompts: \'[{"role":"system","content":[{"type":"text","text":"..."}]},{"role":"user","content":[{"type":"text","text":"{{input}}"}]}]\'. Use get_prompt on an existing prompt to see the exact format.',
+			),
+		parameters: z
+			.record(z.string(), z.unknown())
+			.describe("Default values for template variables"),
+		virtual_key: z.string().describe("Virtual key slug for model access"),
+		model: z
+			.string()
+			.optional()
+			.describe(
+				"Model identifier (e.g., 'gpt-4', 'claude-3-opus'). Required unless ai_model_id or finetune_id is provided",
+			),
+		ai_model_id: z
+			.string()
+			.optional()
+			.describe(
+				"AI model ID (alternative to model). Required unless model or finetune_id is provided",
+			),
+		finetune_id: z
+			.string()
+			.optional()
+			.describe(
+				"Fine-tune ID (alternative to model). Required unless model or ai_model_id is provided",
+			),
+		version_description: z
+			.string()
+			.optional()
+			.describe("Description for this prompt version"),
+		template_metadata: z
+			.record(z.string(), z.unknown())
+			.optional()
+			.describe("Custom metadata (app, env, source_file, etc.)"),
+		functions: z
+			.array(PromptFunctionSchema)
+			.optional()
+			.describe("Function definitions for function calling"),
+		tools: z
+			.array(PromptToolSchema)
+			.optional()
+			.describe("Tool definitions for tool use"),
+		tool_choice: ToolChoiceSchema.optional().describe("Tool choice strategy"),
+		dry_run: z
+			.boolean()
+			.optional()
+			.describe("When true, validate without creating"),
+	},
+	listPrompts: {
+		collection_id: z
+			.string()
+			.optional()
+			.describe(
+				"Filter by collection ID (recommended for app-specific prompts)",
+			),
+		workspace_id: z.string().optional().describe("Filter by workspace ID"),
+		search: z.string().optional().describe("Search prompts by name"),
+		current_page: z.coerce
+			.number()
+			.positive()
+			.optional()
+			.describe("Page number for pagination"),
+		page_size: z.coerce
+			.number()
+			.positive()
+			.max(100)
+			.optional()
+			.describe("Results per page (max 100)"),
+	},
+	getPrompt: {
+		prompt_id: z.string().describe("Prompt ID or slug to retrieve"),
+	},
+	updatePrompt: {
+		prompt_id: z.string().describe("Prompt ID or slug to update"),
+		name: z.string().optional().describe("New display name for the prompt"),
+		collection_id: z
+			.string()
+			.optional()
+			.describe("Move to a different collection"),
+		string: z
+			.string()
+			.optional()
+			.describe(
+				"Updated prompt template. Plain text OR a JSON-encoded messages array string for multi-message chat prompts. Use get_prompt to see the current format before updating.",
+			),
+		parameters: z
+			.record(z.string(), z.unknown())
+			.optional()
+			.describe("New default values for template variables"),
+		model: z.string().optional().describe("New model identifier"),
+		virtual_key: z.string().optional().describe("New virtual key slug"),
+		version_description: z
+			.string()
+			.optional()
+			.describe("Description for this version"),
+		template_metadata: z
+			.record(z.string(), z.unknown())
+			.optional()
+			.describe("New metadata"),
+		functions: z
+			.array(PromptFunctionSchema)
+			.optional()
+			.describe("New function definitions"),
+		tools: z
+			.array(PromptToolSchema)
+			.optional()
+			.describe("New tool definitions"),
+		tool_choice: ToolChoiceSchema.optional().describe(
+			"New tool choice strategy",
+		),
+		dry_run: z
+			.boolean()
+			.optional()
+			.describe("When true, validate without updating"),
+	},
+	deletePrompt: {
+		prompt_id: z.string().describe("Prompt ID or slug to delete"),
+	},
+	publishPrompt: {
+		prompt_id: z.string().describe("Prompt ID or slug to publish"),
+		version: z.coerce
+			.number()
+			.positive()
+			.describe("Version number to publish as the default"),
+	},
+	listPromptVersions: {
+		prompt_id: z.string().describe("Prompt ID or slug to list versions for"),
+	},
+	renderPrompt: {
+		prompt_id: z.string().describe("Prompt ID or slug to render"),
+		variables: PROMPT_VARIABLES_SCHEMA,
+		hyperparameters: HyperparametersSchema.optional().describe(
+			"Override default hyperparameters",
+		),
+	},
+	runPromptCompletion: {
+		prompt_id: z.string().describe("Prompt ID or slug to execute"),
+		variables: PROMPT_VARIABLES_SCHEMA,
+		metadata: BillingMetadataSchema.describe(
+			"Billing metadata - client_id, app, env are REQUIRED for cost attribution",
+		),
+		hyperparameters: HyperparametersSchema.optional().describe(
+			"Override default hyperparameters",
+		),
+	},
+	migratePrompt: {
+		name: z.string().describe("Prompt name to create or find for update"),
+		app: PromptAppIdentifierSchema,
+		env: PromptEnvironmentIdentifierSchema,
+		collection_id: z
+			.string()
+			.describe("Collection ID to search in and create under"),
+		string: z
+			.string()
+			.describe("Prompt template string with {{variable}} mustache syntax"),
+		parameters: z
+			.record(z.string(), z.unknown())
+			.describe("Default values for template variables"),
+		virtual_key: z.string().describe("Virtual key slug for model access"),
+		model: z.string().optional().describe("Model identifier"),
+		version_description: z
+			.string()
+			.optional()
+			.describe("Description for this version"),
+		template_metadata: z
+			.record(z.string(), z.unknown())
+			.optional()
+			.describe("Additional custom metadata"),
+		functions: z
+			.array(PromptFunctionSchema)
+			.optional()
+			.describe("Function definitions"),
+		tools: z.array(PromptToolSchema).optional().describe("Tool definitions"),
+		tool_choice: ToolChoiceSchema.optional().describe("Tool choice strategy"),
+		dry_run: z
+			.boolean()
+			.optional()
+			.describe(
+				"When true, only check what action would be taken without making changes",
+			),
+	},
+	promotePrompt: {
+		source_prompt_id: z
+			.string()
+			.describe("Source prompt ID or slug (e.g., staging prompt)"),
+		target_collection_id: z
+			.string()
+			.describe("Target collection ID for the promoted prompt"),
+		target_name: z
+			.string()
+			.optional()
+			.describe(
+				"Target prompt name (defaults to source name with env suffix replaced)",
+			),
+		target_env: PromptEnvironmentIdentifierSchema,
+		virtual_key: z
+			.string()
+			.optional()
+			.describe(
+				"Virtual key ID to use (defaults to source prompt's virtual_key)",
+			),
+	},
+	validateCompletionMetadata: {
+		client_id: z
+			.string()
+			.optional()
+			.describe("Client ID for billing attribution"),
+		app: PromptAppIdentifierSchema.optional(),
+		env: PromptEnvironmentIdentifierSchema.optional(),
+		project_id: z
+			.string()
+			.optional()
+			.describe("Project ID for granular billing"),
+		feature: z.string().optional().describe("Feature name for tracking"),
+	},
+	getPromptVersion: {
+		prompt_id: z.string().describe("Prompt ID or slug"),
+		version_id: z.string().describe("Version UUID to retrieve"),
+	},
+	updatePromptVersion: {
+		prompt_id: z.string().describe("Prompt ID or slug"),
+		version_id: z.string().describe("Version UUID to update"),
+		label_id: z
+			.string()
+			.nullable()
+			.describe(
+				"Label ID to assign to this version, or null to remove the label",
+			),
+	},
+} as const;
+
+function extractPromptTemplateString(template: unknown): string {
+	const inner =
+		typeof template === "object" && template !== null && "string" in template
+			? (template as Record<string, unknown>).string
+			: template;
+
+	if (inner === undefined) {
+		return "";
+	}
+
+	return typeof inner === "string" ? inner : JSON.stringify(inner);
+}
+
+function formatPromptVersion(version: RawGetPromptResponse): {
+	prompt: {
+		id: string;
+		name: string;
+		slug: string;
+		collection_id: string;
+		workspace_id?: string;
+	};
+	version: {
+		id: string | undefined;
+		number: number | undefined;
+		description: string | undefined;
+		status: string | undefined;
+		model: string | undefined;
+		virtual_key: string | undefined;
+		template: string;
+		parameters: Record<string, unknown> | undefined;
+		metadata: Record<string, unknown> | undefined;
+		function_names: string[];
+		tool_names: string[];
+		tool_choice: RawGetPromptResponse["tool_choice"];
+		created_at: string;
+		last_updated_at: string;
+	};
+} {
+	return {
+		prompt: {
+			id: version.id,
+			name: version.name,
+			slug: version.slug,
+			collection_id: version.collection_id,
+			workspace_id: version.workspace_id,
+		},
+		version: {
+			id: version.prompt_version_id,
+			number: version.prompt_version,
+			description: version.prompt_version_description,
+			status: version.prompt_version_status,
+			model: version.model,
+			virtual_key: version.virtual_key,
+			template: extractPromptTemplateString(version.string),
+			parameters: version.parameters,
+			metadata: version.template_metadata,
+			function_names: (version.functions ?? []).map((fn) => fn.name),
+			tool_names: (version.tools ?? []).map((tool) => tool.function.name),
+			tool_choice: version.tool_choice,
+			created_at: version.created_at,
+			last_updated_at: version.last_updated_at,
+		},
+	};
+}
+
+function formatPromptListResponse(
+	prompts: Awaited<ReturnType<PortkeyService["prompts"]["listPrompts"]>>,
+	params: {
+		current_page?: number;
+		page_size?: number;
+	},
+): {
+	total: number;
+	current_page: number;
+	page_size: number;
+	returned_count: number;
+	has_more: boolean;
+	next_offset: number | null;
+	next_page: number | null;
+	prompts: Array<{
+		id: string;
+		name: string;
+		slug: string;
+		collection_id: string;
+		model: string | undefined;
+		status: string | undefined;
+		created_at: string;
+		last_updated_at: string;
+	}>;
+} {
+	const currentPage = params.current_page ?? 1;
+	const returnedCount = prompts.data.length;
+	const pageSize = params.page_size ?? returnedCount;
+	const nextOffset = currentPage * pageSize;
+	const hasMore = returnedCount > 0 && nextOffset < prompts.total;
+
+	return {
+		total: prompts.total,
+		current_page: currentPage,
+		page_size: pageSize,
+		returned_count: returnedCount,
+		has_more: hasMore,
+		next_offset: hasMore ? nextOffset : null,
+		next_page: hasMore ? currentPage + 1 : null,
+		prompts: prompts.data.map((prompt) => ({
+			id: prompt.id,
+			name: prompt.name,
+			slug: prompt.slug,
+			collection_id: prompt.collection_id,
+			model: prompt.model,
+			status: prompt.status,
+			created_at: prompt.created_at,
+			last_updated_at: prompt.last_updated_at,
+		})),
+	};
+}
 
 export function registerPromptsTools(
 	server: McpServer,
@@ -24,62 +389,7 @@ IMPORTANT: The "string" parameter accepts TWO formats:
    '[{"role":"system","content":[{"type":"text","text":"You are a helpful assistant."}]},{"role":"user","content":[{"type":"text","text":"{{user_input}}"}]}]'
 
 Most production prompts use format #2 (multi-message). Use get_prompt to see examples of the format.`,
-		{
-			name: z.string().describe("Display name for the prompt"),
-			collection_id: z
-				.string()
-				.describe(
-					"Collection ID to organize the prompt in (use list_collections to find)",
-				),
-			string: z
-				.string()
-				.describe(
-					'The prompt template. Plain text OR a JSON-encoded messages array string for multi-message chat prompts: \'[{"role":"system","content":[{"type":"text","text":"..."}]},{"role":"user","content":[{"type":"text","text":"{{input}}"}]}]\'. Use get_prompt on an existing prompt to see the exact format.',
-				),
-			parameters: z
-				.record(z.string(), z.unknown())
-				.describe("Default values for template variables"),
-			virtual_key: z.string().describe("Virtual key slug for model access"),
-			model: z
-				.string()
-				.optional()
-				.describe(
-					"Model identifier (e.g., 'gpt-4', 'claude-3-opus'). Required unless ai_model_id or finetune_id is provided",
-				),
-			ai_model_id: z
-				.string()
-				.optional()
-				.describe(
-					"AI model ID (alternative to model). Required unless model or finetune_id is provided",
-				),
-			finetune_id: z
-				.string()
-				.optional()
-				.describe(
-					"Fine-tune ID (alternative to model). Required unless model or ai_model_id is provided",
-				),
-			version_description: z
-				.string()
-				.optional()
-				.describe("Description for this prompt version"),
-			template_metadata: z
-				.record(z.string(), z.unknown())
-				.optional()
-				.describe("Custom metadata (app, env, source_file, etc.)"),
-			functions: z
-				.array(PromptFunctionSchema)
-				.optional()
-				.describe("Function definitions for function calling"),
-			tools: z
-				.array(PromptToolSchema)
-				.optional()
-				.describe("Tool definitions for tool use"),
-			tool_choice: ToolChoiceSchema.optional().describe("Tool choice strategy"),
-			dry_run: z
-				.boolean()
-				.optional()
-				.describe("When true, validate without creating"),
-		},
+		PROMPTS_TOOL_SCHEMAS.createPrompt,
 		async (params) => {
 			if (!params.model && !params.ai_model_id && !params.finetune_id) {
 				return {
@@ -133,7 +443,7 @@ Most production prompts use format #2 (multi-message). Use get_prompt to see exa
 				template_metadata: params.template_metadata,
 				functions: params.functions,
 				tools: params.tools,
-				tool_choice: params.tool_choice,
+				tool_choice: toPromptToolChoice(params.tool_choice),
 			});
 
 			return {
@@ -160,27 +470,7 @@ Most production prompts use format #2 (multi-message). Use get_prompt to see exa
 	server.tool(
 		"list_prompts",
 		"List all prompts in your Portkey organization with optional filtering by collection, workspace, or search query",
-		{
-			collection_id: z
-				.string()
-				.optional()
-				.describe(
-					"Filter by collection ID (recommended for app-specific prompts)",
-				),
-			workspace_id: z.string().optional().describe("Filter by workspace ID"),
-			search: z.string().optional().describe("Search prompts by name"),
-			current_page: z.coerce
-				.number()
-				.positive()
-				.optional()
-				.describe("Page number for pagination"),
-			page_size: z.coerce
-				.number()
-				.positive()
-				.max(100)
-				.optional()
-				.describe("Results per page (max 100)"),
-		},
+		PROMPTS_TOOL_SCHEMAS.listPrompts,
 		async (params) => {
 			const prompts = await service.prompts.listPrompts(params);
 			return {
@@ -188,19 +478,7 @@ Most production prompts use format #2 (multi-message). Use get_prompt to see exa
 					{
 						type: "text",
 						text: JSON.stringify(
-							{
-								total: prompts.total,
-								prompts: prompts.data.map((prompt) => ({
-									id: prompt.id,
-									name: prompt.name,
-									slug: prompt.slug,
-									collection_id: prompt.collection_id,
-									model: prompt.model,
-									status: prompt.status,
-									created_at: prompt.created_at,
-									last_updated_at: prompt.last_updated_at,
-								})),
-							},
+							formatPromptListResponse(prompts, params),
 							null,
 							2,
 						),
@@ -219,22 +497,14 @@ The template field shows the raw "string" value stored in Portkey:
 - If it starts with "[", it is a JSON-encoded messages array (multi-message prompt with roles).
 - Otherwise it is a plain string template.
 When updating a prompt, pass the same format back in the "string" field of update_prompt.`,
-		{
-			prompt_id: z.string().describe("Prompt ID or slug to retrieve"),
-		},
+		PROMPTS_TOOL_SCHEMAS.getPrompt,
 		async (params) => {
 			const prompt = await service.prompts.getPrompt(params.prompt_id);
 
 			// Resolve the raw template string — Portkey may return it as a nested { string: "..." } object
-			const rawTemplate = prompt.current_version?.string;
-			const inner =
-				typeof rawTemplate === "object" &&
-				rawTemplate !== null &&
-				"string" in rawTemplate
-					? (rawTemplate as Record<string, unknown>).string
-					: rawTemplate;
-			const templateString =
-				typeof inner === "string" ? inner : JSON.stringify(inner);
+			const templateString = extractPromptTemplateString(
+				prompt.current_version?.string,
+			);
 
 			// Detect format for caller guidance
 			let templateFormat = "plain string";
@@ -306,49 +576,7 @@ IMPORTANT: The "string" parameter accepts the same two formats as create_prompt:
    '[{"role":"system","content":[{"type":"text","text":"..."}]},{"role":"user","content":[{"type":"text","text":"{{input}}"}]}]'
 
 Use get_prompt first to see the current format, then pass the same format back. New versions are created in "archived" status — use publish_prompt to make active.`,
-		{
-			prompt_id: z.string().describe("Prompt ID or slug to update"),
-			name: z.string().optional().describe("New display name for the prompt"),
-			collection_id: z
-				.string()
-				.optional()
-				.describe("Move to a different collection"),
-			string: z
-				.string()
-				.optional()
-				.describe(
-					"Updated prompt template. Plain text OR a JSON-encoded messages array string for multi-message chat prompts. Use get_prompt to see the current format before updating.",
-				),
-			parameters: z
-				.record(z.string(), z.unknown())
-				.optional()
-				.describe("New default values for template variables"),
-			model: z.string().optional().describe("New model identifier"),
-			virtual_key: z.string().optional().describe("New virtual key slug"),
-			version_description: z
-				.string()
-				.optional()
-				.describe("Description for this version"),
-			template_metadata: z
-				.record(z.string(), z.unknown())
-				.optional()
-				.describe("New metadata"),
-			functions: z
-				.array(PromptFunctionSchema)
-				.optional()
-				.describe("New function definitions"),
-			tools: z
-				.array(PromptToolSchema)
-				.optional()
-				.describe("New tool definitions"),
-			tool_choice: ToolChoiceSchema.optional().describe(
-				"New tool choice strategy",
-			),
-			dry_run: z
-				.boolean()
-				.optional()
-				.describe("When true, validate without updating"),
-		},
+		PROMPTS_TOOL_SCHEMAS.updatePrompt,
 		async (params) => {
 			const { prompt_id, dry_run, ...updateData } = params;
 
@@ -378,7 +606,10 @@ Use get_prompt first to see the current format, then pass the same format back. 
 				};
 			}
 
-			const result = await service.prompts.updatePrompt(prompt_id, updateData);
+			const result = await service.prompts.updatePrompt(prompt_id, {
+				...updateData,
+				tool_choice: toPromptToolChoice(updateData.tool_choice),
+			});
 
 			return {
 				content: [
@@ -404,9 +635,7 @@ Use get_prompt first to see the current format, then pass the same format back. 
 	server.tool(
 		"delete_prompt",
 		"Delete a prompt by its ID. This action cannot be undone and will remove the prompt and all its versions.",
-		{
-			prompt_id: z.string().describe("Prompt ID or slug to delete"),
-		},
+		PROMPTS_TOOL_SCHEMAS.deletePrompt,
 		async (params) => {
 			await service.prompts.deletePrompt(params.prompt_id);
 			return {
@@ -431,13 +660,7 @@ Use get_prompt first to see the current format, then pass the same format back. 
 	server.tool(
 		"publish_prompt",
 		"Publish a specific version of a prompt, making it the default version that will be used when the prompt is called. This is useful for promoting a tested version to production.",
-		{
-			prompt_id: z.string().describe("Prompt ID or slug to publish"),
-			version: z.coerce
-				.number()
-				.positive()
-				.describe("Version number to publish as the default"),
-		},
+		PROMPTS_TOOL_SCHEMAS.publishPrompt,
 		async (params) => {
 			await service.prompts.publishPrompt(params.prompt_id, {
 				version: params.version,
@@ -466,9 +689,7 @@ Use get_prompt first to see the current format, then pass the same format back. 
 	server.tool(
 		"list_prompt_versions",
 		"List all versions of a specific prompt with their details, including version number, description, template content, and creation date.",
-		{
-			prompt_id: z.string().describe("Prompt ID or slug to list versions for"),
-		},
+		PROMPTS_TOOL_SCHEMAS.listPromptVersions,
 		async (params) => {
 			const versions = await service.prompts.listPromptVersions(
 				params.prompt_id,
@@ -517,18 +738,7 @@ Use get_prompt first to see the current format, then pass the same format back. 
 	server.tool(
 		"render_prompt",
 		"Render a prompt template by substituting variables, returning the final messages without executing",
-		{
-			prompt_id: z.string().describe("Prompt ID or slug to render"),
-			variables: z
-				.record(
-					z.string(),
-					z.union([z.string(), z.coerce.number(), z.boolean()]),
-				)
-				.describe("Variable values to substitute into the template"),
-			hyperparameters: HyperparametersSchema.optional().describe(
-				"Override default hyperparameters",
-			),
-		},
+		PROMPTS_TOOL_SCHEMAS.renderPrompt,
 		async (params) => {
 			const result = await service.prompts.renderPrompt(params.prompt_id, {
 				variables: params.variables,
@@ -563,21 +773,7 @@ Use get_prompt first to see the current format, then pass the same format back. 
 	server.tool(
 		"run_prompt_completion",
 		"Execute a prompt template with variables and get the model completion response. REQUIRES billing metadata (client_id, app, env). Use validate_completion_metadata first if uncertain.",
-		{
-			prompt_id: z.string().describe("Prompt ID or slug to execute"),
-			variables: z
-				.record(
-					z.string(),
-					z.union([z.string(), z.coerce.number(), z.boolean()]),
-				)
-				.describe("Variable values to substitute into the template"),
-			metadata: BillingMetadataSchema.describe(
-				"Billing metadata - client_id, app, env are REQUIRED for cost attribution",
-			),
-			hyperparameters: HyperparametersSchema.optional().describe(
-				"Override default hyperparameters",
-			),
-		},
+		PROMPTS_TOOL_SCHEMAS.runPromptCompletion,
 		async (params) => {
 			const result = await service.prompts.runPromptCompletion(
 				params.prompt_id,
@@ -621,44 +817,7 @@ Use get_prompt first to see the current format, then pass the same format back. 
 	server.tool(
 		"migrate_prompt",
 		"Create or update a prompt based on whether it exists. Useful for CI/CD and prompt-as-code workflows. Finds existing prompts by name within the collection. The app and env values are added to template_metadata automatically.",
-		{
-			name: z.string().describe("Prompt name to create or find for update"),
-			app: z
-				.enum(["hourlink", "apizone", "research-pilot"])
-				.describe("App identifier"),
-			env: z.enum(["dev", "staging", "prod"]).describe("Environment"),
-			collection_id: z
-				.string()
-				.describe("Collection ID to search in and create under"),
-			string: z
-				.string()
-				.describe("Prompt template string with {{variable}} mustache syntax"),
-			parameters: z
-				.record(z.string(), z.unknown())
-				.describe("Default values for template variables"),
-			virtual_key: z.string().describe("Virtual key slug for model access"),
-			model: z.string().optional().describe("Model identifier"),
-			version_description: z
-				.string()
-				.optional()
-				.describe("Description for this version"),
-			template_metadata: z
-				.record(z.string(), z.unknown())
-				.optional()
-				.describe("Additional custom metadata"),
-			functions: z
-				.array(PromptFunctionSchema)
-				.optional()
-				.describe("Function definitions"),
-			tools: z.array(PromptToolSchema).optional().describe("Tool definitions"),
-			tool_choice: ToolChoiceSchema.optional().describe("Tool choice strategy"),
-			dry_run: z
-				.boolean()
-				.optional()
-				.describe(
-					"When true, only check what action would be taken without making changes",
-				),
-		},
+		PROMPTS_TOOL_SCHEMAS.migratePrompt,
 		async (params) => {
 			const result = await service.prompts.migratePrompt({
 				name: params.name,
@@ -673,7 +832,7 @@ Use get_prompt first to see the current format, then pass the same format back. 
 				template_metadata: params.template_metadata,
 				functions: params.functions,
 				tools: params.tools,
-				tool_choice: params.tool_choice,
+				tool_choice: toPromptToolChoice(params.tool_choice),
 				dry_run: params.dry_run,
 			});
 
@@ -703,29 +862,7 @@ Use get_prompt first to see the current format, then pass the same format back. 
 	server.tool(
 		"promote_prompt",
 		"Promote a prompt from one environment to another (e.g., staging -> prod). Copies the current version to the target environment. If the target prompt already exists it is updated with a new version; otherwise a new prompt is created.",
-		{
-			source_prompt_id: z
-				.string()
-				.describe("Source prompt ID or slug (e.g., staging prompt)"),
-			target_collection_id: z
-				.string()
-				.describe("Target collection ID for the promoted prompt"),
-			target_name: z
-				.string()
-				.optional()
-				.describe(
-					"Target prompt name (defaults to source name with env suffix replaced)",
-				),
-			target_env: z
-				.enum(["dev", "staging", "prod"])
-				.describe("Target environment"),
-			virtual_key: z
-				.string()
-				.optional()
-				.describe(
-					"Virtual key ID to use (defaults to source prompt's virtual_key)",
-				),
-		},
+		PROMPTS_TOOL_SCHEMAS.promotePrompt,
 		async (params) => {
 			const result = await service.prompts.promotePrompt({
 				source_prompt_id: params.source_prompt_id,
@@ -766,25 +903,7 @@ Use get_prompt first to see the current format, then pass the same format back. 
 	server.tool(
 		"validate_completion_metadata",
 		"Validate billing metadata before running a completion. Checks for required fields (client_id, app, env) and valid values.",
-		{
-			client_id: z
-				.string()
-				.optional()
-				.describe("Client ID for billing attribution"),
-			app: z
-				.enum(["hourlink", "apizone", "research-pilot"])
-				.optional()
-				.describe("App identifier"),
-			env: z
-				.enum(["dev", "staging", "prod"])
-				.optional()
-				.describe("Environment"),
-			project_id: z
-				.string()
-				.optional()
-				.describe("Project ID for granular billing"),
-			feature: z.string().optional().describe("Feature name for tracking"),
-		},
+		PROMPTS_TOOL_SCHEMAS.validateCompletionMetadata,
 		async (params) => {
 			const result = service.prompts.validateBillingMetadata(params);
 
@@ -813,17 +932,19 @@ Use get_prompt first to see the current format, then pass the same format back. 
 	server.tool(
 		"get_prompt_version",
 		"Retrieve a specific version of a prompt by its version ID",
-		{
-			prompt_id: z.string().describe("Prompt ID or slug"),
-			version_id: z.string().describe("Version UUID to retrieve"),
-		},
+		PROMPTS_TOOL_SCHEMAS.getPromptVersion,
 		async (params) => {
 			const version = await service.prompts.getPromptVersion(
 				params.prompt_id,
 				params.version_id,
 			);
 			return {
-				content: [{ type: "text", text: JSON.stringify(version, null, 2) }],
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(formatPromptVersion(version), null, 2),
+					},
+				],
 			};
 		},
 	);
@@ -831,16 +952,7 @@ Use get_prompt first to see the current format, then pass the same format back. 
 	server.tool(
 		"update_prompt_version",
 		"Update a specific prompt version, e.g. to assign or remove a label",
-		{
-			prompt_id: z.string().describe("Prompt ID or slug"),
-			version_id: z.string().describe("Version UUID to update"),
-			label_id: z
-				.string()
-				.nullable()
-				.describe(
-					"Label ID to assign to this version, or null to remove the label",
-				),
-		},
+		PROMPTS_TOOL_SCHEMAS.updatePromptVersion,
 		async (params) => {
 			if (params.label_id === undefined) {
 				return {

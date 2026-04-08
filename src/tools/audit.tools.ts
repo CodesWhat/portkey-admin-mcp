@@ -2,6 +2,58 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { PortkeyService } from "../services/index.js";
 
+const AUDIT_TOOL_SCHEMAS = {
+	listAuditLogs: {
+		workspace_id: z
+			.string()
+			.optional()
+			.describe("Filter audit logs by workspace ID"),
+		actor_id: z
+			.string()
+			.optional()
+			.describe("Filter by the user ID who performed the action"),
+		action: z
+			.string()
+			.optional()
+			.describe(
+				"Filter by action type (e.g., 'create', 'update', 'delete', 'login')",
+			),
+		resource_type: z
+			.string()
+			.optional()
+			.describe(
+				"Filter by resource type (e.g., 'user', 'workspace', 'config', 'virtual_key')",
+			),
+		resource_id: z
+			.string()
+			.optional()
+			.describe("Filter by specific resource ID"),
+		start_time: z
+			.string()
+			.optional()
+			.describe(
+				"Start of time range filter (ISO 8601 format, e.g., '2024-01-01T00:00:00Z')",
+			),
+		end_time: z
+			.string()
+			.optional()
+			.describe(
+				"End of time range filter (ISO 8601 format, e.g., '2024-01-31T23:59:59Z')",
+			),
+		current_page: z.coerce
+			.number()
+			.positive()
+			.optional()
+			.describe("Page number for pagination (starts at 1)"),
+		page_size: z.coerce
+			.number()
+			.positive()
+			.max(100)
+			.optional()
+			.describe("Number of results per page (max 100)"),
+	},
+} as const;
+
 export function registerAuditTools(
 	server: McpServer,
 	service: PortkeyService,
@@ -10,55 +62,7 @@ export function registerAuditTools(
 	server.tool(
 		"list_audit_logs",
 		"Retrieve audit logs for your Portkey organization. Audit logs track all administrative actions including user management, configuration changes, and access events. Supports filtering by time range, actor, action type, and resource.",
-		{
-			workspace_id: z
-				.string()
-				.optional()
-				.describe("Filter audit logs by workspace ID"),
-			actor_id: z
-				.string()
-				.optional()
-				.describe("Filter by the user ID who performed the action"),
-			action: z
-				.string()
-				.optional()
-				.describe(
-					"Filter by action type (e.g., 'create', 'update', 'delete', 'login')",
-				),
-			resource_type: z
-				.string()
-				.optional()
-				.describe(
-					"Filter by resource type (e.g., 'user', 'workspace', 'config', 'virtual_key')",
-				),
-			resource_id: z
-				.string()
-				.optional()
-				.describe("Filter by specific resource ID"),
-			start_time: z
-				.string()
-				.optional()
-				.describe(
-					"Start of time range filter (ISO 8601 format, e.g., '2024-01-01T00:00:00Z')",
-				),
-			end_time: z
-				.string()
-				.optional()
-				.describe(
-					"End of time range filter (ISO 8601 format, e.g., '2024-01-31T23:59:59Z')",
-				),
-			current_page: z.coerce
-				.number()
-				.positive()
-				.optional()
-				.describe("Page number for pagination (starts at 1)"),
-			page_size: z.coerce
-				.number()
-				.positive()
-				.max(100)
-				.optional()
-				.describe("Number of results per page (max 100)"),
-		},
+		AUDIT_TOOL_SCHEMAS.listAuditLogs,
 		async (params) => {
 			const result = await service.audit.listAuditLogs({
 				workspace_id: params.workspace_id,

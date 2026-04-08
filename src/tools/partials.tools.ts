@@ -2,6 +2,65 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { PortkeyService } from "../services/index.js";
 
+const PARTIALS_TOOL_SCHEMAS = {
+	createPromptPartial: {
+		name: z.string().describe("Display name for the partial"),
+		string: z.string().describe("The partial content/template string"),
+		workspace_id: z
+			.string()
+			.optional()
+			.describe(
+				"Workspace ID to create partial in (required for org-level API keys)",
+			),
+		version_description: z
+			.string()
+			.optional()
+			.describe("Description for this version"),
+	},
+	listPromptPartials: {
+		collection_id: z
+			.string()
+			.optional()
+			.describe(
+				"Filter by collection ID. Optional — omit to list all partials across collections",
+			),
+	},
+	getPromptPartial: {
+		prompt_partial_id: z
+			.string()
+			.describe("Prompt partial ID or slug to retrieve"),
+	},
+	updatePromptPartial: {
+		prompt_partial_id: z
+			.string()
+			.describe("Prompt partial ID or slug to update"),
+		name: z.string().optional().describe("New display name for the partial"),
+		string: z.string().optional().describe("New content for the partial"),
+		description: z.string().optional().describe("Description for this version"),
+		status: z
+			.enum(["active", "archived"])
+			.optional()
+			.describe("New status for the partial"),
+	},
+	deletePromptPartial: {
+		prompt_partial_id: z
+			.string()
+			.describe("Prompt partial ID or slug to delete"),
+	},
+	listPartialVersions: {
+		prompt_partial_id: z
+			.string()
+			.describe("Prompt partial ID or slug to list versions for"),
+	},
+	publishPartial: {
+		prompt_partial_id: z.string().describe("Prompt partial ID or slug"),
+		version: z.coerce
+			.number()
+			.positive()
+			.describe("Version number to publish as default"),
+	},
+} as const;
+
 export function registerPartialsTools(
 	server: McpServer,
 	service: PortkeyService,
@@ -10,20 +69,7 @@ export function registerPartialsTools(
 	server.tool(
 		"create_prompt_partial",
 		"Create a new prompt partial (reusable text snippet) that can be included in prompts using mustache syntax like {{> partial_name}}",
-		{
-			name: z.string().describe("Display name for the partial"),
-			string: z.string().describe("The partial content/template string"),
-			workspace_id: z
-				.string()
-				.optional()
-				.describe(
-					"Workspace ID to create partial in (required for org-level API keys)",
-				),
-			version_description: z
-				.string()
-				.optional()
-				.describe("Description for this version"),
-		},
+		PARTIALS_TOOL_SCHEMAS.createPromptPartial,
 		async (params) => {
 			const result = await service.partials.createPromptPartial({
 				name: params.name,
@@ -55,14 +101,7 @@ export function registerPartialsTools(
 	server.tool(
 		"list_prompt_partials",
 		"List all prompt partials in your Portkey organization with optional filtering by collection",
-		{
-			collection_id: z
-				.string()
-				.optional()
-				.describe(
-					"Filter by collection ID. Optional — omit to list all partials across collections",
-				),
-		},
+		PARTIALS_TOOL_SCHEMAS.listPromptPartials,
 		async (params) => {
 			const partials = await service.partials.listPromptPartials(params);
 			return {
@@ -95,11 +134,7 @@ export function registerPartialsTools(
 	server.tool(
 		"get_prompt_partial",
 		"Retrieve detailed information about a specific prompt partial including its content and version info",
-		{
-			prompt_partial_id: z
-				.string()
-				.describe("Prompt partial ID or slug to retrieve"),
-		},
+		PARTIALS_TOOL_SCHEMAS.getPromptPartial,
 		async (params) => {
 			const partial = await service.partials.getPromptPartial(
 				params.prompt_partial_id,
@@ -135,21 +170,7 @@ export function registerPartialsTools(
 	server.tool(
 		"update_prompt_partial",
 		"Update an existing prompt partial. A new version is created in archived status — use publish_partial to make it active.",
-		{
-			prompt_partial_id: z
-				.string()
-				.describe("Prompt partial ID or slug to update"),
-			name: z.string().optional().describe("New display name for the partial"),
-			string: z.string().optional().describe("New content for the partial"),
-			description: z
-				.string()
-				.optional()
-				.describe("Description for this version"),
-			status: z
-				.enum(["active", "archived"])
-				.optional()
-				.describe("New status for the partial"),
-		},
+		PARTIALS_TOOL_SCHEMAS.updatePromptPartial,
 		async (params) => {
 			const { prompt_partial_id, ...updateData } = params;
 			const result = await service.partials.updatePromptPartial(
@@ -178,11 +199,7 @@ export function registerPartialsTools(
 	server.tool(
 		"delete_prompt_partial",
 		"Delete a prompt partial by ID. This action cannot be undone.",
-		{
-			prompt_partial_id: z
-				.string()
-				.describe("Prompt partial ID or slug to delete"),
-		},
+		PARTIALS_TOOL_SCHEMAS.deletePromptPartial,
 		async (params) => {
 			await service.partials.deletePromptPartial(params.prompt_partial_id);
 			return {
@@ -207,11 +224,7 @@ export function registerPartialsTools(
 	server.tool(
 		"list_partial_versions",
 		"List all versions of a prompt partial to view its change history",
-		{
-			prompt_partial_id: z
-				.string()
-				.describe("Prompt partial ID or slug to list versions for"),
-		},
+		PARTIALS_TOOL_SCHEMAS.listPartialVersions,
 		async (params) => {
 			const versions = await service.partials.listPartialVersions(
 				params.prompt_partial_id,
@@ -251,13 +264,7 @@ export function registerPartialsTools(
 	server.tool(
 		"publish_partial",
 		"Publish a specific version of a prompt partial, making it the default version",
-		{
-			prompt_partial_id: z.string().describe("Prompt partial ID or slug"),
-			version: z.coerce
-				.number()
-				.positive()
-				.describe("Version number to publish as default"),
-		},
+		PARTIALS_TOOL_SCHEMAS.publishPartial,
 		async (params) => {
 			await service.partials.publishPartial(params.prompt_partial_id, {
 				version: params.version,

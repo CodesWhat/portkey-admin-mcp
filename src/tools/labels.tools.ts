@@ -2,6 +2,68 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { PortkeyService } from "../services/index.js";
 
+const LABELS_TOOL_SCHEMAS = {
+	createPromptLabel: {
+		name: z.string().describe("Name of the label"),
+		organisation_id: z
+			.string()
+			.optional()
+			.describe("Organisation ID to create the label in"),
+		workspace_id: z
+			.string()
+			.optional()
+			.describe("Workspace ID to create the label in"),
+		description: z.string().optional().describe("Description of the label"),
+		color_code: z
+			.string()
+			.regex(/^#[0-9A-Fa-f]{6}$/)
+			.optional()
+			.describe(
+				"Hex format, e.g. '#FF5733'. Optional — omit for default color.",
+			),
+	},
+	listPromptLabels: {
+		organisation_id: z
+			.string()
+			.optional()
+			.describe("Filter by organisation ID"),
+		workspace_id: z.string().optional().describe("Filter by workspace ID"),
+		search: z.string().optional().describe("Search labels by name"),
+		current_page: z.coerce
+			.number()
+			.positive()
+			.optional()
+			.describe("Page number for pagination"),
+		page_size: z.coerce
+			.number()
+			.positive()
+			.max(100)
+			.optional()
+			.describe("Results per page (max 100)"),
+	},
+	getPromptLabel: {
+		label_id: z.string().describe("Label ID to retrieve"),
+		organisation_id: z
+			.string()
+			.optional()
+			.describe("Organisation ID for filtering"),
+		workspace_id: z.string().optional().describe("Workspace ID for filtering"),
+	},
+	updatePromptLabel: {
+		label_id: z.string().describe("Label ID to update"),
+		name: z.string().optional().describe("New name for the label"),
+		description: z.string().optional().describe("New description"),
+		color_code: z
+			.string()
+			.regex(/^#[0-9A-Fa-f]{6}$/)
+			.optional()
+			.describe("New hex color code (e.g., '#FF5733')"),
+	},
+	deletePromptLabel: {
+		label_id: z.string().describe("Label ID to delete"),
+	},
+} as const;
+
 export function registerLabelsTools(
 	server: McpServer,
 	service: PortkeyService,
@@ -10,25 +72,7 @@ export function registerLabelsTools(
 	server.tool(
 		"create_prompt_label",
 		"Create a new prompt label to categorize and organize prompts. Labels can be color-coded and scoped to workspaces or organizations.",
-		{
-			name: z.string().describe("Name of the label"),
-			organisation_id: z
-				.string()
-				.optional()
-				.describe("Organisation ID to create the label in"),
-			workspace_id: z
-				.string()
-				.optional()
-				.describe("Workspace ID to create the label in"),
-			description: z.string().optional().describe("Description of the label"),
-			color_code: z
-				.string()
-				.regex(/^#[0-9A-Fa-f]{6}$/)
-				.optional()
-				.describe(
-					"Hex format, e.g. '#FF5733'. Optional — omit for default color.",
-				),
-		},
+		LABELS_TOOL_SCHEMAS.createPromptLabel,
 		async (params) => {
 			if (!params.organisation_id && !params.workspace_id) {
 				return {
@@ -70,25 +114,7 @@ export function registerLabelsTools(
 	server.tool(
 		"list_prompt_labels",
 		"List all prompt labels in your Portkey organization with optional filtering by workspace, organisation, or search query",
-		{
-			organisation_id: z
-				.string()
-				.optional()
-				.describe("Filter by organisation ID"),
-			workspace_id: z.string().optional().describe("Filter by workspace ID"),
-			search: z.string().optional().describe("Search labels by name"),
-			current_page: z.coerce
-				.number()
-				.positive()
-				.optional()
-				.describe("Page number for pagination"),
-			page_size: z.coerce
-				.number()
-				.positive()
-				.max(100)
-				.optional()
-				.describe("Results per page (max 100)"),
-		},
+		LABELS_TOOL_SCHEMAS.listPromptLabels,
 		async (params) => {
 			const result = await service.labels.listLabels(params);
 			return {
@@ -122,17 +148,7 @@ export function registerLabelsTools(
 	server.tool(
 		"get_prompt_label",
 		"Retrieve detailed information about a specific prompt label",
-		{
-			label_id: z.string().describe("Label ID to retrieve"),
-			organisation_id: z
-				.string()
-				.optional()
-				.describe("Organisation ID for filtering"),
-			workspace_id: z
-				.string()
-				.optional()
-				.describe("Workspace ID for filtering"),
-		},
+		LABELS_TOOL_SCHEMAS.getPromptLabel,
 		async (params) => {
 			const label = await service.labels.getLabel(params.label_id, {
 				organisation_id: params.organisation_id,
@@ -168,16 +184,7 @@ export function registerLabelsTools(
 	server.tool(
 		"update_prompt_label",
 		"Update an existing prompt label's name, description, or color",
-		{
-			label_id: z.string().describe("Label ID to update"),
-			name: z.string().optional().describe("New name for the label"),
-			description: z.string().optional().describe("New description"),
-			color_code: z
-				.string()
-				.regex(/^#[0-9A-Fa-f]{6}$/)
-				.optional()
-				.describe("New hex color code (e.g., '#FF5733')"),
-		},
+		LABELS_TOOL_SCHEMAS.updatePromptLabel,
 		async (params) => {
 			const { label_id, ...updateData } = params;
 			await service.labels.updateLabel(label_id, updateData);
@@ -203,9 +210,7 @@ export function registerLabelsTools(
 	server.tool(
 		"delete_prompt_label",
 		"Delete a prompt label by ID. This action cannot be undone.",
-		{
-			label_id: z.string().describe("Label ID to delete"),
-		},
+		LABELS_TOOL_SCHEMAS.deletePromptLabel,
 		async (params) => {
 			await service.labels.deleteLabel(params.label_id);
 			return {

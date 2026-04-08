@@ -1,6 +1,11 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { PortkeyService } from "../services/index.js";
+import type {
+	RateLimit,
+	UsageLimit,
+	UsageLimitEntity,
+} from "../services/limits.service.js";
 
 // Reusable schema for limit conditions
 const conditionSchema = z.object({
@@ -15,6 +20,218 @@ const conditionSchema = z.object({
 	value: z.string().describe("The value to match against"),
 });
 
+const LIMITS_TOOL_SCHEMAS = {
+	listRateLimits: {
+		workspace_id: z
+			.string()
+			.optional()
+			.describe("Filter rate limits by workspace ID"),
+	},
+	getRateLimit: {
+		id: z.string().describe("The unique identifier of the rate limit"),
+	},
+	createRateLimit: {
+		conditions: z
+			.array(conditionSchema)
+			.describe(
+				"Array of conditions that determine which requests this rate limit applies to",
+			),
+		group_by: z
+			.array(z.string())
+			.describe(
+				"Array of fields to group the rate limit by (e.g., ['virtual_key'], ['api_key', 'user_id'])",
+			),
+		type: z
+			.enum(["requests", "tokens"])
+			.describe("What to rate limit: 'requests' or 'tokens'"),
+		unit: z
+			.enum(["rpm", "rph", "rpd"])
+			.describe(
+				"Time unit: 'rpm' (per minute), 'rph' (per hour), or 'rpd' (per day)",
+			),
+		value: z.coerce
+			.number()
+			.positive()
+			.describe("The maximum allowed value per unit (e.g., 100 rpm)"),
+		name: z.string().optional().describe("Optional name for the rate limit"),
+		workspace_id: z
+			.string()
+			.optional()
+			.describe("Workspace ID to scope the limit to"),
+		organisation_id: z
+			.string()
+			.optional()
+			.describe("Organisation ID to scope the limit to"),
+	},
+	updateRateLimit: {
+		id: z.string().describe("The unique identifier of the rate limit"),
+		name: z.string().optional().describe("New name for the rate limit"),
+		unit: z
+			.enum(["rpm", "rph", "rpd"])
+			.optional()
+			.describe(
+				"New time unit: 'rpm' (per minute), 'rph' (per hour), or 'rpd' (per day)",
+			),
+		value: z.coerce
+			.number()
+			.positive()
+			.optional()
+			.describe("New maximum allowed value per unit"),
+	},
+	deleteRateLimit: {
+		id: z.string().describe("The unique identifier of the rate limit"),
+	},
+	listUsageLimits: {
+		workspace_id: z
+			.string()
+			.optional()
+			.describe("Filter usage limits by workspace ID"),
+	},
+	getUsageLimit: {
+		id: z.string().describe("The unique identifier of the usage limit"),
+	},
+	createUsageLimit: {
+		conditions: z
+			.array(conditionSchema)
+			.describe(
+				"Array of conditions that determine which requests this usage limit applies to",
+			),
+		group_by: z
+			.array(z.string())
+			.describe(
+				"Array of fields to group the usage limit by (e.g., ['virtual_key'], ['api_key', 'user_id'])",
+			),
+		type: z
+			.enum(["cost", "tokens"])
+			.describe("What to limit: 'cost' (in dollars) or 'tokens'"),
+		credit_limit: z.coerce
+			.number()
+			.positive()
+			.describe("The maximum allowed usage (cost in dollars or token count)"),
+		name: z.string().optional().describe("Optional name for the usage limit"),
+		alert_threshold: z.coerce
+			.number()
+			.optional()
+			.describe("Percentage threshold (0-100) at which to send an alert"),
+		periodic_reset: z
+			.enum(["monthly", "weekly"])
+			.optional()
+			.describe("Automatically reset usage counters on this schedule"),
+		workspace_id: z
+			.string()
+			.optional()
+			.describe("Workspace ID to scope the limit to"),
+		organisation_id: z
+			.string()
+			.optional()
+			.describe("Organisation ID to scope the limit to"),
+	},
+	updateUsageLimit: {
+		id: z.string().describe("The unique identifier of the usage limit"),
+		name: z.string().optional().describe("New name for the usage limit"),
+		credit_limit: z.coerce
+			.number()
+			.positive()
+			.optional()
+			.describe("New maximum allowed usage value"),
+		alert_threshold: z.coerce
+			.number()
+			.optional()
+			.describe("New alert threshold percentage (0-100)"),
+		periodic_reset: z
+			.enum(["monthly", "weekly"])
+			.optional()
+			.describe("New periodic reset schedule"),
+		reset_usage_for_value: z
+			.string()
+			.optional()
+			.describe("Reset usage counters for a specific group_by value"),
+	},
+	deleteUsageLimit: {
+		id: z.string().describe("The unique identifier of the usage limit"),
+	},
+	listUsageLimitEntities: {
+		limit_id: z.string().describe("Usage limit policy ID"),
+	},
+	resetUsageLimitEntity: {
+		limit_id: z.string().describe("Usage limit policy ID"),
+		entity_id: z.string().describe("Entity ID to reset usage for"),
+	},
+} as const;
+
+function formatRateLimit(limit: RateLimit): {
+	id: string;
+	name?: string;
+	type: "requests" | "tokens";
+	unit: "rpm" | "rph" | "rpd";
+	value: number;
+	status: string;
+	conditions: RateLimit["conditions"];
+	group_by: string[];
+	workspace_id?: string;
+	organisation_id?: string;
+	created_at: string;
+	last_updated_at: string;
+} {
+	return {
+		id: limit.id,
+		name: limit.name,
+		type: limit.type,
+		unit: limit.unit,
+		value: limit.value,
+		status: limit.status,
+		conditions: limit.conditions,
+		group_by: limit.group_by,
+		workspace_id: limit.workspace_id,
+		organisation_id: limit.organisation_id,
+		created_at: limit.created_at,
+		last_updated_at: limit.last_updated_at,
+	};
+}
+
+function formatUsageLimit(limit: UsageLimit): {
+	id: string;
+	name?: string;
+	type: "cost" | "tokens";
+	credit_limit: number;
+	alert_threshold?: number;
+	periodic_reset?: "monthly" | "weekly";
+	status: string;
+	conditions: UsageLimit["conditions"];
+	group_by: string[];
+	workspace_id?: string;
+	organisation_id?: string;
+	created_at: string;
+	last_updated_at: string;
+} {
+	return {
+		id: limit.id,
+		name: limit.name,
+		type: limit.type,
+		credit_limit: limit.credit_limit,
+		alert_threshold: limit.alert_threshold,
+		periodic_reset: limit.periodic_reset,
+		status: limit.status,
+		conditions: limit.conditions,
+		group_by: limit.group_by,
+		workspace_id: limit.workspace_id,
+		organisation_id: limit.organisation_id,
+		created_at: limit.created_at,
+		last_updated_at: limit.last_updated_at,
+	};
+}
+
+function formatUsageLimitEntity(entity: UsageLimitEntity): UsageLimitEntity {
+	return {
+		id: entity.id,
+		entity_id: entity.entity_id,
+		entity_type: entity.entity_type,
+		usage: entity.usage,
+		limit_id: entity.limit_id,
+		last_reset_at: entity.last_reset_at,
+	};
+}
+
 export function registerLimitsTools(
 	server: McpServer,
 	service: PortkeyService,
@@ -25,19 +242,21 @@ export function registerLimitsTools(
 	server.tool(
 		"list_rate_limits",
 		"Retrieve all rate limits in your Portkey organization. Rate limits control how many requests or tokens can be consumed per time unit (rpm/rph/rpd).",
-		{
-			workspace_id: z
-				.string()
-				.optional()
-				.describe("Filter rate limits by workspace ID"),
-		},
+		LIMITS_TOOL_SCHEMAS.listRateLimits,
 		async (params) => {
 			const result = await service.limits.listRateLimits(params.workspace_id);
 			return {
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(result, null, 2),
+						text: JSON.stringify(
+							{
+								total: result.total,
+								rate_limits: result.data.map(formatRateLimit),
+							},
+							null,
+							2,
+						),
 					},
 				],
 			};
@@ -48,16 +267,14 @@ export function registerLimitsTools(
 	server.tool(
 		"get_rate_limit",
 		"Retrieve detailed information about a specific rate limit by its ID",
-		{
-			id: z.string().describe("The unique identifier of the rate limit"),
-		},
+		LIMITS_TOOL_SCHEMAS.getRateLimit,
 		async (params) => {
 			const result = await service.limits.getRateLimit(params.id);
 			return {
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(result, null, 2),
+						text: JSON.stringify(formatRateLimit(result), null, 2),
 					},
 				],
 			};
@@ -68,39 +285,7 @@ export function registerLimitsTools(
 	server.tool(
 		"create_rate_limit",
 		"Create a new rate limit policy to control request/token consumption per time unit. Requires conditions to match against and group_by to specify how limits are applied.",
-		{
-			conditions: z
-				.array(conditionSchema)
-				.describe(
-					"Array of conditions that determine which requests this rate limit applies to",
-				),
-			group_by: z
-				.array(z.string())
-				.describe(
-					"Array of fields to group the rate limit by (e.g., ['virtual_key'], ['api_key', 'user_id'])",
-				),
-			type: z
-				.enum(["requests", "tokens"])
-				.describe("What to rate limit: 'requests' or 'tokens'"),
-			unit: z
-				.enum(["rpm", "rph", "rpd"])
-				.describe(
-					"Time unit: 'rpm' (per minute), 'rph' (per hour), or 'rpd' (per day)",
-				),
-			value: z.coerce
-				.number()
-				.positive()
-				.describe("The maximum allowed value per unit (e.g., 100 rpm)"),
-			name: z.string().optional().describe("Optional name for the rate limit"),
-			workspace_id: z
-				.string()
-				.optional()
-				.describe("Workspace ID to scope the limit to"),
-			organisation_id: z
-				.string()
-				.optional()
-				.describe("Organisation ID to scope the limit to"),
-		},
+		LIMITS_TOOL_SCHEMAS.createRateLimit,
 		async (params) => {
 			const result = await service.limits.createRateLimit({
 				conditions: params.conditions,
@@ -119,7 +304,7 @@ export function registerLimitsTools(
 						text: JSON.stringify(
 							{
 								message: `Successfully created rate limit${params.name ? ` "${params.name}"` : ""}`,
-								rate_limit: result,
+								rate_limit: formatRateLimit(result),
 							},
 							null,
 							2,
@@ -134,21 +319,7 @@ export function registerLimitsTools(
 	server.tool(
 		"update_rate_limit",
 		"Update an existing rate limit's name, unit, or value",
-		{
-			id: z.string().describe("The unique identifier of the rate limit"),
-			name: z.string().optional().describe("New name for the rate limit"),
-			unit: z
-				.enum(["rpm", "rph", "rpd"])
-				.optional()
-				.describe(
-					"New time unit: 'rpm' (per minute), 'rph' (per hour), or 'rpd' (per day)",
-				),
-			value: z.coerce
-				.number()
-				.positive()
-				.optional()
-				.describe("New maximum allowed value per unit"),
-		},
+		LIMITS_TOOL_SCHEMAS.updateRateLimit,
 		async (params) => {
 			const result = await service.limits.updateRateLimit(params.id, {
 				name: params.name,
@@ -162,7 +333,7 @@ export function registerLimitsTools(
 						text: JSON.stringify(
 							{
 								message: `Successfully updated rate limit "${params.id}"`,
-								rate_limit: result,
+								rate_limit: formatRateLimit(result),
 							},
 							null,
 							2,
@@ -177,9 +348,7 @@ export function registerLimitsTools(
 	server.tool(
 		"delete_rate_limit",
 		"Delete a rate limit by ID. This action cannot be undone.",
-		{
-			id: z.string().describe("The unique identifier of the rate limit"),
-		},
+		LIMITS_TOOL_SCHEMAS.deleteRateLimit,
 		async (params) => {
 			await service.limits.deleteRateLimit(params.id);
 			return {
@@ -206,19 +375,21 @@ export function registerLimitsTools(
 	server.tool(
 		"list_usage_limits",
 		"Retrieve all usage limits in your Portkey organization. Usage limits control how much cost or tokens can be consumed, with optional periodic resets.",
-		{
-			workspace_id: z
-				.string()
-				.optional()
-				.describe("Filter usage limits by workspace ID"),
-		},
+		LIMITS_TOOL_SCHEMAS.listUsageLimits,
 		async (params) => {
 			const result = await service.limits.listUsageLimits(params.workspace_id);
 			return {
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(result, null, 2),
+						text: JSON.stringify(
+							{
+								total: result.total,
+								usage_limits: result.data.map(formatUsageLimit),
+							},
+							null,
+							2,
+						),
 					},
 				],
 			};
@@ -229,16 +400,14 @@ export function registerLimitsTools(
 	server.tool(
 		"get_usage_limit",
 		"Retrieve detailed information about a specific usage limit by its ID",
-		{
-			id: z.string().describe("The unique identifier of the usage limit"),
-		},
+		LIMITS_TOOL_SCHEMAS.getUsageLimit,
 		async (params) => {
 			const result = await service.limits.getUsageLimit(params.id);
 			return {
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(result, null, 2),
+						text: JSON.stringify(formatUsageLimit(result), null, 2),
 					},
 				],
 			};
@@ -249,42 +418,7 @@ export function registerLimitsTools(
 	server.tool(
 		"create_usage_limit",
 		"Create a new usage limit policy to control cost or token consumption. Requires conditions to match against and group_by to specify how limits are applied.",
-		{
-			conditions: z
-				.array(conditionSchema)
-				.describe(
-					"Array of conditions that determine which requests this usage limit applies to",
-				),
-			group_by: z
-				.array(z.string())
-				.describe(
-					"Array of fields to group the usage limit by (e.g., ['virtual_key'], ['api_key', 'user_id'])",
-				),
-			type: z
-				.enum(["cost", "tokens"])
-				.describe("What to limit: 'cost' (in dollars) or 'tokens'"),
-			credit_limit: z.coerce
-				.number()
-				.positive()
-				.describe("The maximum allowed usage (cost in dollars or token count)"),
-			name: z.string().optional().describe("Optional name for the usage limit"),
-			alert_threshold: z.coerce
-				.number()
-				.optional()
-				.describe("Percentage threshold (0-100) at which to send an alert"),
-			periodic_reset: z
-				.enum(["monthly", "weekly"])
-				.optional()
-				.describe("Automatically reset usage counters on this schedule"),
-			workspace_id: z
-				.string()
-				.optional()
-				.describe("Workspace ID to scope the limit to"),
-			organisation_id: z
-				.string()
-				.optional()
-				.describe("Organisation ID to scope the limit to"),
-		},
+		LIMITS_TOOL_SCHEMAS.createUsageLimit,
 		async (params) => {
 			const result = await service.limits.createUsageLimit({
 				conditions: params.conditions,
@@ -304,7 +438,7 @@ export function registerLimitsTools(
 						text: JSON.stringify(
 							{
 								message: `Successfully created usage limit${params.name ? ` "${params.name}"` : ""}`,
-								usage_limit: result,
+								usage_limit: formatUsageLimit(result),
 							},
 							null,
 							2,
@@ -319,27 +453,7 @@ export function registerLimitsTools(
 	server.tool(
 		"update_usage_limit",
 		"Update an existing usage limit's configuration",
-		{
-			id: z.string().describe("The unique identifier of the usage limit"),
-			name: z.string().optional().describe("New name for the usage limit"),
-			credit_limit: z.coerce
-				.number()
-				.positive()
-				.optional()
-				.describe("New maximum allowed usage value"),
-			alert_threshold: z.coerce
-				.number()
-				.optional()
-				.describe("New alert threshold percentage (0-100)"),
-			periodic_reset: z
-				.enum(["monthly", "weekly"])
-				.optional()
-				.describe("New periodic reset schedule"),
-			reset_usage_for_value: z
-				.string()
-				.optional()
-				.describe("Reset usage counters for a specific group_by value"),
-		},
+		LIMITS_TOOL_SCHEMAS.updateUsageLimit,
 		async (params) => {
 			const result = await service.limits.updateUsageLimit(params.id, {
 				name: params.name,
@@ -355,7 +469,7 @@ export function registerLimitsTools(
 						text: JSON.stringify(
 							{
 								message: `Successfully updated usage limit "${params.id}"`,
-								usage_limit: result,
+								usage_limit: formatUsageLimit(result),
 							},
 							null,
 							2,
@@ -370,9 +484,7 @@ export function registerLimitsTools(
 	server.tool(
 		"delete_usage_limit",
 		"Delete a usage limit by ID. This action cannot be undone.",
-		{
-			id: z.string().describe("The unique identifier of the usage limit"),
-		},
+		LIMITS_TOOL_SCHEMAS.deleteUsageLimit,
 		async (params) => {
 			await service.limits.deleteUsageLimit(params.id);
 			return {
@@ -398,9 +510,7 @@ export function registerLimitsTools(
 	server.tool(
 		"list_usage_limit_entities",
 		"List all entities tracked against a usage limit policy, showing current usage per entity",
-		{
-			limit_id: z.string().describe("Usage limit policy ID"),
-		},
+		LIMITS_TOOL_SCHEMAS.listUsageLimitEntities,
 		async (params) => {
 			const result = await service.limits.listUsageLimitEntities(
 				params.limit_id,
@@ -409,7 +519,14 @@ export function registerLimitsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(result, null, 2),
+						text: JSON.stringify(
+							{
+								total: result.total,
+								entities: result.data.map(formatUsageLimitEntity),
+							},
+							null,
+							2,
+						),
 					},
 				],
 			};
@@ -419,10 +536,7 @@ export function registerLimitsTools(
 	server.tool(
 		"reset_usage_limit_entity",
 		"Reset accumulated usage for a specific entity on a usage limit policy",
-		{
-			limit_id: z.string().describe("Usage limit policy ID"),
-			entity_id: z.string().describe("Entity ID to reset usage for"),
-		},
+		LIMITS_TOOL_SCHEMAS.resetUsageLimitEntity,
 		async (params) => {
 			await service.limits.resetUsageLimitEntity(
 				params.limit_id,

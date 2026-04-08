@@ -1,5 +1,9 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import type {
+	GenericGraphAnalyticsResponse,
+	GroupAnalyticsResponse,
+} from "../services/analytics.service.js";
 import type { PortkeyService } from "../services/index.js";
 
 // ==================== Shared Zod Schemas ====================
@@ -113,6 +117,65 @@ const baseAnalyticsSchema = {
 	prompt_slug: z.string().optional().describe("Filter by prompt slug"),
 };
 
+const paginatedAnalyticsSchema = {
+	...baseAnalyticsSchema,
+	current_page: z.coerce
+		.number()
+		.positive()
+		.optional()
+		.describe("Page number for pagination"),
+	page_size: z.coerce
+		.number()
+		.int()
+		.positive()
+		.max(100)
+		.optional()
+		.describe("Results per page (max 100)"),
+};
+
+const analyticsGroupMetadataSchema = {
+	...paginatedAnalyticsSchema,
+	metadata_key: z
+		.string()
+		.describe("The metadata key to group by (e.g., 'env', 'app', 'client_id')"),
+};
+
+function formatGraphAnalytics(
+	summary: Record<string, unknown>,
+	dataPoints: Record<string, unknown>[],
+): {
+	summary: Record<string, unknown>;
+	point_count: number;
+	data_points: Record<string, unknown>[];
+} {
+	return {
+		summary,
+		point_count: dataPoints.length,
+		data_points: dataPoints,
+	};
+}
+
+function formatGenericGraphAnalytics(
+	analytics: GenericGraphAnalyticsResponse,
+): {
+	summary: Record<string, unknown>;
+	point_count: number;
+	data_points: Record<string, unknown>[];
+} {
+	return formatGraphAnalytics(analytics.summary, analytics.data_points);
+}
+
+function formatGroupedAnalytics(
+	analytics: GroupAnalyticsResponse,
+	groupLabel: string,
+): Record<string, unknown> {
+	return {
+		total_groups: analytics.total,
+		group_count: analytics.data.length,
+		[groupLabel]: analytics.data,
+	};
+}
+
 export function registerAnalyticsTools(
 	server: McpServer,
 	service: PortkeyService,
@@ -125,23 +188,23 @@ export function registerAnalyticsTools(
 		baseAnalyticsSchema,
 		async (params) => {
 			const analytics = await service.analytics.getCostAnalytics(params);
+			const dataPoints = analytics.data_points.map((point) => ({
+				timestamp: point.timestamp,
+				total_cost: point.total,
+				average_cost: point.avg,
+			}));
 			return {
 				content: [
 					{
 						type: "text",
 						text: JSON.stringify(
-							{
-								summary: {
+							formatGraphAnalytics(
+								{
 									total_cost: analytics.summary.total,
 									average_cost_per_request: analytics.summary.avg,
 								},
-								data_points: analytics.data_points.map((point) => ({
-									timestamp: point.timestamp,
-									total_cost: point.total,
-									average_cost: point.avg,
-								})),
-								object: analytics.object,
-							},
+								dataPoints,
+							),
 							null,
 							2,
 						),
@@ -159,25 +222,25 @@ export function registerAnalyticsTools(
 		baseAnalyticsSchema,
 		async (params) => {
 			const analytics = await service.analytics.getRequestAnalytics(params);
+			const dataPoints = analytics.data_points.map((point) => ({
+				timestamp: point.timestamp,
+				total: point.total,
+				success: point.success,
+				failed: point.failed,
+			}));
 			return {
 				content: [
 					{
 						type: "text",
 						text: JSON.stringify(
-							{
-								summary: {
+							formatGraphAnalytics(
+								{
 									total_requests: analytics.summary.total,
 									successful_requests: analytics.summary.success,
 									failed_requests: analytics.summary.failed,
 								},
-								data_points: analytics.data_points.map((point) => ({
-									timestamp: point.timestamp,
-									total: point.total,
-									success: point.success,
-									failed: point.failed,
-								})),
-								object: analytics.object,
-							},
+								dataPoints,
+							),
 							null,
 							2,
 						),
@@ -193,25 +256,25 @@ export function registerAnalyticsTools(
 		baseAnalyticsSchema,
 		async (params) => {
 			const analytics = await service.analytics.getTokenAnalytics(params);
+			const dataPoints = analytics.data_points.map((point) => ({
+				timestamp: point.timestamp,
+				total: point.total,
+				prompt: point.prompt,
+				completion: point.completion,
+			}));
 			return {
 				content: [
 					{
 						type: "text",
 						text: JSON.stringify(
-							{
-								summary: {
+							formatGraphAnalytics(
+								{
 									total_tokens: analytics.summary.total,
 									prompt_tokens: analytics.summary.prompt,
 									completion_tokens: analytics.summary.completion,
 								},
-								data_points: analytics.data_points.map((point) => ({
-									timestamp: point.timestamp,
-									total: point.total,
-									prompt: point.prompt,
-									completion: point.completion,
-								})),
-								object: analytics.object,
-							},
+								dataPoints,
+							),
 							null,
 							2,
 						),
@@ -227,27 +290,27 @@ export function registerAnalyticsTools(
 		baseAnalyticsSchema,
 		async (params) => {
 			const analytics = await service.analytics.getLatencyAnalytics(params);
+			const dataPoints = analytics.data_points.map((point) => ({
+				timestamp: point.timestamp,
+				avg: point.avg,
+				p50: point.p50,
+				p90: point.p90,
+				p99: point.p99,
+			}));
 			return {
 				content: [
 					{
 						type: "text",
 						text: JSON.stringify(
-							{
-								summary: {
+							formatGraphAnalytics(
+								{
 									avg_latency_ms: analytics.summary.avg,
 									p50_latency_ms: analytics.summary.p50,
 									p90_latency_ms: analytics.summary.p90,
 									p99_latency_ms: analytics.summary.p99,
 								},
-								data_points: analytics.data_points.map((point) => ({
-									timestamp: point.timestamp,
-									avg: point.avg,
-									p50: point.p50,
-									p90: point.p90,
-									p99: point.p99,
-								})),
-								object: analytics.object,
-							},
+								dataPoints,
+							),
 							null,
 							2,
 						),
@@ -263,21 +326,21 @@ export function registerAnalyticsTools(
 		baseAnalyticsSchema,
 		async (params) => {
 			const analytics = await service.analytics.getErrorAnalytics(params);
+			const dataPoints = analytics.data_points.map((point) => ({
+				timestamp: point.timestamp,
+				total_errors: point.total,
+			}));
 			return {
 				content: [
 					{
 						type: "text",
 						text: JSON.stringify(
-							{
-								summary: {
+							formatGraphAnalytics(
+								{
 									total_errors: analytics.summary.total,
 								},
-								data_points: analytics.data_points.map((point) => ({
-									timestamp: point.timestamp,
-									total_errors: point.total,
-								})),
-								object: analytics.object,
-							},
+								dataPoints,
+							),
 							null,
 							2,
 						),
@@ -293,21 +356,21 @@ export function registerAnalyticsTools(
 		baseAnalyticsSchema,
 		async (params) => {
 			const analytics = await service.analytics.getErrorRateAnalytics(params);
+			const dataPoints = analytics.data_points.map((point) => ({
+				timestamp: point.timestamp,
+				error_rate_percent: point.rate,
+			}));
 			return {
 				content: [
 					{
 						type: "text",
 						text: JSON.stringify(
-							{
-								summary: {
+							formatGraphAnalytics(
+								{
 									error_rate_percent: analytics.summary.rate,
 								},
-								data_points: analytics.data_points.map((point) => ({
-									timestamp: point.timestamp,
-									error_rate_percent: point.rate,
-								})),
-								object: analytics.object,
-							},
+								dataPoints,
+							),
 							null,
 							2,
 						),
@@ -325,23 +388,23 @@ export function registerAnalyticsTools(
 		baseAnalyticsSchema,
 		async (params) => {
 			const analytics = await service.analytics.getCacheHitLatency(params);
+			const dataPoints = analytics.data_points.map((point) => ({
+				timestamp: point.timestamp,
+				total: point.total,
+				avg: point.avg,
+			}));
 			return {
 				content: [
 					{
 						type: "text",
 						text: JSON.stringify(
-							{
-								summary: {
+							formatGraphAnalytics(
+								{
 									total_latency: analytics.summary.total,
 									avg_latency: analytics.summary.avg,
 								},
-								data_points: analytics.data_points.map((point) => ({
-									timestamp: point.timestamp,
-									total: point.total,
-									avg: point.avg,
-								})),
-								object: analytics.object,
-							},
+								dataPoints,
+							),
 							null,
 							2,
 						),
@@ -357,25 +420,25 @@ export function registerAnalyticsTools(
 		baseAnalyticsSchema,
 		async (params) => {
 			const analytics = await service.analytics.getCacheHitRate(params);
+			const dataPoints = analytics.data_points.map((point) => ({
+				timestamp: point.timestamp,
+				rate: point.rate,
+				hits: point.hits,
+				misses: point.misses,
+			}));
 			return {
 				content: [
 					{
 						type: "text",
 						text: JSON.stringify(
-							{
-								summary: {
+							formatGraphAnalytics(
+								{
 									hit_rate: analytics.summary.rate,
 									total_hits: analytics.summary.total_hits,
 									total_misses: analytics.summary.total_misses,
 								},
-								data_points: analytics.data_points.map((point) => ({
-									timestamp: point.timestamp,
-									rate: point.rate,
-									hits: point.hits,
-									misses: point.misses,
-								})),
-								object: analytics.object,
-							},
+								dataPoints,
+							),
 							null,
 							2,
 						),
@@ -393,23 +456,23 @@ export function registerAnalyticsTools(
 		baseAnalyticsSchema,
 		async (params) => {
 			const analytics = await service.analytics.getUsersAnalytics(params);
+			const dataPoints = analytics.data_points.map((point) => ({
+				timestamp: point.timestamp,
+				active_users: point.active_users,
+				new_users: point.new_users,
+			}));
 			return {
 				content: [
 					{
 						type: "text",
 						text: JSON.stringify(
-							{
-								summary: {
+							formatGraphAnalytics(
+								{
 									total_active_users: analytics.summary.total_active_users,
 									total_new_users: analytics.summary.total_new_users,
 								},
-								data_points: analytics.data_points.map((point) => ({
-									timestamp: point.timestamp,
-									active_users: point.active_users,
-									new_users: point.new_users,
-								})),
-								object: analytics.object,
-							},
+								dataPoints,
+							),
 							null,
 							2,
 						),
@@ -428,7 +491,16 @@ export function registerAnalyticsTools(
 		async (params) => {
 			const analytics = await service.analytics.getErrorStacksAnalytics(params);
 			return {
-				content: [{ type: "text", text: JSON.stringify(analytics, null, 2) }],
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							formatGenericGraphAnalytics(analytics),
+							null,
+							2,
+						),
+					},
+				],
 			};
 		},
 	);
@@ -441,7 +513,16 @@ export function registerAnalyticsTools(
 			const analytics =
 				await service.analytics.getErrorStatusCodesAnalytics(params);
 			return {
-				content: [{ type: "text", text: JSON.stringify(analytics, null, 2) }],
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							formatGenericGraphAnalytics(analytics),
+							null,
+							2,
+						),
+					},
+				],
 			};
 		},
 	);
@@ -454,7 +535,16 @@ export function registerAnalyticsTools(
 			const analytics =
 				await service.analytics.getUserRequestsAnalytics(params);
 			return {
-				content: [{ type: "text", text: JSON.stringify(analytics, null, 2) }],
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							formatGenericGraphAnalytics(analytics),
+							null,
+							2,
+						),
+					},
+				],
 			};
 		},
 	);
@@ -467,7 +557,16 @@ export function registerAnalyticsTools(
 			const analytics =
 				await service.analytics.getRescuedRequestsAnalytics(params);
 			return {
-				content: [{ type: "text", text: JSON.stringify(analytics, null, 2) }],
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							formatGenericGraphAnalytics(analytics),
+							null,
+							2,
+						),
+					},
+				],
 			};
 		},
 	);
@@ -479,7 +578,16 @@ export function registerAnalyticsTools(
 		async (params) => {
 			const analytics = await service.analytics.getFeedbackAnalytics(params);
 			return {
-				content: [{ type: "text", text: JSON.stringify(analytics, null, 2) }],
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							formatGenericGraphAnalytics(analytics),
+							null,
+							2,
+						),
+					},
+				],
 			};
 		},
 	);
@@ -492,7 +600,16 @@ export function registerAnalyticsTools(
 			const analytics =
 				await service.analytics.getFeedbackModelsAnalytics(params);
 			return {
-				content: [{ type: "text", text: JSON.stringify(analytics, null, 2) }],
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							formatGenericGraphAnalytics(analytics),
+							null,
+							2,
+						),
+					},
+				],
 			};
 		},
 	);
@@ -505,7 +622,16 @@ export function registerAnalyticsTools(
 			const analytics =
 				await service.analytics.getFeedbackScoresAnalytics(params);
 			return {
-				content: [{ type: "text", text: JSON.stringify(analytics, null, 2) }],
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							formatGenericGraphAnalytics(analytics),
+							null,
+							2,
+						),
+					},
+				],
 			};
 		},
 	);
@@ -518,28 +644,21 @@ export function registerAnalyticsTools(
 			const analytics =
 				await service.analytics.getFeedbackWeightedAnalytics(params);
 			return {
-				content: [{ type: "text", text: JSON.stringify(analytics, null, 2) }],
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							formatGenericGraphAnalytics(analytics),
+							null,
+							2,
+						),
+					},
+				],
 			};
 		},
 	);
 
 	// ==================== Analytics Groups (Paginated) ====================
-
-	const paginatedAnalyticsSchema = {
-		...baseAnalyticsSchema,
-		current_page: z.coerce
-			.number()
-			.positive()
-			.optional()
-			.describe("Page number for pagination"),
-		page_size: z.coerce
-			.number()
-			.int()
-			.positive()
-			.max(100)
-			.optional()
-			.describe("Results per page (max 100)"),
-	};
 
 	server.tool(
 		"get_analytics_group_users",
@@ -548,7 +667,16 @@ export function registerAnalyticsTools(
 		async (params) => {
 			const analytics = await service.analytics.getAnalyticsGroupUsers(params);
 			return {
-				content: [{ type: "text", text: JSON.stringify(analytics, null, 2) }],
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							formatGroupedAnalytics(analytics, "users"),
+							null,
+							2,
+						),
+					},
+				],
 			};
 		},
 	);
@@ -560,7 +688,16 @@ export function registerAnalyticsTools(
 		async (params) => {
 			const analytics = await service.analytics.getAnalyticsGroupModels(params);
 			return {
-				content: [{ type: "text", text: JSON.stringify(analytics, null, 2) }],
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							formatGroupedAnalytics(analytics, "models"),
+							null,
+							2,
+						),
+					},
+				],
 			};
 		},
 	);
@@ -568,14 +705,7 @@ export function registerAnalyticsTools(
 	server.tool(
 		"get_analytics_group_metadata",
 		"Retrieve analytics data grouped by a specific metadata key with pagination",
-		{
-			...paginatedAnalyticsSchema,
-			metadata_key: z
-				.string()
-				.describe(
-					"The metadata key to group by (e.g., 'env', 'app', 'client_id')",
-				),
-		},
+		analyticsGroupMetadataSchema,
 		async (params) => {
 			const { metadata_key, ...analyticsParams } = params;
 			const analytics = await service.analytics.getAnalyticsGroupMetadata(
@@ -583,7 +713,16 @@ export function registerAnalyticsTools(
 				analyticsParams,
 			);
 			return {
-				content: [{ type: "text", text: JSON.stringify(analytics, null, 2) }],
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify(
+							formatGroupedAnalytics(analytics, "metadata_groups"),
+							null,
+							2,
+						),
+					},
+				],
 			};
 		},
 	);

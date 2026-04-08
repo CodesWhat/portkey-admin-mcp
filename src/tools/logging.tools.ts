@@ -27,6 +27,147 @@ const logExportFieldSchema = z.enum([
 	"metadata",
 ]);
 
+const LOGGING_TOOL_SCHEMAS = {
+	insertLog: {
+		request_url: z
+			.string()
+			.optional()
+			.describe("The endpoint URL being called"),
+		request_provider: z
+			.string()
+			.optional()
+			.describe("AI provider name (e.g., 'openai', 'anthropic')"),
+		request_method: z
+			.string()
+			.optional()
+			.default("post")
+			.describe("HTTP method used (defaults to 'post')"),
+		request_headers: z
+			.record(z.string(), z.string())
+			.optional()
+			.describe("Request headers as key-value pairs"),
+		request_body: z
+			.record(z.string(), z.unknown())
+			.optional()
+			.describe("Request payload/body"),
+		response_status: z.coerce
+			.number()
+			.optional()
+			.default(200)
+			.describe("HTTP response status code (defaults to 200)"),
+		response_headers: z
+			.record(z.string(), z.string())
+			.optional()
+			.describe("Response headers as key-value pairs"),
+		response_body: z
+			.record(z.string(), z.unknown())
+			.optional()
+			.describe("Response payload/body"),
+		response_time: z.coerce
+			.number()
+			.optional()
+			.describe("Response latency in milliseconds"),
+		streaming_mode: z
+			.boolean()
+			.optional()
+			.default(false)
+			.describe("Whether the response was streamed"),
+		metadata_organization: z
+			.string()
+			.optional()
+			.describe("Organization identifier for the log"),
+		metadata_user: z
+			.string()
+			.optional()
+			.describe("User identifier for the log"),
+		metadata_trace_id: z
+			.string()
+			.optional()
+			.describe("Trace ID for distributed tracing"),
+		metadata_span_id: z.string().optional().describe("Span ID for tracing"),
+		metadata_span_name: z.string().optional().describe("Span name for tracing"),
+		metadata_parent_span_id: z
+			.string()
+			.optional()
+			.describe("Parent span ID for tracing"),
+		metadata_custom: z
+			.record(z.string(), z.unknown())
+			.optional()
+			.describe("Additional custom metadata key-value pairs"),
+	},
+	createLogExport: {
+		workspace_id: z.string().optional().describe("Workspace ID for the export"),
+		description: z
+			.string()
+			.optional()
+			.describe("Human-readable description for the export job"),
+		time_min: z
+			.string()
+			.describe(
+				"Minimum time filter in date format (e.g., '2024-01-01' or ISO 8601)",
+			),
+		time_max: z
+			.string()
+			.describe(
+				"Maximum time filter in date format (e.g., '2024-01-31' or ISO 8601)",
+			),
+		cost_min: z.coerce.number().optional().describe("Minimum cost filter"),
+		cost_max: z.coerce.number().optional().describe("Maximum cost filter"),
+		total_units_min: z.coerce
+			.number()
+			.optional()
+			.describe("Minimum total units (tokens) filter"),
+		total_units_max: z.coerce
+			.number()
+			.optional()
+			.describe("Maximum total units (tokens) filter"),
+		ai_model: z
+			.array(z.string())
+			.optional()
+			.describe("Filter by specific AI model names"),
+		requested_fields: z
+			.array(logExportFieldSchema)
+			.describe(
+				"Fields to include in export: id, trace_id, created_at, request, response, is_success, ai_org, ai_model, req_units, res_units, total_units, request_url, cost, cost_currency, response_time, response_status_code, mode, config, prompt_slug, metadata",
+			),
+	},
+	listLogExports: {
+		workspace_id: z
+			.string()
+			.describe("Workspace ID to list exports for (required)"),
+	},
+	getLogExport: {
+		export_id: z.string().describe("The unique ID of the log export"),
+	},
+	startLogExport: {
+		export_id: z.string().describe("The unique ID of the log export to start"),
+	},
+	cancelLogExport: {
+		export_id: z.string().describe("The unique ID of the log export to cancel"),
+	},
+	downloadLogExport: {
+		export_id: z
+			.string()
+			.describe("The unique ID of the log export to download"),
+	},
+	updateLogExport: {
+		export_id: z.string().describe("The unique ID of the log export to update"),
+		workspace_id: z.string().optional().describe("Workspace ID for the export"),
+		time_of_generation_max: z
+			.string()
+			.optional()
+			.describe(
+				"Maximum time filter in date format (e.g., '2024-07-25' or ISO 8601)",
+			),
+		requested_fields: z
+			.array(logExportFieldSchema)
+			.optional()
+			.describe(
+				"Fields to include in export: id, trace_id, created_at, request, response, is_success, ai_org, ai_model, req_units, res_units, total_units, request_url, cost, cost_currency, response_time, response_status_code, mode, config, prompt_slug, metadata",
+			),
+	},
+} as const;
+
 export function registerLoggingTools(
 	server: McpServer,
 	service: PortkeyService,
@@ -35,76 +176,7 @@ export function registerLoggingTools(
 	server.tool(
 		"insert_log",
 		"Insert a log entry (or multiple entries) into Portkey for tracking AI requests and responses. request_provider must match a configured integration (e.g. 'openai', 'anthropic'). Use metadata_span_id and metadata_parent_span_id to create trace hierarchies.",
-		{
-			request_url: z
-				.string()
-				.optional()
-				.describe("The endpoint URL being called"),
-			request_provider: z
-				.string()
-				.optional()
-				.describe("AI provider name (e.g., 'openai', 'anthropic')"),
-			request_method: z
-				.string()
-				.optional()
-				.default("post")
-				.describe("HTTP method used (defaults to 'post')"),
-			request_headers: z
-				.record(z.string(), z.string())
-				.optional()
-				.describe("Request headers as key-value pairs"),
-			request_body: z
-				.record(z.string(), z.unknown())
-				.optional()
-				.describe("Request payload/body"),
-			response_status: z.coerce
-				.number()
-				.optional()
-				.default(200)
-				.describe("HTTP response status code (defaults to 200)"),
-			response_headers: z
-				.record(z.string(), z.string())
-				.optional()
-				.describe("Response headers as key-value pairs"),
-			response_body: z
-				.record(z.string(), z.unknown())
-				.optional()
-				.describe("Response payload/body"),
-			response_time: z.coerce
-				.number()
-				.optional()
-				.describe("Response latency in milliseconds"),
-			streaming_mode: z
-				.boolean()
-				.optional()
-				.default(false)
-				.describe("Whether the response was streamed"),
-			metadata_organization: z
-				.string()
-				.optional()
-				.describe("Organization identifier for the log"),
-			metadata_user: z
-				.string()
-				.optional()
-				.describe("User identifier for the log"),
-			metadata_trace_id: z
-				.string()
-				.optional()
-				.describe("Trace ID for distributed tracing"),
-			metadata_span_id: z.string().optional().describe("Span ID for tracing"),
-			metadata_span_name: z
-				.string()
-				.optional()
-				.describe("Span name for tracing"),
-			metadata_parent_span_id: z
-				.string()
-				.optional()
-				.describe("Parent span ID for tracing"),
-			metadata_custom: z
-				.record(z.string(), z.unknown())
-				.optional()
-				.describe("Additional custom metadata key-value pairs"),
-		},
+		LOGGING_TOOL_SCHEMAS.insertLog,
 		async (params) => {
 			const entry = {
 				request: {
@@ -156,45 +228,7 @@ export function registerLoggingTools(
 	server.tool(
 		"create_log_export",
 		"Create a new log export job to export logs matching specified filters. time_min/time_max accept ISO 8601 format ('2024-01-01T00:00:00Z'). requested_fields selects which columns to include.",
-		{
-			workspace_id: z
-				.string()
-				.optional()
-				.describe("Workspace ID for the export"),
-			description: z
-				.string()
-				.optional()
-				.describe("Human-readable description for the export job"),
-			time_min: z
-				.string()
-				.describe(
-					"Minimum time filter in date format (e.g., '2024-01-01' or ISO 8601)",
-				),
-			time_max: z
-				.string()
-				.describe(
-					"Maximum time filter in date format (e.g., '2024-01-31' or ISO 8601)",
-				),
-			cost_min: z.coerce.number().optional().describe("Minimum cost filter"),
-			cost_max: z.coerce.number().optional().describe("Maximum cost filter"),
-			total_units_min: z.coerce
-				.number()
-				.optional()
-				.describe("Minimum total units (tokens) filter"),
-			total_units_max: z.coerce
-				.number()
-				.optional()
-				.describe("Maximum total units (tokens) filter"),
-			ai_model: z
-				.array(z.string())
-				.optional()
-				.describe("Filter by specific AI model names"),
-			requested_fields: z
-				.array(logExportFieldSchema)
-				.describe(
-					"Fields to include in export: id, trace_id, created_at, request, response, is_success, ai_org, ai_model, req_units, res_units, total_units, request_url, cost, cost_currency, response_time, response_status_code, mode, config, prompt_slug, metadata",
-				),
-		},
+		LOGGING_TOOL_SCHEMAS.createLogExport,
 		async (params) => {
 			const result = await service.logging.createLogExport({
 				workspace_id: params.workspace_id,
@@ -235,11 +269,7 @@ export function registerLoggingTools(
 	server.tool(
 		"list_log_exports",
 		"List all log export jobs for a workspace",
-		{
-			workspace_id: z
-				.string()
-				.describe("Workspace ID to list exports for (required)"),
-		},
+		LOGGING_TOOL_SCHEMAS.listLogExports,
 		async (params) => {
 			const result = await service.logging.listLogExports({
 				workspace_id: params.workspace_id,
@@ -277,9 +307,7 @@ export function registerLoggingTools(
 	server.tool(
 		"get_log_export",
 		"Get details of a specific log export by its ID",
-		{
-			export_id: z.string().describe("The unique ID of the log export"),
-		},
+		LOGGING_TOOL_SCHEMAS.getLogExport,
 		async (params) => {
 			const result = await service.logging.getLogExport(params.export_id);
 
@@ -313,11 +341,7 @@ export function registerLoggingTools(
 	server.tool(
 		"start_log_export",
 		"Start a log export job that was previously created",
-		{
-			export_id: z
-				.string()
-				.describe("The unique ID of the log export to start"),
-		},
+		LOGGING_TOOL_SCHEMAS.startLogExport,
 		async (params) => {
 			const result = await service.logging.startLogExport(params.export_id);
 
@@ -344,11 +368,7 @@ export function registerLoggingTools(
 	server.tool(
 		"cancel_log_export",
 		"Cancel a running log export job",
-		{
-			export_id: z
-				.string()
-				.describe("The unique ID of the log export to cancel"),
-		},
+		LOGGING_TOOL_SCHEMAS.cancelLogExport,
 		async (params) => {
 			const result = await service.logging.cancelLogExport(params.export_id);
 
@@ -375,11 +395,7 @@ export function registerLoggingTools(
 	server.tool(
 		"download_log_export",
 		"Get the download URL for a completed log export. Export must be in 'completed' status. Workflow: create_log_export -> start_log_export -> poll get_log_export until completed -> download_log_export.",
-		{
-			export_id: z
-				.string()
-				.describe("The unique ID of the log export to download"),
-		},
+		LOGGING_TOOL_SCHEMAS.downloadLogExport,
 		async (params) => {
 			const result = await service.logging.downloadLogExport(params.export_id);
 
@@ -406,27 +422,7 @@ export function registerLoggingTools(
 	server.tool(
 		"update_log_export",
 		"Update an existing log export configuration. Only time_of_generation_max, requested_fields, and workspace_id can be modified after creation.",
-		{
-			export_id: z
-				.string()
-				.describe("The unique ID of the log export to update"),
-			workspace_id: z
-				.string()
-				.optional()
-				.describe("Workspace ID for the export"),
-			time_of_generation_max: z
-				.string()
-				.optional()
-				.describe(
-					"Maximum time filter in date format (e.g., '2024-07-25' or ISO 8601)",
-				),
-			requested_fields: z
-				.array(logExportFieldSchema)
-				.optional()
-				.describe(
-					"Fields to include in export: id, trace_id, created_at, request, response, is_success, ai_org, ai_model, req_units, res_units, total_units, request_url, cost, cost_currency, response_time, response_status_code, mode, config, prompt_slug, metadata",
-				),
-		},
+		LOGGING_TOOL_SCHEMAS.updateLogExport,
 		async (params) => {
 			const updateData: {
 				filters?: { time_of_generation_max?: string };

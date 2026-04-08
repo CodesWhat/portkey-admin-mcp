@@ -3,6 +3,213 @@ import { z } from "zod";
 import { buildRateLimitsRpm, buildUsageLimits } from "../lib/limits.js";
 import type { PortkeyService } from "../services/index.js";
 
+const KEYS_TOOL_SCHEMAS = {
+	listVirtualKeys: {},
+	createVirtualKey: {
+		name: z.string().describe("Display name for the virtual key"),
+		provider: z
+			.string()
+			.describe(
+				"Provider slug (e.g., 'openai', 'anthropic', 'azure-openai', 'google')",
+			),
+		key: z.string().describe("The actual provider API key to store"),
+		note: z
+			.string()
+			.optional()
+			.describe("Optional note or description for this key"),
+		workspace_id: z
+			.string()
+			.optional()
+			.describe("Workspace ID to create the key in"),
+		api_version: z
+			.string()
+			.optional()
+			.describe("API version (for Azure OpenAI)"),
+		resource_name: z
+			.string()
+			.optional()
+			.describe("Resource name (for Azure OpenAI)"),
+		deployment_name: z
+			.string()
+			.optional()
+			.describe("Deployment name (for Azure OpenAI)"),
+		credit_limit: z.coerce
+			.number()
+			.positive()
+			.optional()
+			.describe("Maximum usage cost threshold"),
+		alert_threshold: z.coerce
+			.number()
+			.min(0)
+			.max(100)
+			.optional()
+			.describe(
+				"Percentage of credit_limit at which to send alert emails (0-100)",
+			),
+		rate_limit_rpm: z.coerce
+			.number()
+			.positive()
+			.optional()
+			.describe("Requests per minute limit"),
+	},
+	getVirtualKey: {
+		slug: z
+			.string()
+			.describe("The unique slug identifier of the virtual key to retrieve"),
+	},
+	updateVirtualKey: {
+		slug: z.string().describe("The slug of the virtual key to update"),
+		name: z.string().optional().describe("New display name for the key"),
+		key: z.string().optional().describe("New provider API key value"),
+		note: z.string().optional().describe("New note or description"),
+		credit_limit: z.coerce
+			.number()
+			.positive()
+			.optional()
+			.describe("New credit limit for usage"),
+		alert_threshold: z.coerce
+			.number()
+			.min(0)
+			.max(100)
+			.optional()
+			.describe("New alert threshold percentage (0-100)"),
+		rate_limit_rpm: z.coerce
+			.number()
+			.positive()
+			.optional()
+			.describe("New rate limit in requests per minute"),
+	},
+	deleteVirtualKey: {
+		slug: z.string().describe("The slug of the virtual key to delete"),
+	},
+	createApiKey: {
+		type: z
+			.enum(["organisation", "workspace"])
+			.describe(
+				"Key type: 'organisation' for org-wide access or 'workspace' for workspace-scoped",
+			),
+		sub_type: z
+			.enum(["user", "service"])
+			.describe(
+				"Sub-type: 'user' for user-associated keys or 'service' for service accounts",
+			),
+		name: z.string().describe("Display name for the API key"),
+		description: z
+			.string()
+			.optional()
+			.describe("Optional description for the key"),
+		workspace_id: z
+			.string()
+			.optional()
+			.describe("Workspace ID (required for workspace-type keys)"),
+		user_id: z
+			.string()
+			.optional()
+			.describe("User ID (required for user sub-type keys)"),
+		scopes: z
+			.array(z.string())
+			.describe(
+				"Permission scopes for the key (e.g., ['logs.read', 'analytics.read'])",
+			),
+		credit_limit: z.coerce
+			.number()
+			.positive()
+			.optional()
+			.describe("Credit limit for usage"),
+		alert_threshold: z.coerce
+			.number()
+			.min(0)
+			.max(100)
+			.optional()
+			.describe("Alert threshold percentage (0-100)"),
+		rate_limit_rpm: z.coerce
+			.number()
+			.positive()
+			.optional()
+			.describe("Rate limit in requests per minute"),
+		default_config_id: z
+			.string()
+			.optional()
+			.describe("Default configuration ID to use with this key"),
+		default_metadata: z
+			.record(z.string(), z.string())
+			.optional()
+			.describe("Default metadata key-value pairs"),
+		alert_emails: z
+			.array(z.string())
+			.optional()
+			.describe("Email addresses for alerts"),
+		expires_at: z
+			.string()
+			.optional()
+			.describe("Expiration date in ISO 8601 format"),
+	},
+	listApiKeys: {
+		page_size: z.coerce
+			.number()
+			.positive()
+			.max(100)
+			.optional()
+			.describe("Number of results per page (max 100)"),
+		current_page: z.coerce
+			.number()
+			.positive()
+			.optional()
+			.describe("Page number for pagination"),
+		workspace_id: z.string().optional().describe("Filter by workspace ID"),
+	},
+	getApiKey: {
+		id: z.string().uuid().describe("The UUID of the API key to retrieve"),
+	},
+	updateApiKey: {
+		id: z.string().uuid().describe("The UUID of the API key to update"),
+		name: z.string().optional().describe("New display name for the key"),
+		description: z.string().optional().describe("New description for the key"),
+		scopes: z
+			.array(z.string())
+			.optional()
+			.describe("New permission scopes for the key"),
+		credit_limit: z.coerce
+			.number()
+			.positive()
+			.optional()
+			.describe("New credit limit for usage"),
+		alert_threshold: z.coerce
+			.number()
+			.min(0)
+			.max(100)
+			.optional()
+			.describe("New alert threshold percentage (0-100)"),
+		rate_limit_rpm: z.coerce
+			.number()
+			.positive()
+			.optional()
+			.describe("New rate limit in requests per minute"),
+		default_config_id: z
+			.string()
+			.optional()
+			.describe("New default configuration ID"),
+		default_metadata: z
+			.record(z.string(), z.string())
+			.optional()
+			.describe("New default metadata key-value pairs"),
+		alert_emails: z
+			.array(z.string())
+			.optional()
+			.describe("New email addresses for alerts"),
+		expires_at: z
+			.string()
+			.nullable()
+			.optional()
+			.describe(
+				"New expiration date in ISO 8601 format, or null to remove expiration",
+			),
+	},
+	deleteApiKey: {
+		id: z.string().uuid().describe("The UUID of the API key to delete"),
+	},
+} as const;
+
 export function registerKeysTools(
 	server: McpServer,
 	service: PortkeyService,
@@ -11,7 +218,7 @@ export function registerKeysTools(
 	server.tool(
 		"list_virtual_keys",
 		"Retrieve all virtual keys in your Portkey organization, including their usage limits, rate limits, and status",
-		{},
+		KEYS_TOOL_SCHEMAS.listVirtualKeys,
 		async () => {
 			const virtualKeys = await service.keys.listVirtualKeys();
 			return {
@@ -57,53 +264,7 @@ export function registerKeysTools(
 	server.tool(
 		"create_virtual_key",
 		"Create a new virtual key for a provider (e.g., openai, anthropic). Virtual keys securely store provider API keys.",
-		{
-			name: z.string().describe("Display name for the virtual key"),
-			provider: z
-				.string()
-				.describe(
-					"Provider slug (e.g., 'openai', 'anthropic', 'azure-openai', 'google')",
-				),
-			key: z.string().describe("The actual provider API key to store"),
-			note: z
-				.string()
-				.optional()
-				.describe("Optional note or description for this key"),
-			workspace_id: z
-				.string()
-				.optional()
-				.describe("Workspace ID to create the key in"),
-			api_version: z
-				.string()
-				.optional()
-				.describe("API version (for Azure OpenAI)"),
-			resource_name: z
-				.string()
-				.optional()
-				.describe("Resource name (for Azure OpenAI)"),
-			deployment_name: z
-				.string()
-				.optional()
-				.describe("Deployment name (for Azure OpenAI)"),
-			credit_limit: z.coerce
-				.number()
-				.positive()
-				.optional()
-				.describe("Maximum usage cost threshold"),
-			alert_threshold: z.coerce
-				.number()
-				.min(0)
-				.max(100)
-				.optional()
-				.describe(
-					"Percentage of credit_limit at which to send alert emails (0-100)",
-				),
-			rate_limit_rpm: z.coerce
-				.number()
-				.positive()
-				.optional()
-				.describe("Requests per minute limit"),
-		},
+		KEYS_TOOL_SCHEMAS.createVirtualKey,
 		async (params) => {
 			const result = await service.keys.createVirtualKey({
 				name: params.name,
@@ -146,11 +307,7 @@ export function registerKeysTools(
 	server.tool(
 		"get_virtual_key",
 		"Retrieve detailed information about a specific virtual key by its slug",
-		{
-			slug: z
-				.string()
-				.describe("The unique slug identifier of the virtual key to retrieve"),
-		},
+		KEYS_TOOL_SCHEMAS.getVirtualKey,
 		async (params) => {
 			const virtualKey = await service.keys.getVirtualKey(params.slug);
 			return {
@@ -193,28 +350,7 @@ export function registerKeysTools(
 	server.tool(
 		"update_virtual_key",
 		"Update an existing virtual key's name, API key, note, or limits",
-		{
-			slug: z.string().describe("The slug of the virtual key to update"),
-			name: z.string().optional().describe("New display name for the key"),
-			key: z.string().optional().describe("New provider API key value"),
-			note: z.string().optional().describe("New note or description"),
-			credit_limit: z.coerce
-				.number()
-				.positive()
-				.optional()
-				.describe("New credit limit for usage"),
-			alert_threshold: z.coerce
-				.number()
-				.min(0)
-				.max(100)
-				.optional()
-				.describe("New alert threshold percentage (0-100)"),
-			rate_limit_rpm: z.coerce
-				.number()
-				.positive()
-				.optional()
-				.describe("New rate limit in requests per minute"),
-		},
+		KEYS_TOOL_SCHEMAS.updateVirtualKey,
 		async (params) => {
 			const result = await service.keys.updateVirtualKey(params.slug, {
 				name: params.name,
@@ -251,9 +387,7 @@ export function registerKeysTools(
 	server.tool(
 		"delete_virtual_key",
 		"Delete a virtual key by slug. This action cannot be undone.",
-		{
-			slug: z.string().describe("The slug of the virtual key to delete"),
-		},
+		KEYS_TOOL_SCHEMAS.deleteVirtualKey,
 		async (params) => {
 			const result = await service.keys.deleteVirtualKey(params.slug);
 			return {
@@ -278,68 +412,7 @@ export function registerKeysTools(
 	server.tool(
 		"create_api_key",
 		"Create a new Portkey API key for authentication. Organisation-level keys provide full access, workspace keys are scoped. Scopes control read/write permissions to specific resources (logs, analytics, prompts, etc.).",
-		{
-			type: z
-				.enum(["organisation", "workspace"])
-				.describe(
-					"Key type: 'organisation' for org-wide access or 'workspace' for workspace-scoped",
-				),
-			sub_type: z
-				.enum(["user", "service"])
-				.describe(
-					"Sub-type: 'user' for user-associated keys or 'service' for service accounts",
-				),
-			name: z.string().describe("Display name for the API key"),
-			description: z
-				.string()
-				.optional()
-				.describe("Optional description for the key"),
-			workspace_id: z
-				.string()
-				.optional()
-				.describe("Workspace ID (required for workspace-type keys)"),
-			user_id: z
-				.string()
-				.optional()
-				.describe("User ID (required for user sub-type keys)"),
-			scopes: z
-				.array(z.string())
-				.describe(
-					"Permission scopes for the key (e.g., ['logs.read', 'analytics.read'])",
-				),
-			credit_limit: z.coerce
-				.number()
-				.positive()
-				.optional()
-				.describe("Credit limit for usage"),
-			alert_threshold: z.coerce
-				.number()
-				.min(0)
-				.max(100)
-				.optional()
-				.describe("Alert threshold percentage (0-100)"),
-			rate_limit_rpm: z.coerce
-				.number()
-				.positive()
-				.optional()
-				.describe("Rate limit in requests per minute"),
-			default_config_id: z
-				.string()
-				.optional()
-				.describe("Default configuration ID to use with this key"),
-			default_metadata: z
-				.record(z.string(), z.string())
-				.optional()
-				.describe("Default metadata key-value pairs"),
-			alert_emails: z
-				.array(z.string())
-				.optional()
-				.describe("Email addresses for alerts"),
-			expires_at: z
-				.string()
-				.optional()
-				.describe("Expiration date in ISO 8601 format"),
-		},
+		KEYS_TOOL_SCHEMAS.createApiKey,
 		async (params) => {
 			// Validate required fields based on type and sub_type
 			if (params.type === "workspace" && !params.workspace_id) {
@@ -415,20 +488,7 @@ export function registerKeysTools(
 	server.tool(
 		"list_api_keys",
 		"List all API keys in your Portkey organization with optional pagination and workspace filtering",
-		{
-			page_size: z.coerce
-				.number()
-				.positive()
-				.max(100)
-				.optional()
-				.describe("Number of results per page (max 100)"),
-			current_page: z.coerce
-				.number()
-				.positive()
-				.optional()
-				.describe("Page number for pagination"),
-			workspace_id: z.string().optional().describe("Filter by workspace ID"),
-		},
+		KEYS_TOOL_SCHEMAS.listApiKeys,
 		async (params) => {
 			const apiKeys = await service.keys.listApiKeys({
 				page_size: params.page_size,
@@ -487,9 +547,7 @@ export function registerKeysTools(
 	server.tool(
 		"get_api_key",
 		"Retrieve detailed information about a specific API key by its UUID",
-		{
-			id: z.string().uuid().describe("The UUID of the API key to retrieve"),
-		},
+		KEYS_TOOL_SCHEMAS.getApiKey,
 		async (params) => {
 			const apiKey = await service.keys.getApiKey(params.id);
 			return {
@@ -541,53 +599,7 @@ export function registerKeysTools(
 	server.tool(
 		"update_api_key",
 		"Update an existing API key's name, description, scopes, or limits",
-		{
-			id: z.string().uuid().describe("The UUID of the API key to update"),
-			name: z.string().optional().describe("New display name for the key"),
-			description: z
-				.string()
-				.optional()
-				.describe("New description for the key"),
-			scopes: z
-				.array(z.string())
-				.optional()
-				.describe("New permission scopes for the key"),
-			credit_limit: z.coerce
-				.number()
-				.positive()
-				.optional()
-				.describe("New credit limit for usage"),
-			alert_threshold: z.coerce
-				.number()
-				.min(0)
-				.max(100)
-				.optional()
-				.describe("New alert threshold percentage (0-100)"),
-			rate_limit_rpm: z.coerce
-				.number()
-				.positive()
-				.optional()
-				.describe("New rate limit in requests per minute"),
-			default_config_id: z
-				.string()
-				.optional()
-				.describe("New default configuration ID"),
-			default_metadata: z
-				.record(z.string(), z.string())
-				.optional()
-				.describe("New default metadata key-value pairs"),
-			alert_emails: z
-				.array(z.string())
-				.optional()
-				.describe("New email addresses for alerts"),
-			expires_at: z
-				.string()
-				.nullable()
-				.optional()
-				.describe(
-					"New expiration date in ISO 8601 format, or null to remove expiration",
-				),
-		},
+		KEYS_TOOL_SCHEMAS.updateApiKey,
 		async (params) => {
 			const result = await service.keys.updateApiKey(params.id, {
 				name: params.name,
@@ -632,9 +644,7 @@ export function registerKeysTools(
 	server.tool(
 		"delete_api_key",
 		"Delete an API key by UUID. This action cannot be undone.",
-		{
-			id: z.string().uuid().describe("The UUID of the API key to delete"),
-		},
+		KEYS_TOOL_SCHEMAS.deleteApiKey,
 		async (params) => {
 			const result = await service.keys.deleteApiKey(params.id);
 			return {

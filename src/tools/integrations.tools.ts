@@ -3,6 +3,229 @@ import { z } from "zod";
 import { buildRateLimitsRpm, buildUsageLimits } from "../lib/limits.js";
 import type { PortkeyService } from "../services/index.js";
 
+const INTEGRATIONS_TOOL_SCHEMAS = {
+	listIntegrations: {
+		current_page: z.coerce
+			.number()
+			.positive()
+			.optional()
+			.describe("Page number for pagination"),
+		page_size: z.coerce
+			.number()
+			.int()
+			.positive()
+			.max(100)
+			.optional()
+			.describe("Number of results per page (default 100, max 100)"),
+		workspace_id: z
+			.string()
+			.optional()
+			.describe("Filter integrations accessible by a specific workspace"),
+		type: z
+			.enum(["workspace", "organisation", "all"])
+			.optional()
+			.describe(
+				"Filter by integration type: 'workspace', 'organisation', or 'all' (default)",
+			),
+	},
+	createIntegration: {
+		name: z.string().describe("Human-readable name for the integration"),
+		ai_provider_id: z
+			.string()
+			.describe(
+				"ID of the AI provider (e.g., 'openai', 'anthropic', 'azure-openai', 'aws-bedrock', 'vertex-ai')",
+			),
+		slug: z
+			.string()
+			.optional()
+			.describe(
+				"URL-friendly identifier (auto-generated from name if not provided)",
+			),
+		key: z
+			.string()
+			.optional()
+			.describe("API key for the provider (if required)"),
+		description: z
+			.string()
+			.optional()
+			.describe("Optional description of the integration"),
+		workspace_id: z
+			.string()
+			.optional()
+			.describe("Workspace ID for workspace-scoped integrations"),
+		api_version: z
+			.string()
+			.optional()
+			.describe("API version (for Azure OpenAI)"),
+		resource_name: z
+			.string()
+			.optional()
+			.describe("Resource name (for Azure OpenAI)"),
+		deployment_name: z
+			.string()
+			.optional()
+			.describe("Deployment name (for Azure OpenAI)"),
+		aws_region: z.string().optional().describe("AWS region (for AWS Bedrock)"),
+		aws_access_key_id: z
+			.string()
+			.optional()
+			.describe("AWS access key ID (for AWS Bedrock)"),
+		aws_secret_access_key: z
+			.string()
+			.optional()
+			.describe("AWS secret access key (for AWS Bedrock)"),
+		vertex_project_id: z
+			.string()
+			.optional()
+			.describe("GCP project ID (for Vertex AI)"),
+		vertex_region: z.string().optional().describe("GCP region (for Vertex AI)"),
+		custom_host: z
+			.string()
+			.optional()
+			.describe("Custom base URL for the provider"),
+	},
+	getIntegration: {
+		slug: z
+			.string()
+			.describe("The unique slug identifier of the integration to retrieve"),
+	},
+	updateIntegration: {
+		slug: z.string().describe("The slug of the integration to update"),
+		name: z
+			.string()
+			.optional()
+			.describe("New human-readable name for the integration"),
+		key: z.string().optional().describe("New API key for the provider"),
+		description: z
+			.string()
+			.optional()
+			.describe("New description for the integration"),
+		api_version: z
+			.string()
+			.optional()
+			.describe("New API version (for Azure OpenAI)"),
+		resource_name: z
+			.string()
+			.optional()
+			.describe("New resource name (for Azure OpenAI)"),
+		deployment_name: z
+			.string()
+			.optional()
+			.describe("New deployment name (for Azure OpenAI)"),
+		aws_region: z
+			.string()
+			.optional()
+			.describe("New AWS region (for AWS Bedrock)"),
+		aws_access_key_id: z
+			.string()
+			.optional()
+			.describe("New AWS access key ID (for AWS Bedrock)"),
+		aws_secret_access_key: z
+			.string()
+			.optional()
+			.describe("New AWS secret access key (for AWS Bedrock)"),
+		vertex_project_id: z
+			.string()
+			.optional()
+			.describe("New GCP project ID (for Vertex AI)"),
+		vertex_region: z
+			.string()
+			.optional()
+			.describe("New GCP region (for Vertex AI)"),
+		custom_host: z
+			.string()
+			.optional()
+			.describe("New custom base URL for the provider"),
+	},
+	deleteIntegration: {
+		slug: z.string().describe("The slug of the integration to delete"),
+	},
+	listIntegrationModels: {
+		slug: z.string().describe("The slug of the integration"),
+		current_page: z.coerce
+			.number()
+			.positive()
+			.optional()
+			.describe("Page number for pagination"),
+		page_size: z.coerce
+			.number()
+			.int()
+			.positive()
+			.max(100)
+			.optional()
+			.describe("Number of results per page"),
+	},
+	updateIntegrationModels: {
+		slug: z.string().describe("The slug of the integration"),
+		models: z
+			.array(
+				z.object({
+					slug: z.string().describe("The model slug identifier"),
+					model_name: z
+						.string()
+						.optional()
+						.describe(
+							"Display name for the model (required for custom models)",
+						),
+					enabled: z.boolean().describe("Whether the model is enabled"),
+					is_custom: z
+						.boolean()
+						.optional()
+						.describe("Whether this is a custom model (default: false)"),
+				}),
+			)
+			.describe("Array of model configurations to update"),
+	},
+	deleteIntegrationModel: {
+		slug: z.string().describe("The slug of the integration"),
+		model_slug: z.string().describe("The slug of the model to delete"),
+	},
+	listIntegrationWorkspaces: {
+		slug: z.string().describe("The slug of the integration"),
+		current_page: z.coerce
+			.number()
+			.positive()
+			.optional()
+			.describe("Page number for pagination"),
+		page_size: z.coerce
+			.number()
+			.int()
+			.positive()
+			.max(100)
+			.optional()
+			.describe("Number of results per page"),
+	},
+	updateIntegrationWorkspaces: {
+		slug: z.string().describe("The slug of the integration"),
+		workspaces: z
+			.array(
+				z.object({
+					id: z.string().describe("The workspace ID"),
+					enabled: z
+						.boolean()
+						.describe("Whether the workspace has access to this integration"),
+					credit_limit: z.coerce
+						.number()
+						.positive()
+						.optional()
+						.describe("Credit limit for this workspace"),
+					alert_threshold: z.coerce
+						.number()
+						.min(0)
+						.max(100)
+						.optional()
+						.describe("Alert threshold percentage (0-100)"),
+					rate_limit_rpm: z.coerce
+						.number()
+						.positive()
+						.optional()
+						.describe("Rate limit in requests per minute"),
+				}),
+			)
+			.describe("Array of workspace configurations to update"),
+	},
+} as const;
+
 export function registerIntegrationsTools(
 	server: McpServer,
 	service: PortkeyService,
@@ -11,30 +234,7 @@ export function registerIntegrationsTools(
 	server.tool(
 		"list_integrations",
 		"List all integrations in your Portkey organization with optional filtering by workspace or type",
-		{
-			current_page: z.coerce
-				.number()
-				.positive()
-				.optional()
-				.describe("Page number for pagination"),
-			page_size: z.coerce
-				.number()
-				.int()
-				.positive()
-				.max(100)
-				.optional()
-				.describe("Number of results per page (default 100, max 100)"),
-			workspace_id: z
-				.string()
-				.optional()
-				.describe("Filter integrations accessible by a specific workspace"),
-			type: z
-				.enum(["workspace", "organisation", "all"])
-				.optional()
-				.describe(
-					"Filter by integration type: 'workspace', 'organisation', or 'all' (default)",
-				),
-		},
+		INTEGRATIONS_TOOL_SCHEMAS.listIntegrations,
 		async (params) => {
 			const integrations = await service.integrations.listIntegrations({
 				current_page: params.current_page,
@@ -75,72 +275,7 @@ export function registerIntegrationsTools(
 	server.tool(
 		"create_integration",
 		"Create a new integration with an AI provider (e.g., OpenAI, Anthropic, Azure OpenAI, AWS Bedrock). Provider-specific params: Azure needs api_version + resource_name + deployment_name. AWS needs aws_region. Vertex AI needs vertex_project_id + vertex_region.",
-		{
-			name: z.string().describe("Human-readable name for the integration"),
-			ai_provider_id: z
-				.string()
-				.describe(
-					"ID of the AI provider (e.g., 'openai', 'anthropic', 'azure-openai', 'aws-bedrock', 'vertex-ai')",
-				),
-			slug: z
-				.string()
-				.optional()
-				.describe(
-					"URL-friendly identifier (auto-generated from name if not provided)",
-				),
-			key: z
-				.string()
-				.optional()
-				.describe("API key for the provider (if required)"),
-			description: z
-				.string()
-				.optional()
-				.describe("Optional description of the integration"),
-			workspace_id: z
-				.string()
-				.optional()
-				.describe("Workspace ID for workspace-scoped integrations"),
-			// Azure OpenAI specific
-			api_version: z
-				.string()
-				.optional()
-				.describe("API version (for Azure OpenAI)"),
-			resource_name: z
-				.string()
-				.optional()
-				.describe("Resource name (for Azure OpenAI)"),
-			deployment_name: z
-				.string()
-				.optional()
-				.describe("Deployment name (for Azure OpenAI)"),
-			// AWS Bedrock specific
-			aws_region: z
-				.string()
-				.optional()
-				.describe("AWS region (for AWS Bedrock)"),
-			aws_access_key_id: z
-				.string()
-				.optional()
-				.describe("AWS access key ID (for AWS Bedrock)"),
-			aws_secret_access_key: z
-				.string()
-				.optional()
-				.describe("AWS secret access key (for AWS Bedrock)"),
-			// Vertex AI specific
-			vertex_project_id: z
-				.string()
-				.optional()
-				.describe("GCP project ID (for Vertex AI)"),
-			vertex_region: z
-				.string()
-				.optional()
-				.describe("GCP region (for Vertex AI)"),
-			// Custom base URL
-			custom_host: z
-				.string()
-				.optional()
-				.describe("Custom base URL for the provider"),
-		},
+		INTEGRATIONS_TOOL_SCHEMAS.createIntegration,
 		async (params) => {
 			const configurations: Record<string, unknown> = {};
 
@@ -201,11 +336,7 @@ export function registerIntegrationsTools(
 	server.tool(
 		"get_integration",
 		"Retrieve detailed information about a specific integration by its slug",
-		{
-			slug: z
-				.string()
-				.describe("The unique slug identifier of the integration to retrieve"),
-		},
+		INTEGRATIONS_TOOL_SCHEMAS.getIntegration,
 		async (params) => {
 			const integration = await service.integrations.getIntegration(
 				params.slug,
@@ -246,58 +377,7 @@ export function registerIntegrationsTools(
 	server.tool(
 		"update_integration",
 		"Update an existing integration's name, API key, description, or provider-specific configurations",
-		{
-			slug: z.string().describe("The slug of the integration to update"),
-			name: z
-				.string()
-				.optional()
-				.describe("New human-readable name for the integration"),
-			key: z.string().optional().describe("New API key for the provider"),
-			description: z
-				.string()
-				.optional()
-				.describe("New description for the integration"),
-			// Azure OpenAI specific
-			api_version: z
-				.string()
-				.optional()
-				.describe("New API version (for Azure OpenAI)"),
-			resource_name: z
-				.string()
-				.optional()
-				.describe("New resource name (for Azure OpenAI)"),
-			deployment_name: z
-				.string()
-				.optional()
-				.describe("New deployment name (for Azure OpenAI)"),
-			// AWS Bedrock specific
-			aws_region: z
-				.string()
-				.optional()
-				.describe("New AWS region (for AWS Bedrock)"),
-			aws_access_key_id: z
-				.string()
-				.optional()
-				.describe("New AWS access key ID (for AWS Bedrock)"),
-			aws_secret_access_key: z
-				.string()
-				.optional()
-				.describe("New AWS secret access key (for AWS Bedrock)"),
-			// Vertex AI specific
-			vertex_project_id: z
-				.string()
-				.optional()
-				.describe("New GCP project ID (for Vertex AI)"),
-			vertex_region: z
-				.string()
-				.optional()
-				.describe("New GCP region (for Vertex AI)"),
-			// Custom base URL
-			custom_host: z
-				.string()
-				.optional()
-				.describe("New custom base URL for the provider"),
-		},
+		INTEGRATIONS_TOOL_SCHEMAS.updateIntegration,
 		async (params) => {
 			const configurations: Record<string, unknown> = {};
 
@@ -357,9 +437,7 @@ export function registerIntegrationsTools(
 	server.tool(
 		"delete_integration",
 		"Delete an integration by slug. This action cannot be undone.",
-		{
-			slug: z.string().describe("The slug of the integration to delete"),
-		},
+		INTEGRATIONS_TOOL_SCHEMAS.deleteIntegration,
 		async (params) => {
 			const result = await service.integrations.deleteIntegration(params.slug);
 
@@ -385,21 +463,7 @@ export function registerIntegrationsTools(
 	server.tool(
 		"list_integration_models",
 		"List all models available for a specific integration with their enabled status",
-		{
-			slug: z.string().describe("The slug of the integration"),
-			current_page: z.coerce
-				.number()
-				.positive()
-				.optional()
-				.describe("Page number for pagination"),
-			page_size: z.coerce
-				.number()
-				.int()
-				.positive()
-				.max(100)
-				.optional()
-				.describe("Number of results per page"),
-		},
+		INTEGRATIONS_TOOL_SCHEMAS.listIntegrationModels,
 		async (params) => {
 			const models = await service.integrations.listIntegrationModels(
 				params.slug,
@@ -440,27 +504,7 @@ export function registerIntegrationsTools(
 	server.tool(
 		"update_integration_models",
 		"Update model access settings for an integration - enable/disable models or add custom models",
-		{
-			slug: z.string().describe("The slug of the integration"),
-			models: z
-				.array(
-					z.object({
-						slug: z.string().describe("The model slug identifier"),
-						model_name: z
-							.string()
-							.optional()
-							.describe(
-								"Display name for the model (required for custom models)",
-							),
-						enabled: z.boolean().describe("Whether the model is enabled"),
-						is_custom: z
-							.boolean()
-							.optional()
-							.describe("Whether this is a custom model (default: false)"),
-					}),
-				)
-				.describe("Array of model configurations to update"),
-		},
+		INTEGRATIONS_TOOL_SCHEMAS.updateIntegrationModels,
 		async (params) => {
 			const result = await service.integrations.updateIntegrationModels(
 				params.slug,
@@ -492,10 +536,7 @@ export function registerIntegrationsTools(
 	server.tool(
 		"delete_integration_model",
 		"Delete a specific custom model from an integration",
-		{
-			slug: z.string().describe("The slug of the integration"),
-			model_slug: z.string().describe("The slug of the model to delete"),
-		},
+		INTEGRATIONS_TOOL_SCHEMAS.deleteIntegrationModel,
 		async (params) => {
 			const result = await service.integrations.deleteIntegrationModel(
 				params.slug,
@@ -524,21 +565,7 @@ export function registerIntegrationsTools(
 	server.tool(
 		"list_integration_workspaces",
 		"List all workspaces that have access to a specific integration",
-		{
-			slug: z.string().describe("The slug of the integration"),
-			current_page: z.coerce
-				.number()
-				.positive()
-				.optional()
-				.describe("Page number for pagination"),
-			page_size: z.coerce
-				.number()
-				.int()
-				.positive()
-				.max(100)
-				.optional()
-				.describe("Number of results per page"),
-		},
+		INTEGRATIONS_TOOL_SCHEMAS.listIntegrationWorkspaces,
 		async (params) => {
 			const workspaces = await service.integrations.listIntegrationWorkspaces(
 				params.slug,
@@ -580,35 +607,7 @@ export function registerIntegrationsTools(
 	server.tool(
 		"update_integration_workspaces",
 		"Update workspace access settings for an integration - enable/disable workspace access and configure limits",
-		{
-			slug: z.string().describe("The slug of the integration"),
-			workspaces: z
-				.array(
-					z.object({
-						id: z.string().describe("The workspace ID"),
-						enabled: z
-							.boolean()
-							.describe("Whether the workspace has access to this integration"),
-						credit_limit: z.coerce
-							.number()
-							.positive()
-							.optional()
-							.describe("Credit limit for this workspace"),
-						alert_threshold: z.coerce
-							.number()
-							.min(0)
-							.max(100)
-							.optional()
-							.describe("Alert threshold percentage (0-100)"),
-						rate_limit_rpm: z.coerce
-							.number()
-							.positive()
-							.optional()
-							.describe("Rate limit in requests per minute"),
-					}),
-				)
-				.describe("Array of workspace configurations to update"),
-		},
+		INTEGRATIONS_TOOL_SCHEMAS.updateIntegrationWorkspaces,
 		async (params) => {
 			const result = await service.integrations.updateIntegrationWorkspaces(
 				params.slug,

@@ -14,6 +14,111 @@ type ConfigToolParams = {
 	}>;
 };
 
+const CONFIGS_TOOL_SCHEMAS = {
+	listConfigs: {},
+	getConfig: {
+		slug: z
+			.string()
+			.describe(
+				"The unique identifier (slug) of the configuration to retrieve. " +
+					"This can be found in the configuration's URL or from the list_configs tool response",
+			),
+	},
+	createConfig: {
+		name: z.string().describe("Name for the new configuration"),
+		workspace_id: z
+			.string()
+			.optional()
+			.describe("Workspace ID to create config in"),
+		cache_mode: z
+			.enum(["simple", "semantic"])
+			.optional()
+			.describe("Cache mode: 'simple' or 'semantic'"),
+		cache_max_age: z.coerce
+			.number()
+			.positive()
+			.optional()
+			.describe("Cache max age in seconds"),
+		retry_attempts: z.coerce
+			.number()
+			.positive()
+			.max(5)
+			.optional()
+			.describe("Number of retry attempts (1-5)"),
+		retry_on_status_codes: z
+			.array(z.coerce.number())
+			.optional()
+			.describe("HTTP status codes to retry on (e.g., [429, 500, 502, 503])"),
+		strategy_mode: z
+			.enum(["loadbalance", "fallback"])
+			.optional()
+			.describe("Routing strategy: 'loadbalance' or 'fallback'"),
+		targets: z
+			.array(
+				z
+					.object({
+						provider: z.string().optional(),
+						virtual_key: z.string().optional(),
+					})
+					.refine((t) => t.provider || t.virtual_key, {
+						message: "Each target must have at least provider or virtual_key",
+					}),
+			)
+			.optional()
+			.describe("Array of target providers with virtual keys"),
+	},
+	updateConfig: {
+		slug: z.string().describe("Configuration slug to update"),
+		name: z.string().optional().describe("New name for the configuration"),
+		status: z
+			.enum(["active", "inactive"])
+			.optional()
+			.describe("Configuration status"),
+		cache_mode: z
+			.enum(["simple", "semantic"])
+			.optional()
+			.describe("Cache mode: 'simple' or 'semantic'"),
+		cache_max_age: z.coerce
+			.number()
+			.positive()
+			.optional()
+			.describe("Cache max age in seconds"),
+		retry_attempts: z.coerce
+			.number()
+			.positive()
+			.max(5)
+			.optional()
+			.describe("Number of retry attempts (1-5)"),
+		retry_on_status_codes: z
+			.array(z.coerce.number())
+			.optional()
+			.describe("HTTP status codes to retry on"),
+		strategy_mode: z
+			.enum(["loadbalance", "fallback"])
+			.optional()
+			.describe("Routing strategy"),
+		targets: z
+			.array(
+				z
+					.object({
+						provider: z.string().optional(),
+						virtual_key: z.string().optional(),
+					})
+					.refine((t) => t.provider || t.virtual_key, {
+						message: "Each target must have at least provider or virtual_key",
+					}),
+			)
+			.optional()
+			.describe("Array of target providers"),
+	},
+	deleteConfig: {
+		slug: z.string().describe("Configuration slug to delete"),
+	},
+	listConfigVersions: {
+		slug: z.string().describe("Configuration slug to list versions for"),
+	},
+} as const;
+
 function buildConfigPayload(params: ConfigToolParams) {
 	const cache =
 		params.cache_mode !== undefined || params.cache_max_age !== undefined
@@ -69,7 +174,7 @@ export function registerConfigsTools(
 	server.tool(
 		"list_configs",
 		"Retrieve all configurations in your Portkey organization, including their status and workspace associations",
-		{},
+		CONFIGS_TOOL_SCHEMAS.listConfigs,
 		async () => {
 			const configs = await service.configs.listConfigs();
 			return {
@@ -105,14 +210,7 @@ export function registerConfigsTools(
 	server.tool(
 		"get_config",
 		"Retrieve detailed information about a specific configuration, including cache settings, retry policies, and routing strategy",
-		{
-			slug: z
-				.string()
-				.describe(
-					"The unique identifier (slug) of the configuration to retrieve. " +
-						"This can be found in the configuration's URL or from the list_configs tool response",
-				),
-		},
+		CONFIGS_TOOL_SCHEMAS.getConfig,
 		async (params) => {
 			const response = await service.configs.getConfig(params.slug);
 			return {
@@ -158,49 +256,7 @@ export function registerConfigsTools(
 	server.tool(
 		"create_config",
 		"Create a new configuration with cache, retry, and routing settings. At least one setting is required: cache (cache_mode/cache_max_age), retry (retry_attempts/retry_on_status_codes), strategy_mode, or targets.",
-		{
-			name: z.string().describe("Name for the new configuration"),
-			workspace_id: z
-				.string()
-				.optional()
-				.describe("Workspace ID to create config in"),
-			cache_mode: z
-				.enum(["simple", "semantic"])
-				.optional()
-				.describe("Cache mode: 'simple' or 'semantic'"),
-			cache_max_age: z.coerce
-				.number()
-				.positive()
-				.optional()
-				.describe("Cache max age in seconds"),
-			retry_attempts: z.coerce
-				.number()
-				.positive()
-				.max(5)
-				.optional()
-				.describe("Number of retry attempts (1-5)"),
-			retry_on_status_codes: z
-				.array(z.coerce.number())
-				.optional()
-				.describe("HTTP status codes to retry on (e.g., [429, 500, 502, 503])"),
-			strategy_mode: z
-				.enum(["loadbalance", "fallback"])
-				.optional()
-				.describe("Routing strategy: 'loadbalance' or 'fallback'"),
-			targets: z
-				.array(
-					z
-						.object({
-							provider: z.string().optional(),
-							virtual_key: z.string().optional(),
-						})
-						.refine((t) => t.provider || t.virtual_key, {
-							message: "Each target must have at least provider or virtual_key",
-						}),
-				)
-				.optional()
-				.describe("Array of target providers with virtual keys"),
-		},
+		CONFIGS_TOOL_SCHEMAS.createConfig,
 		async (params) => {
 			const config = buildConfigPayload(params);
 
@@ -246,50 +302,7 @@ export function registerConfigsTools(
 	server.tool(
 		"update_config",
 		"Update an existing configuration's cache, retry, or routing settings",
-		{
-			slug: z.string().describe("Configuration slug to update"),
-			name: z.string().optional().describe("New name for the configuration"),
-			status: z
-				.enum(["active", "inactive"])
-				.optional()
-				.describe("Configuration status"),
-			cache_mode: z
-				.enum(["simple", "semantic"])
-				.optional()
-				.describe("Cache mode: 'simple' or 'semantic'"),
-			cache_max_age: z.coerce
-				.number()
-				.positive()
-				.optional()
-				.describe("Cache max age in seconds"),
-			retry_attempts: z.coerce
-				.number()
-				.positive()
-				.max(5)
-				.optional()
-				.describe("Number of retry attempts (1-5)"),
-			retry_on_status_codes: z
-				.array(z.coerce.number())
-				.optional()
-				.describe("HTTP status codes to retry on"),
-			strategy_mode: z
-				.enum(["loadbalance", "fallback"])
-				.optional()
-				.describe("Routing strategy"),
-			targets: z
-				.array(
-					z
-						.object({
-							provider: z.string().optional(),
-							virtual_key: z.string().optional(),
-						})
-						.refine((t) => t.provider || t.virtual_key, {
-							message: "Each target must have at least provider or virtual_key",
-						}),
-				)
-				.optional()
-				.describe("Array of target providers"),
-		},
+		CONFIGS_TOOL_SCHEMAS.updateConfig,
 		async (params) => {
 			const config = buildConfigPayload(params);
 
@@ -330,9 +343,7 @@ export function registerConfigsTools(
 	server.tool(
 		"delete_config",
 		"Delete a configuration by slug. This action cannot be undone.",
-		{
-			slug: z.string().describe("Configuration slug to delete"),
-		},
+		CONFIGS_TOOL_SCHEMAS.deleteConfig,
 		async (params) => {
 			const result = await service.configs.deleteConfig(params.slug);
 			return {
@@ -357,9 +368,7 @@ export function registerConfigsTools(
 	server.tool(
 		"list_config_versions",
 		"List all versions of a configuration to view its change history",
-		{
-			slug: z.string().describe("Configuration slug to list versions for"),
-		},
+		CONFIGS_TOOL_SCHEMAS.listConfigVersions,
 		async (params) => {
 			const result = await service.configs.listConfigVersions(params.slug);
 			return {

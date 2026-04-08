@@ -49,6 +49,68 @@ const guardrailActionSchema = z.object({
 		.describe("Message to return when guardrail triggers"),
 });
 
+const GUARDRAILS_TOOL_SCHEMAS = {
+	listGuardrails: {
+		workspace_id: z
+			.string()
+			.optional()
+			.describe("Filter guardrails by workspace ID"),
+		organisation_id: z
+			.string()
+			.optional()
+			.describe("Filter guardrails by organization ID"),
+		page_size: z.coerce
+			.number()
+			.min(1)
+			.max(1000)
+			.optional()
+			.describe("Number of items per page (1-1000, default: 100)"),
+		current_page: z.coerce
+			.number()
+			.positive()
+			.optional()
+			.describe("Page number for pagination"),
+	},
+	getGuardrail: {
+		guardrail_id: z
+			.string()
+			.describe("The guardrail UUID or slug (with guard_ prefix) to retrieve"),
+	},
+	createGuardrail: {
+		name: z.string().describe("Name of the guardrail"),
+		checks: z
+			.array(guardrailCheckSchema)
+			.min(1)
+			.describe("Array of checks to apply (at least one required)"),
+		actions: guardrailActionSchema.describe(
+			"Actions to take when guardrail checks pass or fail",
+		),
+		workspace_id: z
+			.string()
+			.optional()
+			.describe("Workspace ID to create the guardrail in"),
+		organisation_id: z
+			.string()
+			.optional()
+			.describe("Organisation ID (required if workspace_id not provided)"),
+	},
+	updateGuardrail: {
+		guardrail_id: z.string().describe("The guardrail UUID or slug to update"),
+		name: z.string().optional().describe("New name for the guardrail"),
+		checks: z
+			.array(guardrailCheckSchema)
+			.min(1)
+			.optional()
+			.describe("Updated array of checks to apply"),
+		actions: guardrailActionSchema
+			.optional()
+			.describe("Updated actions configuration"),
+	},
+	deleteGuardrail: {
+		guardrail_id: z.string().describe("The guardrail UUID or slug to delete"),
+	},
+} as const;
+
 export function registerGuardrailsTools(
 	server: McpServer,
 	service: PortkeyService,
@@ -57,27 +119,7 @@ export function registerGuardrailsTools(
 	server.tool(
 		"list_guardrails",
 		"List all guardrails in your Portkey organization with optional filtering by workspace or organization",
-		{
-			workspace_id: z
-				.string()
-				.optional()
-				.describe("Filter guardrails by workspace ID"),
-			organisation_id: z
-				.string()
-				.optional()
-				.describe("Filter guardrails by organization ID"),
-			page_size: z.coerce
-				.number()
-				.min(1)
-				.max(1000)
-				.optional()
-				.describe("Number of items per page (1-1000, default: 100)"),
-			current_page: z.coerce
-				.number()
-				.positive()
-				.optional()
-				.describe("Page number for pagination"),
-		},
+		GUARDRAILS_TOOL_SCHEMAS.listGuardrails,
 		async (params) => {
 			const result = await service.guardrails.listGuardrails(params);
 			return {
@@ -113,13 +155,7 @@ export function registerGuardrailsTools(
 	server.tool(
 		"get_guardrail",
 		"Retrieve detailed information about a specific guardrail, including its checks and actions configuration",
-		{
-			guardrail_id: z
-				.string()
-				.describe(
-					"The guardrail UUID or slug (with guard_ prefix) to retrieve",
-				),
-		},
+		GUARDRAILS_TOOL_SCHEMAS.getGuardrail,
 		async (params) => {
 			const guardrail = await service.guardrails.getGuardrail(
 				params.guardrail_id,
@@ -156,24 +192,7 @@ export function registerGuardrailsTools(
 	server.tool(
 		"create_guardrail",
 		"Create a new guardrail with specified checks and actions for content moderation and security. checks is an array of check objects with id (e.g. 'default.jwt', 'default.pii'), optional name, is_enabled boolean, and parameters object.",
-		{
-			name: z.string().describe("Name of the guardrail"),
-			checks: z
-				.array(guardrailCheckSchema)
-				.min(1)
-				.describe("Array of checks to apply (at least one required)"),
-			actions: guardrailActionSchema.describe(
-				"Actions to take when guardrail checks pass or fail",
-			),
-			workspace_id: z
-				.string()
-				.optional()
-				.describe("Workspace ID to create the guardrail in"),
-			organisation_id: z
-				.string()
-				.optional()
-				.describe("Organisation ID (required if workspace_id not provided)"),
-		},
+		GUARDRAILS_TOOL_SCHEMAS.createGuardrail,
 		async (params) => {
 			const result = await service.guardrails.createGuardrail({
 				name: params.name,
@@ -206,18 +225,7 @@ export function registerGuardrailsTools(
 	server.tool(
 		"update_guardrail",
 		"Update an existing guardrail's name, checks, or actions configuration",
-		{
-			guardrail_id: z.string().describe("The guardrail UUID or slug to update"),
-			name: z.string().optional().describe("New name for the guardrail"),
-			checks: z
-				.array(guardrailCheckSchema)
-				.min(1)
-				.optional()
-				.describe("Updated array of checks to apply"),
-			actions: guardrailActionSchema
-				.optional()
-				.describe("Updated actions configuration"),
-		},
+		GUARDRAILS_TOOL_SCHEMAS.updateGuardrail,
 		async (params) => {
 			const updateData: {
 				name?: string;
@@ -263,9 +271,7 @@ export function registerGuardrailsTools(
 	server.tool(
 		"delete_guardrail",
 		"Delete a guardrail by its ID or slug. This action cannot be undone.",
-		{
-			guardrail_id: z.string().describe("The guardrail UUID or slug to delete"),
-		},
+		GUARDRAILS_TOOL_SCHEMAS.deleteGuardrail,
 		async (params) => {
 			const result = await service.guardrails.deleteGuardrail(
 				params.guardrail_id,

@@ -3,6 +3,161 @@ import { z } from "zod";
 import { buildRateLimits, buildUsageLimits } from "../lib/limits.js";
 import type { PortkeyService } from "../services/index.js";
 
+const PROVIDERS_TOOL_SCHEMAS = {
+	listProviders: {
+		current_page: z.coerce
+			.number()
+			.positive()
+			.optional()
+			.describe("Page number for pagination"),
+		page_size: z.coerce
+			.number()
+			.int()
+			.positive()
+			.max(100)
+			.optional()
+			.describe("Number of results per page (max 100, default 50)"),
+		workspace_id: z
+			.string()
+			.optional()
+			.describe(
+				"Workspace ID - required when using organization admin keys, optional with workspace API keys",
+			),
+	},
+	createProvider: {
+		name: z.string().describe("Display name for the provider"),
+		integration_id: z
+			.string()
+			.describe(
+				"Integration slug for the provider (e.g., 'openai', 'anthropic', 'azure-openai')",
+			),
+		workspace_id: z
+			.string()
+			.optional()
+			.describe(
+				"Workspace ID - required when using organization admin API keys",
+			),
+		slug: z
+			.string()
+			.optional()
+			.describe(
+				"Custom slug for the provider. Auto-generated with random suffix if omitted",
+			),
+		note: z
+			.string()
+			.optional()
+			.describe("Optional note or description for the provider"),
+		credit_limit: z.coerce
+			.number()
+			.positive()
+			.optional()
+			.describe("Credit limit for usage"),
+		alert_threshold: z.coerce
+			.number()
+			.min(0)
+			.max(100)
+			.optional()
+			.describe("Alert threshold percentage (0-100)"),
+		usage_limit_type: z
+			.enum(["cost", "tokens"])
+			.optional()
+			.describe(
+				"Type of usage limit: 'cost' (monetary) or 'tokens' (token count). Defaults to 'cost'.",
+			),
+		periodic_reset: z
+			.enum(["monthly", "weekly"])
+			.optional()
+			.describe(
+				"Period for resetting usage limits: 'monthly' or 'weekly'. Defaults to 'monthly'.",
+			),
+		rate_limit_value: z.coerce
+			.number()
+			.positive()
+			.optional()
+			.describe("Must be provided together with rate_limit_unit."),
+		rate_limit_unit: z
+			.enum(["rpm", "rph", "rpd"])
+			.optional()
+			.describe(
+				"Must be provided together with rate_limit_value. Values: 'rpm' (requests/min), 'rph' (requests/hour), or 'rpd' (requests/day).",
+			),
+		expires_at: z
+			.string()
+			.optional()
+			.describe("Expiration date in ISO 8601 format"),
+	},
+	getProvider: {
+		slug: z
+			.string()
+			.describe("The unique slug identifier of the provider to retrieve"),
+		workspace_id: z
+			.string()
+			.optional()
+			.describe("Workspace ID - required when using organization admin keys"),
+	},
+	updateProvider: {
+		slug: z.string().describe("The slug of the provider to update"),
+		workspace_id: z
+			.string()
+			.optional()
+			.describe("Workspace ID - required when using organization admin keys"),
+		name: z.string().optional().describe("New display name for the provider"),
+		note: z
+			.string()
+			.optional()
+			.describe("New note or description for the provider"),
+		credit_limit: z.coerce
+			.number()
+			.positive()
+			.optional()
+			.describe("New credit limit for usage"),
+		alert_threshold: z.coerce
+			.number()
+			.min(0)
+			.max(100)
+			.optional()
+			.describe("New alert threshold percentage (0-100)"),
+		usage_limit_type: z
+			.enum(["cost", "tokens"])
+			.optional()
+			.describe(
+				"Type of usage limit: 'cost' (monetary) or 'tokens' (token count). Defaults to 'cost'.",
+			),
+		periodic_reset: z
+			.enum(["monthly", "weekly"])
+			.optional()
+			.describe(
+				"Period for resetting usage limits: 'monthly' or 'weekly'. Defaults to 'monthly'.",
+			),
+		rate_limit_value: z.coerce
+			.number()
+			.positive()
+			.optional()
+			.describe("New rate limit value"),
+		rate_limit_unit: z
+			.enum(["rpm", "rph", "rpd"])
+			.optional()
+			.describe(
+				"Rate limit unit: 'rpm' (requests per minute), 'rph' (requests per hour), or 'rpd' (requests per day)",
+			),
+		expires_at: z
+			.string()
+			.optional()
+			.describe("New expiration date in ISO 8601 format"),
+		reset_usage: z
+			.boolean()
+			.optional()
+			.describe("Set to true to reset accumulated usage metrics"),
+	},
+	deleteProvider: {
+		slug: z.string().describe("The slug of the provider to delete"),
+		workspace_id: z
+			.string()
+			.optional()
+			.describe("Workspace ID - required when using organization admin keys"),
+	},
+} as const;
+
 export function registerProvidersTools(
 	server: McpServer,
 	service: PortkeyService,
@@ -11,26 +166,7 @@ export function registerProvidersTools(
 	server.tool(
 		"list_providers",
 		"List all providers in your Portkey organization with optional pagination and workspace filtering",
-		{
-			current_page: z.coerce
-				.number()
-				.positive()
-				.optional()
-				.describe("Page number for pagination"),
-			page_size: z.coerce
-				.number()
-				.int()
-				.positive()
-				.max(100)
-				.optional()
-				.describe("Number of results per page (max 100, default 50)"),
-			workspace_id: z
-				.string()
-				.optional()
-				.describe(
-					"Workspace ID - required when using organization admin keys, optional with workspace API keys",
-				),
-		},
+		PROVIDERS_TOOL_SCHEMAS.listProviders,
 		async (params) => {
 			const providers = await service.providers.listProviders({
 				current_page: params.current_page,
@@ -82,68 +218,7 @@ export function registerProvidersTools(
 	server.tool(
 		"create_provider",
 		"Create a new provider configuration in Portkey. Providers define integrations with AI model providers like OpenAI, Anthropic, etc.",
-		{
-			name: z.string().describe("Display name for the provider"),
-			integration_id: z
-				.string()
-				.describe(
-					"Integration slug for the provider (e.g., 'openai', 'anthropic', 'azure-openai')",
-				),
-			workspace_id: z
-				.string()
-				.optional()
-				.describe(
-					"Workspace ID - required when using organization admin API keys",
-				),
-			slug: z
-				.string()
-				.optional()
-				.describe(
-					"Custom slug for the provider. Auto-generated with random suffix if omitted",
-				),
-			note: z
-				.string()
-				.optional()
-				.describe("Optional note or description for the provider"),
-			credit_limit: z.coerce
-				.number()
-				.positive()
-				.optional()
-				.describe("Credit limit for usage"),
-			alert_threshold: z.coerce
-				.number()
-				.min(0)
-				.max(100)
-				.optional()
-				.describe("Alert threshold percentage (0-100)"),
-			usage_limit_type: z
-				.enum(["cost", "tokens"])
-				.optional()
-				.describe(
-					"Type of usage limit: 'cost' (monetary) or 'tokens' (token count). Defaults to 'cost'.",
-				),
-			periodic_reset: z
-				.enum(["monthly", "weekly"])
-				.optional()
-				.describe(
-					"Period for resetting usage limits: 'monthly' or 'weekly'. Defaults to 'monthly'.",
-				),
-			rate_limit_value: z.coerce
-				.number()
-				.positive()
-				.optional()
-				.describe("Must be provided together with rate_limit_unit."),
-			rate_limit_unit: z
-				.enum(["rpm", "rph", "rpd"])
-				.optional()
-				.describe(
-					"Must be provided together with rate_limit_value. Values: 'rpm' (requests/min), 'rph' (requests/hour), or 'rpd' (requests/day).",
-				),
-			expires_at: z
-				.string()
-				.optional()
-				.describe("Expiration date in ISO 8601 format"),
-		},
+		PROVIDERS_TOOL_SCHEMAS.createProvider,
 		async (params) => {
 			const result = await service.providers.createProvider({
 				name: params.name,
@@ -191,15 +266,7 @@ export function registerProvidersTools(
 	server.tool(
 		"get_provider",
 		"Retrieve detailed information about a specific provider by its slug",
-		{
-			slug: z
-				.string()
-				.describe("The unique slug identifier of the provider to retrieve"),
-			workspace_id: z
-				.string()
-				.optional()
-				.describe("Workspace ID - required when using organization admin keys"),
-		},
+		PROVIDERS_TOOL_SCHEMAS.getProvider,
 		async (params) => {
 			const provider = await service.providers.getProvider(
 				params.slug,
@@ -247,60 +314,7 @@ export function registerProvidersTools(
 	server.tool(
 		"update_provider",
 		"Update an existing provider's name, note, limits, or expiration",
-		{
-			slug: z.string().describe("The slug of the provider to update"),
-			workspace_id: z
-				.string()
-				.optional()
-				.describe("Workspace ID - required when using organization admin keys"),
-			name: z.string().optional().describe("New display name for the provider"),
-			note: z
-				.string()
-				.optional()
-				.describe("New note or description for the provider"),
-			credit_limit: z.coerce
-				.number()
-				.positive()
-				.optional()
-				.describe("New credit limit for usage"),
-			alert_threshold: z.coerce
-				.number()
-				.min(0)
-				.max(100)
-				.optional()
-				.describe("New alert threshold percentage (0-100)"),
-			usage_limit_type: z
-				.enum(["cost", "tokens"])
-				.optional()
-				.describe(
-					"Type of usage limit: 'cost' (monetary) or 'tokens' (token count). Defaults to 'cost'.",
-				),
-			periodic_reset: z
-				.enum(["monthly", "weekly"])
-				.optional()
-				.describe(
-					"Period for resetting usage limits: 'monthly' or 'weekly'. Defaults to 'monthly'.",
-				),
-			rate_limit_value: z.coerce
-				.number()
-				.positive()
-				.optional()
-				.describe("New rate limit value"),
-			rate_limit_unit: z
-				.enum(["rpm", "rph", "rpd"])
-				.optional()
-				.describe(
-					"Rate limit unit: 'rpm' (requests per minute), 'rph' (requests per hour), or 'rpd' (requests per day)",
-				),
-			expires_at: z
-				.string()
-				.optional()
-				.describe("New expiration date in ISO 8601 format"),
-			reset_usage: z
-				.boolean()
-				.optional()
-				.describe("Set to true to reset accumulated usage metrics"),
-		},
+		PROVIDERS_TOOL_SCHEMAS.updateProvider,
 		async (params) => {
 			const result = await service.providers.updateProvider(
 				params.slug,
@@ -350,13 +364,7 @@ export function registerProvidersTools(
 	server.tool(
 		"delete_provider",
 		"Delete a provider by slug. This action cannot be undone.",
-		{
-			slug: z.string().describe("The slug of the provider to delete"),
-			workspace_id: z
-				.string()
-				.optional()
-				.describe("Workspace ID - required when using organization admin keys"),
-		},
+		PROVIDERS_TOOL_SCHEMAS.deleteProvider,
 		async (params) => {
 			await service.providers.deleteProvider(params.slug, params.workspace_id);
 
