@@ -176,6 +176,38 @@ describe("PortkeyService facade shape", () => {
 	});
 });
 
+describe("HealthService cache sharing", () => {
+	it("reuses one HealthService across PortkeyService instances with the same config", async () => {
+		const originalApiKey = process.env.PORTKEY_API_KEY;
+		const originalBaseUrl = process.env.PORTKEY_BASE_URL;
+		process.env.PORTKEY_API_KEY = "test-dummy-key";
+		process.env.PORTKEY_BASE_URL = "https://example.portkey.test/v1";
+
+		try {
+			const { PortkeyService: FreshPortkeyService } = await import(
+				`../src/services/index.js?test=${Date.now()}-${Math.random()}`
+			);
+
+			const first = new FreshPortkeyService();
+			const second = new FreshPortkeyService();
+
+			assert.equal(first.health, second.health);
+			assert.notEqual(first.users, second.users);
+		} finally {
+			if (originalApiKey === undefined) {
+				delete process.env.PORTKEY_API_KEY;
+			} else {
+				process.env.PORTKEY_API_KEY = originalApiKey;
+			}
+			if (originalBaseUrl === undefined) {
+				delete process.env.PORTKEY_BASE_URL;
+			} else {
+				process.env.PORTKEY_BASE_URL = originalBaseUrl;
+			}
+		}
+	});
+});
+
 // ---------------------------------------------------------------------------
 // BaseService HTTP execution
 // ---------------------------------------------------------------------------
@@ -386,6 +418,81 @@ describe("BaseService HTTP execution", () => {
 			} else {
 				process.env.PORTKEY_BASE_URL = originalBaseUrl;
 			}
+		}
+	});
+});
+
+// ---------------------------------------------------------------------------
+// ConfigsService response parsing
+// ---------------------------------------------------------------------------
+
+describe("ConfigsService response parsing", () => {
+	it("parses JSON-encoded config details in getConfig and updateConfig", async () => {
+		const service = new ConfigsService("test-dummy-key");
+		const basePrototype = BaseService.prototype as {
+			get: (path: string, params?: object) => Promise<unknown>;
+			put: (path: string, body?: unknown) => Promise<unknown>;
+		};
+		const originalGet = basePrototype.get;
+		const originalPut = basePrototype.put;
+
+		basePrototype.get = async () => ({
+			id: "cfg_123",
+			name: "Support Config",
+			workspace_id: "ws_123",
+			slug: "support-config",
+			organisation_id: "org_123",
+			is_default: 0,
+			status: "active",
+			owner_id: "user_123",
+			updated_by: "user_456",
+			created_at: "2026-01-01T00:00:00.000Z",
+			last_updated_at: "2026-01-02T00:00:00.000Z",
+			config:
+				'{"cache":{"mode":"simple","max_age":300},"targets":[{"provider":"openai"}]}',
+			format: "json",
+			type: "router",
+			version_id: "ver_123",
+			object: "config",
+		});
+		basePrototype.put = async () => ({
+			id: "cfg_123",
+			name: "Support Config",
+			workspace_id: "ws_123",
+			slug: "support-config",
+			organisation_id: "org_123",
+			is_default: 0,
+			status: "active",
+			owner_id: "user_123",
+			updated_by: "user_456",
+			created_at: "2026-01-01T00:00:00.000Z",
+			last_updated_at: "2026-01-02T00:00:00.000Z",
+			config: '{"retry":{"attempts":2,"on_status_codes":[429]}}',
+			format: "json",
+			type: "router",
+			version_id: "ver_124",
+			object: "config",
+		});
+
+		try {
+			const config = await service.getConfig("support-config");
+			const updated = await service.updateConfig("support-config", {
+				status: "active",
+			});
+
+			assert.deepEqual(config.config, {
+				cache: { mode: "simple", max_age: 300 },
+				targets: [{ provider: "openai" }],
+			});
+			assert.deepEqual(updated.config, {
+				retry: {
+					attempts: 2,
+					on_status_codes: [429],
+				},
+			});
+		} finally {
+			basePrototype.get = originalGet;
+			basePrototype.put = originalPut;
 		}
 	});
 });
@@ -1230,6 +1337,73 @@ describe("Config tool payload assembly", () => {
 // ---------------------------------------------------------------------------
 
 describe("Tool callback error handling", () => {
+	it("wraps successful tool responses in a standard ok/data envelope", async () => {
+		const callbacks = new Map<
+			string,
+			(...args: unknown[]) => Promise<unknown>
+		>();
+
+		registerAllTools(
+			{
+				tool(name: string, ...rest: unknown[]) {
+					callbacks.set(
+						name,
+						rest[rest.length - 1] as (...args: unknown[]) => Promise<unknown>,
+					);
+					return {} as never;
+				},
+			} as never,
+			{
+				prompts: {
+					validateBillingMetadata: (params: unknown) => ({
+						valid: true,
+						errors: [],
+						warnings: [],
+						received: params,
+					}),
+				},
+			} as never,
+		);
+
+		const validateCallback = callbacks.get("validate_completion_metadata");
+		assert.ok(
+			validateCallback,
+			"expected validate_completion_metadata to be registered",
+		);
+
+		const result = (await validateCallback({
+			client_id: "test-client",
+			app: "hourlink",
+			env: "dev",
+		})) as {
+			content: Array<{ type: string; text: string }>;
+			structuredContent?: unknown;
+			isError?: boolean;
+		};
+		const payload = JSON.parse(result.content[0]?.text || "{}") as {
+			ok?: boolean;
+			data?: {
+				valid?: boolean;
+				errors?: unknown[];
+				warnings?: unknown[];
+				metadata?: Record<string, unknown>;
+			};
+		};
+
+		assert.equal(result.isError, undefined);
+		assert.equal(result.content[0]?.type, "text");
+		assert.equal(payload.ok, true);
+		assert.equal(payload.data?.valid, true);
+		assert.deepEqual(payload.data?.errors, []);
+		assert.deepEqual(payload.data?.warnings, []);
+		assert.deepEqual(payload.data?.metadata, {
+			client_id: "test-client",
+			app: "hourlink",
+			env: "dev",
+		});
+		assert.deepEqual(result.structuredContent, payload);
+	});
+
 	it("wraps registered tool callbacks so thrown errors become MCP error results", async () => {
 		const callbacks = new Map<
 			string,
@@ -1261,15 +1435,24 @@ describe("Tool callback error handling", () => {
 
 			const result = (await listUsersCallback()) as {
 				content: Array<{ type: string; text: string }>;
+				structuredContent?: unknown;
 				isError?: boolean;
+			};
+			const payload = JSON.parse(result.content[0]?.text || "{}") as {
+				ok?: boolean;
+				error?: {
+					message?: string;
+				};
 			};
 
 			assert.equal(result.isError, true);
 			assert.equal(result.content[0]?.type, "text");
+			assert.equal(payload.ok, false);
 			assert.match(
-				result.content[0]?.text || "",
+				payload.error?.message || "",
 				/Tool "list_all_users" failed: .*listUsers.*/,
 			);
+			assert.deepEqual(result.structuredContent, payload);
 			assert.equal(loggedErrors.length, 1);
 			assert.equal(loggedErrors[0]?.message, "Tool callback failed");
 		} finally {

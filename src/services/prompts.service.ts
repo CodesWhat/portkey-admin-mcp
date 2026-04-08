@@ -122,9 +122,9 @@ export class PromptsService extends BaseService {
 	async getPromptVersion(
 		promptId: string,
 		versionId: string,
-	): Promise<Record<string, unknown>> {
+	): Promise<RawGetPromptResponse> {
 		// Returns the full prompt object with version fields flattened in
-		return this.get<Record<string, unknown>>(
+		return this.get<RawGetPromptResponse>(
 			`/prompts/${this.encodePathSegment(promptId)}/versions/${this.encodePathSegment(versionId)}`,
 		);
 	}

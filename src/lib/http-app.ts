@@ -13,7 +13,7 @@ import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import cors from "cors";
 import express from "express";
 import helmet from "helmet";
-import { HealthService } from "../services/health.service.js";
+import { getSharedHealthService } from "../services/index.js";
 import {
 	assertSafeHttpAuthConfig,
 	getHttpAuthConfig,
@@ -187,7 +187,7 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 		? true
 		: allowedOrigins;
 	const healthService = process.env.PORTKEY_API_KEY
-		? new HealthService()
+		? getSharedHealthService()
 		: null;
 	const isStatefulSessionMode = config.sessionMode === "stateful";
 	const publicBaseUrl = buildConfiguredPublicBaseUrl(config);

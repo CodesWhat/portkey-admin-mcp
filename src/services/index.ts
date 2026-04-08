@@ -88,6 +88,19 @@ function getSharedServiceCacheKey(apiKey?: string): string {
 }
 
 const sharedPortkeyServices = new Map<string, PortkeyService>();
+const sharedHealthServices = new Map<string, HealthService>();
+
+export function getSharedHealthService(apiKey?: string): HealthService {
+	const cacheKey = getSharedServiceCacheKey(apiKey);
+	const cached = sharedHealthServices.get(cacheKey);
+	if (cached) {
+		return cached;
+	}
+
+	const service = new HealthService(resolvePortkeyApiKey(apiKey));
+	sharedHealthServices.set(cacheKey, service);
+	return service;
+}
 
 /**
  * PortkeyService - container for domain-specific service clients
@@ -133,7 +146,7 @@ export class PortkeyService {
 		this.providers = new ProvidersService(resolvedApiKey);
 		this.mcpIntegrations = new McpIntegrationsService(resolvedApiKey);
 		this.mcpServers = new McpServersService(resolvedApiKey);
-		this.health = new HealthService(resolvedApiKey);
+		this.health = getSharedHealthService(resolvedApiKey);
 	}
 }
 

@@ -53,7 +53,26 @@ export interface GetConfigResponse {
 	updated_by: string;
 	created_at: string;
 	last_updated_at: string;
-	config: string; // JSON-encoded ConfigDetails
+	config: ConfigDetails;
+	format: string;
+	type: string;
+	version_id: string;
+	object: "config";
+}
+
+interface RawGetConfigResponse {
+	id: string;
+	name: string;
+	workspace_id: string;
+	slug: string;
+	organisation_id: string;
+	is_default: number;
+	status: string;
+	owner_id: string;
+	updated_by: string;
+	created_at: string;
+	last_updated_at: string;
+	config: string;
 	format: string;
 	type: string;
 	version_id: string;
@@ -101,14 +120,24 @@ export interface ConfigVersionsResponse {
 }
 
 export class ConfigsService extends BaseService {
+	private parseConfigResponse(
+		response: RawGetConfigResponse,
+	): GetConfigResponse {
+		return {
+			...response,
+			config: JSON.parse(response.config || "{}") as ConfigDetails,
+		};
+	}
+
 	async listConfigs(): Promise<ListConfigsResponse> {
 		return this.get<ListConfigsResponse>("/configs");
 	}
 
 	async getConfig(slug: string): Promise<GetConfigResponse> {
-		return this.get<GetConfigResponse>(
+		const response = await this.get<RawGetConfigResponse>(
 			`/configs/${this.encodePathSegment(slug)}`,
 		);
+		return this.parseConfigResponse(response);
 	}
 
 	// Phase 1: Config CRUD
@@ -121,10 +150,11 @@ export class ConfigsService extends BaseService {
 		slug: string,
 		data: UpdateConfigRequest,
 	): Promise<GetConfigResponse> {
-		return this.put<GetConfigResponse>(
+		const response = await this.put<RawGetConfigResponse>(
 			`/configs/${this.encodePathSegment(slug)}`,
 			data,
 		);
+		return this.parseConfigResponse(response);
 	}
 
 	async deleteConfig(slug: string): Promise<{ success: boolean }> {
