@@ -217,7 +217,7 @@ export function registerKeysTools(
 	// List virtual keys tool
 	server.tool(
 		"list_virtual_keys",
-		"Retrieve all virtual keys in your Portkey organization, including their usage limits, rate limits, and status",
+		"List virtual keys that securely store provider API keys (OpenAI, Anthropic, etc.) in your Portkey organization. Use to discover virtual key slugs referenced in prompts and configs. Returns all keys with their usage limits, rate limits, and status.",
 		KEYS_TOOL_SCHEMAS.listVirtualKeys,
 		async () => {
 			const virtualKeys = await service.keys.listVirtualKeys();
@@ -263,7 +263,7 @@ export function registerKeysTools(
 	// Phase 2: Create virtual key tool
 	server.tool(
 		"create_virtual_key",
-		"Create a new virtual key for a provider (e.g., openai, anthropic). Virtual keys securely store provider API keys.",
+		"Securely store a provider API key as a virtual key. The original key is encrypted and never returned after creation. Use the returned slug to reference this key in prompts and configs. Supports optional usage/rate limits.",
 		KEYS_TOOL_SCHEMAS.createVirtualKey,
 		async (params) => {
 			const result = await service.keys.createVirtualKey({
@@ -306,7 +306,7 @@ export function registerKeysTools(
 	// Phase 2: Get virtual key tool
 	server.tool(
 		"get_virtual_key",
-		"Retrieve detailed information about a specific virtual key by its slug",
+		"Retrieve detailed information about a specific virtual key by its slug. Returns key metadata with a masked version of the stored API key. Use to check usage limits, rate limits, and status.",
 		KEYS_TOOL_SCHEMAS.getVirtualKey,
 		async (params) => {
 			const virtualKey = await service.keys.getVirtualKey(params.slug);
@@ -349,7 +349,7 @@ export function registerKeysTools(
 	// Phase 2: Update virtual key tool
 	server.tool(
 		"update_virtual_key",
-		"Update an existing virtual key's name, API key, note, or limits",
+		"Update an existing virtual key's name, API key, note, or limits. Can rotate the underlying provider API key by passing a new key value. Changes to limits take effect immediately.",
 		KEYS_TOOL_SCHEMAS.updateVirtualKey,
 		async (params) => {
 			const result = await service.keys.updateVirtualKey(params.slug, {
@@ -386,7 +386,7 @@ export function registerKeysTools(
 	// Phase 2: Delete virtual key tool
 	server.tool(
 		"delete_virtual_key",
-		"Delete a virtual key by slug. This action cannot be undone.",
+		"Delete a virtual key by slug. This action cannot be undone. Prompts and configs referencing this key will fail; ensure no active resources depend on it before deleting.",
 		KEYS_TOOL_SCHEMAS.deleteVirtualKey,
 		async (params) => {
 			const result = await service.keys.deleteVirtualKey(params.slug);
@@ -411,7 +411,7 @@ export function registerKeysTools(
 	// Phase 2: Create API key tool
 	server.tool(
 		"create_api_key",
-		"Create a new Portkey API key for authentication. Organisation-level keys provide full access, workspace keys are scoped. Scopes control read/write permissions to specific resources (logs, analytics, prompts, etc.).",
+		"Create a new Portkey API key for authentication. Organisation-level keys provide full access, workspace keys are scoped. Scopes control read/write permissions to specific resources (logs, analytics, prompts, etc.). Returns the key value only once at creation time — save it immediately.",
 		KEYS_TOOL_SCHEMAS.createApiKey,
 		async (params) => {
 			// Validate required fields based on type and sub_type
@@ -487,7 +487,7 @@ export function registerKeysTools(
 	// Phase 2: List API keys tool
 	server.tool(
 		"list_api_keys",
-		"List all API keys in your Portkey organization with optional pagination and workspace filtering",
+		"List Portkey API keys (not provider keys — use list_virtual_keys for those) with optional pagination and workspace filtering. Use to audit access and review key scopes, limits, and expiration across your organization.",
 		KEYS_TOOL_SCHEMAS.listApiKeys,
 		async (params) => {
 			const apiKeys = await service.keys.listApiKeys({
@@ -546,7 +546,7 @@ export function registerKeysTools(
 	// Phase 2: Get API key tool
 	server.tool(
 		"get_api_key",
-		"Retrieve detailed information about a specific API key by its UUID",
+		"Retrieve detailed information about a specific API key by its UUID. Returns key metadata without the secret key value. Use to check scopes, usage/rate limits, defaults, and expiration.",
 		KEYS_TOOL_SCHEMAS.getApiKey,
 		async (params) => {
 			const apiKey = await service.keys.getApiKey(params.id);
@@ -598,7 +598,7 @@ export function registerKeysTools(
 	// Phase 2: Update API key tool
 	server.tool(
 		"update_api_key",
-		"Update an existing API key's name, description, scopes, or limits",
+		"Update an existing API key's name, description, scopes, or limits. Can modify scopes, usage/rate limits, defaults, and expiration. Cannot change key type or sub_type after creation.",
 		KEYS_TOOL_SCHEMAS.updateApiKey,
 		async (params) => {
 			const result = await service.keys.updateApiKey(params.id, {
@@ -643,7 +643,7 @@ export function registerKeysTools(
 	// Phase 2: Delete API key tool
 	server.tool(
 		"delete_api_key",
-		"Delete an API key by UUID. This action cannot be undone.",
+		"Delete an API key by UUID. This action cannot be undone. Immediately revokes authentication; active sessions using this key will fail.",
 		KEYS_TOOL_SCHEMAS.deleteApiKey,
 		async (params) => {
 			const result = await service.keys.deleteApiKey(params.id);

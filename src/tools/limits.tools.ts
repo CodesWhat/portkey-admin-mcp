@@ -241,7 +241,7 @@ export function registerLimitsTools(
 	// List rate limits
 	server.tool(
 		"list_rate_limits",
-		"Retrieve all rate limits in your Portkey organization. Rate limits control how many requests or tokens can be consumed per time unit (rpm/rph/rpd).",
+		"Retrieve all rate limits in your Portkey organization. Use to discover existing rate limit policies before creating new ones. Returns an array of rate limits each containing id, type, unit, value, and status. Rate limits control how many requests or tokens can be consumed per time unit (rpm/rph/rpd).",
 		LIMITS_TOOL_SCHEMAS.listRateLimits,
 		async (params) => {
 			const result = await service.limits.listRateLimits(params.workspace_id);
@@ -266,7 +266,7 @@ export function registerLimitsTools(
 	// Get rate limit
 	server.tool(
 		"get_rate_limit",
-		"Retrieve detailed information about a specific rate limit by its ID",
+		"Retrieve detailed information about a specific rate limit by its ID. Returns full detail including conditions and group_by fields. Use when you have a specific rate limit ID from list_rate_limits and need to inspect its complete configuration.",
 		LIMITS_TOOL_SCHEMAS.getRateLimit,
 		async (params) => {
 			const result = await service.limits.getRateLimit(params.id);
@@ -284,7 +284,7 @@ export function registerLimitsTools(
 	// Create rate limit
 	server.tool(
 		"create_rate_limit",
-		"Create a new rate limit policy to control request/token consumption per time unit. Requires conditions to match against and group_by to specify how limits are applied.",
+		"Create a new rate limit policy to throttle requests in real-time by controlling request/token consumption per time unit. Differs from usage limits, which cap cumulative consumption over time. Requires conditions to match against and group_by to specify how limits are applied.",
 		LIMITS_TOOL_SCHEMAS.createRateLimit,
 		async (params) => {
 			const result = await service.limits.createRateLimit({
@@ -318,7 +318,7 @@ export function registerLimitsTools(
 	// Update rate limit
 	server.tool(
 		"update_rate_limit",
-		"Update an existing rate limit's name, unit, or value",
+		"Update an existing rate limit's name, unit, or value. Only name, unit, and value can be changed after creation; conditions and group_by are immutable. Returns the updated rate limit object.",
 		LIMITS_TOOL_SCHEMAS.updateRateLimit,
 		async (params) => {
 			const result = await service.limits.updateRateLimit(params.id, {
@@ -374,7 +374,7 @@ export function registerLimitsTools(
 	// List usage limits
 	server.tool(
 		"list_usage_limits",
-		"Retrieve all usage limits in your Portkey organization. Usage limits control how much cost or tokens can be consumed, with optional periodic resets.",
+		"Retrieve all usage limits in your Portkey organization. Differs from rate limits: usage limits cap total cumulative cost or tokens over time, optionally resetting on a weekly or monthly schedule. Returns an array of usage limits with id, type, credit_limit, status, and reset schedule.",
 		LIMITS_TOOL_SCHEMAS.listUsageLimits,
 		async (params) => {
 			const result = await service.limits.listUsageLimits(params.workspace_id);
@@ -399,7 +399,7 @@ export function registerLimitsTools(
 	// Get usage limit
 	server.tool(
 		"get_usage_limit",
-		"Retrieve detailed information about a specific usage limit by its ID",
+		"Retrieve detailed information about a specific usage limit by its ID. Returns full detail including conditions, group_by, credit_limit, alert_threshold, and periodic reset schedule.",
 		LIMITS_TOOL_SCHEMAS.getUsageLimit,
 		async (params) => {
 			const result = await service.limits.getUsageLimit(params.id);
@@ -417,7 +417,7 @@ export function registerLimitsTools(
 	// Create usage limit
 	server.tool(
 		"create_usage_limit",
-		"Create a new usage limit policy to control cost or token consumption. Requires conditions to match against and group_by to specify how limits are applied.",
+		"Create a new usage limit policy to enforce spending or token budgets over time. Differs from rate limits, which control real-time request velocity. Requires conditions to match against and group_by to specify how limits are applied. Supports optional periodic resets and alert thresholds.",
 		LIMITS_TOOL_SCHEMAS.createUsageLimit,
 		async (params) => {
 			const result = await service.limits.createUsageLimit({
@@ -452,7 +452,7 @@ export function registerLimitsTools(
 	// Update usage limit
 	server.tool(
 		"update_usage_limit",
-		"Update an existing usage limit's configuration",
+		"Update an existing usage limit's configuration. Modifiable fields: name, credit_limit, alert_threshold, periodic_reset, and reset_usage_for_value. Conditions and group_by are immutable after creation.",
 		LIMITS_TOOL_SCHEMAS.updateUsageLimit,
 		async (params) => {
 			const result = await service.limits.updateUsageLimit(params.id, {
@@ -509,7 +509,7 @@ export function registerLimitsTools(
 
 	server.tool(
 		"list_usage_limit_entities",
-		"List all entities tracked against a usage limit policy, showing current usage per entity",
+		"List all entities (individual keys, users, or groups) tracked against a usage limit policy. Shows current consumption per entity, useful for monitoring who is approaching or has exceeded their budget.",
 		LIMITS_TOOL_SCHEMAS.listUsageLimitEntities,
 		async (params) => {
 			const result = await service.limits.listUsageLimitEntities(
@@ -535,7 +535,7 @@ export function registerLimitsTools(
 
 	server.tool(
 		"reset_usage_limit_entity",
-		"Reset accumulated usage for a specific entity on a usage limit policy",
+		"Reset the accumulated usage counter to zero for a specific entity on a usage limit policy. Does not delete the entity or the policy itself. Use when an entity needs its budget restored before the next scheduled periodic reset.",
 		LIMITS_TOOL_SCHEMAS.resetUsageLimitEntity,
 		async (params) => {
 			await service.limits.resetUsageLimitEntity(

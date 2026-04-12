@@ -52,7 +52,7 @@ export function registerCollectionsTools(
 	// List collections tool
 	server.tool(
 		"list_collections",
-		"List all prompt collections in your Portkey organization. Collections group prompts by app (e.g., hourlink, apizone, research-pilot).",
+		"List all prompt collections in your Portkey organization. Collections organize prompts by application (e.g., hourlink, apizone, research-pilot). Use to discover collection_id values before creating or listing prompts. Returns id, name, and slug per collection.",
 		COLLECTIONS_TOOL_SCHEMAS.listCollections,
 		async (params) => {
 			const collections = await service.collections.listCollections(params);
@@ -84,7 +84,7 @@ export function registerCollectionsTools(
 	// Create collection tool
 	server.tool(
 		"create_collection",
-		"Create a new prompt collection for organizing prompts by app. Use one collection per app (hourlink, apizone, research-pilot).",
+		"Create a new prompt collection for organizing prompts by app. Use one collection per app (hourlink, apizone, research-pilot). Returns the new collection_id and slug needed for create_prompt.",
 		COLLECTIONS_TOOL_SCHEMAS.createCollection,
 		async (params) => {
 			const result = await service.collections.createCollection(params);
@@ -110,7 +110,7 @@ export function registerCollectionsTools(
 	// Get collection tool
 	server.tool(
 		"get_collection",
-		"Retrieve detailed information about a specific collection",
+		"Retrieve full details of a specific collection by ID or slug, including name, slug, and workspace_id. Use get_collection when you have a specific ID; use list_collections to browse all collections.",
 		COLLECTIONS_TOOL_SCHEMAS.getCollection,
 		async (params) => {
 			const collection = await service.collections.getCollection(
@@ -141,7 +141,7 @@ export function registerCollectionsTools(
 	// Update collection tool
 	server.tool(
 		"update_collection",
-		"Update a collection's name or description",
+		"Update a collection's display name or description. Does not affect prompts within the collection.",
 		COLLECTIONS_TOOL_SCHEMAS.updateCollection,
 		async (params) => {
 			await service.collections.updateCollection(params.collection_id, {

@@ -61,7 +61,7 @@ export function registerAuditTools(
 	// List audit logs
 	server.tool(
 		"list_audit_logs",
-		"Retrieve audit logs for your Portkey organization. Audit logs track all administrative actions including user management, configuration changes, and access events. Supports filtering by time range, actor, action type, and resource.",
+		"Retrieve audit logs for your Portkey organization. Use this for compliance and security reviews. Audit logs track all administrative actions including user management, configuration changes, and access events. Unlike analytics tools which show aggregated metrics, audit logs show individual action events with actor details. Supports filtering by time range, actor, action type, and resource.",
 		AUDIT_TOOL_SCHEMAS.listAuditLogs,
 		async (params) => {
 			const result = await service.audit.listAuditLogs({

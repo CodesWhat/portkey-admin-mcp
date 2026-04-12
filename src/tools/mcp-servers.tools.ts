@@ -150,7 +150,7 @@ export function registerMcpServersTools(
 ): void {
 	server.tool(
 		"list_mcp_servers",
-		"List all MCP servers in your Portkey organization with optional pagination and workspace filtering",
+		"List all MCP servers in your Portkey organization with optional pagination and workspace filtering. MCP servers are instances under MCP integrations. Use to discover server IDs needed by other tools. Differs from list_mcp_integrations which shows the parent integration connections. Returns paginated array of servers with total count.",
 		MCP_SERVERS_TOOL_SCHEMAS.listMcpServers,
 		async (params) => {
 			const result = await service.mcpServers.listMcpServers(params);
@@ -174,7 +174,7 @@ export function registerMcpServersTools(
 
 	server.tool(
 		"create_mcp_server",
-		"Register a new MCP server under an existing MCP integration",
+		"Register a new MCP server instance under an existing MCP integration. Use list_mcp_integrations to find the mcp_integration_id first. Returns the new server's id and slug.",
 		MCP_SERVERS_TOOL_SCHEMAS.createMcpServer,
 		async (params) => {
 			const result = await service.mcpServers.createMcpServer(params);
@@ -199,7 +199,7 @@ export function registerMcpServersTools(
 
 	server.tool(
 		"get_mcp_server",
-		"Retrieve detailed information about a specific MCP server by ID or slug",
+		"Retrieve detailed information about a specific MCP server by ID or slug. Returns server details including linked integration ID and status. Use to check server configuration and health.",
 		MCP_SERVERS_TOOL_SCHEMAS.getMcpServer,
 		async (params) => {
 			const mcpServer = await service.mcpServers.getMcpServer(params.id);
@@ -216,7 +216,7 @@ export function registerMcpServersTools(
 
 	server.tool(
 		"update_mcp_server",
-		"Update an existing MCP server's name or description",
+		"Update an existing MCP server's name or description. Only name and description can be changed on a server. To change the URL or auth configuration, update the parent MCP integration instead.",
 		MCP_SERVERS_TOOL_SCHEMAS.updateMcpServer,
 		async (params) => {
 			const { id, ...data } = params;
@@ -265,7 +265,7 @@ export function registerMcpServersTools(
 
 	server.tool(
 		"test_mcp_server",
-		"Test connectivity to an MCP server to verify it is reachable and responding",
+		"Send a connectivity check to an MCP server to verify it is reachable and responding. Returns success/failure, response time in ms, and any error message. Use to diagnose connection issues before investigating configuration.",
 		MCP_SERVERS_TOOL_SCHEMAS.testMcpServer,
 		async (params) => {
 			const result = await service.mcpServers.testMcpServer(params.id);
@@ -282,7 +282,7 @@ export function registerMcpServersTools(
 
 	server.tool(
 		"list_mcp_server_capabilities",
-		"List all capabilities (tools, resources, prompts) exposed by an MCP server",
+		"List all capabilities (tools, resources, prompts) exposed by an MCP server instance. Differs from list_mcp_integration_capabilities which shows integration-level capability settings. Returns total count and array of capabilities.",
 		MCP_SERVERS_TOOL_SCHEMAS.listMcpServerCapabilities,
 		async (params) => {
 			const result = await service.mcpServers.listMcpServerCapabilities(
@@ -305,7 +305,7 @@ export function registerMcpServersTools(
 
 	server.tool(
 		"update_mcp_server_capabilities",
-		"Bulk enable or disable capabilities on an MCP server",
+		"Enable or disable specific capabilities on an MCP server instance. Overrides integration-level capability settings for this server. Changes take effect immediately for connected users.",
 		MCP_SERVERS_TOOL_SCHEMAS.updateMcpServerCapabilities,
 		async (params) => {
 			await service.mcpServers.updateMcpServerCapabilities(params.id, {
@@ -331,7 +331,7 @@ export function registerMcpServersTools(
 
 	server.tool(
 		"list_mcp_server_user_access",
-		"List user access settings for an MCP server",
+		"List per-user access settings for an MCP server including override flags and connection status. Returns default_user_access setting and array of users. Use to audit who can access this server before modifying permissions.",
 		MCP_SERVERS_TOOL_SCHEMAS.listMcpServerUserAccess,
 		async (params) => {
 			const result = await service.mcpServers.listMcpServerUserAccess(
@@ -358,7 +358,7 @@ export function registerMcpServersTools(
 
 	server.tool(
 		"update_mcp_server_user_access",
-		"Bulk update user access for an MCP server",
+		"Grant or revoke individual user access to an MCP server. Overrides the default_user_access setting for specified users. Changes take effect immediately.",
 		MCP_SERVERS_TOOL_SCHEMAS.updateMcpServerUserAccess,
 		async (params) => {
 			await service.mcpServers.updateMcpServerUserAccess(params.id, {

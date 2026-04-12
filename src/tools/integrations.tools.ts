@@ -233,7 +233,7 @@ export function registerIntegrationsTools(
 	// List integrations tool
 	server.tool(
 		"list_integrations",
-		"List all integrations in your Portkey organization with optional filtering by workspace or type",
+		"List org-level connections to AI providers (OpenAI, Anthropic, Azure, etc.) with optional filtering by workspace or type. Use to discover integration slugs for other integration tools. Returns paginated results with id, slug, provider, and status. Differs from list_providers, which shows workspace-scoped provider instances.",
 		INTEGRATIONS_TOOL_SCHEMAS.listIntegrations,
 		async (params) => {
 			const integrations = await service.integrations.listIntegrations({
@@ -335,7 +335,7 @@ export function registerIntegrationsTools(
 	// Get integration tool
 	server.tool(
 		"get_integration",
-		"Retrieve detailed information about a specific integration by its slug",
+		"Retrieve detailed information about a specific integration by its slug. Returns full config including masked API key, workspace access settings, and allowed models. Use when you need provider-specific details or to audit an integration's configuration.",
 		INTEGRATIONS_TOOL_SCHEMAS.getIntegration,
 		async (params) => {
 			const integration = await service.integrations.getIntegration(
@@ -376,7 +376,7 @@ export function registerIntegrationsTools(
 	// Update integration tool
 	server.tool(
 		"update_integration",
-		"Update an existing integration's name, API key, description, or provider-specific configurations",
+		"Update an existing integration's name, API key, description, or provider-specific configurations. API key changes take effect immediately. Changing provider-specific configs (Azure resource_name, Vertex region, etc.) may break active requests using this integration.",
 		INTEGRATIONS_TOOL_SCHEMAS.updateIntegration,
 		async (params) => {
 			const configurations: Record<string, unknown> = {};
@@ -436,7 +436,7 @@ export function registerIntegrationsTools(
 	// Delete integration tool
 	server.tool(
 		"delete_integration",
-		"Delete an integration by slug. This action cannot be undone.",
+		"Delete an integration by slug. This action cannot be undone. Removes the org-level provider connection; all dependent virtual keys and providers will stop working.",
 		INTEGRATIONS_TOOL_SCHEMAS.deleteIntegration,
 		async (params) => {
 			const result = await service.integrations.deleteIntegration(params.slug);
@@ -462,7 +462,7 @@ export function registerIntegrationsTools(
 	// List integration models tool
 	server.tool(
 		"list_integration_models",
-		"List all models available for a specific integration with their enabled status",
+		"List which AI models are enabled for a specific integration, with their enabled/disabled status and custom flag. Use to check model availability before creating prompts or configs. Returns paginated results with model id, name, and enabled state.",
 		INTEGRATIONS_TOOL_SCHEMAS.listIntegrationModels,
 		async (params) => {
 			const models = await service.integrations.listIntegrationModels(
@@ -503,7 +503,7 @@ export function registerIntegrationsTools(
 	// Update integration models tool
 	server.tool(
 		"update_integration_models",
-		"Update model access settings for an integration - enable/disable models or add custom models",
+		"Enable/disable specific models or register custom model names for an integration. Changes affect all workspaces using this integration. Pass an array of model configurations with slug, enabled state, and optional is_custom flag.",
 		INTEGRATIONS_TOOL_SCHEMAS.updateIntegrationModels,
 		async (params) => {
 			const result = await service.integrations.updateIntegrationModels(
@@ -535,7 +535,7 @@ export function registerIntegrationsTools(
 	// Delete integration model tool
 	server.tool(
 		"delete_integration_model",
-		"Delete a specific custom model from an integration",
+		"Delete a specific custom model from an integration. Only custom models can be deleted; built-in models should be disabled via update_integration_models instead. Returns success status.",
 		INTEGRATIONS_TOOL_SCHEMAS.deleteIntegrationModel,
 		async (params) => {
 			const result = await service.integrations.deleteIntegrationModel(
@@ -564,7 +564,7 @@ export function registerIntegrationsTools(
 	// List integration workspaces tool
 	server.tool(
 		"list_integration_workspaces",
-		"List all workspaces that have access to a specific integration",
+		"List which workspaces can access a specific integration, including their usage limits and rate limits. Use to audit workspace access and review per-workspace spending/rate configurations. Returns paginated results.",
 		INTEGRATIONS_TOOL_SCHEMAS.listIntegrationWorkspaces,
 		async (params) => {
 			const workspaces = await service.integrations.listIntegrationWorkspaces(
@@ -606,7 +606,7 @@ export function registerIntegrationsTools(
 	// Update integration workspaces tool
 	server.tool(
 		"update_integration_workspaces",
-		"Update workspace access settings for an integration - enable/disable workspace access and configure limits",
+		"Control which workspaces can use an integration and set per-workspace usage/rate limits. Pass an array of workspace configurations with id, enabled state, and optional credit_limit, alert_threshold, and rate_limit_rpm.",
 		INTEGRATIONS_TOOL_SCHEMAS.updateIntegrationWorkspaces,
 		async (params) => {
 			const result = await service.integrations.updateIntegrationWorkspaces(

@@ -58,7 +58,7 @@ export function registerTracingTools(
 	// Create feedback
 	server.tool(
 		"create_feedback",
-		"Create feedback for a specific trace/request. Use this to capture user feedback (thumbs up/down, ratings) on AI generations. Feedback is linked via trace_id and can include custom metadata for analysis.",
+		"Create feedback for a specific trace/request. Use this to capture user feedback (thumbs up/down, ratings) on AI generations. Feedback is linked via trace_id and can include custom metadata for analysis. Use get_trace to find trace_ids for requests you want to provide feedback on.",
 		TRACING_TOOL_SCHEMAS.createFeedback,
 		async (params) => {
 			const result = await service.tracing.createFeedback({
@@ -89,7 +89,7 @@ export function registerTracingTools(
 	// Update feedback
 	server.tool(
 		"update_feedback",
-		"Update existing feedback by ID. Allows modifying the feedback value, weight, or metadata after initial creation.",
+		"Update existing feedback by ID. Use this instead of create_feedback when feedback already exists and needs correction or refinement. Only value, weight, and metadata can be changed; the trace_id association is immutable. Returns the updated feedback status and IDs.",
 		TRACING_TOOL_SCHEMAS.updateFeedback,
 		async (params) => {
 			const result = await service.tracing.updateFeedback(params.id, {
@@ -119,7 +119,7 @@ export function registerTracingTools(
 	// Get trace
 	server.tool(
 		"get_trace",
-		"Retrieve detailed information about a specific trace by ID. Returns full request/response data, all spans, metadata, cost, token usage, and any associated feedback.",
+		"Retrieve detailed information about a specific trace by ID. Use this to inspect individual request/response data, spans, metadata, cost, token usage, and associated feedback. Unlike analytics tools which return aggregated metrics across many requests, this returns the full detail of a single trace.",
 		TRACING_TOOL_SCHEMAS.getTrace,
 		async (params) => {
 			const result = await service.tracing.getTrace(params.id);

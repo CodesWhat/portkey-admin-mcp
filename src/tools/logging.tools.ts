@@ -175,7 +175,7 @@ export function registerLoggingTools(
 	// Insert log tool
 	server.tool(
 		"insert_log",
-		"Insert a log entry (or multiple entries) into Portkey for tracking AI requests and responses. request_provider must match a configured integration (e.g. 'openai', 'anthropic'). Use metadata_span_id and metadata_parent_span_id to create trace hierarchies.",
+		"Insert a log entry (or multiple entries) into Portkey for tracking AI requests and responses. Use this for external or custom logs not routed through the Portkey gateway. request_provider must match a configured integration (e.g. 'openai', 'anthropic'). Use metadata_span_id and metadata_parent_span_id to create trace hierarchies.",
 		LOGGING_TOOL_SCHEMAS.insertLog,
 		async (params) => {
 			const entry = {
@@ -227,7 +227,7 @@ export function registerLoggingTools(
 	// Create log export tool
 	server.tool(
 		"create_log_export",
-		"Create a new log export job to export logs matching specified filters. time_min/time_max accept ISO 8601 format ('2024-01-01T00:00:00Z'). requested_fields selects which columns to include.",
+		"Create a new log export job definition with filters and field selection. This only creates the job — you must call start_log_export to begin processing, then poll get_log_export to check status. time_min/time_max accept ISO 8601 format ('2024-01-01T00:00:00Z'). Returns the export ID and matching log count.",
 		LOGGING_TOOL_SCHEMAS.createLogExport,
 		async (params) => {
 			const result = await service.logging.createLogExport({
@@ -268,7 +268,7 @@ export function registerLoggingTools(
 	// List log exports tool
 	server.tool(
 		"list_log_exports",
-		"List all log export jobs for a workspace",
+		"List all log export jobs for a workspace. Returns each export with its current status (pending/running/completed/failed), filters, and timestamps. Use this to find export_ids for subsequent get, start, cancel, or download operations.",
 		LOGGING_TOOL_SCHEMAS.listLogExports,
 		async (params) => {
 			const result = await service.logging.listLogExports({
@@ -306,7 +306,7 @@ export function registerLoggingTools(
 	// Get log export tool
 	server.tool(
 		"get_log_export",
-		"Get details of a specific log export by its ID",
+		"Get details of a specific log export by its ID. Use this to check the current status of an export (pending/running/completed/failed) and view its full configuration. Unlike list_log_exports which returns summaries of all exports, this returns complete detail for a single export including filters and requested fields.",
 		LOGGING_TOOL_SCHEMAS.getLogExport,
 		async (params) => {
 			const result = await service.logging.getLogExport(params.export_id);
@@ -340,7 +340,7 @@ export function registerLoggingTools(
 	// Start log export tool
 	server.tool(
 		"start_log_export",
-		"Start a log export job that was previously created",
+		"Trigger processing of a previously created log export job. You must call create_log_export first to define the export before starting it. After starting, poll get_log_export to monitor progress until status is 'completed', then use download_log_export to retrieve results.",
 		LOGGING_TOOL_SCHEMAS.startLogExport,
 		async (params) => {
 			const result = await service.logging.startLogExport(params.export_id);
@@ -367,7 +367,7 @@ export function registerLoggingTools(
 	// Cancel log export tool
 	server.tool(
 		"cancel_log_export",
-		"Cancel a running log export job",
+		"Cancel a running or pending log export job. This permanently stops the export — it cannot be resumed after cancellation. To export the same data, create a new export job with create_log_export.",
 		LOGGING_TOOL_SCHEMAS.cancelLogExport,
 		async (params) => {
 			const result = await service.logging.cancelLogExport(params.export_id);

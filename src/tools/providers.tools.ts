@@ -165,7 +165,7 @@ export function registerProvidersTools(
 	// List providers tool
 	server.tool(
 		"list_providers",
-		"List all providers in your Portkey organization with optional pagination and workspace filtering",
+		"List workspace-scoped providers, which are instances of org-level integrations with their own usage and rate limits. Differs from list_integrations which shows org-level provider connections. Use to discover provider slugs for a workspace. Returns name, slug, limits, and status per provider.",
 		PROVIDERS_TOOL_SCHEMAS.listProviders,
 		async (params) => {
 			const providers = await service.providers.listProviders({
@@ -217,7 +217,7 @@ export function registerProvidersTools(
 	// Create provider tool
 	server.tool(
 		"create_provider",
-		"Create a new provider configuration in Portkey. Providers define integrations with AI model providers like OpenAI, Anthropic, etc.",
+		"Create a workspace-scoped provider linked to an org-level integration. Use list_integrations to find the integration_id first. Providers inherit the integration's API key but can have independent usage limits, rate limits, and expiration. Returns the new provider's id and slug.",
 		PROVIDERS_TOOL_SCHEMAS.createProvider,
 		async (params) => {
 			const result = await service.providers.createProvider({
@@ -265,7 +265,7 @@ export function registerProvidersTools(
 	// Get provider tool
 	server.tool(
 		"get_provider",
-		"Retrieve detailed information about a specific provider by its slug",
+		"Retrieve full provider details by slug, including usage limits, rate limits, and expiration. Use to check current consumption against limits or inspect provider configuration before updating.",
 		PROVIDERS_TOOL_SCHEMAS.getProvider,
 		async (params) => {
 			const provider = await service.providers.getProvider(
@@ -313,7 +313,7 @@ export function registerProvidersTools(
 	// Update provider tool
 	server.tool(
 		"update_provider",
-		"Update an existing provider's name, note, limits, or expiration",
+		"Update a provider's name, note, usage limits, rate limits, or expiration. Set reset_usage to true to clear accumulated usage counters without changing the limit. Returns the updated provider's id and slug.",
 		PROVIDERS_TOOL_SCHEMAS.updateProvider,
 		async (params) => {
 			const result = await service.providers.updateProvider(

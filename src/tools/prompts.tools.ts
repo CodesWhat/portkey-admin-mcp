@@ -469,7 +469,7 @@ Most production prompts use format #2 (multi-message). Use get_prompt to see exa
 	// List prompts tool
 	server.tool(
 		"list_prompts",
-		"List all prompts in your Portkey organization with optional filtering by collection, workspace, or search query",
+		"List all prompts in your Portkey organization with optional filtering by collection, workspace, or search query. Returns paginated results with id, name, slug, model, and status. Use collection_id to filter by app. Use to discover prompt_id values before calling get_prompt.",
 		PROMPTS_TOOL_SCHEMAS.listPrompts,
 		async (params) => {
 			const prompts = await service.prompts.listPrompts(params);
@@ -737,7 +737,7 @@ Use get_prompt first to see the current format, then pass the same format back. 
 	// Render prompt tool
 	server.tool(
 		"render_prompt",
-		"Render a prompt template by substituting variables, returning the final messages without executing",
+		"Render a prompt template by substituting variables, returning the final messages without executing. Previews the final messages after variable substitution without sending to the AI model. Use to verify template output before running a completion. Differs from run_prompt_completion which actually calls the model.",
 		PROMPTS_TOOL_SCHEMAS.renderPrompt,
 		async (params) => {
 			const result = await service.prompts.renderPrompt(params.prompt_id, {
@@ -772,7 +772,7 @@ Use get_prompt first to see the current format, then pass the same format back. 
 	// Run prompt completion tool
 	server.tool(
 		"run_prompt_completion",
-		"Execute a prompt template with variables and get the model completion response. REQUIRES billing metadata (client_id, app, env). Use validate_completion_metadata first if uncertain.",
+		"Execute a prompt template against the configured AI model and return the model's response. Costs money — use render_prompt to preview first. REQUIRES billing metadata (client_id, app, env). Use validate_completion_metadata first if uncertain.",
 		PROMPTS_TOOL_SCHEMAS.runPromptCompletion,
 		async (params) => {
 			const result = await service.prompts.runPromptCompletion(
@@ -902,7 +902,7 @@ Use get_prompt first to see the current format, then pass the same format back. 
 	// Validate completion metadata tool
 	server.tool(
 		"validate_completion_metadata",
-		"Validate billing metadata before running a completion. Checks for required fields (client_id, app, env) and valid values.",
+		"Validate billing metadata before running a completion. Checks for required fields (client_id, app, env) and valid values. Call this before run_prompt_completion to catch missing or invalid billing fields. Does not make any changes.",
 		PROMPTS_TOOL_SCHEMAS.validateCompletionMetadata,
 		async (params) => {
 			const result = service.prompts.validateBillingMetadata(params);
@@ -931,7 +931,7 @@ Use get_prompt first to see the current format, then pass the same format back. 
 
 	server.tool(
 		"get_prompt_version",
-		"Retrieve a specific version of a prompt by its version ID",
+		"Retrieve a specific version of a prompt by its version UUID. Use list_prompt_versions to find version IDs. Returns full template, parameters, and model config for that version.",
 		PROMPTS_TOOL_SCHEMAS.getPromptVersion,
 		async (params) => {
 			const version = await service.prompts.getPromptVersion(
@@ -951,7 +951,7 @@ Use get_prompt first to see the current format, then pass the same format back. 
 
 	server.tool(
 		"update_prompt_version",
-		"Update a specific prompt version, e.g. to assign or remove a label",
+		"Update a specific prompt version. Currently only supports assigning or removing a label. Use list_prompt_labels to find label IDs. Pass null to remove the current label.",
 		PROMPTS_TOOL_SCHEMAS.updatePromptVersion,
 		async (params) => {
 			if (params.label_id === undefined) {
