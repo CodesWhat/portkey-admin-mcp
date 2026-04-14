@@ -26,7 +26,6 @@ interface TestContext {
 	rateLimitId?: string;
 	labelId?: string;
 	partialId?: string;
-	traceId?: string;
 	logExportId?: string;
 	providerSlug?: string;
 	apiKeyId?: string;
@@ -358,14 +357,6 @@ async function main() {
 			await portkey.partials.listPartialVersions(ctx.partialId!);
 		},
 		() => (ctx.partialId ? null : "no partialId"),
-	);
-
-	await test(
-		"getTrace",
-		async () => {
-			await portkey.tracing.getTrace(ctx.traceId!);
-		},
-		() => (ctx.traceId ? null : "no traceId"),
 	);
 
 	await test(

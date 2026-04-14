@@ -1,7 +1,7 @@
 # Portkey Admin MCP — API Coverage Roadmap
 
 > Last updated: 2026-03-23
-> **Status: COMPLETE** — 151 tools covering ~98% of Portkey admin API surface
+> **Status: COMPLETE** — 150 tools covering ~98% of Portkey admin API surface
 > Completed: MCP Integrations (10), MCP Servers (10), Analytics (11), Prompt Versions (2), Usage Limit Entities (2)
 > Skipped: Secret References (not a standard admin CRUD endpoint — requires config/provider headers)
 

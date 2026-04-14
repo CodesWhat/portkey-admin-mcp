@@ -6,7 +6,7 @@ This document lists all API endpoints used by the Portkey Admin MCP Server, veri
 
 - **Base URL**: `https://api.portkey.ai/v1`
 - **Authentication**: `x-portkey-api-key` header
-- **Total Endpoints**: 151
+- **Total Endpoints**: 150
 
 ## Verification Legend
 
@@ -306,7 +306,6 @@ This document lists all API endpoints used by the Portkey Admin MCP Server, veri
 |--------|--------|---------------|-----------|-------------|
 | [x] | POST | `/feedback` | `/feedback` | Create feedback |
 | [x] | PUT | `/feedback/{id}` | `/feedback/{id}` | Update feedback |
-| [x] | GET | `/logs/{id}` | `/logs/{id}` | Get trace |
 
 ---
 

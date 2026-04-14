@@ -46,9 +46,6 @@ const TRACING_TOOL_SCHEMAS = {
 			.optional()
 			.describe("New or updated custom metadata for the feedback"),
 	},
-	getTrace: {
-		id: z.string().describe("The unique identifier of the trace to retrieve"),
-	},
 } as const;
 
 export function registerTracingTools(
@@ -58,7 +55,7 @@ export function registerTracingTools(
 	// Create feedback
 	server.tool(
 		"create_feedback",
-		"Create feedback for a specific trace/request. Use this to capture user feedback (thumbs up/down, ratings) on AI generations. Feedback is linked via trace_id and can include custom metadata for analysis. Use get_trace to find trace_ids for requests you want to provide feedback on.",
+		"Create feedback for a specific trace/request. Use this to capture user feedback (thumbs up/down, ratings) on AI generations. Feedback is linked via trace_id and can include custom metadata for analysis. Trace IDs are surfaced in request logs and via log exports (create_log_export).",
 		TRACING_TOOL_SCHEMAS.createFeedback,
 		async (params) => {
 			const result = await service.tracing.createFeedback({
@@ -106,53 +103,6 @@ export function registerTracingTools(
 								message: `Successfully updated feedback "${params.id}"`,
 								status: result.status,
 								feedback_ids: result.feedback_ids,
-							},
-							null,
-							2,
-						),
-					},
-				],
-			};
-		},
-	);
-
-	// Get trace
-	server.tool(
-		"get_trace",
-		"Retrieve detailed information about a specific trace by ID. Use this to inspect individual request/response data, spans, metadata, cost, token usage, and associated feedback. Unlike analytics tools which return aggregated metrics across many requests, this returns the full detail of a single trace.",
-		TRACING_TOOL_SCHEMAS.getTrace,
-		async (params) => {
-			const result = await service.tracing.getTrace(params.id);
-			const trace = result.data;
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify(
-							{
-								success: result.success,
-								trace: {
-									id: trace.id,
-									trace_id: trace.trace_id,
-									request: trace.request,
-									response: trace.response,
-									metadata: trace.metadata,
-									workspace_id: trace.workspace_id,
-									organisation_id: trace.organisation_id,
-									cost: trace.cost,
-									tokens: trace.tokens,
-									spans: trace.spans?.map((span) => ({
-										span_id: span.span_id,
-										span_name: span.span_name,
-										parent_span_id: span.parent_span_id,
-										start_time: span.start_time,
-										end_time: span.end_time,
-										status: span.status,
-										attributes: span.attributes,
-									})),
-									feedback: trace.feedback,
-									created_at: trace.created_at,
-								},
 							},
 							null,
 							2,

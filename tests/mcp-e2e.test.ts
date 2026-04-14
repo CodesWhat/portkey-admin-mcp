@@ -16,7 +16,7 @@ const PKG = JSON.parse(
 	readFileSync(new URL("../package.json", import.meta.url), "utf-8"),
 );
 
-// All 151 expected tool names across 18 domains
+// All 150 expected tool names across 18 domains
 const EXPECTED_TOOLS = [
 	// users (10)
 	"list_all_users",
@@ -135,10 +135,9 @@ const EXPECTED_TOOLS = [
 	"delete_prompt_partial",
 	"list_partial_versions",
 	"publish_partial",
-	// tracing (3)
+	// tracing (2)
 	"create_feedback",
 	"update_feedback",
-	"get_trace",
 	// logging (8)
 	"insert_log",
 	"create_log_export",
