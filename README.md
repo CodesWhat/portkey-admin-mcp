@@ -56,6 +56,14 @@ Add to your MCP config (`.cursor/mcp.json`, `.windsurf/mcp.json`, or `.vscode/mc
 PORTKEY_API_KEY=your_key npx -y portkey-admin-mcp
 ```
 
+To expose only a focused subset of tools in stdio clients, set `PORTKEY_TOOL_DOMAINS`:
+
+```bash
+PORTKEY_API_KEY=your_key \
+PORTKEY_TOOL_DOMAINS=prompts,analytics \
+npx -y portkey-admin-mcp
+```
+
 <details>
 <summary><strong>Build from source</strong></summary>
 
@@ -156,6 +164,7 @@ For local-only HTTP use, leave `MCP_HOST` at its default `127.0.0.1`. Set `MCP_H
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `PORTKEY_API_KEY` | (required) | Your Portkey API key |
+| `PORTKEY_TOOL_DOMAINS` | — | Optional comma-separated stdio/HTTP default tool subset, e.g. `prompts,analytics` |
 | `MCP_HOST` | `127.0.0.1` | Bind address |
 | `MCP_PORT` | `3000` | Port |
 | `MCP_PUBLIC_BASE_URL` | — | Public absolute base URL to advertise from `/auth/info` and the status page; recommended for hosted deployments |

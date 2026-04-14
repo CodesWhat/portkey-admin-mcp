@@ -317,6 +317,37 @@ describe("MCP E2E Protocol Tests", () => {
 				);
 			}
 		});
+
+		it("supports stdio-side tool domain subsetting via PORTKEY_TOOL_DOMAINS", async () => {
+			const subsetTransport = new StdioClientTransport({
+				command: "node",
+				args: ["build/index.js"],
+				env: {
+					...process.env,
+					PORTKEY_API_KEY: "test-dummy-key-for-e2e",
+					PORTKEY_TOOL_DOMAINS: "prompts,analytics",
+				} as Record<string, string>,
+				stderr: "pipe",
+			});
+			const subsetClient = new Client({
+				name: "subset-e2e-test-client",
+				version: "1.0.0",
+			});
+
+			try {
+				await subsetClient.connect(subsetTransport);
+				const result = await subsetClient.listTools();
+				const toolNames = result.tools.map((tool) => tool.name).sort();
+
+				assert.equal(toolNames.length, 34);
+				assert.ok(toolNames.includes("create_prompt"));
+				assert.ok(toolNames.includes("get_request_analytics"));
+				assert.ok(!toolNames.includes("list_all_users"));
+				assert.ok(!toolNames.includes("create_workspace"));
+			} finally {
+				await subsetClient.close();
+			}
+		});
 	});
 
 	// ==================== Validation ====================

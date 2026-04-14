@@ -1,29 +1,36 @@
 {
-  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.s-b-e-n-s-o-n/portkey-admin-mcp",
-  "description": "Full Portkey Admin API MCP server — configs, prompts, keys, analytics, and more.",
-  "repository": {
-    "url": "https://github.com/s-b-e-n-s-o-n/portkey-admin-mcp",
-    "source": "github"
-  },
-  "version": "0.1.0-beta.3",
-  "packages": [
-    {
-      "registryType": "npm",
-      "identifier": "portkey-admin-mcp",
-      "version": "0.1.0-beta.3",
-      "transport": {
-        "type": "stdio"
-      },
-      "environmentVariables": [
-        {
-          "name": "PORTKEY_API_KEY",
-          "description": "Your Portkey API key for authentication",
-          "isRequired": true,
-          "format": "string",
-          "isSecret": true
-        }
-      ]
-    }
-  ]
+	"$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+	"name": "io.github.s-b-e-n-s-o-n/portkey-admin-mcp",
+	"description": "Full Portkey Admin API MCP server — configs, prompts, keys, analytics, and more.",
+	"repository": {
+		"url": "https://github.com/s-b-e-n-s-o-n/portkey-admin-mcp",
+		"source": "github"
+	},
+	"version": "0.1.0-beta.3",
+	"packages": [
+		{
+			"registryType": "npm",
+			"identifier": "portkey-admin-mcp",
+			"version": "0.1.0-beta.3",
+			"transport": {
+				"type": "stdio"
+			},
+			"environmentVariables": [
+				{
+					"name": "PORTKEY_API_KEY",
+					"description": "Your Portkey API key for authentication",
+					"isRequired": true,
+					"format": "string",
+					"isSecret": true
+				},
+				{
+					"name": "PORTKEY_TOOL_DOMAINS",
+					"description": "Optional comma-separated tool domains to expose, for example prompts,analytics",
+					"isRequired": false,
+					"format": "string",
+					"isSecret": false
+				}
+			]
+		}
+	]
 }

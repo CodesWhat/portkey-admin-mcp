@@ -107,6 +107,40 @@ const DESTRUCTIVE_TOOL_PREFIXES = [
 	"reset_",
 ] as const;
 
+const ENTERPRISE_GATED_TOOL_NAMES = new Set([
+	"get_cost_analytics",
+	"get_request_analytics",
+	"get_token_analytics",
+	"get_latency_analytics",
+	"get_error_analytics",
+	"get_error_rate_analytics",
+	"get_cache_hit_latency",
+	"get_cache_hit_rate",
+	"get_users_analytics",
+	"get_error_stacks_analytics",
+	"get_error_status_codes_analytics",
+	"get_user_requests_analytics",
+	"get_rescued_requests_analytics",
+	"get_feedback_analytics",
+	"get_feedback_models_analytics",
+	"get_feedback_scores_analytics",
+	"get_feedback_weighted_analytics",
+	"get_analytics_group_users",
+	"get_analytics_group_models",
+	"get_analytics_group_metadata",
+	"list_audit_logs",
+	"get_integration",
+	"list_integration_models",
+	"list_integration_workspaces",
+	"list_all_users",
+	"get_user",
+	"list_user_invites",
+	"get_user_stats",
+]);
+
+const ENTERPRISE_GATED_DESCRIPTION_NOTE =
+	"Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.";
+
 function isToolAnnotationsLike(
 	value: unknown,
 ): value is Partial<ToolAnnotations> {
@@ -172,6 +206,21 @@ function inferToolAnnotations(toolName: string): ToolAnnotations {
 		idempotentHint: false,
 		openWorldHint: true,
 	};
+}
+
+function augmentToolDescription(
+	toolName: string,
+	description: string | undefined,
+): string | undefined {
+	if (!description || !ENTERPRISE_GATED_TOOL_NAMES.has(toolName)) {
+		return description;
+	}
+
+	if (description.includes(ENTERPRISE_GATED_DESCRIPTION_NOTE)) {
+		return description;
+	}
+
+	return `${description} ${ENTERPRISE_GATED_DESCRIPTION_NOTE}`;
 }
 
 function getToolErrorMessage(error: unknown): string {
@@ -346,6 +395,7 @@ function buildToolRegistration(
 	if (typeof args[0] === "string") {
 		description = args.shift() as string;
 	}
+	description = augmentToolDescription(name, description);
 
 	let inputSchema: unknown;
 	let annotations = inferredAnnotations;
