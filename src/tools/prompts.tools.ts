@@ -17,6 +17,28 @@ const PROMPT_VARIABLES_SCHEMA = z
 	.record(z.string(), z.union([z.string(), z.coerce.number(), z.boolean()]))
 	.describe("Variable values to substitute into the template");
 
+const PROMPT_TEMPLATE_CONTENT_BLOCK_SCHEMA = z
+	.object({
+		type: z.string().describe("Content block type"),
+		text: z.string().optional().describe("Text content for text-based blocks"),
+	})
+	.passthrough()
+	.describe("Content block within a structured chat message");
+
+const PROMPT_TEMPLATE_MESSAGE_SCHEMA = z
+	.object({
+		role: z
+			.enum(["system", "user", "assistant"])
+			.describe("Message role in the chat template"),
+		content: z
+			.array(PROMPT_TEMPLATE_CONTENT_BLOCK_SCHEMA)
+			.describe("Message content blocks"),
+	})
+	.passthrough()
+	.describe("Structured chat message in a prompt template");
+
+type PromptTemplateMessage = z.infer<typeof PROMPT_TEMPLATE_MESSAGE_SCHEMA>;
+
 const PROMPTS_TOOL_SCHEMAS = {
 	createPrompt: {
 		name: z.string().describe("Display name for the prompt"),
@@ -27,8 +49,15 @@ const PROMPTS_TOOL_SCHEMAS = {
 			),
 		string: z
 			.string()
+			.optional()
 			.describe(
-				'The prompt template. Plain text OR a JSON-encoded messages array string for multi-message chat prompts: \'[{"role":"system","content":[{"type":"text","text":"..."}]},{"role":"user","content":[{"type":"text","text":"{{input}}"}]}]\'. Use get_prompt on an existing prompt to see the exact format.',
+				"Legacy prompt template string. Use plain text for single-message prompts, or a JSON-encoded messages array string for multi-message chat prompts.",
+			),
+		messages: z
+			.array(PROMPT_TEMPLATE_MESSAGE_SCHEMA)
+			.optional()
+			.describe(
+				"Structured chat template alias. Serialized to the legacy string format before creation.",
 			),
 		parameters: z
 			.record(z.string(), z.unknown())
@@ -109,7 +138,13 @@ const PROMPTS_TOOL_SCHEMAS = {
 			.string()
 			.optional()
 			.describe(
-				"Updated prompt template. Plain text OR a JSON-encoded messages array string for multi-message chat prompts. Use get_prompt to see the current format before updating.",
+				"Legacy prompt template string. Use plain text for single-message prompts, or a JSON-encoded messages array string for multi-message chat prompts.",
+			),
+		messages: z
+			.array(PROMPT_TEMPLATE_MESSAGE_SCHEMA)
+			.optional()
+			.describe(
+				"Structured chat template alias for updates. Serialized to the legacy string format before the prompt is updated.",
 			),
 		parameters: z
 			.record(z.string(), z.unknown())
@@ -180,7 +215,16 @@ const PROMPTS_TOOL_SCHEMAS = {
 			.describe("Collection ID to search in and create under"),
 		string: z
 			.string()
-			.describe("Prompt template string with {{variable}} mustache syntax"),
+			.optional()
+			.describe(
+				"Legacy prompt template string with {{variable}} mustache syntax.",
+			),
+		messages: z
+			.array(PROMPT_TEMPLATE_MESSAGE_SCHEMA)
+			.optional()
+			.describe(
+				"Structured chat template alias for migrations. Serialized to the legacy string format before the prompt is created or updated.",
+			),
 		parameters: z
 			.record(z.string(), z.unknown())
 			.describe("Default values for template variables"),
@@ -256,6 +300,21 @@ const PROMPTS_TOOL_SCHEMAS = {
 			),
 	},
 } as const;
+
+function normalizePromptTemplateString(params: {
+	string?: string;
+	messages?: PromptTemplateMessage[];
+}): string | undefined {
+	if (params.string !== undefined) {
+		return params.string;
+	}
+
+	if (params.messages !== undefined) {
+		return JSON.stringify(params.messages);
+	}
+
+	return undefined;
+}
 
 function extractPromptTemplateString(template: unknown): string {
 	const inner =
@@ -381,14 +440,14 @@ export function registerPromptsTools(
 	// Create prompt tool
 	server.tool(
 		"create_prompt",
-		`Create a new prompt template in Portkey. Supports both single-message and multi-message (chat) templates.
+		`Create a new prompt template in Portkey. Supports both the legacy string template and a structured messages alias for chat prompts.
 
-IMPORTANT: The "string" parameter accepts TWO formats:
+IMPORTANT: The "string" parameter accepts TWO legacy formats:
 1. Plain text: "Hello {{name}}, how can I help?"
 2. Multi-message JSON array (MUST be a JSON-encoded string):
    '[{"role":"system","content":[{"type":"text","text":"You are a helpful assistant."}]},{"role":"user","content":[{"type":"text","text":"{{user_input}}"}]}]'
 
-Most production prompts use format #2 (multi-message). Use get_prompt to see examples of the format.`,
+For structured prompts, prefer the "messages" alias and let the server serialize it to the legacy string format.`,
 		PROMPTS_TOOL_SCHEMAS.createPrompt,
 		async (params) => {
 			if (!params.model && !params.ai_model_id && !params.finetune_id) {
@@ -397,6 +456,19 @@ Most production prompts use format #2 (multi-message). Use get_prompt to see exa
 						{
 							type: "text",
 							text: "Error creating prompt: At least one of model, ai_model_id, or finetune_id must be provided",
+						},
+					],
+					isError: true,
+				};
+			}
+
+			const templateString = normalizePromptTemplateString(params);
+			if (templateString === undefined) {
+				return {
+					content: [
+						{
+							type: "text",
+							text: "Error creating prompt: Provide either string or messages",
 						},
 					],
 					isError: true,
@@ -417,7 +489,7 @@ Most production prompts use format #2 (multi-message). Use get_prompt to see exa
 										name: params.name,
 										collection_id: params.collection_id,
 										model: params.model,
-										template_length: params.string.length,
+										template_length: templateString.length,
 										parameter_count: Object.keys(params.parameters ?? {})
 											.length,
 									},
@@ -433,17 +505,29 @@ Most production prompts use format #2 (multi-message). Use get_prompt to see exa
 			const result = await service.prompts.createPrompt({
 				name: params.name,
 				collection_id: params.collection_id,
-				string: params.string,
+				string: templateString,
 				parameters: params.parameters,
 				virtual_key: params.virtual_key,
-				model: params.model,
-				ai_model_id: params.ai_model_id,
-				finetune_id: params.finetune_id,
-				version_description: params.version_description,
-				template_metadata: params.template_metadata,
-				functions: params.functions,
-				tools: params.tools,
-				tool_choice: toPromptToolChoice(params.tool_choice),
+				...(params.model !== undefined ? { model: params.model } : {}),
+				...(params.ai_model_id !== undefined
+					? { ai_model_id: params.ai_model_id }
+					: {}),
+				...(params.finetune_id !== undefined
+					? { finetune_id: params.finetune_id }
+					: {}),
+				...(params.version_description !== undefined
+					? { version_description: params.version_description }
+					: {}),
+				...(params.template_metadata !== undefined
+					? { template_metadata: params.template_metadata }
+					: {}),
+				...(params.functions !== undefined
+					? { functions: params.functions }
+					: {}),
+				...(params.tools !== undefined ? { tools: params.tools } : {}),
+				...(params.tool_choice !== undefined
+					? { tool_choice: toPromptToolChoice(params.tool_choice) }
+					: {}),
 			});
 
 			return {
@@ -570,15 +654,19 @@ When updating a prompt, pass the same format back in the "string" field of updat
 		"update_prompt",
 		`Update an existing prompt template. Creates a new version. Uses patch mode — only provided fields are updated, others are kept from the current version.
 
-IMPORTANT: The "string" parameter accepts the same two formats as create_prompt:
+IMPORTANT: The legacy "string" parameter accepts the same two formats as create_prompt:
 1. Plain text: "Hello {{name}}"
 2. Multi-message JSON array (MUST be a JSON-encoded string):
    '[{"role":"system","content":[{"type":"text","text":"..."}]},{"role":"user","content":[{"type":"text","text":"{{input}}"}]}]'
 
-Use get_prompt first to see the current format, then pass the same format back. New versions are created in "archived" status — use publish_prompt to make active.`,
+For structured chat prompts, prefer the "messages" alias and let the server serialize it for you. New versions are created in "archived" status — use publish_prompt to make active.`,
 		PROMPTS_TOOL_SCHEMAS.updatePrompt,
 		async (params) => {
-			const { prompt_id, dry_run, ...updateData } = params;
+			const { prompt_id, dry_run, messages, ...updateData } = params;
+			const templateString = normalizePromptTemplateString({
+				string: updateData.string,
+				messages,
+			});
 
 			if (dry_run) {
 				const current = await service.prompts.getPrompt(prompt_id);
@@ -607,8 +695,31 @@ Use get_prompt first to see the current format, then pass the same format back. 
 			}
 
 			const result = await service.prompts.updatePrompt(prompt_id, {
-				...updateData,
-				tool_choice: toPromptToolChoice(updateData.tool_choice),
+				...(updateData.name !== undefined ? { name: updateData.name } : {}),
+				...(updateData.collection_id !== undefined
+					? { collection_id: updateData.collection_id }
+					: {}),
+				...(templateString !== undefined ? { string: templateString } : {}),
+				...(updateData.parameters !== undefined
+					? { parameters: updateData.parameters }
+					: {}),
+				...(updateData.model !== undefined ? { model: updateData.model } : {}),
+				...(updateData.virtual_key !== undefined
+					? { virtual_key: updateData.virtual_key }
+					: {}),
+				...(updateData.version_description !== undefined
+					? { version_description: updateData.version_description }
+					: {}),
+				...(updateData.template_metadata !== undefined
+					? { template_metadata: updateData.template_metadata }
+					: {}),
+				...(updateData.functions !== undefined
+					? { functions: updateData.functions }
+					: {}),
+				...(updateData.tools !== undefined ? { tools: updateData.tools } : {}),
+				...(updateData.tool_choice !== undefined
+					? { tool_choice: toPromptToolChoice(updateData.tool_choice) }
+					: {}),
 			});
 
 			return {
@@ -816,24 +927,45 @@ Use get_prompt first to see the current format, then pass the same format back. 
 	// Migrate prompt tool
 	server.tool(
 		"migrate_prompt",
-		"Create or update a prompt based on whether it exists. Useful for CI/CD and prompt-as-code workflows. Finds existing prompts by name within the collection. The app and env values are added to template_metadata automatically.",
+		"Create or update a prompt based on whether it exists. Useful for CI/CD and prompt-as-code workflows. Finds existing prompts by name within the collection. The app and env values are added to template_metadata automatically. For structured chat prompts, prefer the messages alias instead of hand-encoding JSON into string.",
 		PROMPTS_TOOL_SCHEMAS.migratePrompt,
 		async (params) => {
+			const templateString = normalizePromptTemplateString(params);
+			if (templateString === undefined) {
+				return {
+					content: [
+						{
+							type: "text",
+							text: "Error migrating prompt: Provide either string or messages",
+						},
+					],
+					isError: true,
+				};
+			}
+
 			const result = await service.prompts.migratePrompt({
 				name: params.name,
 				app: params.app,
 				env: params.env,
 				collection_id: params.collection_id,
-				string: params.string,
+				string: templateString,
 				parameters: params.parameters,
 				virtual_key: params.virtual_key,
-				model: params.model,
-				version_description: params.version_description,
-				template_metadata: params.template_metadata,
-				functions: params.functions,
-				tools: params.tools,
-				tool_choice: toPromptToolChoice(params.tool_choice),
-				dry_run: params.dry_run,
+				...(params.model !== undefined ? { model: params.model } : {}),
+				...(params.version_description !== undefined
+					? { version_description: params.version_description }
+					: {}),
+				...(params.template_metadata !== undefined
+					? { template_metadata: params.template_metadata }
+					: {}),
+				...(params.functions !== undefined
+					? { functions: params.functions }
+					: {}),
+				...(params.tools !== undefined ? { tools: params.tools } : {}),
+				...(params.tool_choice !== undefined
+					? { tool_choice: toPromptToolChoice(params.tool_choice) }
+					: {}),
+				...(params.dry_run !== undefined ? { dry_run: params.dry_run } : {}),
 			});
 
 			return {

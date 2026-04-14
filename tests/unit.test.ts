@@ -1814,6 +1814,102 @@ describe("Tool callback error handling", () => {
 		);
 	});
 
+	it("annotates Enterprise-gated tool descriptions with a simple plan requirement note", () => {
+		const registrations = new Map<
+			string,
+			{
+				config: {
+					description?: string;
+				};
+			}
+		>();
+
+		registerAllTools(
+			{
+				registerTool(
+					name: string,
+					config: {
+						description?: string;
+					},
+				) {
+					registrations.set(name, { config });
+					return {} as never;
+				},
+				tool() {
+					return {} as never;
+				},
+			} as never,
+			{} as never,
+		);
+
+		const analyticsTools = [
+			"get_cost_analytics",
+			"get_request_analytics",
+			"get_token_analytics",
+			"get_latency_analytics",
+			"get_error_analytics",
+			"get_error_rate_analytics",
+			"get_cache_hit_latency",
+			"get_cache_hit_rate",
+			"get_users_analytics",
+			"get_error_stacks_analytics",
+			"get_error_status_codes_analytics",
+			"get_user_requests_analytics",
+			"get_rescued_requests_analytics",
+			"get_feedback_analytics",
+			"get_feedback_models_analytics",
+			"get_feedback_scores_analytics",
+			"get_feedback_weighted_analytics",
+			"get_analytics_group_users",
+			"get_analytics_group_models",
+			"get_analytics_group_metadata",
+		] as const;
+
+		for (const toolName of analyticsTools) {
+			assert.match(
+				registrations.get(toolName)?.config.description || "",
+				/Enterprise-gated\./,
+				`${toolName} should advertise that it is Enterprise-gated`,
+			);
+		}
+
+		assert.match(
+			registrations.get("list_audit_logs")?.config.description || "",
+			/Enterprise-gated\./,
+		);
+
+		for (const toolName of [
+			"get_integration",
+			"list_integration_models",
+			"list_integration_workspaces",
+		] as const) {
+			assert.match(
+				registrations.get(toolName)?.config.description || "",
+				/Enterprise-gated\./,
+				`${toolName} should advertise that it is Enterprise-gated`,
+			);
+		}
+
+		for (const toolName of [
+			"list_all_users",
+			"get_user",
+			"list_user_invites",
+			"get_user_stats",
+		] as const) {
+			assert.match(
+				registrations.get(toolName)?.config.description || "",
+				/Enterprise-gated\./,
+				`${toolName} should advertise that it is Enterprise-gated`,
+			);
+		}
+
+		assert.doesNotMatch(
+			registrations.get("create_prompt")?.config.description || "",
+			/Enterprise-gated\./,
+			"non-gated tools should not be annotated as Enterprise-gated",
+		);
+	});
+
 	it("accepts arbitrary app and env identifiers in prompt tool schemas", () => {
 		const registrations = new Map<string, unknown[]>();
 
@@ -1863,6 +1959,382 @@ describe("Tool callback error handling", () => {
 				},
 			});
 		assert.equal(runPromptCompletionResult.success, true);
+	});
+
+	it("accepts structured prompt template aliases in create_prompt schemas", () => {
+		const registrations = new Map<string, unknown[]>();
+
+		registerPromptsTools(
+			{
+				tool(name: string, ...rest: unknown[]) {
+					registrations.set(name, rest);
+					return {} as never;
+				},
+			} as never,
+			{} as never,
+		);
+
+		const createPromptSchema = registrations.get("create_prompt")?.[1] as
+			| z.ZodRawShape
+			| undefined;
+		assert.ok(createPromptSchema, "expected create_prompt schema");
+
+		const result = z.object(createPromptSchema).safeParse({
+			name: "Support Prompt",
+			collection_id: "collection-1",
+			messages: [
+				{
+					role: "system",
+					content: [{ type: "text", text: "Be helpful" }],
+				},
+				{
+					role: "user",
+					content: [{ type: "text", text: "{{input}}" }],
+				},
+			],
+			parameters: { input: "Ada" },
+			virtual_key: "vk_support",
+			model: "gpt-4.1",
+		});
+
+		assert.equal(result.success, true);
+	});
+
+	it("normalizes structured prompt template aliases before calling the prompts service", async () => {
+		let receivedCreatePrompt: Record<string, unknown> | undefined;
+		const callbacks = registerToolCallbacks((server) => {
+			registerPromptsTools(
+				server as never,
+				{
+					prompts: {
+						createPrompt: async (params: Record<string, unknown>) => {
+							receivedCreatePrompt = params;
+							return {
+								id: "prompt-1",
+								slug: "support-prompt",
+								version_id: "version-1",
+								object: "prompt",
+							};
+						},
+					},
+				} as never,
+			);
+		});
+
+		const createPromptCallback = callbacks.get("create_prompt");
+		assert.ok(createPromptCallback, "expected create_prompt callback");
+
+		await createPromptCallback({
+			name: "Support Prompt",
+			collection_id: "collection-1",
+			messages: [
+				{
+					role: "system",
+					content: [{ type: "text", text: "Be helpful" }],
+				},
+				{
+					role: "user",
+					content: [{ type: "text", text: "{{input}}" }],
+				},
+			],
+			parameters: { input: "Ada" },
+			virtual_key: "vk_support",
+			model: "gpt-4.1",
+		});
+
+		assert.deepEqual(receivedCreatePrompt, {
+			name: "Support Prompt",
+			collection_id: "collection-1",
+			string:
+				'[{"role":"system","content":[{"type":"text","text":"Be helpful"}]},{"role":"user","content":[{"type":"text","text":"{{input}}"}]}]',
+			parameters: { input: "Ada" },
+			virtual_key: "vk_support",
+			model: "gpt-4.1",
+		});
+	});
+
+	it("accepts structured prompt template aliases in update_prompt and migrate_prompt", async () => {
+		const registrations = new Map<string, unknown[]>();
+
+		registerPromptsTools(
+			{
+				tool(name: string, ...rest: unknown[]) {
+					registrations.set(name, rest);
+					return {} as never;
+				},
+			} as never,
+			{} as never,
+		);
+
+		const updatePromptSchema = registrations.get("update_prompt")?.[1] as
+			| z.ZodRawShape
+			| undefined;
+		const migratePromptSchema = registrations.get("migrate_prompt")?.[1] as
+			| z.ZodRawShape
+			| undefined;
+		assert.ok(updatePromptSchema, "expected update_prompt schema");
+		assert.ok(migratePromptSchema, "expected migrate_prompt schema");
+
+		assert.equal(
+			z.object(updatePromptSchema).safeParse({
+				prompt_id: "prompt-1",
+				messages: [
+					{
+						role: "system",
+						content: [{ type: "text", text: "Be concise" }],
+					},
+				],
+			}).success,
+			true,
+		);
+		assert.equal(
+			z.object(migratePromptSchema).safeParse({
+				name: "Support Prompt",
+				app: "support-console",
+				env: "qa",
+				collection_id: "collection-1",
+				messages: [
+					{
+						role: "user",
+						content: [{ type: "text", text: "{{input}}" }],
+					},
+				],
+				parameters: { input: "Ada" },
+				virtual_key: "vk_support",
+			}).success,
+			true,
+		);
+
+		let receivedUpdatePrompt:
+			| {
+					prompt_id: string;
+					body: Record<string, unknown>;
+			  }
+			| undefined;
+		let receivedMigratePrompt: Record<string, unknown> | undefined;
+		const callbacks = registerToolCallbacks((server) => {
+			registerPromptsTools(
+				server as never,
+				{
+					prompts: {
+						updatePrompt: async (
+							promptId: string,
+							body: Record<string, unknown>,
+						) => {
+							receivedUpdatePrompt = { prompt_id: promptId, body };
+							return {
+								id: promptId,
+								slug: "support-prompt",
+								prompt_version_id: "version-2",
+								object: "prompt",
+							};
+						},
+						migratePrompt: async (body: Record<string, unknown>) => {
+							receivedMigratePrompt = body;
+							return {
+								action: "create",
+								dry_run: false,
+								message: "created",
+								prompt_id: "prompt-1",
+								slug: "support-prompt",
+								version_id: "version-1",
+							};
+						},
+					},
+				} as never,
+			);
+		});
+
+		const updatePromptCallback = callbacks.get("update_prompt");
+		const migratePromptCallback = callbacks.get("migrate_prompt");
+		assert.ok(updatePromptCallback, "expected update_prompt callback");
+		assert.ok(migratePromptCallback, "expected migrate_prompt callback");
+
+		await updatePromptCallback({
+			prompt_id: "prompt-1",
+			messages: [
+				{
+					role: "system",
+					content: [{ type: "text", text: "Be concise" }],
+				},
+			],
+		});
+		await migratePromptCallback({
+			name: "Support Prompt",
+			app: "support-console",
+			env: "qa",
+			collection_id: "collection-1",
+			messages: [
+				{
+					role: "user",
+					content: [{ type: "text", text: "{{input}}" }],
+				},
+			],
+			parameters: { input: "Ada" },
+			virtual_key: "vk_support",
+		});
+
+		assert.deepEqual(receivedUpdatePrompt, {
+			prompt_id: "prompt-1",
+			body: {
+				string:
+					'[{"role":"system","content":[{"type":"text","text":"Be concise"}]}]',
+			},
+		});
+		assert.deepEqual(receivedMigratePrompt, {
+			name: "Support Prompt",
+			app: "support-console",
+			env: "qa",
+			collection_id: "collection-1",
+			string:
+				'[{"role":"user","content":[{"type":"text","text":"{{input}}"}]}]',
+			parameters: { input: "Ada" },
+			virtual_key: "vk_support",
+		});
+	});
+
+	it("accepts structured analytics filter aliases and normalizes them before calling the analytics service", async () => {
+		const registrations = new Map<string, unknown[]>();
+		registerAnalyticsTools(
+			{
+				tool(name: string, ...rest: unknown[]) {
+					registrations.set(name, rest);
+					return {} as never;
+				},
+			} as never,
+			{} as never,
+		);
+
+		const requestAnalyticsSchema = registrations.get(
+			"get_request_analytics",
+		)?.[1] as z.ZodRawShape | undefined;
+		assert.ok(requestAnalyticsSchema, "expected get_request_analytics schema");
+
+		const schemaResult = z.object(requestAnalyticsSchema).safeParse({
+			time_of_generation_min: "2026-01-01T00:00:00.000Z",
+			time_of_generation_max: "2026-01-02T00:00:00.000Z",
+			status_codes: ["429", "500"],
+			virtual_key_slugs: ["vk_support", "vk_sales"],
+			config_slugs: ["cfg_support"],
+			api_key_ids: ["key-1", "key-2"],
+			trace_ids: ["trace-1"],
+			span_ids: ["span-1"],
+			provider_models: ["openai__gpt-4.1"],
+			metadata_filter: { env: "prod", app: "support-console" },
+		});
+		assert.equal(schemaResult.success, true);
+
+		let capturedParams: Record<string, unknown> | undefined;
+		const callbacks = registerToolCallbacks((server) => {
+			registerAnalyticsTools(
+				server as never,
+				{
+					analytics: {
+						getRequestAnalytics: async (params: Record<string, unknown>) => {
+							capturedParams = params;
+							return {
+								summary: { total: 1, success: 1, failed: 0 },
+								data_points: [],
+							};
+						},
+					},
+				} as never,
+			);
+		});
+
+		const requestAnalyticsCallback = callbacks.get("get_request_analytics");
+		assert.ok(
+			requestAnalyticsCallback,
+			"expected get_request_analytics callback",
+		);
+
+		await requestAnalyticsCallback({
+			time_of_generation_min: "2026-01-01T00:00:00.000Z",
+			time_of_generation_max: "2026-01-02T00:00:00.000Z",
+			status_codes: ["429", "500"],
+			virtual_key_slugs: ["vk_support", "vk_sales"],
+			config_slugs: ["cfg_support"],
+			api_key_ids: ["key-1", "key-2"],
+			trace_ids: ["trace-1"],
+			span_ids: ["span-1"],
+			provider_models: ["openai__gpt-4.1"],
+			metadata_filter: { env: "prod", app: "support-console" },
+		});
+
+		assert.deepEqual(capturedParams, {
+			time_of_generation_min: "2026-01-01T00:00:00.000Z",
+			time_of_generation_max: "2026-01-02T00:00:00.000Z",
+			status_code: "429,500",
+			virtual_keys: "vk_support,vk_sales",
+			configs: "cfg_support",
+			api_key_ids: "key-1,key-2",
+			trace_id: "trace-1",
+			span_id: "span-1",
+			ai_org_model: "openai__gpt-4.1",
+			metadata: '{"env":"prod","app":"support-console"}',
+		});
+	});
+
+	it("applies structured analytics aliases across graph analytics tools sharing the base filter schema", async () => {
+		const registrations = new Map<string, unknown[]>();
+		registerAnalyticsTools(
+			{
+				tool(name: string, ...rest: unknown[]) {
+					registrations.set(name, rest);
+					return {} as never;
+				},
+			} as never,
+			{} as never,
+		);
+
+		const costAnalyticsSchema = registrations.get("get_cost_analytics")?.[1] as
+			| z.ZodRawShape
+			| undefined;
+		assert.ok(costAnalyticsSchema, "expected get_cost_analytics schema");
+		assert.equal(
+			z.object(costAnalyticsSchema).safeParse({
+				time_of_generation_min: "2026-01-01T00:00:00.000Z",
+				time_of_generation_max: "2026-01-02T00:00:00.000Z",
+				status_codes: ["429"],
+				metadata_filter: { env: "prod" },
+			}).success,
+			true,
+		);
+
+		let capturedParams: Record<string, unknown> | undefined;
+		const callbacks = registerToolCallbacks((server) => {
+			registerAnalyticsTools(
+				server as never,
+				{
+					analytics: {
+						getCostAnalytics: async (params: Record<string, unknown>) => {
+							capturedParams = params;
+							return {
+								summary: { total: 1, avg: 1 },
+								data_points: [],
+							};
+						},
+					},
+				} as never,
+			);
+		});
+
+		const costAnalyticsCallback = callbacks.get("get_cost_analytics");
+		assert.ok(costAnalyticsCallback, "expected get_cost_analytics callback");
+
+		await costAnalyticsCallback({
+			time_of_generation_min: "2026-01-01T00:00:00.000Z",
+			time_of_generation_max: "2026-01-02T00:00:00.000Z",
+			status_codes: ["429"],
+			metadata_filter: { env: "prod" },
+		});
+
+		assert.deepEqual(capturedParams, {
+			time_of_generation_min: "2026-01-01T00:00:00.000Z",
+			time_of_generation_max: "2026-01-02T00:00:00.000Z",
+			status_code: "429",
+			metadata: '{"env":"prod"}',
+		});
 	});
 
 	it("wraps successful tool responses in a standard ok/data envelope", async () => {
