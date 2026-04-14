@@ -31,3 +31,7 @@ Thumbs.db
 
 # Personal notes
 .seo
+
+# Local tool test tracking (live API results, not committed)
+.tool-test-results.md
+.research-findings.md
