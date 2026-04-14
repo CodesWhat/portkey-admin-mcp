@@ -270,7 +270,7 @@ export function registerGuardrailsTools(
 	// Delete guardrail tool
 	server.tool(
 		"delete_guardrail",
-		"Delete a guardrail by its ID or slug. This action cannot be undone.",
+		"Delete a guardrail by its ID or slug. This action cannot be undone. Configs referencing this guardrail as a before/after request hook will stop enforcing it, silently dropping the safety check. Review dependent configs before deleting.",
 		GUARDRAILS_TOOL_SCHEMAS.deleteGuardrail,
 		async (params) => {
 			const result = await service.guardrails.deleteGuardrail(

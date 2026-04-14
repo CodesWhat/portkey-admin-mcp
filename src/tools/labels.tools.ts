@@ -209,7 +209,7 @@ export function registerLabelsTools(
 	// Delete label tool
 	server.tool(
 		"delete_prompt_label",
-		"Delete a prompt label by ID. This action cannot be undone. Prompt versions that had this label assigned will lose their label assignment.",
+		"Delete a prompt label by ID. This action cannot be undone. Prompt versions carrying this label lose it, and any workflow resolving prompts by this label (e.g., 'production', 'staging') will fail until reassigned. Audit label usage via list_prompts before deleting.",
 		LABELS_TOOL_SCHEMAS.deletePromptLabel,
 		async (params) => {
 			await service.labels.deleteLabel(params.label_id);

@@ -347,7 +347,7 @@ export function registerLimitsTools(
 	// Delete rate limit
 	server.tool(
 		"delete_rate_limit",
-		"Delete a rate limit by ID. This action cannot be undone.",
+		"Delete a rate limit policy by ID. This action cannot be undone. Requests previously throttled by this policy will no longer be limited; review dependent configs and virtual keys first to avoid unexpected traffic spikes.",
 		LIMITS_TOOL_SCHEMAS.deleteRateLimit,
 		async (params) => {
 			await service.limits.deleteRateLimit(params.id);
@@ -483,7 +483,7 @@ export function registerLimitsTools(
 	// Delete usage limit
 	server.tool(
 		"delete_usage_limit",
-		"Delete a usage limit by ID. This action cannot be undone.",
+		"Delete a usage limit policy by ID. This action cannot be undone. Budgets and quotas enforced by this policy are removed immediately and tracked entities lose accumulated usage state. Use list_usage_limit_entities first to review impact before deleting.",
 		LIMITS_TOOL_SCHEMAS.deleteUsageLimit,
 		async (params) => {
 			await service.limits.deleteUsageLimit(params.id);

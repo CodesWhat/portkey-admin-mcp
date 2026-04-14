@@ -308,7 +308,7 @@ export function registerUsersTools(
 	// Phase 1: Delete user tool
 	server.tool(
 		"delete_user",
-		"Remove a user from your Portkey organization. Permanently removes the user and all their org/workspace memberships. Cannot be undone.",
+		"Remove a user from your Portkey organization by ID. This action cannot be undone. Permanently removes org and workspace memberships and revokes the user's API keys; active sessions will fail immediately. Use delete_user_invite for pending invitations instead.",
 		USERS_TOOL_SCHEMAS.deleteUser,
 		async (params) => {
 			await service.users.deleteUser(params.user_id);

@@ -342,7 +342,7 @@ export function registerConfigsTools(
 	// Phase 1: Delete configuration tool
 	server.tool(
 		"delete_config",
-		"Delete a configuration by slug. This action cannot be undone.",
+		"Delete a configuration by slug. This action cannot be undone and removes all versions. Requests and API keys referencing this config slug will fail immediately. Use list_config_versions first to review history; audit dependent API keys before deleting.",
 		CONFIGS_TOOL_SCHEMAS.deleteConfig,
 		async (params) => {
 			const result = await service.configs.deleteConfig(params.slug);

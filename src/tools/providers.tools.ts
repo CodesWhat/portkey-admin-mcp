@@ -363,7 +363,7 @@ export function registerProvidersTools(
 	// Delete provider tool
 	server.tool(
 		"delete_provider",
-		"Delete a provider by slug. This action cannot be undone.",
+		"Delete a workspace-level provider by slug. This action cannot be undone. Virtual keys, configs, and prompts referencing this provider will stop working. Audit dependent resources first; use delete_integration for org-level provider connections instead.",
 		PROVIDERS_TOOL_SCHEMAS.deleteProvider,
 		async (params) => {
 			await service.providers.deleteProvider(params.slug, params.workspace_id);

@@ -634,7 +634,7 @@ Use get_prompt first to see the current format, then pass the same format back. 
 	// Delete prompt tool
 	server.tool(
 		"delete_prompt",
-		"Delete a prompt by its ID. This action cannot be undone and will remove the prompt and all its versions.",
+		"Delete a prompt and all its versions by ID. This action cannot be undone. Applications calling this prompt slug will fail immediately. Use list_prompt_versions first to review history; consider archiving via update_prompt status instead if an audit trail is needed.",
 		PROMPTS_TOOL_SCHEMAS.deletePrompt,
 		async (params) => {
 			await service.prompts.deletePrompt(params.prompt_id);

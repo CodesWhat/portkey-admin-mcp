@@ -241,7 +241,7 @@ export function registerMcpServersTools(
 
 	server.tool(
 		"delete_mcp_server",
-		"Delete an MCP server. This action cannot be undone.",
+		"Delete an MCP server instance by ID. This action cannot be undone. Connected users and workspaces lose access immediately, and workspace access grants to this server are removed. Verify no active integrations depend on it before deleting.",
 		MCP_SERVERS_TOOL_SCHEMAS.deleteMcpServer,
 		async (params) => {
 			await service.mcpServers.deleteMcpServer(params.id);

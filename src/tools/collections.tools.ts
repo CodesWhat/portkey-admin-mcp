@@ -169,7 +169,7 @@ export function registerCollectionsTools(
 	// Phase 1: Delete collection tool
 	server.tool(
 		"delete_collection",
-		"Delete a collection by ID. This action cannot be undone. Prompts in this collection will become orphaned.",
+		"Delete a prompt collection by ID. This action cannot be undone. Prompts inside the collection are not deleted but lose their grouping and move to the top level. Reassign prompts to another collection first if organization must be preserved.",
 		COLLECTIONS_TOOL_SCHEMAS.deleteCollection,
 		async (params) => {
 			const result = await service.collections.deleteCollection(
