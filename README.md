@@ -112,7 +112,7 @@ Then use this config:
 | **Rate Limits** | 5 | Request frequency controls |
 | **Analytics** | 20 | Cost, latency, errors, tokens, cache, feedback |
 | **Logging** | 8 | Log ingestion and export |
-| **Tracing** | 3 | Feedback and trace retrieval |
+| **Tracing** | 2 | Feedback creation and updates on traces |
 | **Users & Workspaces** | 20 | User management, invites, workspace members |
 | **Audit** | 1 | Audit log access |
 
@@ -122,14 +122,25 @@ Then use this config:
 
 ## API Key Scopes
 
-Different tools require different API key scopes. A workspace-scoped service key with broad permissions works for most operations. Some features need additional access:
+Most tools work with a **workspace-scoped service key** that has Select All permissions enabled. That covers prompts, configs, virtual/API keys, providers, guardrails, workspace integrations, MCP servers, rate/usage limits, logs, prompt completions, and workspace user management.
+
+### Enterprise-gated tools (28)
+
+The following tools require an **organisation-level scope that is only available on Portkey Enterprise plans**. They return `403 You do not have enough permissions to execute this request` on workspace plans. Their descriptions include an `Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.` suffix so MCP clients know upfront.
+
+| Area | Tools | Required scope |
+|---|---|---|
+| Analytics (20) | `get_cost_analytics`, `get_request_analytics`, `get_token_analytics`, `get_latency_analytics`, `get_error_analytics`, `get_error_rate_analytics`, `get_cache_hit_latency`, `get_cache_hit_rate`, `get_users_analytics`, `get_error_stacks_analytics`, `get_error_status_codes_analytics`, `get_user_requests_analytics`, `get_rescued_requests_analytics`, `get_feedback_analytics`, `get_feedback_models_analytics`, `get_feedback_scores_analytics`, `get_feedback_weighted_analytics`, `get_analytics_group_users`, `get_analytics_group_models`, `get_analytics_group_metadata` | org-level `analytics.view` |
+| Audit | `list_audit_logs` | `audit_logs.list` |
+| Org-level integrations | `get_integration`, `list_integration_models`, `list_integration_workspaces` | `organisation_integrations.read` |
+| Org-level users | `list_all_users`, `get_user`, `get_user_stats`, `list_user_invites` | `organisation_users.list` / `organisation_users.read` |
+
+### Other scope requirements
 
 | Feature | Required |
 |---------|----------|
-| Analytics, log exports, audit logs | Enterprise plan + `analytics.view` scope |
-| User management, invites | Organization-level API key |
-| Integration models/workspaces | Organization-level API key |
-| Prompt completions | `completions.write` scope + billing metadata |
+| Prompt completions (`run_prompt_completion`) | `completions.write` scope + billing metadata (`app`, `env`) |
+| Org-level service API key creation via `create_api_key` | `organisation_service_api_keys.create` (Enterprise) |
 
 If a tool returns a `403` with Portkey error `AB03`, it means missing scopes — not a broken endpoint.
 

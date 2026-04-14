@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-04-14
+
+Tool surface refinement release. Cleans up a phantom endpoint, adds structured input aliases for LLM ergonomics, enables stdio/HTTP tool domain subsetting, and flags the 28 tools that are Enterprise-gated so clients know up front.
+
+### Added
+
+- **`PORTKEY_TOOL_DOMAINS`** environment variable — stdio and HTTP clients can now expose only a focused subset of tools (e.g. `prompts,analytics`) instead of all 150. Validated against `TOOL_DOMAIN_NAMES` on startup with a clear error listing valid domains. Complements the pre-existing HTTP-only `?tools=` query parameter.
+- **Structured input aliases** for prompt creation/update/migration — `create_prompt`, `update_prompt`, and `migrate_prompt` now accept a first-class `messages` array (system/user/assistant with typed content blocks) alongside the legacy JSON-encoded `string`. The server serializes `messages` into the legacy format before calling Portkey, so both forms keep working.
+- **Structured filter aliases** on every analytics tool — `status_codes[]`, `virtual_key_slugs[]`, `config_slugs[]`, `trace_ids[]`, `span_ids[]`, `provider_models[]`, `metadata_filter{}`, and array-aware `api_key_ids[]`. LLM callers can now pass native arrays/objects; the server normalizes to Portkey's legacy comma-separated query params.
+- **Enterprise-gated annotation** on the 28 tools that require Portkey Enterprise plan scopes — 20 analytics tools, `list_audit_logs`, 3 org-level integration reads, and 4 org-level user reads now carry an `Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.` suffix in their descriptions. Verified against the Portkey dashboard — these scope groups are not offered to workspace plans.
+- Glama MCP server registry card badge in README and `glama.json` ownership manifest.
+
+### Removed
+
+- **BREAKING**: `get_trace` tool removed. Portkey's Admin API does not expose `GET /logs/{id}` — the endpoint returns `405 Method Not Allowed` for every valid-looking id and is absent from the official Portkey SDK. Single-trace retrieval is not a supported operation; use `create_log_export` with a `trace_id` filter to export the data you need. This drops tool count from 151 → 150.
+
+### Changed
+
+- All destructive-op descriptions (`delete_*`, `remove_*`, `reset_*`) tightened for Glama TDQS scoring — each now documents cascade effects and a safety/audit step, matching the pattern of the already-strong `delete_virtual_key` / `delete_api_key` descriptions. Bumps min-TDQS on destructive tools and lifts the overall description quality score.
+- All 150 tool descriptions pass through a quality review for the Glama TDQS rubric — purpose clarity, usage guidelines, behavioral transparency, parameter semantics.
+- `src/services/tracing.service.ts` no longer exports `Trace`, `TraceSpan`, or `GetTraceResponse` types (removed with `get_trace`).
+- README `API Key Scopes` section rewritten to call out Enterprise gating explicitly, list every affected tool, and note that workspace service keys with Select All cover the non-Enterprise surface.
+- SECURITY.md advisory URL updated to the personal-repo location.
+
+### Fixed
+
+- `get_trace` was previously documented and registered but had never worked against the real Portkey API. Removing it eliminates a silent failure path for LLM clients that would otherwise hit a 405.
+
 ## [0.2.0] - 2026-04-08
 
 Major hardening release. Fixes critical MCP spec compliance issues, adds tool annotations and structured responses, and significantly improves security defaults.
