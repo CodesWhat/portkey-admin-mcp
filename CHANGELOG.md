@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-04-16
+
+Maintenance release. Description-quality pass across every MCP tool and a routine patch-level dependency refresh. No behavior, schema, or API surface changes.
+
+### Changed
+
+- All 150 tool descriptions rewritten to lead with returned scope (named fields/shapes), clarify workflow boundaries, and link sibling tools — total description payload shrinks ~14% while becoming more useful to LLM callers on every session start.
+- `create_prompt`, `get_prompt`, and `update_prompt` retain a one-line hint pointing callers at the structured `messages` alias while documenting the legacy JSON-encoded `string` multi-message format.
+- `create_api_key` ("the secret is only returned once"), `delete_api_key` ("cannot be undone"), and `insert_log` (failure mode for unmatched `request_provider`) sharpened for safety-critical wording.
+- Voice/casing normalized across analytics tools (`Get X` rather than mixed `Return X`/`Returns X`) and MCP tools (lowercase `id` rather than mixed `ID`/`id`).
+
+### Added
+
+- Three description-quality test blocks in `tests/unit.test.ts` enforcing: workflow/scope/sibling guidance for weak tool families, A-rated/infra tool standards, and a high-risk sweep over `delete_*` / `create_api_key` / `create_virtual_key` / `run_prompt_completion` / `insert_log` requiring irreversibility, access, billable, or failure semantics in the description. Test count 101 → 102.
+- Shared `before()` setup in the description-quality suite to register all tools once with a `descriptionFor()` helper, replacing per-test `registerAllTools` rebuilds.
+
+### Dependencies
+
+- `@biomejs/biome` 2.4.10 → 2.4.12
+- `@types/node` 25.5.2 → 25.6.0
+- `dotenv` 17.4.1 → 17.4.2
+- `knip` 6.3.0 → 6.4.1
+- `lefthook` 2.1.5 → 2.1.6
+- `redis` 5.11.0 → 5.12.1
+- 0 vulnerabilities; full `npm run ci` (lint + knip + typecheck + 102 unit tests + build + 16 e2e tests + readme tool verification) green.
+
 ## [0.3.0] - 2026-04-14
 
 Tool surface refinement release. Cleans up a phantom endpoint, adds structured input aliases for LLM ergonomics, enables stdio/HTTP tool domain subsetting, and flags the 28 tools that are Enterprise-gated so clients know up front.
