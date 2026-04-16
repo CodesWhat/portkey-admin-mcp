@@ -1,0 +1,199 @@
+
+================================================================================
+DIMENSION: Behavior (behavioral_transparency)
+================================================================================
+
+--- Score 4/5 — 11 tools ---
+
+[delete_rate_limit]
+  With no annotations provided, the description carries the full burden of behavioral disclosure. It effectively warns that 'This action cannot be undone,' which is crucial for a destructive operation. However, it doesn't mention potential side effects, error conditions, or response formats, leaving some behavioral aspects unclear.
+
+[delete_collection]
+  With no annotations provided, the description carries the full burden of behavioral disclosure. It effectively communicates critical behavioral traits: the action is irreversible ('cannot be undone') and has side effects ('prompts in this collection will become orphaned'). This covers the destructive nature and consequences, though it doesn't mention permissions, rate limits, or error conditions.
+
+[delete_prompt]
+  With no annotations provided, the description carries the full burden of behavioral disclosure. It effectively communicates critical behavioral traits: the action is irreversible ('cannot be undone') and has broad impact ('remove the prompt and all its versions'), which are essential for a destructive operation. However, it lacks details on permissions, error handling, or response format.
+
+--- Score 3/5 — 9 tools ---
+
+[delete_provider]
+  With no annotations provided, the description carries the full burden of behavioral disclosure. It correctly indicates this is a destructive operation ('cannot be undone'), which is crucial context. However, it doesn't mention authentication requirements, rate limits, error conditions, or what constitutes a successful deletion. For a destructive tool with zero annotation coverage, this leaves significant behavioral gaps.
+
+[delete_config]
+  No annotations are provided, so the description carries full burden. It discloses the irreversible nature of the deletion ('This action cannot be undone'), which is a critical behavioral trait. However, it lacks details on permissions, side effects, or error handling that would be helpful for a destructive operation.
+
+[list_audit_logs]
+  With no annotations provided, the description carries the full burden. It indicates this is a retrieval operation ('Retrieve audit logs') and mentions filtering capabilities, but doesn't disclose critical behavioral aspects like pagination behavior (implied by parameters but not described), rate limits, authentication requirements, or what happens with large result sets. It adds some value but leaves significant gaps.
+
+--- Score 2/5 — 97 tools ---
+
+[start_log_export]
+  No annotations are provided, so the description carries full burden. It mentions 'start' but does not disclose behavioral traits such as whether this is asynchronous, requires specific permissions, has side effects (e.g., resource locking), or potential errors. This leaves significant gaps for a mutation tool.
+
+[add_workspace_member]
+  No annotations are provided, so the description must fully disclose behavioral traits. It states the tool performs an addition operation, implying a mutation, but fails to mention critical aspects like required permissions, whether the action is idempotent, error conditions (e.g., duplicate members), or response format. This leaves significant gaps in understanding how the tool behaves in practice.
+
+[cancel_log_export]
+  With no annotations provided, the description carries full burden for behavioral disclosure. While 'cancel' implies a mutation operation, the description doesn't specify whether this requires special permissions, whether the cancellation is reversible, what happens to partial export data, or what confirmation/response to expect. For a mutation tool with zero annotation coverage, this leaves significant behavioral questions unanswered.
+
+================================================================================
+DIMENSION: Usage Guidelines (usage_guidelines)
+================================================================================
+
+--- Score 5/5 — 1 tools ---
+
+[create_collection]
+  The description provides explicit usage guidance: 'Use one collection per app' with named examples (hourlink, apizone, research-pilot). This tells the agent when to use this tool (for organizing prompts by app) and implies when not to use it (don't create multiple collections for the same app).
+
+--- Score 4/5 — 6 tools ---
+
+[migrate_prompt]
+  The description provides clear context about when to use this tool ('Useful for CI/CD and prompt-as-code workflows') and explains the lookup mechanism ('Finds existing prompts by name within the collection'). This gives practical guidance, though it doesn't explicitly state when NOT to use it or name specific alternative tools.
+
+[run_prompt_completion]
+  The description provides clear context for usage: 'REQUIRES billing metadata (client_id, app, env).' This indicates prerequisites and when the tool is applicable (when billing attribution is needed). However, it doesn't specify when to use this tool versus alternatives like 'render_prompt' (which might render without execution) or other completion-related tools, nor does it mention exclusions.
+
+[publish_prompt]
+  The description provides clear context for when to use this tool ('useful for promoting a tested version to production'), which helps differentiate it from tools like 'update_prompt' or 'create_prompt'. However, it doesn't explicitly state when NOT to use it or mention specific alternatives like 'promote_prompt'.
+
+--- Score 3/5 — 20 tools ---
+
+[create_prompt_label]
+  The description implies usage context through mentioning 'scoped to workspaces or organizations,' suggesting when labels might be applied. However, it lacks explicit guidance on when to use this tool versus alternatives like 'update_prompt_label' or 'delete_prompt_label,' and doesn't mention prerequisites or exclusions.
+
+[update_feedback]
+  The description implies usage context through 'after initial creation' and 'by ID,' suggesting this tool is for modifying existing feedback rather than creating new entries. However, it doesn't provide explicit guidance on when to use this versus alternatives like 'create_feedback' or other update tools, nor does it mention any prerequisites or exclusions.
+
+[list_api_keys]
+  The description implies usage context through 'optional pagination and workspace filtering,' suggesting when to use these parameters. However, it provides no explicit guidance on when to choose this tool over alternatives like 'get_api_key' for single-key retrieval or 'list_virtual_keys' for different resource types. The guidance is functional but lacks strategic direction.
+
+--- Score 2/5 — 90 tools ---
+
+[start_log_export]
+  No explicit guidance on when to use this tool versus alternatives like 'download_log_export' or 'cancel_log_export'. The phrase 'previously created' implies a prerequisite but does not specify conditions or workflows, leaving usage context unclear.
+
+[add_workspace_member]
+  The description provides no guidance on when to use this tool versus alternatives, such as 'invite_user' (which might handle external invitations) or 'update_workspace_member' (which might modify existing members). It also lacks prerequisites, like requiring admin permissions or valid user IDs from 'list_all_users', leaving usage context unclear.
+
+[cancel_log_export]
+  The description provides no guidance about when to use this tool versus alternatives. It doesn't mention prerequisites (e.g., that the export must be running), nor does it reference related tools like 'start_log_export', 'get_log_export', or 'list_log_exports' from the sibling list. The agent must infer usage context from the tool name alone.
+
+================================================================================
+DIMENSION: Completeness (contextual_completeness)
+================================================================================
+
+--- Score 4/5 — 4 tools ---
+
+[get_trace]
+  For a single-parameter read operation with no output schema, the description provides excellent context about what information is returned. It comprehensively lists the return data components (request/response data, spans, metadata, cost, token usage, feedback). The main gap is lack of output schema to structure this return data.
+
+[delete_prompt_label]
+  For a destructive tool with no annotations and no output schema, the description is reasonably complete: it states the purpose and key behavioral warning. However, it could improve by mentioning potential impacts on related resources or typical response formats.
+
+[delete_virtual_key]
+  For a destructive tool with no annotations and no output schema, the description is reasonably complete: it clarifies the irreversible nature and parameter usage. However, it could improve by mentioning expected outcomes (e.g., confirmation message) or error cases, given the tool's complexity.
+
+--- Score 3/5 — 44 tools ---
+
+[get_guardrail]
+  For a single-parameter retrieval tool with no output schema, the description provides basic purpose but lacks important context. It doesn't explain what format the 'detailed information' returns, what 'checks and actions configuration' entails, or any behavioral considerations. The absence of annotations means the description should do more heavy lifting, but it remains quite minimal.
+
+[get_latency_analytics]
+  Given the high parameter count (21), no annotations, and no output schema, the description is minimally adequate. It explains what data is retrieved but lacks context on behavioral traits, output format, or usage guidelines. For a complex analytics tool, more completeness would be helpful, but the clear purpose and full schema coverage keep it at a baseline level.
+
+[get_prompt_partial]
+  Given the tool's low complexity (single parameter, no output schema, no annotations), the description is minimally adequate. It covers the basic purpose but lacks context on usage guidelines, behavioral details, or output format. For a read operation with no annotations, it should ideally mention safety or response structure to be more complete.
+
+--- Score 2/5 — 69 tools ---
+
+[start_log_export]
+  For a mutation tool with no annotations and no output schema, the description is incomplete. It lacks details on behavior, outcomes, error handling, and how it fits with sibling tools (e.g., 'download_log_export'), making it insufficient for informed use.
+
+[add_workspace_member]
+  Given the tool's complexity (a mutation with no annotations and no output schema), the description is insufficient. It lacks details on behavioral outcomes, error handling, permissions, and how it relates to sibling tools. For a tool that modifies workspace membership, more context is needed to ensure safe and correct usage by an AI agent.
+
+[cancel_log_export]
+  For a mutation tool with no annotations and no output schema, the description is insufficiently complete. It doesn't explain what 'cancel' entails operationally, what happens to the export job, whether there are side effects, or what the tool returns. The agent must guess about the behavioral implications and expected outcomes of invoking this tool.
+
+================================================================================
+DIMENSION: Parameters (parameter_semantics)
+================================================================================
+
+--- Score 4/5 — 6 tools ---
+
+[list_all_users]
+  The input schema has 0 parameters with 100% coverage, so no parameter documentation is needed. The description appropriately doesn't discuss parameters, focusing on the tool's purpose. With no parameters, the baseline is 4, as the description doesn't need to compensate for any schema gaps.
+
+[list_configs]
+  The tool has 0 parameters with 100% schema description coverage, so no parameter information is needed. The description doesn't add param details beyond the schema, but this is acceptable given the baseline of 4 for zero parameters.
+
+[list_virtual_keys]
+  The input schema has 0 parameters with 100% coverage, so no parameter documentation is needed. The description appropriately doesn't discuss parameters, focusing instead on what the tool retrieves. This meets the baseline expectation for a zero-parameter tool, though it doesn't add extra semantic value beyond the empty schema.
+
+--- Score 3/5 — 111 tools ---
+
+[start_log_export]
+  Schema description coverage is 100%, with the parameter 'export_id' clearly documented. The description adds no additional meaning beyond the schema, such as format examples or sourcing guidance. Baseline 3 is appropriate as the schema handles parameter documentation adequately.
+
+[add_workspace_member]
+  Schema description coverage is 100%, with clear parameter descriptions in the input schema (e.g., user_id must be a UUID from list_all_users). The description adds no additional semantic context beyond what the schema provides, such as explaining role implications or workspace constraints. Thus, it meets the baseline but does not enhance parameter understanding.
+
+[cancel_log_export]
+  Schema description coverage is 100%, with the single parameter 'export_id' well-documented in the schema as 'The unique ID of the log export to cancel'. The description doesn't add any parameter information beyond what the schema provides, but with complete schema coverage, the baseline score of 3 is appropriate.
+
+================================================================================
+DIMENSION: Purpose (purpose_clarity)
+================================================================================
+
+--- Score 5/5 — 24 tools ---
+
+[create_integration]
+  The description clearly states the specific action ('create') and resource ('integration with an AI provider'), with examples of providers (OpenAI, Anthropic, etc.). It distinguishes from sibling tools like 'create_provider' or 'create_workspace' by focusing on AI provider integrations specifically.
+
+[get_api_key]
+  The description clearly states the verb 'Retrieve' and the resource 'detailed information about a specific API key', specifying it's by UUID. It distinguishes from sibling tools like 'list_api_keys' (which lists multiple) and 'create_api_key' (which creates new ones), making the purpose specific and differentiated.
+
+[get_cache_hit_rate]
+  The description clearly states the tool's purpose with a specific verb ('Retrieve') and resource ('cache hit rate analytics'), and distinguishes it from siblings by specifying it returns 'time-series data' with specific metrics ('hit rate percentage, total hits, and misses over time'), unlike other analytics tools like get_cost_analytics or get_latency_analytics.
+
+--- Score 4/5 — 92 tools ---
+
+[add_workspace_member]
+  The description clearly states the action ('Add a user to a workspace') and specifies the resource ('with a specific role'), making the purpose unambiguous. However, it does not explicitly differentiate from sibling tools like 'invite_user' or 'update_workspace_member', which might involve similar user-management functions, so it misses the highest score.
+
+[cancel_log_export]
+  The description clearly states the action ('Cancel') and target resource ('a running log export job'), providing specific verb+resource combination. However, it doesn't differentiate from sibling tools like 'delete_log_export' (which doesn't exist in the list) or 'update_log_export' - though 'cancel' implies stopping an in-progress operation rather than deleting or modifying.
+
+[create_api_key]
+  The description clearly states the action ('Create') and resource ('Portkey API key for authentication'), making the purpose evident. It distinguishes between organisation-level and workspace keys, but doesn't explicitly differentiate from sibling tools like 'create_virtual_key' or 'update_api_key', which prevents a perfect score.
+
+--- Score 3/5 — 1 tools ---
+
+[start_log_export]
+  The description states the action ('start') and resource ('log export job'), but is vague about what 'start' entails (e.g., initiating processing, queuing for export). It distinguishes from 'create_log_export' by referencing 'previously created', but does not clarify differences from 'download_log_export' or 'cancel_log_export'.
+
+================================================================================
+DIMENSION: Conciseness (conciseness_structure)
+================================================================================
+
+--- Score 5/5 — 98 tools ---
+
+[add_workspace_member]
+  The description is a single, direct sentence that efficiently conveys the core action without unnecessary words. It is front-loaded with the main purpose, making it easy to parse quickly, and every part of the sentence contributes essential information.
+
+[cancel_log_export]
+  The description is a single, efficient sentence that states the core functionality without any wasted words. It's appropriately sized for a single-parameter tool and gets straight to the point with clear subject-verb-object structure.
+
+[create_config]
+  The description is a single, efficient sentence that clearly states the tool's purpose without any wasted words. It's appropriately sized and front-loaded with the essential information.
+
+--- Score 4/5 — 19 tools ---
+
+[start_log_export]
+  The description is a single, straightforward sentence with no wasted words. It is front-loaded with the core action, though it could be more specific to improve clarity without sacrificing brevity.
+
+[create_api_key]
+  The description is brief and front-loaded with the core purpose, using only two sentences without unnecessary elaboration. However, it could be slightly more structured by explicitly separating purpose from scope details, though it remains efficient overall.
+
+[create_guardrail]
+  The description is a single, efficient sentence that front-loads the core action ('Create a new guardrail') and adds purpose ('for content moderation and security'). There's no wasted text, though it could be slightly more structured (e.g., by hinting at parameters).

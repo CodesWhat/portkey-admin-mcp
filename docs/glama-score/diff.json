@@ -1,0 +1,7159 @@
+{
+	"summary": {
+		"both": 115,
+		"improved": 109,
+		"unchanged": 0,
+		"regressed": 6,
+		"added": 35,
+		"removed": 2,
+		"baselineMean": 3.14,
+		"currentMean": 3.81,
+		"deltaMean": 0.67
+	},
+	"rows": [
+		{
+			"name": "add_workspace_member",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 3.8,
+			"delta": 0.9,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 2,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "cancel_log_export",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 4,
+			"delta": 1.1,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 4,
+					"delta": -1
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "create_api_key",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 4,
+			"delta": 1.1,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 4,
+					"delta": 0
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 4,
+					"cur": 4,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				}
+			]
+		},
+		{
+			"name": "create_collection",
+			"status": "both",
+			"baselineTdqs": 3.9,
+			"currentTdqs": 4.2,
+			"delta": 0.3,
+			"baselineTier": "A",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "create_config",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 3.9,
+			"delta": 1,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 4,
+					"delta": -1
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				}
+			]
+		},
+		{
+			"name": "create_feedback",
+			"status": "both",
+			"baselineTdqs": 3.9,
+			"currentTdqs": 4.2,
+			"delta": 0.3,
+			"baselineTier": "A",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 4,
+					"cur": 4,
+					"delta": 0
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "create_guardrail",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 3.6,
+			"delta": 0.7,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 4,
+					"delta": 0
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "create_integration",
+			"status": "both",
+			"baselineTdqs": 3.2,
+			"currentTdqs": 3.6,
+			"delta": 0.4,
+			"baselineTier": "B",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 5,
+					"cur": 4,
+					"delta": -1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 4,
+					"delta": -1
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				}
+			]
+		},
+		{
+			"name": "create_log_export",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 4.1,
+			"delta": 1.2,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "create_mcp_integration",
+			"status": "added",
+			"baselineTdqs": null,
+			"currentTdqs": 3.7,
+			"delta": null,
+			"baselineTier": null,
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": null,
+					"cur": 2,
+					"delta": null
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				}
+			]
+		},
+		{
+			"name": "create_mcp_server",
+			"status": "added",
+			"baselineTdqs": null,
+			"currentTdqs": 3.6,
+			"delta": null,
+			"baselineTier": null,
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": null,
+					"cur": 2,
+					"delta": null
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				}
+			]
+		},
+		{
+			"name": "create_prompt",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 4,
+			"delta": 1.1,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 4,
+					"delta": -1
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				}
+			]
+		},
+		{
+			"name": "create_prompt_label",
+			"status": "both",
+			"baselineTdqs": 3.1,
+			"currentTdqs": 3.8,
+			"delta": 0.7,
+			"baselineTier": "B",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 4,
+					"delta": 0
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "create_prompt_partial",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 3.6,
+			"delta": 0.7,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 4,
+					"delta": 0
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				}
+			]
+		},
+		{
+			"name": "create_provider",
+			"status": "both",
+			"baselineTdqs": 3.3,
+			"currentTdqs": 3.6,
+			"delta": 0.3,
+			"baselineTier": "B",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 5,
+					"cur": 4,
+					"delta": -1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "create_rate_limit",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 3.8,
+			"delta": 0.9,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 2,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "create_usage_limit",
+			"status": "both",
+			"baselineTdqs": 3.1,
+			"currentTdqs": 3.8,
+			"delta": 0.7,
+			"baselineTier": "B",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 2,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				}
+			]
+		},
+		{
+			"name": "create_virtual_key",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 3.6,
+			"delta": 0.7,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 4,
+					"delta": 0
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 4,
+					"cur": 4,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				}
+			]
+		},
+		{
+			"name": "create_workspace",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 3.7,
+			"delta": 0.8,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 4,
+					"delta": 0
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				}
+			]
+		},
+		{
+			"name": "delete_api_key",
+			"status": "both",
+			"baselineTdqs": 3.7,
+			"currentTdqs": 3.6,
+			"delta": -0.1,
+			"baselineTier": "A",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 5,
+					"cur": 4,
+					"delta": -1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 4,
+					"cur": 3,
+					"delta": -1
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				}
+			]
+		},
+		{
+			"name": "delete_collection",
+			"status": "both",
+			"baselineTdqs": 3.7,
+			"currentTdqs": 4,
+			"delta": 0.3,
+			"baselineTier": "A",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 5,
+					"cur": 4,
+					"delta": -1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 4,
+					"cur": 4,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "delete_config",
+			"status": "both",
+			"baselineTdqs": 3.5,
+			"currentTdqs": 3.8,
+			"delta": 0.3,
+			"baselineTier": "A",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 5,
+					"cur": 4,
+					"delta": -1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				}
+			]
+		},
+		{
+			"name": "delete_guardrail",
+			"status": "both",
+			"baselineTdqs": 3.9,
+			"currentTdqs": 3.8,
+			"delta": -0.1,
+			"baselineTier": "A",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 5,
+					"cur": 4,
+					"delta": -1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 4,
+					"cur": 4,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				}
+			]
+		},
+		{
+			"name": "delete_integration",
+			"status": "both",
+			"baselineTdqs": 3.9,
+			"currentTdqs": 3.8,
+			"delta": -0.1,
+			"baselineTier": "A",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 5,
+					"cur": 4,
+					"delta": -1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 4,
+					"cur": 4,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "delete_integration_model",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 3.6,
+			"delta": 0.7,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 4,
+					"delta": 0
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "delete_mcp_integration",
+			"status": "added",
+			"baselineTdqs": null,
+			"currentTdqs": 3.8,
+			"delta": null,
+			"baselineTier": null,
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				}
+			]
+		},
+		{
+			"name": "delete_mcp_server",
+			"status": "added",
+			"baselineTdqs": null,
+			"currentTdqs": 3.8,
+			"delta": null,
+			"baselineTier": null,
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				}
+			]
+		},
+		{
+			"name": "delete_prompt",
+			"status": "both",
+			"baselineTdqs": 3.7,
+			"currentTdqs": 3.8,
+			"delta": 0.1,
+			"baselineTier": "A",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 5,
+					"cur": 4,
+					"delta": -1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 4,
+					"cur": 4,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				}
+			]
+		},
+		{
+			"name": "delete_prompt_label",
+			"status": "both",
+			"baselineTdqs": 4,
+			"currentTdqs": 3.8,
+			"delta": -0.2,
+			"baselineTier": "A",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 5,
+					"cur": 4,
+					"delta": -1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 4,
+					"cur": 4,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 4,
+					"cur": 4,
+					"delta": 0
+				}
+			]
+		},
+		{
+			"name": "delete_prompt_partial",
+			"status": "both",
+			"baselineTdqs": 3.7,
+			"currentTdqs": 3.8,
+			"delta": 0.1,
+			"baselineTier": "A",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 5,
+					"cur": 4,
+					"delta": -1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 4,
+					"cur": 4,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "delete_provider",
+			"status": "both",
+			"baselineTdqs": 3.2,
+			"currentTdqs": 4.1,
+			"delta": 0.9,
+			"baselineTier": "B",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "delete_rate_limit",
+			"status": "both",
+			"baselineTdqs": 3.5,
+			"currentTdqs": 3.8,
+			"delta": 0.3,
+			"baselineTier": "A",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 4,
+					"delta": 0
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 4,
+					"cur": 4,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				}
+			]
+		},
+		{
+			"name": "delete_usage_limit",
+			"status": "both",
+			"baselineTdqs": 3.7,
+			"currentTdqs": 4,
+			"delta": 0.3,
+			"baselineTier": "A",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 5,
+					"cur": 4,
+					"delta": -1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 4,
+					"cur": 4,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "delete_user",
+			"status": "both",
+			"baselineTdqs": 3.9,
+			"currentTdqs": 4.2,
+			"delta": 0.3,
+			"baselineTier": "A",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 4,
+					"cur": 4,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "delete_user_invite",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 3.9,
+			"delta": 1,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "delete_virtual_key",
+			"status": "both",
+			"baselineTdqs": 4,
+			"currentTdqs": 3.8,
+			"delta": -0.2,
+			"baselineTier": "A",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 5,
+					"cur": 4,
+					"delta": -1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 4,
+					"cur": 4,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 4,
+					"cur": 3,
+					"delta": -1
+				}
+			]
+		},
+		{
+			"name": "delete_workspace",
+			"status": "both",
+			"baselineTdqs": 3.7,
+			"currentTdqs": 3.8,
+			"delta": 0.1,
+			"baselineTier": "A",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 5,
+					"cur": 4,
+					"delta": -1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 4,
+					"cur": 3,
+					"delta": -1
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "download_log_export",
+			"status": "both",
+			"baselineTdqs": 3.1,
+			"currentTdqs": 3.6,
+			"delta": 0.5,
+			"baselineTier": "B",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 4,
+					"delta": 0
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				}
+			]
+		},
+		{
+			"name": "get_analytics_group_metadata",
+			"status": "added",
+			"baselineTdqs": null,
+			"currentTdqs": 4,
+			"delta": null,
+			"baselineTier": null,
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": null,
+					"cur": 2,
+					"delta": null
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				}
+			]
+		},
+		{
+			"name": "get_analytics_group_models",
+			"status": "added",
+			"baselineTdqs": null,
+			"currentTdqs": 3.8,
+			"delta": null,
+			"baselineTier": null,
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": null,
+					"cur": 2,
+					"delta": null
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				}
+			]
+		},
+		{
+			"name": "get_analytics_group_users",
+			"status": "added",
+			"baselineTdqs": null,
+			"currentTdqs": 3.8,
+			"delta": null,
+			"baselineTier": null,
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": null,
+					"cur": 2,
+					"delta": null
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				}
+			]
+		},
+		{
+			"name": "get_api_key",
+			"status": "both",
+			"baselineTdqs": 3.2,
+			"currentTdqs": 3.8,
+			"delta": 0.6,
+			"baselineTier": "B",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 5,
+					"cur": 4,
+					"delta": -1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				}
+			]
+		},
+		{
+			"name": "get_cache_hit_latency",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 3.8,
+			"delta": 0.9,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 2,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				}
+			]
+		},
+		{
+			"name": "get_cache_hit_rate",
+			"status": "both",
+			"baselineTdqs": 3.2,
+			"currentTdqs": 3.8,
+			"delta": 0.6,
+			"baselineTier": "B",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 2,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				}
+			]
+		},
+		{
+			"name": "get_collection",
+			"status": "both",
+			"baselineTdqs": 3.1,
+			"currentTdqs": 3.8,
+			"delta": 0.7,
+			"baselineTier": "B",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 2,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "get_config",
+			"status": "both",
+			"baselineTdqs": 3.1,
+			"currentTdqs": 3.6,
+			"delta": 0.5,
+			"baselineTier": "B",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 4,
+					"delta": 0
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 2,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "get_cost_analytics",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 3.8,
+			"delta": 0.9,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 2,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				}
+			]
+		},
+		{
+			"name": "get_error_analytics",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 3.8,
+			"delta": 0.9,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 2,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				}
+			]
+		},
+		{
+			"name": "get_error_rate_analytics",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 3.8,
+			"delta": 0.9,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 2,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				}
+			]
+		},
+		{
+			"name": "get_error_stacks_analytics",
+			"status": "added",
+			"baselineTdqs": null,
+			"currentTdqs": 3.8,
+			"delta": null,
+			"baselineTier": null,
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": null,
+					"cur": 2,
+					"delta": null
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				}
+			]
+		},
+		{
+			"name": "get_error_status_codes_analytics",
+			"status": "added",
+			"baselineTdqs": null,
+			"currentTdqs": 3.8,
+			"delta": null,
+			"baselineTier": null,
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": null,
+					"cur": 2,
+					"delta": null
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				}
+			]
+		},
+		{
+			"name": "get_feedback_analytics",
+			"status": "added",
+			"baselineTdqs": null,
+			"currentTdqs": 3.8,
+			"delta": null,
+			"baselineTier": null,
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": null,
+					"cur": 2,
+					"delta": null
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				}
+			]
+		},
+		{
+			"name": "get_feedback_models_analytics",
+			"status": "added",
+			"baselineTdqs": null,
+			"currentTdqs": 3.8,
+			"delta": null,
+			"baselineTier": null,
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": null,
+					"cur": 2,
+					"delta": null
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				}
+			]
+		},
+		{
+			"name": "get_feedback_scores_analytics",
+			"status": "added",
+			"baselineTdqs": null,
+			"currentTdqs": 3.8,
+			"delta": null,
+			"baselineTier": null,
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": null,
+					"cur": 2,
+					"delta": null
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				}
+			]
+		},
+		{
+			"name": "get_feedback_weighted_analytics",
+			"status": "added",
+			"baselineTdqs": null,
+			"currentTdqs": 3.8,
+			"delta": null,
+			"baselineTier": null,
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": null,
+					"cur": 2,
+					"delta": null
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				}
+			]
+		},
+		{
+			"name": "get_guardrail",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 3.8,
+			"delta": 0.9,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 2,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "get_integration",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 3.6,
+			"delta": 0.7,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 4,
+					"delta": 0
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 2,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				}
+			]
+		},
+		{
+			"name": "get_latency_analytics",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 3.8,
+			"delta": 0.9,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 2,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "get_log_export",
+			"status": "both",
+			"baselineTdqs": 3.1,
+			"currentTdqs": 3.8,
+			"delta": 0.7,
+			"baselineTier": "B",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 2,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "get_mcp_integration",
+			"status": "added",
+			"baselineTdqs": null,
+			"currentTdqs": 3.8,
+			"delta": null,
+			"baselineTier": null,
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": null,
+					"cur": 2,
+					"delta": null
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				}
+			]
+		},
+		{
+			"name": "get_mcp_integration_metadata",
+			"status": "added",
+			"baselineTdqs": null,
+			"currentTdqs": 3.8,
+			"delta": null,
+			"baselineTier": null,
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": null,
+					"cur": 2,
+					"delta": null
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				}
+			]
+		},
+		{
+			"name": "get_mcp_server",
+			"status": "added",
+			"baselineTdqs": null,
+			"currentTdqs": 3.7,
+			"delta": null,
+			"baselineTier": null,
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": null,
+					"cur": 2,
+					"delta": null
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				}
+			]
+		},
+		{
+			"name": "get_prompt",
+			"status": "both",
+			"baselineTdqs": 3.1,
+			"currentTdqs": 3.7,
+			"delta": 0.6,
+			"baselineTier": "B",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 4,
+					"delta": 0
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 2,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "get_prompt_label",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 3.7,
+			"delta": 0.8,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 2,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "get_prompt_partial",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 3.6,
+			"delta": 0.7,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 4,
+					"delta": 0
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 2,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "get_prompt_version",
+			"status": "added",
+			"baselineTdqs": null,
+			"currentTdqs": 3.8,
+			"delta": null,
+			"baselineTier": null,
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": null,
+					"cur": 2,
+					"delta": null
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				}
+			]
+		},
+		{
+			"name": "get_provider",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 3.6,
+			"delta": 0.7,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 4,
+					"delta": 0
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 2,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				}
+			]
+		},
+		{
+			"name": "get_rate_limit",
+			"status": "both",
+			"baselineTdqs": 3.1,
+			"currentTdqs": 3.6,
+			"delta": 0.5,
+			"baselineTier": "B",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 4,
+					"delta": 0
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 2,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "get_request_analytics",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 3.8,
+			"delta": 0.9,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 2,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				}
+			]
+		},
+		{
+			"name": "get_rescued_requests_analytics",
+			"status": "added",
+			"baselineTdqs": null,
+			"currentTdqs": 3.7,
+			"delta": null,
+			"baselineTier": null,
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": null,
+					"cur": 2,
+					"delta": null
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				}
+			]
+		},
+		{
+			"name": "get_token_analytics",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 3.8,
+			"delta": 0.9,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 2,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				}
+			]
+		},
+		{
+			"name": "get_trace",
+			"status": "removed",
+			"baselineTdqs": 3.8,
+			"currentTdqs": null,
+			"delta": null,
+			"baselineTier": "A",
+			"currentTier": null,
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 5,
+					"cur": null,
+					"delta": null
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 3,
+					"cur": null,
+					"delta": null
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 3,
+					"cur": null,
+					"delta": null
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": null,
+					"delta": null
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": null,
+					"delta": null
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 4,
+					"cur": null,
+					"delta": null
+				}
+			]
+		},
+		{
+			"name": "get_usage_limit",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 3.6,
+			"delta": 0.7,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 4,
+					"delta": 0
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 2,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				}
+			]
+		},
+		{
+			"name": "get_user",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 3.8,
+			"delta": 0.9,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 2,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				}
+			]
+		},
+		{
+			"name": "get_user_invite",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 3.8,
+			"delta": 0.9,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 2,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				}
+			]
+		},
+		{
+			"name": "get_user_requests_analytics",
+			"status": "added",
+			"baselineTdqs": null,
+			"currentTdqs": 3.8,
+			"delta": null,
+			"baselineTier": null,
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": null,
+					"cur": 2,
+					"delta": null
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				}
+			]
+		},
+		{
+			"name": "get_user_stats",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 3.7,
+			"delta": 0.8,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 2,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "get_users_analytics",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 3.8,
+			"delta": 0.9,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 2,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				}
+			]
+		},
+		{
+			"name": "get_virtual_key",
+			"status": "both",
+			"baselineTdqs": 3.1,
+			"currentTdqs": 3.6,
+			"delta": 0.5,
+			"baselineTier": "B",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 4,
+					"delta": 0
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 2,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "get_workspace",
+			"status": "both",
+			"baselineTdqs": 3.1,
+			"currentTdqs": 3.8,
+			"delta": 0.7,
+			"baselineTier": "B",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 2,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "get_workspace_member",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 3.7,
+			"delta": 0.8,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 2,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "insert_log",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 3.9,
+			"delta": 1,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 4,
+					"delta": 0
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 4,
+					"delta": -1
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "invite_user",
+			"status": "both",
+			"baselineTdqs": 3.4,
+			"currentTdqs": 3.9,
+			"delta": 0.5,
+			"baselineTier": "B",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "list_all_users",
+			"status": "both",
+			"baselineTdqs": 3.2,
+			"currentTdqs": 4,
+			"delta": 0.8,
+			"baselineTier": "B",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 5,
+					"delta": 3
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 2,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 4,
+					"cur": 3,
+					"delta": -1
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "list_api_keys",
+			"status": "both",
+			"baselineTdqs": 3.2,
+			"currentTdqs": 3.8,
+			"delta": 0.6,
+			"baselineTier": "B",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 2,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				}
+			]
+		},
+		{
+			"name": "list_audit_logs",
+			"status": "both",
+			"baselineTdqs": 3.5,
+			"currentTdqs": 4,
+			"delta": 0.5,
+			"baselineTier": "A",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "list_collections",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 3.8,
+			"delta": 0.9,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 2,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "list_config_versions",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 3.8,
+			"delta": 0.9,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 2,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				}
+			]
+		},
+		{
+			"name": "list_configs",
+			"status": "both",
+			"baselineTdqs": 3.2,
+			"currentTdqs": 3.8,
+			"delta": 0.6,
+			"baselineTier": "B",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 2,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 4,
+					"cur": 3,
+					"delta": -1
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "list_guardrails",
+			"status": "both",
+			"baselineTdqs": 3.2,
+			"currentTdqs": 3.8,
+			"delta": 0.6,
+			"baselineTier": "B",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 2,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				}
+			]
+		},
+		{
+			"name": "list_integration_models",
+			"status": "both",
+			"baselineTdqs": 3.1,
+			"currentTdqs": 3.6,
+			"delta": 0.5,
+			"baselineTier": "B",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 4,
+					"delta": 0
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 2,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "list_integration_workspaces",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 3.6,
+			"delta": 0.7,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 4,
+					"delta": 0
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 2,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				}
+			]
+		},
+		{
+			"name": "list_integrations",
+			"status": "both",
+			"baselineTdqs": 3.3,
+			"currentTdqs": 3.8,
+			"delta": 0.5,
+			"baselineTier": "B",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 2,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "list_log_exports",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 3.8,
+			"delta": 0.9,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 2,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				}
+			]
+		},
+		{
+			"name": "list_mcp_integration_capabilities",
+			"status": "added",
+			"baselineTdqs": null,
+			"currentTdqs": 3.7,
+			"delta": null,
+			"baselineTier": null,
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": null,
+					"cur": 2,
+					"delta": null
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				}
+			]
+		},
+		{
+			"name": "list_mcp_integration_workspaces",
+			"status": "added",
+			"baselineTdqs": null,
+			"currentTdqs": 3.7,
+			"delta": null,
+			"baselineTier": null,
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": null,
+					"cur": 2,
+					"delta": null
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				}
+			]
+		},
+		{
+			"name": "list_mcp_integrations",
+			"status": "added",
+			"baselineTdqs": null,
+			"currentTdqs": 4,
+			"delta": null,
+			"baselineTier": null,
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				}
+			]
+		},
+		{
+			"name": "list_mcp_server_capabilities",
+			"status": "added",
+			"baselineTdqs": null,
+			"currentTdqs": 3.7,
+			"delta": null,
+			"baselineTier": null,
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": null,
+					"cur": 2,
+					"delta": null
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				}
+			]
+		},
+		{
+			"name": "list_mcp_server_user_access",
+			"status": "added",
+			"baselineTdqs": null,
+			"currentTdqs": 3.7,
+			"delta": null,
+			"baselineTier": null,
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": null,
+					"cur": 2,
+					"delta": null
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				}
+			]
+		},
+		{
+			"name": "list_mcp_servers",
+			"status": "added",
+			"baselineTdqs": null,
+			"currentTdqs": 3.7,
+			"delta": null,
+			"baselineTier": null,
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": null,
+					"cur": 2,
+					"delta": null
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				}
+			]
+		},
+		{
+			"name": "list_partial_versions",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 3.8,
+			"delta": 0.9,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 2,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				}
+			]
+		},
+		{
+			"name": "list_prompt_labels",
+			"status": "both",
+			"baselineTdqs": 3.5,
+			"currentTdqs": 3.8,
+			"delta": 0.3,
+			"baselineTier": "A",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 3,
+					"cur": 2,
+					"delta": -1
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "list_prompt_partials",
+			"status": "both",
+			"baselineTdqs": 3.3,
+			"currentTdqs": 3.8,
+			"delta": 0.5,
+			"baselineTier": "B",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 2,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "list_prompt_versions",
+			"status": "both",
+			"baselineTdqs": 3.1,
+			"currentTdqs": 3.8,
+			"delta": 0.7,
+			"baselineTier": "B",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 2,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "list_prompts",
+			"status": "both",
+			"baselineTdqs": 3.3,
+			"currentTdqs": 3.8,
+			"delta": 0.5,
+			"baselineTier": "B",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 2,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "list_providers",
+			"status": "both",
+			"baselineTdqs": 3.3,
+			"currentTdqs": 3.8,
+			"delta": 0.5,
+			"baselineTier": "B",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 2,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "list_rate_limits",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 3.8,
+			"delta": 0.9,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 2,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "list_traces",
+			"status": "removed",
+			"baselineTdqs": 2.9,
+			"currentTdqs": null,
+			"delta": null,
+			"baselineTier": "C",
+			"currentTier": null,
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": null,
+					"delta": null
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": null,
+					"delta": null
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": null,
+					"delta": null
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": null,
+					"delta": null
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 4,
+					"cur": null,
+					"delta": null
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": null,
+					"delta": null
+				}
+			]
+		},
+		{
+			"name": "list_usage_limit_entities",
+			"status": "added",
+			"baselineTdqs": null,
+			"currentTdqs": 3.7,
+			"delta": null,
+			"baselineTier": null,
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": null,
+					"cur": 2,
+					"delta": null
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				}
+			]
+		},
+		{
+			"name": "list_usage_limits",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 3.8,
+			"delta": 0.9,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 2,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "list_user_invites",
+			"status": "both",
+			"baselineTdqs": 3.6,
+			"currentTdqs": 3.8,
+			"delta": 0.2,
+			"baselineTier": "A",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 2,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 4,
+					"cur": 3,
+					"delta": -1
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				}
+			]
+		},
+		{
+			"name": "list_virtual_keys",
+			"status": "both",
+			"baselineTdqs": 3.2,
+			"currentTdqs": 3.6,
+			"delta": 0.4,
+			"baselineTier": "B",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 4,
+					"delta": 0
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 2,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 4,
+					"cur": 3,
+					"delta": -1
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "list_workspace_members",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 3.8,
+			"delta": 0.9,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 2,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				}
+			]
+		},
+		{
+			"name": "list_workspaces",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 3.8,
+			"delta": 0.9,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 2,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				}
+			]
+		},
+		{
+			"name": "migrate_prompt",
+			"status": "both",
+			"baselineTdqs": 3.4,
+			"currentTdqs": 4.4,
+			"delta": 1,
+			"baselineTier": "B",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "promote_prompt",
+			"status": "both",
+			"baselineTdqs": 3.2,
+			"currentTdqs": 3.8,
+			"delta": 0.6,
+			"baselineTier": "B",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 4,
+					"delta": 0
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				}
+			]
+		},
+		{
+			"name": "publish_partial",
+			"status": "both",
+			"baselineTdqs": 3.1,
+			"currentTdqs": 4,
+			"delta": 0.9,
+			"baselineTier": "B",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 4,
+					"delta": -1
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				}
+			]
+		},
+		{
+			"name": "publish_prompt",
+			"status": "both",
+			"baselineTdqs": 3.7,
+			"currentTdqs": 4,
+			"delta": 0.3,
+			"baselineTier": "A",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 4,
+					"cur": 4,
+					"delta": 0
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 4,
+					"delta": -1
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				}
+			]
+		},
+		{
+			"name": "remove_workspace_member",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 3.9,
+			"delta": 1,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "render_prompt",
+			"status": "both",
+			"baselineTdqs": 3.9,
+			"currentTdqs": 4,
+			"delta": 0.1,
+			"baselineTier": "A",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 4,
+					"cur": 4,
+					"delta": 0
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "resend_user_invite",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 3.8,
+			"delta": 0.9,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 4,
+					"delta": -1
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "reset_usage_limit_entity",
+			"status": "added",
+			"baselineTdqs": null,
+			"currentTdqs": 3.6,
+			"delta": null,
+			"baselineTier": null,
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				}
+			]
+		},
+		{
+			"name": "run_prompt_completion",
+			"status": "both",
+			"baselineTdqs": 3.4,
+			"currentTdqs": 4.1,
+			"delta": 0.7,
+			"baselineTier": "B",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 4,
+					"cur": 4,
+					"delta": 0
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "start_log_export",
+			"status": "both",
+			"baselineTdqs": 2.6,
+			"currentTdqs": 3.8,
+			"delta": 1.2,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "test_mcp_server",
+			"status": "added",
+			"baselineTdqs": null,
+			"currentTdqs": 3.8,
+			"delta": null,
+			"baselineTier": null,
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				}
+			]
+		},
+		{
+			"name": "update_api_key",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 4,
+			"delta": 1.1,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 4,
+					"delta": -1
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "update_collection",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 3.6,
+			"delta": 0.7,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 4,
+					"delta": 0
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "update_config",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 3.6,
+			"delta": 0.7,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 4,
+					"delta": 0
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "update_feedback",
+			"status": "both",
+			"baselineTdqs": 3.1,
+			"currentTdqs": 4.4,
+			"delta": 1.3,
+			"baselineTier": "B",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				}
+			]
+		},
+		{
+			"name": "update_guardrail",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 4,
+			"delta": 1.1,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 4,
+					"delta": -1
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "update_integration",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 3.6,
+			"delta": 0.7,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 4,
+					"delta": 0
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "update_integration_models",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 3.6,
+			"delta": 0.7,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 4,
+					"delta": 0
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "update_integration_workspaces",
+			"status": "both",
+			"baselineTdqs": 3.1,
+			"currentTdqs": 3.8,
+			"delta": 0.7,
+			"baselineTier": "B",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 4,
+					"delta": -1
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				}
+			]
+		},
+		{
+			"name": "update_log_export",
+			"status": "both",
+			"baselineTdqs": 4.2,
+			"currentTdqs": 3.9,
+			"delta": -0.3,
+			"baselineTier": "A",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 5,
+					"cur": 4,
+					"delta": -1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 4,
+					"cur": 4,
+					"delta": 0
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 4,
+					"cur": 4,
+					"delta": 0
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 4,
+					"delta": -1
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 4,
+					"cur": 3,
+					"delta": -1
+				}
+			]
+		},
+		{
+			"name": "update_mcp_integration",
+			"status": "added",
+			"baselineTdqs": null,
+			"currentTdqs": 4.1,
+			"delta": null,
+			"baselineTier": null,
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				}
+			]
+		},
+		{
+			"name": "update_mcp_integration_capabilities",
+			"status": "added",
+			"baselineTdqs": null,
+			"currentTdqs": 4,
+			"delta": null,
+			"baselineTier": null,
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				}
+			]
+		},
+		{
+			"name": "update_mcp_integration_workspaces",
+			"status": "added",
+			"baselineTdqs": null,
+			"currentTdqs": 3.8,
+			"delta": null,
+			"baselineTier": null,
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				}
+			]
+		},
+		{
+			"name": "update_mcp_server",
+			"status": "added",
+			"baselineTdqs": null,
+			"currentTdqs": 3.9,
+			"delta": null,
+			"baselineTier": null,
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				}
+			]
+		},
+		{
+			"name": "update_mcp_server_capabilities",
+			"status": "added",
+			"baselineTdqs": null,
+			"currentTdqs": 3.8,
+			"delta": null,
+			"baselineTier": null,
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				}
+			]
+		},
+		{
+			"name": "update_mcp_server_user_access",
+			"status": "added",
+			"baselineTdqs": null,
+			"currentTdqs": 3.8,
+			"delta": null,
+			"baselineTier": null,
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				}
+			]
+		},
+		{
+			"name": "update_prompt",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 4,
+			"delta": 1.1,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "update_prompt_label",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 3.8,
+			"delta": 0.9,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 4,
+					"delta": -1
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "update_prompt_partial",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 3.6,
+			"delta": 0.7,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 4,
+					"delta": 0
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "update_prompt_version",
+			"status": "added",
+			"baselineTdqs": null,
+			"currentTdqs": 3.8,
+			"delta": null,
+			"baselineTier": null,
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": null,
+					"cur": 4,
+					"delta": null
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": null,
+					"cur": 5,
+					"delta": null
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": null,
+					"cur": 3,
+					"delta": null
+				}
+			]
+		},
+		{
+			"name": "update_provider",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 3.8,
+			"delta": 0.9,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 4,
+					"delta": 0
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "update_rate_limit",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 3.6,
+			"delta": 0.7,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 4,
+					"delta": 0
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "update_usage_limit",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 4,
+			"delta": 1.1,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 4,
+					"delta": -1
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "update_user",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 3.9,
+			"delta": 1,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "update_virtual_key",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 3.8,
+			"delta": 0.9,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 4,
+					"delta": 0
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				}
+			]
+		},
+		{
+			"name": "update_workspace",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 4,
+			"delta": 1.1,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 4,
+					"cur": 4,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "update_workspace_member",
+			"status": "both",
+			"baselineTdqs": 2.9,
+			"currentTdqs": 3.9,
+			"delta": 1,
+			"baselineTier": "C",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 5,
+					"delta": 1
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 2,
+					"cur": 4,
+					"delta": 2
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				}
+			]
+		},
+		{
+			"name": "validate_completion_metadata",
+			"status": "both",
+			"baselineTdqs": 3.2,
+			"currentTdqs": 3.6,
+			"delta": 0.4,
+			"baselineTier": "B",
+			"currentTier": "A",
+			"dims": [
+				{
+					"dim": "purposeClarity",
+					"base": 4,
+					"cur": 4,
+					"delta": 0
+				},
+				{
+					"dim": "usageGuidelines",
+					"base": 3,
+					"cur": 4,
+					"delta": 1
+				},
+				{
+					"dim": "behavioralTransparency",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				},
+				{
+					"dim": "parameterSemantics",
+					"base": 3,
+					"cur": 3,
+					"delta": 0
+				},
+				{
+					"dim": "concisenessStructure",
+					"base": 5,
+					"cur": 5,
+					"delta": 0
+				},
+				{
+					"dim": "contextualCompleteness",
+					"base": 2,
+					"cur": 3,
+					"delta": 1
+				}
+			]
+		}
+	]
+}

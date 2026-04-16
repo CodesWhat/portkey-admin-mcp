@@ -1,0 +1,752 @@
+[
+	{
+		"name": "get_cost_analytics",
+		"description": "Get cost time-series data with summary.total_cost, summary.average_cost_per_request, and per-bucket total/avg cost. Use this for spend analysis and spike detection; use get_token_analytics when you need token volume instead of monetary cost.",
+		"file": "src/tools/analytics.tools.ts"
+	},
+	{
+		"name": "get_request_analytics",
+		"description": "Get request-volume time-series data with summary.total_requests, summary.successful_requests, summary.failed_requests, and per-bucket total/success/failed counts. Use this for traffic and reliability trends; use get_error_analytics when you only need error counts.",
+		"file": "src/tools/analytics.tools.ts"
+	},
+	{
+		"name": "get_token_analytics",
+		"description": "Get token-usage time-series data with summary.total_tokens, summary.prompt_tokens, summary.completion_tokens, and per-bucket total/prompt/completion counts. Use this for consumption trends; use get_cost_analytics when you need spend instead of token volume.",
+		"file": "src/tools/analytics.tools.ts"
+	},
+	{
+		"name": "get_latency_analytics",
+		"description": "Get latency time-series data with summary.avg_latency_ms, summary.p50_latency_ms, summary.p90_latency_ms, summary.p99_latency_ms, and per-bucket latency percentiles in ms. Use this to spot slowdowns and regressions; use get_cache_hit_latency when you only want cache-hit latency.",
+		"file": "src/tools/analytics.tools.ts"
+	},
+	{
+		"name": "get_error_analytics",
+		"description": "Get error-count time-series data with summary.total_errors and per-bucket counts. Use this for high-level error trends; use get_error_rate_analytics for percentages, or get_error_status_codes_analytics and get_error_stacks_analytics for breakdowns.",
+		"file": "src/tools/analytics.tools.ts"
+	},
+	{
+		"name": "get_error_rate_analytics",
+		"description": "Get error-rate time-series data with summary.error_rate_percent and per-bucket percentages of total requests. Use this for reliability and SLA trends; use get_error_analytics for absolute error counts instead.",
+		"file": "src/tools/analytics.tools.ts"
+	},
+	{
+		"name": "get_cache_hit_latency",
+		"description": "Get cache-hit-only latency time-series data with summary.total_latency, summary.avg_latency, and per-bucket total/avg latency. Use this to evaluate cached-response speed; use get_latency_analytics for all requests.",
+		"file": "src/tools/analytics.tools.ts"
+	},
+	{
+		"name": "get_cache_hit_rate",
+		"description": "Get cache-effectiveness time-series data with summary.hit_rate, summary.total_hits, summary.total_misses, and per-bucket hits/misses/rate. Use this to measure cache effectiveness; use get_cache_hit_latency for speed rather than hit/miss ratio.",
+		"file": "src/tools/analytics.tools.ts"
+	},
+	{
+		"name": "get_users_analytics",
+		"description": "Get user-growth time-series data with summary.total_active_users, summary.total_new_users, and per-bucket active/new user counts. Use this for growth and adoption trends; use get_user_requests_analytics for per-user traffic or get_analytics_group_users for per-user cost and token detail.",
+		"file": "src/tools/analytics.tools.ts"
+	},
+	{
+		"name": "get_error_stacks_analytics",
+		"description": "Get stacked error-series data grouped by HTTP status code over time, with summary and per-code series. Use this to see which error classes dominate; use get_error_status_codes_analytics for distinct-code distribution instead.",
+		"file": "src/tools/analytics.tools.ts"
+	},
+	{
+		"name": "get_error_status_codes_analytics",
+		"description": "Get HTTP error-code distribution time-series data with summary and per-code series. Use this to see which codes occur most often; use get_error_stacks_analytics for stacked or cumulative breakdowns.",
+		"file": "src/tools/analytics.tools.ts"
+	},
+	{
+		"name": "get_user_requests_analytics",
+		"description": "Get per-user request-count time-series data with counts grouped by user. Use this to find heavy users and traffic concentration; use get_users_analytics for aggregate active and new user trends instead.",
+		"file": "src/tools/analytics.tools.ts"
+	},
+	{
+		"name": "get_rescued_requests_analytics",
+		"description": "Get rescued-request time-series data showing requests recovered by retry or fallback handling. Use this only when your configs include resilience features, and use it to measure how often recovery logic saved requests.",
+		"file": "src/tools/analytics.tools.ts"
+	},
+	{
+		"name": "get_feedback_analytics",
+		"description": "Get feedback-submission time-series data with summary totals and per-bucket counts. Use this as the top-level feedback trend view; use get_feedback_models_analytics, get_feedback_scores_analytics, or get_feedback_weighted_analytics for breakdowns.",
+		"file": "src/tools/analytics.tools.ts"
+	},
+	{
+		"name": "get_feedback_models_analytics",
+		"description": "Get feedback time-series data grouped by model, with per-model counts over time. Use this to compare feedback volume and satisfaction across models; use get_feedback_analytics for the overall total instead.",
+		"file": "src/tools/analytics.tools.ts"
+	},
+	{
+		"name": "get_feedback_scores_analytics",
+		"description": "Get raw feedback-score distribution time-series data with per-score buckets. Use this to understand sentiment mix; use get_feedback_weighted_analytics for calibrated scores with weighting.",
+		"file": "src/tools/analytics.tools.ts"
+	},
+	{
+		"name": "get_feedback_weighted_analytics",
+		"description": "Get weighted feedback-score time-series data using the weight recorded at feedback creation. Use this for calibrated quality metrics; use get_feedback_scores_analytics for the raw unweighted distribution.",
+		"file": "src/tools/analytics.tools.ts"
+	},
+	{
+		"name": "get_analytics_group_users",
+		"description": "Get a paginated per-user breakdown with total_groups, group_count, and a users array containing request count, cost, and token usage. Use this for billing, audits, or top-consumer analysis; use get_users_analytics for aggregate active and new user trends.",
+		"file": "src/tools/analytics.tools.ts"
+	},
+	{
+		"name": "get_analytics_group_models",
+		"description": "Get a paginated per-model breakdown with total_groups, group_count, and a models array containing request count, cost, and token usage. Use this to compare model cost, popularity, and efficiency; use get_token_analytics or get_cost_analytics for time-series trends instead.",
+		"file": "src/tools/analytics.tools.ts"
+	},
+	{
+		"name": "get_analytics_group_metadata",
+		"description": "Get a paginated metadata breakdown with total_groups, group_count, and a metadata_groups array grouped by the required metadata_key. Use this for custom breakdowns like per-environment or per-feature analysis; pass metadata_key in addition to the time window.",
+		"file": "src/tools/analytics.tools.ts"
+	},
+	{
+		"name": "list_audit_logs",
+		"description": "List audit log events for a Portkey workspace or organization. Returns paginated action-level records with actor, resource, metadata, and timestamps for compliance or incident review; use this instead of analytics when you need individual events, not aggregates.",
+		"file": "src/tools/audit.tools.ts"
+	},
+	{
+		"name": "list_collections",
+		"description": "List prompt collections in the workspace, optionally filtering by name or workspace. Returns ids, names, slugs, and timestamps so you can choose a collection_id before create_prompt, get_collection, or list_prompts.",
+		"file": "src/tools/collections.tools.ts"
+	},
+	{
+		"name": "create_collection",
+		"description": "Create a new prompt collection for organizing prompts by app. Use this when you need a new namespace before create_prompt; returns the collection id and slug, and does not move any prompts.",
+		"file": "src/tools/collections.tools.ts"
+	},
+	{
+		"name": "get_collection",
+		"description": "Fetch one collection by id or slug and return its name, slug, workspace, and timestamps. Use list_collections when browsing and get_collection when you already know the target.",
+		"file": "src/tools/collections.tools.ts"
+	},
+	{
+		"name": "update_collection",
+		"description": "Update a collection's name or description only. This does not move prompts or change membership, so use it for metadata changes rather than reorganization.",
+		"file": "src/tools/collections.tools.ts"
+	},
+	{
+		"name": "delete_collection",
+		"description": "Delete a prompt collection by ID. This cannot be undone; prompts stay in the workspace but lose their collection grouping, so reassign them first if organization matters.",
+		"file": "src/tools/collections.tools.ts"
+	},
+	{
+		"name": "list_configs",
+		"description": "List configs in the org with id, slug, name, status, workspace, and timestamps. Use this summary view to find a slug; use get_config for the full routing, cache, retry, and target settings before updating or deleting.",
+		"file": "src/tools/configs.tools.ts"
+	},
+	{
+		"name": "get_config",
+		"description": "Get one config by slug and return its routing, cache, retry, and target settings. Requires a known slug; use list_configs to discover one before editing.",
+		"file": "src/tools/configs.tools.ts"
+	},
+	{
+		"name": "create_config",
+		"description": "Create a config that defines routing, cache, retry, and targets for requests; use update_config to modify an existing one and list_config_versions for history. At least one setting is required, new configs become active immediately once referenced by a key or prompt, and the call returns the new id and version_id.",
+		"file": "src/tools/configs.tools.ts"
+	},
+	{
+		"name": "update_config",
+		"description": "Update a config by slug and create a new version. Only provided fields change; name and status are editable, while the slug stays fixed. Use list_config_versions if you need history first.",
+		"file": "src/tools/configs.tools.ts"
+	},
+	{
+		"name": "delete_config",
+		"description": "Delete a config by slug. This is permanent, removes all versions, and breaks anything still pointing at that slug; check list_config_versions first.",
+		"file": "src/tools/configs.tools.ts"
+	},
+	{
+		"name": "list_config_versions",
+		"description": "List every version of a config with version number, config payload, creator, and timestamp. Use this to audit history or compare revisions before update_config or delete_config.",
+		"file": "src/tools/configs.tools.ts"
+	},
+	{
+		"name": "list_guardrails",
+		"description": "List guardrails in the org with id, slug, status, ownership, and optional workspace/org filters. Use this to find IDs and slugs before get_guardrail, update_guardrail, or delete_guardrail.",
+		"file": "src/tools/guardrails.tools.ts"
+	},
+	{
+		"name": "get_guardrail",
+		"description": "Fetch one guardrail by id or slug with its full checks and actions; use list_guardrails to discover ids first. Use before update_guardrail or delete_guardrail when you need the exact enforcement policy, and returns the full check and action configuration alongside status and ownership.",
+		"file": "src/tools/guardrails.tools.ts"
+	},
+	{
+		"name": "create_guardrail",
+		"description": "Create a guardrail with checks and actions for request filtering. Create it first, then reference it from configs; the new version becomes the policy anchor for downstream use.",
+		"file": "src/tools/guardrails.tools.ts"
+	},
+	{
+		"name": "update_guardrail",
+		"description": "Update a guardrail's name, checks, or actions, unlike create_guardrail which registers a new one or delete_guardrail which removes it. This creates a new version that takes effect immediately for dependent configs, so review list_guardrails first; returns the updated id, slug, and version_id.",
+		"file": "src/tools/guardrails.tools.ts"
+	},
+	{
+		"name": "delete_guardrail",
+		"description": "Delete a guardrail by id or slug. This is irreversible and removes the check from any configs that reference it, so review dependent configs first.",
+		"file": "src/tools/guardrails.tools.ts"
+	},
+	{
+		"name": "list_integrations",
+		"description": "List org-level AI provider connections with optional workspace or type filters. Use this to find integration slugs before model or workspace updates. Returns total plus id, name, slug, provider, status, description, workspace counts, and config summary.",
+		"file": "src/tools/integrations.tools.ts"
+	},
+	{
+		"name": "create_integration",
+		"description": "Create an org-level provider integration. Some backends need provider-specific fields, and the new integration becomes the source for downstream providers and workspace access. Returns the new integration id and slug.",
+		"file": "src/tools/integrations.tools.ts"
+	},
+	{
+		"name": "get_integration",
+		"description": "Fetch one integration by slug, including masked key, workspace access, allowed models, and configuration metadata. Use this before editing provider-specific settings or auditing access.",
+		"file": "src/tools/integrations.tools.ts"
+	},
+	{
+		"name": "update_integration",
+		"description": "Update an integration's name, key, or provider-specific config. Key and config changes take effect immediately and can disrupt dependent providers or live requests.",
+		"file": "src/tools/integrations.tools.ts"
+	},
+	{
+		"name": "delete_integration",
+		"description": "Delete an integration by slug. This is irreversible and stops the org-level connection, which will break dependent virtual keys, providers, and workspace access.",
+		"file": "src/tools/integrations.tools.ts"
+	},
+	{
+		"name": "list_integration_models",
+		"description": "List models enabled on an integration. Use this to verify model availability before creating prompts or configs. Returns total plus model ids, display names, enabled state, and custom-model markers.",
+		"file": "src/tools/integrations.tools.ts"
+	},
+	{
+		"name": "update_integration_models",
+		"description": "Enable, disable, or register custom models for an integration. This changes model availability for every workspace using it, so confirm the downstream impact first. Returns success and the number of models updated.",
+		"file": "src/tools/integrations.tools.ts"
+	},
+	{
+		"name": "delete_integration_model",
+		"description": "Delete a custom model from an integration. Built-in models should be disabled instead, because deletion only applies to custom entries. Returns success after the custom model is removed.",
+		"file": "src/tools/integrations.tools.ts"
+	},
+	{
+		"name": "list_integration_workspaces",
+		"description": "List workspaces that can use an integration, with their limits. Use this to audit access or confirm per-workspace cost and rate settings. Returns total plus workspace ids, names, enabled state, usage limits, and rate limits.",
+		"file": "src/tools/integrations.tools.ts"
+	},
+	{
+		"name": "update_integration_workspaces",
+		"description": "Control which workspaces can use an integration and set per-workspace limits, unlike update_integration which edits the org-level connection. Call list_integration_workspaces first to review current state; access changes and new limits apply to downstream usage immediately, and the call returns success plus the number of workspaces updated.",
+		"file": "src/tools/integrations.tools.ts"
+	},
+	{
+		"name": "list_virtual_keys",
+		"description": "List provider API keys stored as virtual keys in your Portkey org. Use this to find slugs before wiring prompts/configs or auditing limits. Returns total plus name, slug, status, usage limits, rate limits, reset state, and model config.",
+		"file": "src/tools/keys.tools.ts"
+	},
+	{
+		"name": "create_virtual_key",
+		"description": "Store a provider API key as a virtual key. The raw key is encrypted and only returned at creation time, so save the returned slug and use it in prompts/configs. Optional usage and rate limits apply immediately, and the tool returns the new slug.",
+		"file": "src/tools/keys.tools.ts"
+	},
+	{
+		"name": "get_virtual_key",
+		"description": "Fetch one virtual key by slug, including metadata, a masked secret, limits, status, and model config. Use this before updating or to inspect the current configuration.",
+		"file": "src/tools/keys.tools.ts"
+	},
+	{
+		"name": "update_virtual_key",
+		"description": "Update a virtual key's name, secret, note, or limits. Rotating the key takes effect immediately, and limit changes apply to downstream prompts and configs using this slug. Returns the updated name, slug, and status.",
+		"file": "src/tools/keys.tools.ts"
+	},
+	{
+		"name": "delete_virtual_key",
+		"description": "Delete a virtual key by slug. This is irreversible and will break prompts and configs that reference the slug, so confirm no active dependencies first. Returns success after removal.",
+		"file": "src/tools/keys.tools.ts"
+	},
+	{
+		"name": "create_api_key",
+		"description": "Create a Portkey API key for auth. Org keys grant broader access; workspace keys are scoped. The secret is only returned once, and using the key grants access immediately according to its scopes, defaults, and limits. Workspace keys require workspace_id and user keys require user_id.",
+		"file": "src/tools/keys.tools.ts"
+	},
+	{
+		"name": "list_api_keys",
+		"description": "List Portkey API keys for auditing access, scopes, defaults, limits, and expiration. Use this for API keys only; use list_virtual_keys for provider keys. Returns total plus id, type, status, workspace/user scope, limits, defaults, alert emails, and creation mode.",
+		"file": "src/tools/keys.tools.ts"
+	},
+	{
+		"name": "get_api_key",
+		"description": "Fetch one API key by UUID without revealing the secret. Use this to inspect scopes, defaults, limits, expiration, and reset state before changing access.",
+		"file": "src/tools/keys.tools.ts"
+	},
+	{
+		"name": "update_api_key",
+		"description": "Update an API key's name, description, scopes, defaults, or limits, unlike delete_api_key which revokes it or create_api_key which issues a new one. Changes take effect immediately for downstream callers, type and sub-type stay fixed after creation, and the call returns success without rotating the secret.",
+		"file": "src/tools/keys.tools.ts"
+	},
+	{
+		"name": "delete_api_key",
+		"description": "Delete an API key by UUID. This cannot be undone, revokes access immediately, and can break active sessions using the key. Returns success after revocation.",
+		"file": "src/tools/keys.tools.ts"
+	},
+	{
+		"name": "create_prompt_label",
+		"description": "Create a prompt label for tagging prompt versions such as production, staging, or experiment. Requires either organisation_id or workspace_id to set scope, returns the new label id, and does not assign it to any versions yet.",
+		"file": "src/tools/labels.tools.ts"
+	},
+	{
+		"name": "list_prompt_labels",
+		"description": "List labels across the workspace or organisation, with optional search and scope filters. Returns ids, names, colors, status, and timestamps so you can choose a label_id before get_prompt_label or update_prompt_version.",
+		"file": "src/tools/labels.tools.ts"
+	},
+	{
+		"name": "get_prompt_label",
+		"description": "Fetch one label's full definition, including scope, color, and status. Use this when you already know the label_id; list_prompt_labels is better for browsing candidates.",
+		"file": "src/tools/labels.tools.ts"
+	},
+	{
+		"name": "update_prompt_label",
+		"description": "Update a prompt label's name, description, or color only, unlike update_prompt_version which changes which label a version carries. This takes effect immediately for all versions already tagged with the label, but does not reassign labels or touch history; use list_prompt_labels to find the label_id first.",
+		"file": "src/tools/labels.tools.ts"
+	},
+	{
+		"name": "delete_prompt_label",
+		"description": "Delete a prompt label by ID. This cannot be undone; versions carrying the label lose it, and any workflow resolving by that label will need a replacement.",
+		"file": "src/tools/labels.tools.ts"
+	},
+	{
+		"name": "list_rate_limits",
+		"description": "List rate limits in the org with id, type, unit, value, status, scope, conditions, and grouping. Use this to find an existing policy before get_rate_limit, update_rate_limit, or delete_rate_limit.",
+		"file": "src/tools/limits.tools.ts"
+	},
+	{
+		"name": "get_rate_limit",
+		"description": "Get one rate limit by id and return its full conditions and grouping definition. Use list_rate_limits to discover ids or compare policies first.",
+		"file": "src/tools/limits.tools.ts"
+	},
+	{
+		"name": "create_rate_limit",
+		"description": "Create a request or token throttle with conditions, group_by, type, unit, and value. conditions and group_by are required; use usage limits when you need a cumulative budget instead.",
+		"file": "src/tools/limits.tools.ts"
+	},
+	{
+		"name": "update_rate_limit",
+		"description": "Update a rate limit's name, unit, or value by id. Conditions and group_by are immutable after creation; use get_rate_limit first if you need the full policy.",
+		"file": "src/tools/limits.tools.ts"
+	},
+	{
+		"name": "delete_rate_limit",
+		"description": "Delete a rate limit by id. This is permanent and removes throttling immediately; review dependent configs and virtual keys before deleting.",
+		"file": "src/tools/limits.tools.ts"
+	},
+	{
+		"name": "list_usage_limits",
+		"description": "List usage limits in the org with id, type, credit_limit, status, reset schedule, scope, conditions, and grouping. Use this before get_usage_limit, update_usage_limit, or delete_usage_limit.",
+		"file": "src/tools/limits.tools.ts"
+	},
+	{
+		"name": "get_usage_limit",
+		"description": "Get one usage limit by id and return its full budget, threshold, grouping, and reset details. Use list_usage_limits to discover ids or compare policies first.",
+		"file": "src/tools/limits.tools.ts"
+	},
+	{
+		"name": "create_usage_limit",
+		"description": "Create a cumulative budget for cost or tokens with optional alerts and weekly or monthly resets. conditions and group_by are required; use rate limits when you need request throttling.",
+		"file": "src/tools/limits.tools.ts"
+	},
+	{
+		"name": "update_usage_limit",
+		"description": "Update a usage limit's name, credit_limit, alert_threshold, reset schedule, or reset target by id, unlike update_rate_limit which tunes request throttling. New values apply immediately to tracked usage, conditions and group_by are immutable after creation, and the call returns the updated id without clearing accumulated usage (use reset_usage_limit_entity for that).",
+		"file": "src/tools/limits.tools.ts"
+	},
+	{
+		"name": "delete_usage_limit",
+		"description": "Delete a usage limit by id. This is permanent, removes the budget immediately, and clears tracked usage state; check list_usage_limit_entities first if you need impact.",
+		"file": "src/tools/limits.tools.ts"
+	},
+	{
+		"name": "list_usage_limit_entities",
+		"description": "List the entities currently tracked against a usage limit, including current usage. Use this to see who is near or over budget before reset_usage_limit_entity or delete_usage_limit.",
+		"file": "src/tools/limits.tools.ts"
+	},
+	{
+		"name": "reset_usage_limit_entity",
+		"description": "Reset tracked usage for one entity under a usage limit. This changes accumulated usage for that entity only; use list_usage_limit_entities to confirm the target first.",
+		"file": "src/tools/limits.tools.ts"
+	},
+	{
+		"name": "insert_log",
+		"description": "Insert log records for requests that bypassed the gateway. This writes request, response, and trace metadata into Portkey immediately, and the call will fail if request_provider does not match a configured integration. Use the span fields to stitch trace hierarchies together.",
+		"file": "src/tools/logging.tools.ts"
+	},
+	{
+		"name": "create_log_export",
+		"description": "Create a log export definition with filters and requested fields. This only sets up the export and does not start processing; call start_log_export next, then use get_log_export or download_log_export to inspect or retrieve the finished result.",
+		"file": "src/tools/logging.tools.ts"
+	},
+	{
+		"name": "list_log_exports",
+		"description": "List log export jobs in a workspace with status, filters, and timestamps. Use this to find an export_id before calling get_log_export, start_log_export, cancel_log_export, or download_log_export.",
+		"file": "src/tools/logging.tools.ts"
+	},
+	{
+		"name": "get_log_export",
+		"description": "Fetch one log export job by export_id and return its status, filters, requested fields, and file metadata. Use this when you already know the target; use list_log_exports for a workspace-wide overview.",
+		"file": "src/tools/logging.tools.ts"
+	},
+	{
+		"name": "start_log_export",
+		"description": "Start processing a previously created log export job. This is asynchronous, only queues the export, and does not return rows or a download file; use get_log_export to poll progress and download_log_export after the job completes.",
+		"file": "src/tools/logging.tools.ts"
+	},
+	{
+		"name": "cancel_log_export",
+		"description": "Cancel a pending or running log export job, unlike start_log_export which queues one or delete_integration which removes the source. This permanently stops that export, takes effect immediately, and does not roll back already-processed rows; call create_log_export and start_log_export again to retry.",
+		"file": "src/tools/logging.tools.ts"
+	},
+	{
+		"name": "download_log_export",
+		"description": "Get a signed URL for downloading a completed log export. The export must already be finished; use get_log_export to confirm readiness and start_log_export if it has not run yet.",
+		"file": "src/tools/logging.tools.ts"
+	},
+	{
+		"name": "update_log_export",
+		"description": "Update an existing log export configuration before or between export runs. Only workspace_id, time_of_generation_max, and requested_fields can change after creation, so use get_log_export to review the current job and start_log_export after the definition is ready.",
+		"file": "src/tools/logging.tools.ts"
+	},
+	{
+		"name": "list_mcp_integrations",
+		"description": "List MCP integrations in the organization. Returns paginated integration records plus total and has_more for discovering integration IDs; use get_mcp_integration for one integration's full Portkey-side config and list_mcp_servers for the servers under an integration.",
+		"file": "src/tools/mcp-integrations.tools.ts"
+	},
+	{
+		"name": "create_mcp_integration",
+		"description": "Create an MCP integration from an external server URL. Registers the Portkey-side connection and returns the new id and slug; if auth_type is headers, custom_headers are required, and you usually follow with create_mcp_server and capability updates.",
+		"file": "src/tools/mcp-integrations.tools.ts"
+	},
+	{
+		"name": "get_mcp_integration",
+		"description": "Retrieve one MCP integration by id or slug. Returns the full Portkey-side config, including auth type, transport, and masked configuration keys; use get_mcp_integration_metadata for the server's self-reported metadata.",
+		"file": "src/tools/mcp-integrations.tools.ts"
+	},
+	{
+		"name": "update_mcp_integration",
+		"description": "Update an MCP integration's name, description, URL, auth, or transport. Changes apply immediately and altering url or auth_type can break connected clients; use update_mcp_server when you only need to rename or re-describe a server.",
+		"file": "src/tools/mcp-integrations.tools.ts"
+	},
+	{
+		"name": "delete_mcp_integration",
+		"description": "Delete an MCP integration and all servers beneath it. This is irreversible, removes connected access immediately, and should only be used after confirming nothing depends on the integration.",
+		"file": "src/tools/mcp-integrations.tools.ts"
+	},
+	{
+		"name": "get_mcp_integration_metadata",
+		"description": "Retrieve the external MCP server's self-reported metadata for an integration. Returns name, version, protocol, capability flags, and sync status; use get_mcp_integration for the Portkey-side connection config.",
+		"file": "src/tools/mcp-integrations.tools.ts"
+	},
+	{
+		"name": "list_mcp_integration_capabilities",
+		"description": "List capabilities exposed by the external MCP server for an integration. Returns total plus enabled-state entries so you can decide what to toggle; use before update_mcp_integration_capabilities when you need to compare the current surface.",
+		"file": "src/tools/mcp-integrations.tools.ts"
+	},
+	{
+		"name": "update_mcp_integration_capabilities",
+		"description": "Bulk enable or disable capabilities on an MCP integration. Changes take effect immediately for connected users and hide or expose the selected tools, resources, and prompts; use list_mcp_integration_capabilities first if you need the current state.",
+		"file": "src/tools/mcp-integrations.tools.ts"
+	},
+	{
+		"name": "list_mcp_integration_workspaces",
+		"description": "List which workspaces can access an MCP integration. Returns the global access mode plus per-workspace enablement for audit or permission review; use before update_mcp_integration_workspaces.",
+		"file": "src/tools/mcp-integrations.tools.ts"
+	},
+	{
+		"name": "update_mcp_integration_workspaces",
+		"description": "Grant or revoke workspace access to an MCP integration in bulk. Changes take effect immediately for all users in the selected workspaces; use list_mcp_integration_workspaces first to review the current access state.",
+		"file": "src/tools/mcp-integrations.tools.ts"
+	},
+	{
+		"name": "list_mcp_servers",
+		"description": "List MCP servers in the organization. Returns paginated server records plus total for discovering server IDs; use get_mcp_server for one server's details and list_mcp_integrations for the parent integration.",
+		"file": "src/tools/mcp-servers.tools.ts"
+	},
+	{
+		"name": "create_mcp_server",
+		"description": "Create an MCP server under an existing integration. Registers the server and returns the new id and slug; use list_mcp_integrations first to find the parent integration, then capabilities or access tools to configure it.",
+		"file": "src/tools/mcp-servers.tools.ts"
+	},
+	{
+		"name": "get_mcp_server",
+		"description": "Retrieve one MCP server by id or slug. Returns server details including the parent integration, status, and created time; use get_mcp_server when you need the server record rather than the integration config.",
+		"file": "src/tools/mcp-servers.tools.ts"
+	},
+	{
+		"name": "update_mcp_server",
+		"description": "Update an MCP server's name or description. Changes apply immediately, but URL and auth live on the parent integration, so use update_mcp_integration for those fields.",
+		"file": "src/tools/mcp-servers.tools.ts"
+	},
+	{
+		"name": "delete_mcp_server",
+		"description": "Delete an MCP server instance. This is irreversible, removes connected users' access immediately, and should be used only after confirming no workflows depend on the server.",
+		"file": "src/tools/mcp-servers.tools.ts"
+	},
+	{
+		"name": "test_mcp_server",
+		"description": "Test connectivity to an MCP server. Sends a live check and returns success, response time, HTTP status, and any error; use this before changing configuration or when diagnosing reachability.",
+		"file": "src/tools/mcp-servers.tools.ts"
+	},
+	{
+		"name": "list_mcp_server_capabilities",
+		"description": "List capabilities exposed by an MCP server instance. Returns total plus the current tool, resource, and prompt surface; use this instead of the integration-level capability list when you need server-specific exposure.",
+		"file": "src/tools/mcp-servers.tools.ts"
+	},
+	{
+		"name": "update_mcp_server_capabilities",
+		"description": "Enable or disable capabilities on an MCP server. Changes take effect immediately and override the integration-level settings for this server; use list_mcp_server_capabilities first to inspect the current surface.",
+		"file": "src/tools/mcp-servers.tools.ts"
+	},
+	{
+		"name": "list_mcp_server_user_access",
+		"description": "List per-user access for an MCP server. Returns the default access mode, override flags, and connection status so you can audit who can use it; use before update_mcp_server_user_access.",
+		"file": "src/tools/mcp-servers.tools.ts"
+	},
+	{
+		"name": "update_mcp_server_user_access",
+		"description": "Grant or revoke individual user access to an MCP server. Changes take effect immediately and override the default access setting for the selected users; use list_mcp_server_user_access first if you need the current state.",
+		"file": "src/tools/mcp-servers.tools.ts"
+	},
+	{
+		"name": "create_prompt_partial",
+		"description": "Create a reusable prompt partial for inclusion with {{> partial_name}}. Use this for shared snippets or macros; returns the partial id, slug, and version id, and the new version stays inactive until published.",
+		"file": "src/tools/partials.tools.ts"
+	},
+	{
+		"name": "list_prompt_partials",
+		"description": "List partials across collections, with optional collection filtering. Returns ids, slugs, names, collections, and status so you can choose a prompt_partial_id before get_prompt_partial, update_prompt_partial, delete_prompt_partial, or publish_partial.",
+		"file": "src/tools/partials.tools.ts"
+	},
+	{
+		"name": "get_prompt_partial",
+		"description": "Fetch a partial's content and current version details. Use this before embedding, updating, or checking what {{> partial_name}} resolves to; returns the stored string plus version metadata.",
+		"file": "src/tools/partials.tools.ts"
+	},
+	{
+		"name": "update_prompt_partial",
+		"description": "Create a new version of a partial by updating its content or metadata. Only provided fields change, and the new version stays inactive until publish_partial makes it current.",
+		"file": "src/tools/partials.tools.ts"
+	},
+	{
+		"name": "delete_prompt_partial",
+		"description": "Delete a prompt partial by ID. This cannot be undone, and prompts that reference it with {{> name}} will fail to render until you replace the reference.",
+		"file": "src/tools/partials.tools.ts"
+	},
+	{
+		"name": "list_partial_versions",
+		"description": "List all versions for one partial, including version numbers, descriptions, status, and timestamps. Use this when you need history or want to choose a version_id before publish_partial.",
+		"file": "src/tools/partials.tools.ts"
+	},
+	{
+		"name": "publish_partial",
+		"description": "Publish a specific partial version as the default, unlike update_prompt_partial which creates a new draft without activating it. Use after list_partial_versions to pick a version_id; this immediately changes what {{> partial_name}} resolves to for all prompts and replaces the previously active version without a rollback path.",
+		"file": "src/tools/partials.tools.ts"
+	},
+	{
+		"name": "create_prompt",
+		"description": "Create a new prompt template and initial version. Use this for first-time setup; use migrate_prompt for idempotent CI/CD flows. Accepts plain text or structured chat messages, creates a new version immediately, and returns the prompt id, slug, and version id. For multi-message chat prompts pass messages (preferred) or a JSON-encoded array as string.",
+		"file": "src/tools/prompts.tools.ts"
+	},
+	{
+		"name": "list_prompts",
+		"description": "List prompts across the workspace, with optional collection, workspace, or search filters. Returns a paginated summary with id, name, slug, model, and status so you can choose a prompt_id before get_prompt, update_prompt, or render_prompt.",
+		"file": "src/tools/prompts.tools.ts"
+	},
+	{
+		"name": "get_prompt",
+		"description": "Fetch a prompt's full definition, active version, and version history. Use this before updating, publishing, rendering, or copying a prompt when you need the stored template and metadata. For multi-message chat prompts pass messages (preferred) or a JSON-encoded array as string.",
+		"file": "src/tools/prompts.tools.ts"
+	},
+	{
+		"name": "update_prompt",
+		"description": "Update an existing prompt and create a new archived version. Only provided fields change, and publish_prompt is what makes the new version active. For multi-message chat prompts pass messages (preferred) or a JSON-encoded array as string.",
+		"file": "src/tools/prompts.tools.ts"
+	},
+	{
+		"name": "delete_prompt",
+		"description": "Delete a prompt and all its versions by id. This cannot be undone, immediately breaks callers using the slug, and should only be used after checking list_prompt_versions or confirming you do not need an audit trail.",
+		"file": "src/tools/prompts.tools.ts"
+	},
+	{
+		"name": "publish_prompt",
+		"description": "Publish a specific version of a prompt as the active default, unlike promote_prompt which copies across environments or update_prompt which creates a new draft. This immediately routes all callers using the slug to that version and there is no rollback, so use list_prompt_versions to pick the version and update_prompt first if you need to create new content before promoting it.",
+		"file": "src/tools/prompts.tools.ts"
+	},
+	{
+		"name": "list_prompt_versions",
+		"description": "List all versions of one prompt, including version number, description, status, label, and a short template preview. Use this for history or to choose a version_id before publish_prompt or update_prompt_version.",
+		"file": "src/tools/prompts.tools.ts"
+	},
+	{
+		"name": "render_prompt",
+		"description": "Render a prompt by substituting variables and returning the final messages without calling the model. Use this to verify template output before a completion; run_prompt_completion is the tool that actually invokes the model.",
+		"file": "src/tools/prompts.tools.ts"
+	},
+	{
+		"name": "run_prompt_completion",
+		"description": "Execute a prompt against the configured model and return the completion. This makes a billable model call, so use render_prompt first when you want to check the template and validate_completion_metadata when billing fields are uncertain.",
+		"file": "src/tools/prompts.tools.ts"
+	},
+	{
+		"name": "migrate_prompt",
+		"description": "Create or update a prompt in one idempotent step for CI/CD and prompt-as-code flows. Finds existing prompts by name within the collection, stores app/env in template_metadata, and supports dry_run for safe preflight checks.",
+		"file": "src/tools/prompts.tools.ts"
+	},
+	{
+		"name": "promote_prompt",
+		"description": "Copy a prompt from one environment to another and create or update the target automatically. Use this for staged releases when you want the target prompt synchronized without manual edits, and it returns both source and target version ids.",
+		"file": "src/tools/prompts.tools.ts"
+	},
+	{
+		"name": "validate_completion_metadata",
+		"description": "Preflight billing metadata before run_prompt_completion. Validates required fields and values without making changes, so you can catch attribution errors before paying for the call.",
+		"file": "src/tools/prompts.tools.ts"
+	},
+	{
+		"name": "get_prompt_version",
+		"description": "Retrieve a specific prompt version by its version UUID. Use list_prompt_versions to find the id first; returns the template, parameters, and model config for that version.",
+		"file": "src/tools/prompts.tools.ts"
+	},
+	{
+		"name": "update_prompt_version",
+		"description": "Update a specific prompt version's label assignment. This only assigns or removes a label, and null clears the label after you look up ids with list_prompt_labels.",
+		"file": "src/tools/prompts.tools.ts"
+	},
+	{
+		"name": "list_providers",
+		"description": "List workspace-scoped provider instances and their limits or status. Use this to find provider slugs for workspace-level updates; use list_integrations for the org-level source connection. Returns total plus provider name, slug, integration, status, limits, expiration, and reset flags.",
+		"file": "src/tools/providers.tools.ts"
+	},
+	{
+		"name": "create_provider",
+		"description": "Create a workspace provider backed by an org integration. The provider inherits the integration key, but its limits and expiration are enforced independently for that workspace. Returns the new provider id and slug.",
+		"file": "src/tools/providers.tools.ts"
+	},
+	{
+		"name": "get_provider",
+		"description": "Fetch one provider by slug, including limits, rate settings, expiration, and reset status. Use this to check consumption or audit configuration before updating.",
+		"file": "src/tools/providers.tools.ts"
+	},
+	{
+		"name": "update_provider",
+		"description": "Update a provider's metadata, limits, or expiration. reset_usage clears accumulated usage counters immediately, so use it only when you intend to reset quota tracking. Returns the updated provider id and slug.",
+		"file": "src/tools/providers.tools.ts"
+	},
+	{
+		"name": "delete_provider",
+		"description": "Delete a workspace provider by slug. This is irreversible and will break prompts, configs, and virtual keys that reference it; use delete_integration for the org source instead. Returns success after the provider is removed.",
+		"file": "src/tools/providers.tools.ts"
+	},
+	{
+		"name": "create_feedback",
+		"description": "Create feedback for a trace or request. Writes a new feedback record linked by trace_id, returns the created feedback IDs and status, and takes effect immediately; use update_feedback when correcting an existing record.",
+		"file": "src/tools/tracing.tools.ts"
+	},
+	{
+		"name": "update_feedback",
+		"description": "Update an existing feedback record by ID. Returns the updated status and feedback IDs, changes only value, weight, and metadata, and leaves the trace linkage immutable; use create_feedback only for a new record.",
+		"file": "src/tools/tracing.tools.ts"
+	},
+	{
+		"name": "list_all_users",
+		"description": "List accepted org users with id, name, email, role, and timestamps. Use this to find a user_id before get_user, update_user, delete_user, or add_workspace_member; use list_user_invites for pending invitations.",
+		"file": "src/tools/users.tools.ts"
+	},
+	{
+		"name": "invite_user",
+		"description": "Invite a new org user and optionally provision workspace access and an API key in one call. Workspace assignments apply only after acceptance; use add_workspace_member or update_workspace_member later for follow-up changes.",
+		"file": "src/tools/users.tools.ts"
+	},
+	{
+		"name": "get_user_stats",
+		"description": "Return per-user request and cost analytics for a required time range. This is usage-by-user, not population metrics; use get_users_analytics for active-user or cohort trends.",
+		"file": "src/tools/users.tools.ts"
+	},
+	{
+		"name": "get_user",
+		"description": "Get one accepted user by id and return their profile, role, and timestamps. Use list_all_users to find the id if you only have a name or email, and get_user_invite for pending invitations.",
+		"file": "src/tools/users.tools.ts"
+	},
+	{
+		"name": "update_user",
+		"description": "Update a user's first name, last name, or organization role by id. Email and workspace roles are not editable here; use update_workspace_member for workspace membership changes.",
+		"file": "src/tools/users.tools.ts"
+	},
+	{
+		"name": "delete_user",
+		"description": "Delete a user from the org by id. This is permanent, removes org and workspace memberships, revokes API keys, and ends active sessions; use delete_user_invite for pending invites instead.",
+		"file": "src/tools/users.tools.ts"
+	},
+	{
+		"name": "list_user_invites",
+		"description": "List pending and sent invitations with id, email, role, status, and expiry. Use this to check invite state; use list_all_users for users who already accepted.",
+		"file": "src/tools/users.tools.ts"
+	},
+	{
+		"name": "get_user_invite",
+		"description": "Get one invitation by invite id and return its email, role, status, and expiry. Use this for pending invites only; use get_user for accepted users.",
+		"file": "src/tools/users.tools.ts"
+	},
+	{
+		"name": "delete_user_invite",
+		"description": "Delete a pending invite and revoke its invite link. This does not affect existing users; use delete_user for full user removal.",
+		"file": "src/tools/users.tools.ts"
+	},
+	{
+		"name": "resend_user_invite",
+		"description": "Resend the email for a pending invite that has not been accepted, unlike invite_user which creates a new invite. This sends a fresh email without modifying the invite record, expiry, or role; use get_user_invite first if you are unsure whether the invite still exists and list_user_invites to discover invite_ids.",
+		"file": "src/tools/users.tools.ts"
+	},
+	{
+		"name": "list_workspaces",
+		"description": "List workspaces with id, name, slug, default settings, and timestamps. Use this to find a workspace_id before get_workspace, update_workspace, add_workspace_member, or remove_workspace_member.",
+		"file": "src/tools/workspaces.tools.ts"
+	},
+	{
+		"name": "get_workspace",
+		"description": "Get one workspace by id and return its full details, including defaults and the complete member list. Use this when you need membership detail; use list_workspaces for an overview.",
+		"file": "src/tools/workspaces.tools.ts"
+	},
+	{
+		"name": "create_workspace",
+		"description": "Create a workspace to isolate resources, API keys, and team members. If slug is omitted it is auto-generated from the name; returns the new workspace id, name, and slug.",
+		"file": "src/tools/workspaces.tools.ts"
+	},
+	{
+		"name": "update_workspace",
+		"description": "Update a workspace's name, slug, description, default flag, or metadata by id, unlike update_workspace_member which changes role assignments within a workspace. Only provided fields change and updates take effect immediately; changing the slug can break URLs, API key references, and other external links, so confirm no dependencies first.",
+		"file": "src/tools/workspaces.tools.ts"
+	},
+	{
+		"name": "delete_workspace",
+		"description": "Delete a workspace by id. This is permanent and removes the workspace, its members, configs, API keys, and resources.",
+		"file": "src/tools/workspaces.tools.ts"
+	},
+	{
+		"name": "add_workspace_member",
+		"description": "Add an existing org user to a workspace with a role. Requires a UUID user_id; use list_all_users to find it, and invite_user first if the person is not yet in the org.",
+		"file": "src/tools/workspaces.tools.ts"
+	},
+	{
+		"name": "list_workspace_members",
+		"description": "List every member in a workspace with organization role, workspace role, status, and timestamps. Use this to find a user_id before get_workspace_member, update_workspace_member, or remove_workspace_member.",
+		"file": "src/tools/workspaces.tools.ts"
+	},
+	{
+		"name": "get_workspace_member",
+		"description": "Get one workspace member by workspace_id and user_id. Use this when you already know both IDs; use list_workspace_members to browse the full roster.",
+		"file": "src/tools/workspaces.tools.ts"
+	},
+	{
+		"name": "update_workspace_member",
+		"description": "Update a workspace member's role by workspace_id and user_id. Only the role changes here; use list_workspace_members or get_workspace_member to confirm the current assignment first.",
+		"file": "src/tools/workspaces.tools.ts"
+	},
+	{
+		"name": "remove_workspace_member",
+		"description": "Remove a user from a workspace and revoke workspace access. This does not delete the user from the organization; use delete_user for full removal.",
+		"file": "src/tools/workspaces.tools.ts"
+	}
+]
