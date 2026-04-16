@@ -10,7 +10,7 @@ import fs from "node:fs";
 import { syncBuiltinESMExports } from "node:module";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, it } from "node:test";
+import { before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { toJsonSchemaCompat } from "@modelcontextprotocol/sdk/server/zod-json-schema-compat.js";
 import { z } from "zod";
@@ -1747,6 +1747,40 @@ describe("Config tool payload assembly", () => {
 // ---------------------------------------------------------------------------
 
 describe("Tool callback error handling", () => {
+	let descriptionRegistrations = new Map<
+		string,
+		{
+			config: {
+				description?: string;
+			};
+		}
+	>();
+
+	const descriptionFor = (name: string) =>
+		descriptionRegistrations.get(name)?.config.description || "";
+
+	before(() => {
+		descriptionRegistrations = new Map();
+
+		registerAllTools(
+			{
+				registerTool(
+					name: string,
+					config: {
+						description?: string;
+					},
+				) {
+					descriptionRegistrations.set(name, { config });
+					return {} as never;
+				},
+				tool() {
+					return {} as never;
+				},
+			} as never,
+			{} as never,
+		);
+	});
+
 	it("registers a standard outputSchema when registerTool is available", () => {
 		const registrations = new Map<
 			string,
@@ -1815,33 +1849,6 @@ describe("Tool callback error handling", () => {
 	});
 
 	it("annotates Enterprise-gated tool descriptions with a simple plan requirement note", () => {
-		const registrations = new Map<
-			string,
-			{
-				config: {
-					description?: string;
-				};
-			}
-		>();
-
-		registerAllTools(
-			{
-				registerTool(
-					name: string,
-					config: {
-						description?: string;
-					},
-				) {
-					registrations.set(name, { config });
-					return {} as never;
-				},
-				tool() {
-					return {} as never;
-				},
-			} as never,
-			{} as never,
-		);
-
 		const analyticsTools = [
 			"get_cost_analytics",
 			"get_request_analytics",
@@ -1867,16 +1874,13 @@ describe("Tool callback error handling", () => {
 
 		for (const toolName of analyticsTools) {
 			assert.match(
-				registrations.get(toolName)?.config.description || "",
+				descriptionFor(toolName),
 				/Enterprise-gated\./,
 				`${toolName} should advertise that it is Enterprise-gated`,
 			);
 		}
 
-		assert.match(
-			registrations.get("list_audit_logs")?.config.description || "",
-			/Enterprise-gated\./,
-		);
+		assert.match(descriptionFor("list_audit_logs"), /Enterprise-gated\./);
 
 		for (const toolName of [
 			"get_integration",
@@ -1884,7 +1888,7 @@ describe("Tool callback error handling", () => {
 			"list_integration_workspaces",
 		] as const) {
 			assert.match(
-				registrations.get(toolName)?.config.description || "",
+				descriptionFor(toolName),
 				/Enterprise-gated\./,
 				`${toolName} should advertise that it is Enterprise-gated`,
 			);
@@ -1897,17 +1901,229 @@ describe("Tool callback error handling", () => {
 			"get_user_stats",
 		] as const) {
 			assert.match(
-				registrations.get(toolName)?.config.description || "",
+				descriptionFor(toolName),
 				/Enterprise-gated\./,
 				`${toolName} should advertise that it is Enterprise-gated`,
 			);
 		}
 
 		assert.doesNotMatch(
-			registrations.get("create_prompt")?.config.description || "",
+			descriptionFor("create_prompt"),
 			/Enterprise-gated\./,
 			"non-gated tools should not be annotated as Enterprise-gated",
 		);
+	});
+
+	it("describes workflow boundaries, returned scope, and sibling-tool guidance for weak tool families", () => {
+		assert.match(
+			descriptionFor("start_log_export"),
+			/async|asynchronous|queue|queued/i,
+			"start_log_export should disclose that export processing runs asynchronously",
+		);
+		assert.match(
+			descriptionFor("start_log_export"),
+			/does not return .*file|does not return .*rows|does not return .*result/i,
+			"start_log_export should clarify that starting the job does not return export contents",
+		);
+		assert.match(
+			descriptionFor("download_log_export"),
+			/\b(url|link)\b/i,
+			"download_log_export should clarify that it returns a URL or link rather than export contents",
+		);
+		assert.match(
+			descriptionFor("list_configs"),
+			/get_config/i,
+			"list_configs should direct callers to get_config for detailed config inspection",
+		);
+		assert.match(
+			descriptionFor("list_configs"),
+			/\b(detail|full|routing|cache|retry|target)\b/i,
+			"list_configs should explain what extra detail get_config provides",
+		);
+		assert.match(
+			descriptionFor("get_request_analytics"),
+			/summary/i,
+			"get_request_analytics should mention the rolled-up summary alongside the time series",
+		);
+		assert.match(
+			descriptionFor("get_token_analytics"),
+			/summary/i,
+			"get_token_analytics should mention the rolled-up summary alongside the time series",
+		);
+		assert.match(
+			descriptionFor("get_usage_limit"),
+			/list_usage_limits/i,
+			"get_usage_limit should point callers to list_usage_limits when they need discovery",
+		);
+		assert.match(
+			descriptionFor("get_user"),
+			/invite|invitation/i,
+			"get_user should distinguish accepted users from pending invitations",
+		);
+		assert.match(
+			descriptionFor("list_all_users"),
+			/invite|invitation/i,
+			"list_all_users should distinguish accepted users from pending invitations",
+		);
+	});
+
+	it("holds A-rated and infrastructure tool descriptions to the same stricter standard", () => {
+		assert.match(
+			descriptionFor("publish_prompt"),
+			/default|active/i,
+			"publish_prompt should clarify that it changes the prompt's default or active version",
+		);
+		assert.match(
+			descriptionFor("publish_prompt"),
+			/update_prompt|list_prompt_versions/i,
+			"publish_prompt should point callers to adjacent prompt workflow tools",
+		);
+
+		assert.match(
+			descriptionFor("create_collection"),
+			/\b(id|slug)\b/i,
+			"create_collection should mention the identifiers it returns",
+		);
+		assert.match(
+			descriptionFor("create_collection"),
+			/create_prompt|list_prompts/i,
+			"create_collection should explain what downstream prompt workflows it supports",
+		);
+
+		assert.match(
+			descriptionFor("create_feedback"),
+			/\b(status|feedback_ids|ids?)\b/i,
+			"create_feedback should mention the feedback identifiers or status it returns",
+		);
+		assert.match(
+			descriptionFor("create_feedback"),
+			/update_feedback/i,
+			"create_feedback should distinguish itself from update_feedback",
+		);
+
+		assert.match(
+			descriptionFor("update_log_export"),
+			/only/i,
+			"update_log_export should be explicit about the limited fields that can change",
+		);
+		assert.match(
+			descriptionFor("update_log_export"),
+			/start_log_export|get_log_export/i,
+			"update_log_export should place itself in the broader export workflow",
+		);
+
+		assert.match(
+			descriptionFor("list_audit_logs"),
+			/individual|events?/i,
+			"list_audit_logs should clarify that it returns individual events rather than aggregates",
+		);
+		assert.match(
+			descriptionFor("list_audit_logs"),
+			/analytics/i,
+			"list_audit_logs should distinguish itself from analytics tools",
+		);
+
+		assert.match(
+			descriptionFor("create_mcp_integration"),
+			/\b(id|slug)\b/i,
+			"create_mcp_integration should mention the identifiers it returns",
+		);
+		assert.match(
+			descriptionFor("create_mcp_integration"),
+			/create_mcp_server|capabilities/i,
+			"create_mcp_integration should point to the next MCP setup step",
+		);
+
+		assert.match(
+			descriptionFor("delete_mcp_integration"),
+			/\b(remove|servers?)\b/i,
+			"delete_mcp_integration should disclose its cascading effect on child servers",
+		);
+		assert.match(
+			descriptionFor("delete_mcp_integration"),
+			/immediately|lose access/i,
+			"delete_mcp_integration should disclose immediate access impact",
+		);
+
+		assert.match(
+			descriptionFor("test_mcp_server"),
+			/response time|latency/i,
+			"test_mcp_server should mention the measured connectivity result",
+		);
+		assert.match(
+			descriptionFor("test_mcp_server"),
+			/error/i,
+			"test_mcp_server should mention that failures return an error message",
+		);
+	});
+
+	it("requires high-risk tool descriptions to disclose irreversible, access, billable, or failure semantics", () => {
+		const riskyTools = [
+			{
+				toolName: "delete_api_key",
+				patterns: [
+					/\b(irreversible|cannot be undone|permanent)\b/i,
+					/\b(break|stop|revoke|fail)\w*\b/i,
+				],
+			},
+			{
+				toolName: "delete_virtual_key",
+				patterns: [
+					/\b(irreversible|cannot be undone|permanent)\b/i,
+					/\b(break|stop|revoke|fail)\w*\b/i,
+				],
+			},
+			{
+				toolName: "delete_prompt",
+				patterns: [
+					/\b(irreversible|cannot be undone|permanent)\b/i,
+					/\b(break|stop|revoke|fail)\w*\b/i,
+				],
+			},
+			{
+				toolName: "delete_integration",
+				patterns: [
+					/\b(irreversible|cannot be undone|permanent)\b/i,
+					/\b(break|stop|revoke|fail)\w*\b/i,
+				],
+			},
+			{
+				toolName: "create_api_key",
+				patterns: [
+					/(returned once|only returned once|one-time)/i,
+					/\b(access|grant)\w*\b/i,
+				],
+			},
+			{
+				toolName: "create_virtual_key",
+				patterns: [
+					/(returned once|only returned at creation time|creation time)/i,
+					/\b(immediately|prompts|configs)\b/i,
+				],
+			},
+			{
+				toolName: "run_prompt_completion",
+				patterns: [
+					/\bbillable\b/i,
+					/(render_prompt|validate_completion_metadata)/i,
+				],
+			},
+			{
+				toolName: "insert_log",
+				patterns: [/\b(write|writes|insert)\b/i, /(fail|must match)/i],
+			},
+		] as const;
+
+		for (const { toolName, patterns } of riskyTools) {
+			const description = descriptionFor(toolName);
+			for (const pattern of patterns) {
+				assert.match(
+					description,
+					pattern,
+					`${toolName} should disclose high-risk behavior with pattern ${pattern}`,
+				);
+			}
+		}
 	});
 
 	it("accepts arbitrary app and env identifiers in prompt tool schemas", () => {

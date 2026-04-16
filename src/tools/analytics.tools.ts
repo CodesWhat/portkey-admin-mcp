@@ -409,7 +409,7 @@ export function registerAnalyticsTools(
 
 	server.tool(
 		"get_cost_analytics",
-		"Returns time-series of total and average cost per request over the specified period. Use to track spending trends and identify cost spikes. Differs from get_token_analytics which measures token consumption, not monetary cost. Requires time_of_generation_min and time_of_generation_max.",
+		"Get cost time-series data with summary.total_cost, summary.average_cost_per_request, and per-bucket total/avg cost. Use this for spend analysis and spike detection; use get_token_analytics when you need token volume instead of monetary cost.",
 		baseAnalyticsSchema,
 		async (params) => {
 			const analytics = await service.analytics.getCostAnalytics(
@@ -445,7 +445,7 @@ export function registerAnalyticsTools(
 
 	server.tool(
 		"get_request_analytics",
-		"Returns time-series of total, successful, and failed request counts over the specified period. Use to monitor traffic volume and success/failure trends. Differs from get_error_analytics which only shows error counts. Requires time_of_generation_min and time_of_generation_max.",
+		"Get request-volume time-series data with summary.total_requests, summary.successful_requests, summary.failed_requests, and per-bucket total/success/failed counts. Use this for traffic and reliability trends; use get_error_analytics when you only need error counts.",
 		requestAnalyticsSchema,
 		async (params) => {
 			const analytics = await service.analytics.getRequestAnalytics(
@@ -481,7 +481,7 @@ export function registerAnalyticsTools(
 
 	server.tool(
 		"get_token_analytics",
-		"Returns time-series of total, prompt, and completion token counts over the specified period. Use to track token consumption and identify usage patterns. Differs from get_cost_analytics which shows monetary cost, not token volume. Requires time_of_generation_min and time_of_generation_max.",
+		"Get token-usage time-series data with summary.total_tokens, summary.prompt_tokens, summary.completion_tokens, and per-bucket total/prompt/completion counts. Use this for consumption trends; use get_cost_analytics when you need spend instead of token volume.",
 		baseAnalyticsSchema,
 		async (params) => {
 			const analytics = await service.analytics.getTokenAnalytics(
@@ -517,7 +517,7 @@ export function registerAnalyticsTools(
 
 	server.tool(
 		"get_latency_analytics",
-		"Returns time-series of avg, p50, p90, and p99 latency percentiles in ms over the specified period. Use to monitor response times and detect latency regressions. Differs from get_cache_hit_latency which only measures latency for cached responses. Requires time_of_generation_min and time_of_generation_max.",
+		"Get latency time-series data with summary.avg_latency_ms, summary.p50_latency_ms, summary.p90_latency_ms, summary.p99_latency_ms, and per-bucket latency percentiles in ms. Use this to spot slowdowns and regressions; use get_cache_hit_latency when you only want cache-hit latency.",
 		baseAnalyticsSchema,
 		async (params) => {
 			const analytics = await service.analytics.getLatencyAnalytics(
@@ -555,7 +555,7 @@ export function registerAnalyticsTools(
 
 	server.tool(
 		"get_error_analytics",
-		"Returns time-series of total error counts over the specified period. Use for high-level error trend monitoring. For error breakdown by status code, use get_error_status_codes_analytics or get_error_stacks_analytics; for error rate as a percentage, use get_error_rate_analytics. Requires time_of_generation_min and time_of_generation_max.",
+		"Get error-count time-series data with summary.total_errors and per-bucket counts. Use this for high-level error trends; use get_error_rate_analytics for percentages, or get_error_status_codes_analytics and get_error_stacks_analytics for breakdowns.",
 		baseAnalyticsSchema,
 		async (params) => {
 			const analytics = await service.analytics.getErrorAnalytics(
@@ -587,7 +587,7 @@ export function registerAnalyticsTools(
 
 	server.tool(
 		"get_error_rate_analytics",
-		"Returns time-series of error rate as a percentage of total requests over the specified period. Use to track reliability trends and SLA compliance. Differs from get_error_analytics which shows absolute error counts, not percentages. Requires time_of_generation_min and time_of_generation_max.",
+		"Get error-rate time-series data with summary.error_rate_percent and per-bucket percentages of total requests. Use this for reliability and SLA trends; use get_error_analytics for absolute error counts instead.",
 		baseAnalyticsSchema,
 		async (params) => {
 			const analytics = await service.analytics.getErrorRateAnalytics(
@@ -621,7 +621,7 @@ export function registerAnalyticsTools(
 
 	server.tool(
 		"get_cache_hit_latency",
-		"Returns time-series of latency specifically for cache hits over the specified period. Use to evaluate cache performance and response speed for cached requests. Differs from get_latency_analytics which measures latency across all requests. Requires time_of_generation_min and time_of_generation_max.",
+		"Get cache-hit-only latency time-series data with summary.total_latency, summary.avg_latency, and per-bucket total/avg latency. Use this to evaluate cached-response speed; use get_latency_analytics for all requests.",
 		baseAnalyticsSchema,
 		async (params) => {
 			const analytics = await service.analytics.getCacheHitLatency(
@@ -655,7 +655,7 @@ export function registerAnalyticsTools(
 
 	server.tool(
 		"get_cache_hit_rate",
-		"Returns time-series of cache hit rate percentage, total hits, and misses over the specified period. Use to evaluate cache effectiveness and tune caching strategy. Unrelated to get_cache_hit_latency which measures speed of cached responses, not hit/miss ratio. Requires time_of_generation_min and time_of_generation_max.",
+		"Get cache-effectiveness time-series data with summary.hit_rate, summary.total_hits, summary.total_misses, and per-bucket hits/misses/rate. Use this to measure cache effectiveness; use get_cache_hit_latency for speed rather than hit/miss ratio.",
 		baseAnalyticsSchema,
 		async (params) => {
 			const analytics = await service.analytics.getCacheHitRate(
@@ -693,7 +693,7 @@ export function registerAnalyticsTools(
 
 	server.tool(
 		"get_users_analytics",
-		"Returns time-series of active and new user counts over the specified period. Use for user growth tracking and adoption metrics. Differs from get_user_requests_analytics which shows per-user request breakdown, and get_analytics_group_users which shows per-user cost/token data. Requires time_of_generation_min and time_of_generation_max.",
+		"Get user-growth time-series data with summary.total_active_users, summary.total_new_users, and per-bucket active/new user counts. Use this for growth and adoption trends; use get_user_requests_analytics for per-user traffic or get_analytics_group_users for per-user cost and token detail.",
 		baseAnalyticsSchema,
 		async (params) => {
 			const analytics = await service.analytics.getUsersAnalytics(
@@ -729,7 +729,7 @@ export function registerAnalyticsTools(
 
 	server.tool(
 		"get_error_stacks_analytics",
-		"Returns errors broken down by status code stacks (e.g., 429, 500, 502) over the specified period. Use to identify which error types are most common and how they trend. Differs from get_error_status_codes_analytics which shows unique code distribution rather than stacked/cumulative breakdown. Requires time_of_generation_min and time_of_generation_max.",
+		"Get stacked error-series data grouped by HTTP status code over time, with summary and per-code series. Use this to see which error classes dominate; use get_error_status_codes_analytics for distinct-code distribution instead.",
 		baseAnalyticsSchema,
 		async (params) => {
 			const analytics = await service.analytics.getErrorStacksAnalytics(
@@ -752,7 +752,7 @@ export function registerAnalyticsTools(
 
 	server.tool(
 		"get_error_status_codes_analytics",
-		"Returns distribution of unique HTTP error status codes over the specified period. Use to see which status codes are occurring and their frequency. Differs from get_error_stacks_analytics which shows stacked/cumulative error breakdown rather than individual code distribution. Requires time_of_generation_min and time_of_generation_max.",
+		"Get HTTP error-code distribution time-series data with summary and per-code series. Use this to see which codes occur most often; use get_error_stacks_analytics for stacked or cumulative breakdowns.",
 		baseAnalyticsSchema,
 		async (params) => {
 			const analytics = await service.analytics.getErrorStatusCodesAnalytics(
@@ -775,7 +775,7 @@ export function registerAnalyticsTools(
 
 	server.tool(
 		"get_user_requests_analytics",
-		"Returns per-user request count breakdown over the specified period. Use to identify heavy users and per-user traffic patterns. Differs from get_users_analytics which shows aggregate active/new user counts, not individual user breakdowns. Requires time_of_generation_min and time_of_generation_max.",
+		"Get per-user request-count time-series data with counts grouped by user. Use this to find heavy users and traffic concentration; use get_users_analytics for aggregate active and new user trends instead.",
 		baseAnalyticsSchema,
 		async (params) => {
 			const analytics = await service.analytics.getUserRequestsAnalytics(
@@ -798,7 +798,7 @@ export function registerAnalyticsTools(
 
 	server.tool(
 		"get_rescued_requests_analytics",
-		"Returns time-series of requests saved by retry or fallback strategies over the specified period. Use to evaluate the effectiveness of your Portkey configs' resilience features. Only relevant if configs include retry or fallback targets. Requires time_of_generation_min and time_of_generation_max.",
+		"Get rescued-request time-series data showing requests recovered by retry or fallback handling. Use this only when your configs include resilience features, and use it to measure how often recovery logic saved requests.",
 		baseAnalyticsSchema,
 		async (params) => {
 			const analytics = await service.analytics.getRescuedRequestsAnalytics(
@@ -821,7 +821,7 @@ export function registerAnalyticsTools(
 
 	server.tool(
 		"get_feedback_analytics",
-		"Returns time-series of feedback submission counts over the specified period. Use to track feedback volume trends. For breakdown by model, use get_feedback_models_analytics; for score distribution, use get_feedback_scores_analytics; for weighted scores, use get_feedback_weighted_analytics. Requires time_of_generation_min and time_of_generation_max.",
+		"Get feedback-submission time-series data with summary totals and per-bucket counts. Use this as the top-level feedback trend view; use get_feedback_models_analytics, get_feedback_scores_analytics, or get_feedback_weighted_analytics for breakdowns.",
 		baseAnalyticsSchema,
 		async (params) => {
 			const analytics = await service.analytics.getFeedbackAnalytics(
@@ -844,7 +844,7 @@ export function registerAnalyticsTools(
 
 	server.tool(
 		"get_feedback_models_analytics",
-		"Returns feedback counts grouped by AI model over the specified period. Use to compare user satisfaction and feedback volume across different models. Differs from get_feedback_analytics which shows total volume without model breakdown. Requires time_of_generation_min and time_of_generation_max.",
+		"Get feedback time-series data grouped by model, with per-model counts over time. Use this to compare feedback volume and satisfaction across models; use get_feedback_analytics for the overall total instead.",
 		baseAnalyticsSchema,
 		async (params) => {
 			const analytics = await service.analytics.getFeedbackModelsAnalytics(
@@ -867,7 +867,7 @@ export function registerAnalyticsTools(
 
 	server.tool(
 		"get_feedback_scores_analytics",
-		"Returns distribution of raw feedback score values over the specified period. Use to understand score patterns (e.g., mostly positive vs mixed). Differs from get_feedback_weighted_analytics which applies weight factors for calibrated metrics. Requires time_of_generation_min and time_of_generation_max.",
+		"Get raw feedback-score distribution time-series data with per-score buckets. Use this to understand sentiment mix; use get_feedback_weighted_analytics for calibrated scores with weighting.",
 		baseAnalyticsSchema,
 		async (params) => {
 			const analytics = await service.analytics.getFeedbackScoresAnalytics(
@@ -890,7 +890,7 @@ export function registerAnalyticsTools(
 
 	server.tool(
 		"get_feedback_weighted_analytics",
-		"Returns weighted feedback scores over the specified period, applying the weight factor set during feedback creation. Use for calibrated quality metrics where different feedback types have different importance. Differs from get_feedback_scores_analytics which shows raw unweighted scores. Requires time_of_generation_min and time_of_generation_max.",
+		"Get weighted feedback-score time-series data using the weight recorded at feedback creation. Use this for calibrated quality metrics; use get_feedback_scores_analytics for the raw unweighted distribution.",
 		baseAnalyticsSchema,
 		async (params) => {
 			const analytics = await service.analytics.getFeedbackWeightedAnalytics(
@@ -915,7 +915,7 @@ export function registerAnalyticsTools(
 
 	server.tool(
 		"get_analytics_group_users",
-		"Returns analytics data aggregated per user with pagination, showing each user's request count, cost, and token usage. Use for per-user billing, audit, or identifying top consumers. Differs from get_users_analytics which shows aggregate active/new user counts over time. Requires time_of_generation_min and time_of_generation_max.",
+		"Get a paginated per-user breakdown with total_groups, group_count, and a users array containing request count, cost, and token usage. Use this for billing, audits, or top-consumer analysis; use get_users_analytics for aggregate active and new user trends.",
 		paginatedAnalyticsSchema,
 		async (params) => {
 			const analytics = await service.analytics.getAnalyticsGroupUsers(
@@ -938,7 +938,7 @@ export function registerAnalyticsTools(
 
 	server.tool(
 		"get_analytics_group_models",
-		"Returns analytics data aggregated per AI model with pagination, showing each model's request count, cost, and token usage. Use to compare model costs, popularity, and efficiency. Requires time_of_generation_min and time_of_generation_max.",
+		"Get a paginated per-model breakdown with total_groups, group_count, and a models array containing request count, cost, and token usage. Use this to compare model cost, popularity, and efficiency; use get_token_analytics or get_cost_analytics for time-series trends instead.",
 		paginatedAnalyticsSchema,
 		async (params) => {
 			const analytics = await service.analytics.getAnalyticsGroupModels(
@@ -961,7 +961,7 @@ export function registerAnalyticsTools(
 
 	server.tool(
 		"get_analytics_group_metadata",
-		"Returns analytics data grouped by a custom metadata key (e.g., 'env', 'app', 'client_id') with pagination. Use for custom breakdowns like per-environment or per-feature cost analysis. Requires the metadata_key parameter in addition to time_of_generation_min and time_of_generation_max.",
+		"Get a paginated metadata breakdown with total_groups, group_count, and a metadata_groups array grouped by the required metadata_key. Use this for custom breakdowns like per-environment or per-feature analysis; pass metadata_key in addition to the time window.",
 		analyticsGroupMetadataSchema,
 		async (params) => {
 			const { metadata_key, ...analyticsParams } = params;

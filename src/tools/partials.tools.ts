@@ -68,7 +68,7 @@ export function registerPartialsTools(
 	// Create partial tool
 	server.tool(
 		"create_prompt_partial",
-		"Create a new prompt partial (reusable text snippet) that can be included in prompts using mustache syntax like {{> partial_name}}. After creation, use publish_partial to make it the default version. Returns id, slug, and version_id.",
+		"Create a reusable prompt partial for inclusion with {{> partial_name}}. Use this for shared snippets or macros; returns the partial id, slug, and version id, and the new version stays inactive until published.",
 		PARTIALS_TOOL_SCHEMAS.createPromptPartial,
 		async (params) => {
 			const result = await service.partials.createPromptPartial({
@@ -100,7 +100,7 @@ export function registerPartialsTools(
 	// List partials tool
 	server.tool(
 		"list_prompt_partials",
-		"List all prompt partials in your Portkey organization with optional filtering by collection. Returns all partials with id, slug, name, and status. Use to discover partial IDs or check if a partial already exists before creating.",
+		"List partials across collections, with optional collection filtering. Returns ids, slugs, names, collections, and status so you can choose a prompt_partial_id before get/update/delete.",
 		PARTIALS_TOOL_SCHEMAS.listPromptPartials,
 		async (params) => {
 			const partials = await service.partials.listPromptPartials(params);
@@ -133,7 +133,7 @@ export function registerPartialsTools(
 	// Get partial tool
 	server.tool(
 		"get_prompt_partial",
-		"Retrieve detailed information about a specific prompt partial. Returns the partial's content string and current version info. Use to inspect content before including it in a prompt via {{> partial_name}}.",
+		"Fetch a partial's content and current version details. Use this before embedding, updating, or checking what {{> partial_name}} resolves to; returns the stored string plus version metadata.",
 		PARTIALS_TOOL_SCHEMAS.getPromptPartial,
 		async (params) => {
 			const partial = await service.partials.getPromptPartial(
@@ -169,7 +169,7 @@ export function registerPartialsTools(
 	// Update partial tool
 	server.tool(
 		"update_prompt_partial",
-		"Update an existing prompt partial. A new version is created in archived status — use publish_partial to make it active.",
+		"Create a new version of a partial by updating its content or metadata. Only provided fields change, and the new version stays inactive until publish_partial makes it current.",
 		PARTIALS_TOOL_SCHEMAS.updatePromptPartial,
 		async (params) => {
 			const { prompt_partial_id, ...updateData } = params;
@@ -198,7 +198,7 @@ export function registerPartialsTools(
 	// Delete partial tool
 	server.tool(
 		"delete_prompt_partial",
-		"Delete a prompt partial by ID. This action cannot be undone. Prompts referencing this partial via {{> name}} will fail to render. Ensure no active prompts depend on it.",
+		"Delete a prompt partial by ID. This cannot be undone, and prompts that reference it with {{> name}} will fail to render until you replace the reference.",
 		PARTIALS_TOOL_SCHEMAS.deletePromptPartial,
 		async (params) => {
 			await service.partials.deletePromptPartial(params.prompt_partial_id);
@@ -223,7 +223,7 @@ export function registerPartialsTools(
 	// List partial versions tool
 	server.tool(
 		"list_partial_versions",
-		"List all versions of a prompt partial to view its change history. Returns all versions with content preview. Use to find a version number before calling publish_partial to roll back or promote a version.",
+		"List all versions for one partial, including version numbers, descriptions, status, and timestamps. Use this when you need history or want to choose a version_id before publish_partial.",
 		PARTIALS_TOOL_SCHEMAS.listPartialVersions,
 		async (params) => {
 			const versions = await service.partials.listPartialVersions(
@@ -263,7 +263,7 @@ export function registerPartialsTools(
 	// Publish partial tool
 	server.tool(
 		"publish_partial",
-		"Publish a specific version of a prompt partial, making it the default version. After publishing, all prompts using {{> partial_name}} will resolve to this version's content.",
+		"Publish a specific partial version as the default version. This changes which content {{> partial_name}} resolves to and replaces the previously active version.",
 		PARTIALS_TOOL_SCHEMAS.publishPartial,
 		async (params) => {
 			await service.partials.publishPartial(params.prompt_partial_id, {

@@ -233,7 +233,7 @@ export function registerIntegrationsTools(
 	// List integrations tool
 	server.tool(
 		"list_integrations",
-		"List org-level connections to AI providers (OpenAI, Anthropic, Azure, etc.) with optional filtering by workspace or type. Use to discover integration slugs for other integration tools. Returns paginated results with id, slug, provider, and status. Differs from list_providers, which shows workspace-scoped provider instances.",
+		"List org-level AI provider connections with optional workspace or type filters. Use this to find integration slugs before model or workspace updates. Returns total plus id, name, slug, provider, status, description, workspace counts, and config summary.",
 		INTEGRATIONS_TOOL_SCHEMAS.listIntegrations,
 		async (params) => {
 			const integrations = await service.integrations.listIntegrations({
@@ -274,7 +274,7 @@ export function registerIntegrationsTools(
 	// Create integration tool
 	server.tool(
 		"create_integration",
-		"Create a new integration with an AI provider (e.g., OpenAI, Anthropic, Azure OpenAI, AWS Bedrock). Provider-specific params: Azure needs api_version + resource_name + deployment_name. AWS needs aws_region. Vertex AI needs vertex_project_id + vertex_region.",
+		"Create an org-level provider integration. Some backends need provider-specific fields, and the new integration becomes the source for downstream providers and workspace access. Returns the new integration id and slug.",
 		INTEGRATIONS_TOOL_SCHEMAS.createIntegration,
 		async (params) => {
 			const configurations: Record<string, unknown> = {};
@@ -335,7 +335,7 @@ export function registerIntegrationsTools(
 	// Get integration tool
 	server.tool(
 		"get_integration",
-		"Retrieve detailed information about a specific integration by its slug. Returns full config including masked API key, workspace access settings, and allowed models. Use when you need provider-specific details or to audit an integration's configuration.",
+		"Fetch one integration by slug, including masked key, workspace access, allowed models, and configuration metadata. Use this before editing provider-specific settings or auditing access.",
 		INTEGRATIONS_TOOL_SCHEMAS.getIntegration,
 		async (params) => {
 			const integration = await service.integrations.getIntegration(
@@ -376,7 +376,7 @@ export function registerIntegrationsTools(
 	// Update integration tool
 	server.tool(
 		"update_integration",
-		"Update an existing integration's name, API key, description, or provider-specific configurations. API key changes take effect immediately. Changing provider-specific configs (Azure resource_name, Vertex region, etc.) may break active requests using this integration.",
+		"Update an integration's name, key, or provider-specific config. Key and config changes take effect immediately and can disrupt dependent providers or live requests.",
 		INTEGRATIONS_TOOL_SCHEMAS.updateIntegration,
 		async (params) => {
 			const configurations: Record<string, unknown> = {};
@@ -436,7 +436,7 @@ export function registerIntegrationsTools(
 	// Delete integration tool
 	server.tool(
 		"delete_integration",
-		"Delete an integration by slug. This action cannot be undone. Removes the org-level provider connection; all dependent virtual keys and providers will stop working.",
+		"Delete an integration by slug. This is irreversible and stops the org-level connection, which will break dependent virtual keys, providers, and workspace access.",
 		INTEGRATIONS_TOOL_SCHEMAS.deleteIntegration,
 		async (params) => {
 			const result = await service.integrations.deleteIntegration(params.slug);
@@ -462,7 +462,7 @@ export function registerIntegrationsTools(
 	// List integration models tool
 	server.tool(
 		"list_integration_models",
-		"List which AI models are enabled for a specific integration, with their enabled/disabled status and custom flag. Use to check model availability before creating prompts or configs. Returns paginated results with model id, name, and enabled state.",
+		"List models enabled on an integration. Use this to verify model availability before creating prompts or configs. Returns total plus model ids, display names, enabled state, and custom-model markers.",
 		INTEGRATIONS_TOOL_SCHEMAS.listIntegrationModels,
 		async (params) => {
 			const models = await service.integrations.listIntegrationModels(
@@ -503,7 +503,7 @@ export function registerIntegrationsTools(
 	// Update integration models tool
 	server.tool(
 		"update_integration_models",
-		"Enable/disable specific models or register custom model names for an integration. Changes affect all workspaces using this integration. Pass an array of model configurations with slug, enabled state, and optional is_custom flag.",
+		"Enable, disable, or register custom models for an integration. This changes model availability for every workspace using it, so confirm the downstream impact first. Returns success and the number of models updated.",
 		INTEGRATIONS_TOOL_SCHEMAS.updateIntegrationModels,
 		async (params) => {
 			const result = await service.integrations.updateIntegrationModels(
@@ -535,7 +535,7 @@ export function registerIntegrationsTools(
 	// Delete integration model tool
 	server.tool(
 		"delete_integration_model",
-		"Delete a specific custom model from an integration. Only custom models can be deleted; built-in models should be disabled via update_integration_models instead. Returns success status.",
+		"Delete a custom model from an integration. Built-in models should be disabled instead, because deletion only applies to custom entries. Returns success after the custom model is removed.",
 		INTEGRATIONS_TOOL_SCHEMAS.deleteIntegrationModel,
 		async (params) => {
 			const result = await service.integrations.deleteIntegrationModel(
@@ -564,7 +564,7 @@ export function registerIntegrationsTools(
 	// List integration workspaces tool
 	server.tool(
 		"list_integration_workspaces",
-		"List which workspaces can access a specific integration, including their usage limits and rate limits. Use to audit workspace access and review per-workspace spending/rate configurations. Returns paginated results.",
+		"List workspaces that can use an integration, with their limits. Use this to audit access or confirm per-workspace cost and rate settings. Returns total plus workspace ids, names, enabled state, usage limits, and rate limits.",
 		INTEGRATIONS_TOOL_SCHEMAS.listIntegrationWorkspaces,
 		async (params) => {
 			const workspaces = await service.integrations.listIntegrationWorkspaces(
@@ -606,7 +606,7 @@ export function registerIntegrationsTools(
 	// Update integration workspaces tool
 	server.tool(
 		"update_integration_workspaces",
-		"Control which workspaces can use an integration and set per-workspace usage/rate limits. Pass an array of workspace configurations with id, enabled state, and optional credit_limit, alert_threshold, and rate_limit_rpm.",
+		"Control which workspaces can use an integration and set per-workspace limits. Access changes and new limits apply to downstream usage immediately. Returns success and the number of workspaces updated.",
 		INTEGRATIONS_TOOL_SCHEMAS.updateIntegrationWorkspaces,
 		async (params) => {
 			const result = await service.integrations.updateIntegrationWorkspaces(

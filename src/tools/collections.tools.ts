@@ -52,7 +52,7 @@ export function registerCollectionsTools(
 	// List collections tool
 	server.tool(
 		"list_collections",
-		"List all prompt collections in your Portkey organization. Collections organize prompts by application (e.g., hourlink, apizone, research-pilot). Use to discover collection_id values before creating or listing prompts. Returns id, name, and slug per collection.",
+		"List prompt collections in the workspace, optionally filtering by name or workspace. Returns ids, names, slugs, and timestamps so you can choose a collection_id before create_prompt, get_collection, or list_prompts.",
 		COLLECTIONS_TOOL_SCHEMAS.listCollections,
 		async (params) => {
 			const collections = await service.collections.listCollections(params);
@@ -84,7 +84,7 @@ export function registerCollectionsTools(
 	// Create collection tool
 	server.tool(
 		"create_collection",
-		"Create a new prompt collection for organizing prompts by app. Use one collection per app (hourlink, apizone, research-pilot). Returns the new collection_id and slug needed for create_prompt.",
+		"Create a new prompt collection for organizing prompts by app. Use this when you need a new namespace before create_prompt; returns the collection id and slug, and does not move any prompts.",
 		COLLECTIONS_TOOL_SCHEMAS.createCollection,
 		async (params) => {
 			const result = await service.collections.createCollection(params);
@@ -110,7 +110,7 @@ export function registerCollectionsTools(
 	// Get collection tool
 	server.tool(
 		"get_collection",
-		"Retrieve full details of a specific collection by ID or slug, including name, slug, and workspace_id. Use get_collection when you have a specific ID; use list_collections to browse all collections.",
+		"Fetch one collection by id or slug and return its name, slug, workspace, and timestamps. Use list_collections when browsing and get_collection when you already know the target.",
 		COLLECTIONS_TOOL_SCHEMAS.getCollection,
 		async (params) => {
 			const collection = await service.collections.getCollection(
@@ -141,7 +141,7 @@ export function registerCollectionsTools(
 	// Update collection tool
 	server.tool(
 		"update_collection",
-		"Update a collection's display name or description. Does not affect prompts within the collection.",
+		"Update a collection's name or description only. This does not move prompts or change membership, so use it for metadata changes rather than reorganization.",
 		COLLECTIONS_TOOL_SCHEMAS.updateCollection,
 		async (params) => {
 			await service.collections.updateCollection(params.collection_id, {
@@ -169,7 +169,7 @@ export function registerCollectionsTools(
 	// Phase 1: Delete collection tool
 	server.tool(
 		"delete_collection",
-		"Delete a prompt collection by ID. This action cannot be undone. Prompts inside the collection are not deleted but lose their grouping and move to the top level. Reassign prompts to another collection first if organization must be preserved.",
+		"Delete a prompt collection by ID. This cannot be undone; prompts stay in the workspace but lose their collection grouping, so reassign them first if organization matters.",
 		COLLECTIONS_TOOL_SCHEMAS.deleteCollection,
 		async (params) => {
 			const result = await service.collections.deleteCollection(

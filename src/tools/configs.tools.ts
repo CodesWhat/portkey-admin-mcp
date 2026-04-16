@@ -173,7 +173,7 @@ export function registerConfigsTools(
 	// List configurations tool
 	server.tool(
 		"list_configs",
-		"Retrieve all configurations in your Portkey organization, including their status and workspace associations. Configs define request routing behavior (cache, retry, fallback, load balancing). Use to discover config slugs before inspecting or modifying them.",
+		"List configs in the org with id, slug, name, status, workspace, and timestamps. Use this summary view to find a slug; use get_config for the full routing, cache, retry, and target settings before updating or deleting.",
 		CONFIGS_TOOL_SCHEMAS.listConfigs,
 		async () => {
 			const configs = await service.configs.listConfigs();
@@ -209,7 +209,7 @@ export function registerConfigsTools(
 	// Get configuration details tool
 	server.tool(
 		"get_config",
-		"Retrieve detailed information about a specific configuration, including cache settings, retry policies, routing strategy, and targets. Use when you need to inspect a config's full settings or clone an existing config's structure.",
+		"Get one config by slug and return its routing, cache, retry, and target settings. Requires a known slug; use list_configs to discover one before editing.",
 		CONFIGS_TOOL_SCHEMAS.getConfig,
 		async (params) => {
 			const response = await service.configs.getConfig(params.slug);
@@ -255,7 +255,7 @@ export function registerConfigsTools(
 	// Phase 1: Create configuration tool
 	server.tool(
 		"create_config",
-		"Create a new configuration that defines how AI requests are routed, cached, retried, and load-balanced across providers. At least one setting is required: cache (cache_mode/cache_max_age), retry (retry_attempts/retry_on_status_codes), strategy_mode, or targets.",
+		"Create a config that defines routing, cache, retry, and targets for requests. At least one of those settings is required; returns the new id and version_id.",
 		CONFIGS_TOOL_SCHEMAS.createConfig,
 		async (params) => {
 			const config = buildConfigPayload(params);
@@ -301,7 +301,7 @@ export function registerConfigsTools(
 	// Phase 1: Update configuration tool
 	server.tool(
 		"update_config",
-		"Update an existing configuration's cache, retry, or routing settings. Creates a new version; only provided fields are updated, unspecified fields remain unchanged.",
+		"Update a config by slug and create a new version. Only provided fields change; name and status are editable, while the slug stays fixed. Use list_config_versions if you need history first.",
 		CONFIGS_TOOL_SCHEMAS.updateConfig,
 		async (params) => {
 			const config = buildConfigPayload(params);
@@ -342,7 +342,7 @@ export function registerConfigsTools(
 	// Phase 1: Delete configuration tool
 	server.tool(
 		"delete_config",
-		"Delete a configuration by slug. This action cannot be undone and removes all versions. Requests and API keys referencing this config slug will fail immediately. Use list_config_versions first to review history; audit dependent API keys before deleting.",
+		"Delete a config by slug. This is permanent, removes all versions, and breaks anything still pointing at that slug; check list_config_versions first.",
 		CONFIGS_TOOL_SCHEMAS.deleteConfig,
 		async (params) => {
 			const result = await service.configs.deleteConfig(params.slug);
@@ -367,7 +367,7 @@ export function registerConfigsTools(
 	// Phase 1: List configuration versions tool
 	server.tool(
 		"list_config_versions",
-		"List all versions of a configuration to view its change history. Use to audit past changes, compare versions, or find a specific version ID for rollback.",
+		"List every version of a config with version number, config payload, creator, and timestamp. Use this to audit history or compare revisions before update_config or delete_config.",
 		CONFIGS_TOOL_SCHEMAS.listConfigVersions,
 		async (params) => {
 			const result = await service.configs.listConfigVersions(params.slug);

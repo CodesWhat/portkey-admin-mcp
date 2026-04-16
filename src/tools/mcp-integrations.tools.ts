@@ -220,7 +220,7 @@ export function registerMcpIntegrationsTools(
 ): void {
 	server.tool(
 		"list_mcp_integrations",
-		"List all MCP integrations in your Portkey organization with optional pagination and workspace filtering. MCP integrations connect external MCP servers to your Portkey org. Use to discover integration IDs needed by other tools. Differs from list_mcp_servers which shows server instances under an integration. Returns paginated array of integrations with total count and has_more flag.",
+		"List MCP integrations in the organization. Returns paginated integration records plus total and has_more for discovering integration IDs; use get_mcp_integration for one integration's full Portkey-side config and list_mcp_servers for the servers under an integration.",
 		MCP_INTEGRATIONS_TOOL_SCHEMAS.listMcpIntegrations,
 		async (params) => {
 			const result = await service.mcpIntegrations.listMcpIntegrations(params);
@@ -245,7 +245,7 @@ export function registerMcpIntegrationsTools(
 
 	server.tool(
 		"create_mcp_integration",
-		"Create a new MCP integration by registering an external MCP server URL with auth configuration. After creation, use create_mcp_server to add server instances and update_mcp_integration_capabilities to control which tools are exposed. Returns the new integration's id and slug.",
+		"Create an MCP integration from an external server URL. Registers the Portkey-side connection and returns the new id and slug; if auth_type is headers, custom_headers are required, and you usually follow with create_mcp_server and capability updates.",
 		MCP_INTEGRATIONS_TOOL_SCHEMAS.createMcpIntegration,
 		async (params) => {
 			if (
@@ -289,7 +289,7 @@ export function registerMcpIntegrationsTools(
 
 	server.tool(
 		"get_mcp_integration",
-		"Retrieve detailed information about a specific MCP integration by ID or slug. Returns full integration config including auth type, transport, and configuration keys (header values are masked). Use to inspect Portkey-side connection details. Differs from get_mcp_integration_metadata which returns the external server's self-reported info.",
+		"Retrieve one MCP integration by id or slug. Returns the full Portkey-side config, including auth type, transport, and masked configuration keys; use get_mcp_integration_metadata for the server's self-reported metadata.",
 		MCP_INTEGRATIONS_TOOL_SCHEMAS.getMcpIntegration,
 		async (params) => {
 			const integration = await service.mcpIntegrations.getMcpIntegration(
@@ -308,7 +308,7 @@ export function registerMcpIntegrationsTools(
 
 	server.tool(
 		"update_mcp_integration",
-		"Update an existing MCP integration's name, description, URL, auth, or transport. Changing url or auth_type may break active connections. Changes take effect immediately for all connected users.",
+		"Update an MCP integration's name, description, URL, auth, or transport. Changes apply immediately and altering url or auth_type can break connected clients; use update_mcp_server when you only need to rename or re-describe a server.",
 		MCP_INTEGRATIONS_TOOL_SCHEMAS.updateMcpIntegration,
 		async (params) => {
 			const { id, custom_headers, ...rest } = params;
@@ -336,7 +336,7 @@ export function registerMcpIntegrationsTools(
 
 	server.tool(
 		"delete_mcp_integration",
-		"Delete an MCP integration permanently. Also removes all MCP servers under this integration. Connected users will lose access immediately. This action cannot be undone.",
+		"Delete an MCP integration and all servers beneath it. This is irreversible, removes connected access immediately, and should only be used after confirming nothing depends on the integration.",
 		MCP_INTEGRATIONS_TOOL_SCHEMAS.deleteMcpIntegration,
 		async (params) => {
 			await service.mcpIntegrations.deleteMcpIntegration(params.id);
@@ -360,7 +360,7 @@ export function registerMcpIntegrationsTools(
 
 	server.tool(
 		"get_mcp_integration_metadata",
-		"Retrieve server-reported metadata for an MCP integration including name, version, protocol, and sync status. Use to verify the external server is responding and check its capabilities. Differs from get_mcp_integration which shows Portkey-side config.",
+		"Retrieve the external MCP server's self-reported metadata for an integration. Returns name, version, protocol, capability flags, and sync status; use get_mcp_integration for the Portkey-side connection config.",
 		MCP_INTEGRATIONS_TOOL_SCHEMAS.getMcpIntegrationMetadata,
 		async (params) => {
 			const metadata = await service.mcpIntegrations.getMcpIntegrationMetadata(
@@ -383,7 +383,7 @@ export function registerMcpIntegrationsTools(
 
 	server.tool(
 		"list_mcp_integration_capabilities",
-		"List all capabilities (tools, resources, prompts) the external MCP server exposes on an integration. Use before update_mcp_integration_capabilities to see what can be enabled or disabled. Returns total count and array of capabilities with their enabled status.",
+		"List capabilities exposed by the external MCP server for an integration. Returns total plus enabled-state entries so you can decide what to toggle; use before update_mcp_integration_capabilities when you need to compare the current surface.",
 		MCP_INTEGRATIONS_TOOL_SCHEMAS.listMcpIntegrationCapabilities,
 		async (params) => {
 			const result =
@@ -405,7 +405,7 @@ export function registerMcpIntegrationsTools(
 
 	server.tool(
 		"update_mcp_integration_capabilities",
-		"Bulk enable or disable capabilities on an MCP integration to control which MCP tools, resources, and prompts are available to users. Disabled capabilities are hidden from connected clients. Changes take effect immediately.",
+		"Bulk enable or disable capabilities on an MCP integration. Changes take effect immediately for connected users and hide or expose the selected tools, resources, and prompts; use list_mcp_integration_capabilities first if you need the current state.",
 		MCP_INTEGRATIONS_TOOL_SCHEMAS.updateMcpIntegrationCapabilities,
 		async (params) => {
 			await service.mcpIntegrations.updateMcpIntegrationCapabilities(
@@ -434,7 +434,7 @@ export function registerMcpIntegrationsTools(
 
 	server.tool(
 		"list_mcp_integration_workspaces",
-		"List which workspaces have access to an MCP integration. Returns global access setting and per-workspace enabled status. Use to audit access before modifying permissions with update_mcp_integration_workspaces.",
+		"List which workspaces can access an MCP integration. Returns the global access mode plus per-workspace enablement for audit or permission review; use before update_mcp_integration_workspaces.",
 		MCP_INTEGRATIONS_TOOL_SCHEMAS.listMcpIntegrationWorkspaces,
 		async (params) => {
 			const result = await service.mcpIntegrations.listMcpIntegrationWorkspaces(
@@ -463,7 +463,7 @@ export function registerMcpIntegrationsTools(
 
 	server.tool(
 		"update_mcp_integration_workspaces",
-		"Grant or revoke workspace access to an MCP integration in bulk. Changes affect all users in the workspace immediately. Use list_mcp_integration_workspaces first to see current access state.",
+		"Grant or revoke workspace access to an MCP integration in bulk. Changes take effect immediately for all users in the selected workspaces; use list_mcp_integration_workspaces first to review the current access state.",
 		MCP_INTEGRATIONS_TOOL_SCHEMAS.updateMcpIntegrationWorkspaces,
 		async (params) => {
 			await service.mcpIntegrations.updateMcpIntegrationWorkspaces(params.id, {

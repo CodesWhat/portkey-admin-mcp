@@ -241,7 +241,7 @@ export function registerLimitsTools(
 	// List rate limits
 	server.tool(
 		"list_rate_limits",
-		"Retrieve all rate limits in your Portkey organization. Use to discover existing rate limit policies before creating new ones. Returns an array of rate limits each containing id, type, unit, value, and status. Rate limits control how many requests or tokens can be consumed per time unit (rpm/rph/rpd).",
+		"List rate limits in the org with id, type, unit, value, status, scope, conditions, and grouping. Use this to find an existing policy before get_rate_limit, update_rate_limit, or delete_rate_limit.",
 		LIMITS_TOOL_SCHEMAS.listRateLimits,
 		async (params) => {
 			const result = await service.limits.listRateLimits(params.workspace_id);
@@ -266,7 +266,7 @@ export function registerLimitsTools(
 	// Get rate limit
 	server.tool(
 		"get_rate_limit",
-		"Retrieve detailed information about a specific rate limit by its ID. Returns full detail including conditions and group_by fields. Use when you have a specific rate limit ID from list_rate_limits and need to inspect its complete configuration.",
+		"Get one rate limit by id and return its full conditions and grouping definition. Use list_rate_limits to discover ids or compare policies first.",
 		LIMITS_TOOL_SCHEMAS.getRateLimit,
 		async (params) => {
 			const result = await service.limits.getRateLimit(params.id);
@@ -284,7 +284,7 @@ export function registerLimitsTools(
 	// Create rate limit
 	server.tool(
 		"create_rate_limit",
-		"Create a new rate limit policy to throttle requests in real-time by controlling request/token consumption per time unit. Differs from usage limits, which cap cumulative consumption over time. Requires conditions to match against and group_by to specify how limits are applied.",
+		"Create a request or token throttle with conditions, group_by, type, unit, and value. conditions and group_by are required; use usage limits when you need a cumulative budget instead.",
 		LIMITS_TOOL_SCHEMAS.createRateLimit,
 		async (params) => {
 			const result = await service.limits.createRateLimit({
@@ -318,7 +318,7 @@ export function registerLimitsTools(
 	// Update rate limit
 	server.tool(
 		"update_rate_limit",
-		"Update an existing rate limit's name, unit, or value. Only name, unit, and value can be changed after creation; conditions and group_by are immutable. Returns the updated rate limit object.",
+		"Update a rate limit's name, unit, or value by id. Conditions and group_by are immutable after creation; use get_rate_limit first if you need the full policy.",
 		LIMITS_TOOL_SCHEMAS.updateRateLimit,
 		async (params) => {
 			const result = await service.limits.updateRateLimit(params.id, {
@@ -347,7 +347,7 @@ export function registerLimitsTools(
 	// Delete rate limit
 	server.tool(
 		"delete_rate_limit",
-		"Delete a rate limit policy by ID. This action cannot be undone. Requests previously throttled by this policy will no longer be limited; review dependent configs and virtual keys first to avoid unexpected traffic spikes.",
+		"Delete a rate limit by id. This is permanent and removes throttling immediately; review dependent configs and virtual keys before deleting.",
 		LIMITS_TOOL_SCHEMAS.deleteRateLimit,
 		async (params) => {
 			await service.limits.deleteRateLimit(params.id);
@@ -374,7 +374,7 @@ export function registerLimitsTools(
 	// List usage limits
 	server.tool(
 		"list_usage_limits",
-		"Retrieve all usage limits in your Portkey organization. Differs from rate limits: usage limits cap total cumulative cost or tokens over time, optionally resetting on a weekly or monthly schedule. Returns an array of usage limits with id, type, credit_limit, status, and reset schedule.",
+		"List usage limits in the org with id, type, credit_limit, status, reset schedule, scope, conditions, and grouping. Use this before get_usage_limit, update_usage_limit, or delete_usage_limit.",
 		LIMITS_TOOL_SCHEMAS.listUsageLimits,
 		async (params) => {
 			const result = await service.limits.listUsageLimits(params.workspace_id);
@@ -399,7 +399,7 @@ export function registerLimitsTools(
 	// Get usage limit
 	server.tool(
 		"get_usage_limit",
-		"Retrieve detailed information about a specific usage limit by its ID. Returns full detail including conditions, group_by, credit_limit, alert_threshold, and periodic reset schedule.",
+		"Get one usage limit by id and return its full budget, threshold, grouping, and reset details. Use list_usage_limits to discover ids or compare policies first.",
 		LIMITS_TOOL_SCHEMAS.getUsageLimit,
 		async (params) => {
 			const result = await service.limits.getUsageLimit(params.id);
@@ -417,7 +417,7 @@ export function registerLimitsTools(
 	// Create usage limit
 	server.tool(
 		"create_usage_limit",
-		"Create a new usage limit policy to enforce spending or token budgets over time. Differs from rate limits, which control real-time request velocity. Requires conditions to match against and group_by to specify how limits are applied. Supports optional periodic resets and alert thresholds.",
+		"Create a cumulative budget for cost or tokens with optional alerts and weekly or monthly resets. conditions and group_by are required; use rate limits when you need request throttling.",
 		LIMITS_TOOL_SCHEMAS.createUsageLimit,
 		async (params) => {
 			const result = await service.limits.createUsageLimit({
@@ -452,7 +452,7 @@ export function registerLimitsTools(
 	// Update usage limit
 	server.tool(
 		"update_usage_limit",
-		"Update an existing usage limit's configuration. Modifiable fields: name, credit_limit, alert_threshold, periodic_reset, and reset_usage_for_value. Conditions and group_by are immutable after creation.",
+		"Update a usage limit's name, credit_limit, alert_threshold, reset schedule, or reset target by id. Conditions and group_by are immutable after creation.",
 		LIMITS_TOOL_SCHEMAS.updateUsageLimit,
 		async (params) => {
 			const result = await service.limits.updateUsageLimit(params.id, {
@@ -483,7 +483,7 @@ export function registerLimitsTools(
 	// Delete usage limit
 	server.tool(
 		"delete_usage_limit",
-		"Delete a usage limit policy by ID. This action cannot be undone. Budgets and quotas enforced by this policy are removed immediately and tracked entities lose accumulated usage state. Use list_usage_limit_entities first to review impact before deleting.",
+		"Delete a usage limit by id. This is permanent, removes the budget immediately, and clears tracked usage state; check list_usage_limit_entities first if you need impact.",
 		LIMITS_TOOL_SCHEMAS.deleteUsageLimit,
 		async (params) => {
 			await service.limits.deleteUsageLimit(params.id);
@@ -509,7 +509,7 @@ export function registerLimitsTools(
 
 	server.tool(
 		"list_usage_limit_entities",
-		"List all entities (individual keys, users, or groups) tracked against a usage limit policy. Shows current consumption per entity, useful for monitoring who is approaching or has exceeded their budget.",
+		"List the entities currently tracked against a usage limit, including current usage. Use this to see who is near or over budget before reset_usage_limit_entity or delete_usage_limit.",
 		LIMITS_TOOL_SCHEMAS.listUsageLimitEntities,
 		async (params) => {
 			const result = await service.limits.listUsageLimitEntities(
@@ -535,7 +535,7 @@ export function registerLimitsTools(
 
 	server.tool(
 		"reset_usage_limit_entity",
-		"Reset the accumulated usage counter to zero for a specific entity on a usage limit policy. Does not delete the entity or the policy itself. Use when an entity needs its budget restored before the next scheduled periodic reset.",
+		"Reset tracked usage for one entity under a usage limit. This changes accumulated usage for that entity only; use list_usage_limit_entities to confirm the target first.",
 		LIMITS_TOOL_SCHEMAS.resetUsageLimitEntity,
 		async (params) => {
 			await service.limits.resetUsageLimitEntity(

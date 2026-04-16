@@ -184,7 +184,7 @@ export function registerWorkspacesTools(
 	// List workspaces tool
 	server.tool(
 		"list_workspaces",
-		"Retrieve a paginated list of all workspaces in your Portkey organization. Returns id, name, slug, and configuration for each workspace. Use this tool first to discover workspace_id values needed by other workspace-scoped operations.",
+		"List workspaces with id, name, slug, default settings, and timestamps. Use this to find a workspace_id before get_workspace, update_workspace, add_workspace_member, or remove_workspace_member.",
 		WORKSPACES_TOOL_SCHEMAS.listWorkspaces,
 		async (params) => {
 			const workspaces = await service.workspaces.listWorkspaces(params);
@@ -209,7 +209,7 @@ export function registerWorkspacesTools(
 	// Get single workspace tool
 	server.tool(
 		"get_workspace",
-		"Retrieve full details for a single workspace by ID, including its configuration, metadata, and complete member list with roles. Unlike list_workspaces, this includes the full user roster — use it when you need member details or workspace membership counts.",
+		"Get one workspace by id and return its full details, including defaults and the complete member list. Use this when you need membership detail; use list_workspaces for an overview.",
 		WORKSPACES_TOOL_SCHEMAS.getWorkspace,
 		async (params) => {
 			const workspace = await service.workspaces.getWorkspace(
@@ -229,7 +229,7 @@ export function registerWorkspacesTools(
 	// Phase 1: Create workspace tool
 	server.tool(
 		"create_workspace",
-		"Create a new workspace to isolate resources, API keys, and team members within your Portkey organization. A URL-friendly slug is auto-generated from the name if not provided. Returns the created workspace's id, name, and slug.",
+		"Create a workspace to isolate resources, API keys, and team members. If slug is omitted it is auto-generated from the name; returns the new workspace id, name, and slug.",
 		WORKSPACES_TOOL_SCHEMAS.createWorkspace,
 		async (params) => {
 			const workspace = await service.workspaces.createWorkspace({
@@ -265,7 +265,7 @@ export function registerWorkspacesTools(
 	// Phase 1: Update workspace tool
 	server.tool(
 		"update_workspace",
-		"Update a workspace's name, slug, description, default status, or metadata. Only provided fields are changed; omitted fields remain unchanged. Warning: changing a workspace's slug may break existing references and URLs that depend on it.",
+		"Update a workspace's name, slug, description, default flag, or metadata by id. Only provided fields change; changing the slug can break URLs and other references.",
 		WORKSPACES_TOOL_SCHEMAS.updateWorkspace,
 		async (params) => {
 			const { workspace_id, is_default, metadata, ...rest } = params;
@@ -299,7 +299,7 @@ export function registerWorkspacesTools(
 	// Phase 1: Delete workspace tool
 	server.tool(
 		"delete_workspace",
-		"Delete a workspace from your organization. Permanently deletes the workspace and all its members, configs, API keys, and resources. Cannot be undone.",
+		"Delete a workspace by id. This is permanent and removes the workspace, its members, configs, API keys, and resources.",
 		WORKSPACES_TOOL_SCHEMAS.deleteWorkspace,
 		async (params) => {
 			await service.workspaces.deleteWorkspace(params.workspace_id);
@@ -324,7 +324,7 @@ export function registerWorkspacesTools(
 	// Phase 1: Add workspace member tool
 	server.tool(
 		"add_workspace_member",
-		"Add an existing organization user to a workspace with a specified role (admin, manager, or member). Requires user_id as a UUID — use list_all_users to find it. For users not yet in the organization, use invite_user first.",
+		"Add an existing org user to a workspace with a role. Requires a UUID user_id; use list_all_users to find it, and invite_user first if the person is not yet in the org.",
 		WORKSPACES_TOOL_SCHEMAS.addWorkspaceMember,
 		async (params) => {
 			const member = await service.workspaces.addWorkspaceMember(
@@ -355,7 +355,7 @@ export function registerWorkspacesTools(
 	// Phase 1: List workspace members tool
 	server.tool(
 		"list_workspace_members",
-		"List all members of a workspace, returning each member's user_id, name, organization role, workspace role, and status. Use this to discover user_id values needed for get_workspace_member, update_workspace_member, or remove_workspace_member.",
+		"List every member in a workspace with organization role, workspace role, status, and timestamps. Use this to find a user_id before get_workspace_member, update_workspace_member, or remove_workspace_member.",
 		WORKSPACES_TOOL_SCHEMAS.listWorkspaceMembers,
 		async (params) => {
 			const members = await service.workspaces.listWorkspaceMembers(
@@ -382,7 +382,7 @@ export function registerWorkspacesTools(
 	// Phase 1: Get workspace member tool
 	server.tool(
 		"get_workspace_member",
-		"Get details about a single workspace member by workspace_id and user_id. Returns the member's name, organization role, workspace role, and status. Unlike list_workspace_members, this fetches a single member directly when you already know both IDs.",
+		"Get one workspace member by workspace_id and user_id. Use this when you already know both IDs; use list_workspace_members to browse the full roster.",
 		WORKSPACES_TOOL_SCHEMAS.getWorkspaceMember,
 		async (params) => {
 			const member = await service.workspaces.getWorkspaceMember(
@@ -403,7 +403,7 @@ export function registerWorkspacesTools(
 	// Phase 1: Update workspace member tool
 	server.tool(
 		"update_workspace_member",
-		"Update a workspace member's role. Only the role can be changed — valid values are admin, manager, or member. Use list_workspace_members or get_workspace_member to check the current role first.",
+		"Update a workspace member's role by workspace_id and user_id. Only the role changes here; use list_workspace_members or get_workspace_member to confirm the current assignment first.",
 		WORKSPACES_TOOL_SCHEMAS.updateWorkspaceMember,
 		async (params) => {
 			const member = await service.workspaces.updateWorkspaceMember(
@@ -434,7 +434,7 @@ export function registerWorkspacesTools(
 	// Phase 1: Remove workspace member tool
 	server.tool(
 		"remove_workspace_member",
-		"Remove a user from a workspace, revoking their workspace-level access. This does not delete the user from the organization — use delete_user for full org removal. The user can be re-added later with add_workspace_member.",
+		"Remove a user from a workspace and revoke workspace access. This does not delete the user from the organization; use delete_user for full removal.",
 		WORKSPACES_TOOL_SCHEMAS.removeWorkspaceMember,
 		async (params) => {
 			await service.workspaces.removeWorkspaceMember(

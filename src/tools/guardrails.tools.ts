@@ -118,7 +118,7 @@ export function registerGuardrailsTools(
 	// List guardrails tool
 	server.tool(
 		"list_guardrails",
-		"List all guardrails in your Portkey organization with optional filtering by workspace or organization. Guardrails are content moderation and security policies applied to AI requests. Use to discover guardrail IDs and slugs before inspecting or modifying them.",
+		"List guardrails in the org with id, slug, status, ownership, and optional workspace/org filters. Use this to find IDs and slugs before get_guardrail, update_guardrail, or delete_guardrail.",
 		GUARDRAILS_TOOL_SCHEMAS.listGuardrails,
 		async (params) => {
 			const result = await service.guardrails.listGuardrails(params);
@@ -154,7 +154,7 @@ export function registerGuardrailsTools(
 	// Get guardrail tool
 	server.tool(
 		"get_guardrail",
-		"Retrieve detailed information about a specific guardrail, including its full checks and actions configuration. Use when you need to inspect or modify a guardrail's rules, or to understand what checks are applied before updating.",
+		"Fetch one guardrail with its full checks and actions. Use this before updating rules or when you need the exact enforcement policy.",
 		GUARDRAILS_TOOL_SCHEMAS.getGuardrail,
 		async (params) => {
 			const guardrail = await service.guardrails.getGuardrail(
@@ -191,7 +191,7 @@ export function registerGuardrailsTools(
 	// Create guardrail tool
 	server.tool(
 		"create_guardrail",
-		"Create a new guardrail with specified checks and actions for content moderation and security. Guardrails are applied to requests via configs -- create the guardrail first, then reference it in a config. checks is an array of check objects with id (e.g. 'default.jwt', 'default.pii'), optional name, is_enabled boolean, and parameters object.",
+		"Create a guardrail with checks and actions for request filtering. Create it first, then reference it from configs; the new version becomes the policy anchor for downstream use.",
 		GUARDRAILS_TOOL_SCHEMAS.createGuardrail,
 		async (params) => {
 			const result = await service.guardrails.createGuardrail({
@@ -224,7 +224,7 @@ export function registerGuardrailsTools(
 	// Update guardrail tool
 	server.tool(
 		"update_guardrail",
-		"Update an existing guardrail's name, checks, or actions configuration. Creates a new version of the guardrail; existing references in configs continue working with the latest version.",
+		"Update a guardrail's name, checks, or actions. This creates a new version, so configs keep pointing at the latest policy after the change.",
 		GUARDRAILS_TOOL_SCHEMAS.updateGuardrail,
 		async (params) => {
 			const updateData: {
@@ -270,7 +270,7 @@ export function registerGuardrailsTools(
 	// Delete guardrail tool
 	server.tool(
 		"delete_guardrail",
-		"Delete a guardrail by its ID or slug. This action cannot be undone. Configs referencing this guardrail as a before/after request hook will stop enforcing it, silently dropping the safety check. Review dependent configs before deleting.",
+		"Delete a guardrail by id or slug. This is irreversible and removes the check from any configs that reference it, so review dependent configs first.",
 		GUARDRAILS_TOOL_SCHEMAS.deleteGuardrail,
 		async (params) => {
 			const result = await service.guardrails.deleteGuardrail(

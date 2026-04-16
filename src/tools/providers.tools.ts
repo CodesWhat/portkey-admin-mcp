@@ -165,7 +165,7 @@ export function registerProvidersTools(
 	// List providers tool
 	server.tool(
 		"list_providers",
-		"List workspace-scoped providers, which are instances of org-level integrations with their own usage and rate limits. Differs from list_integrations which shows org-level provider connections. Use to discover provider slugs for a workspace. Returns name, slug, limits, and status per provider.",
+		"List workspace-scoped provider instances and their limits or status. Use this to find provider slugs for workspace-level updates; use list_integrations for the org-level source connection. Returns total plus provider name, slug, integration, status, limits, expiration, and reset flags.",
 		PROVIDERS_TOOL_SCHEMAS.listProviders,
 		async (params) => {
 			const providers = await service.providers.listProviders({
@@ -217,7 +217,7 @@ export function registerProvidersTools(
 	// Create provider tool
 	server.tool(
 		"create_provider",
-		"Create a workspace-scoped provider linked to an org-level integration. Use list_integrations to find the integration_id first. Providers inherit the integration's API key but can have independent usage limits, rate limits, and expiration. Returns the new provider's id and slug.",
+		"Create a workspace provider backed by an org integration. The provider inherits the integration key, but its limits and expiration are enforced independently for that workspace. Returns the new provider id and slug.",
 		PROVIDERS_TOOL_SCHEMAS.createProvider,
 		async (params) => {
 			const result = await service.providers.createProvider({
@@ -265,7 +265,7 @@ export function registerProvidersTools(
 	// Get provider tool
 	server.tool(
 		"get_provider",
-		"Retrieve full provider details by slug, including usage limits, rate limits, and expiration. Use to check current consumption against limits or inspect provider configuration before updating.",
+		"Fetch one provider by slug, including limits, rate settings, expiration, and reset status. Use this to check consumption or audit configuration before updating.",
 		PROVIDERS_TOOL_SCHEMAS.getProvider,
 		async (params) => {
 			const provider = await service.providers.getProvider(
@@ -313,7 +313,7 @@ export function registerProvidersTools(
 	// Update provider tool
 	server.tool(
 		"update_provider",
-		"Update a provider's name, note, usage limits, rate limits, or expiration. Set reset_usage to true to clear accumulated usage counters without changing the limit. Returns the updated provider's id and slug.",
+		"Update a provider's metadata, limits, or expiration. reset_usage clears accumulated usage counters immediately, so use it only when you intend to reset quota tracking. Returns the updated provider id and slug.",
 		PROVIDERS_TOOL_SCHEMAS.updateProvider,
 		async (params) => {
 			const result = await service.providers.updateProvider(
@@ -363,7 +363,7 @@ export function registerProvidersTools(
 	// Delete provider tool
 	server.tool(
 		"delete_provider",
-		"Delete a workspace-level provider by slug. This action cannot be undone. Virtual keys, configs, and prompts referencing this provider will stop working. Audit dependent resources first; use delete_integration for org-level provider connections instead.",
+		"Delete a workspace provider by slug. This is irreversible and will break prompts, configs, and virtual keys that reference it; use delete_integration for the org source instead. Returns success after the provider is removed.",
 		PROVIDERS_TOOL_SCHEMAS.deleteProvider,
 		async (params) => {
 			await service.providers.deleteProvider(params.slug, params.workspace_id);

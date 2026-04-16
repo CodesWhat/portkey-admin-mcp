@@ -55,7 +55,7 @@ export function registerTracingTools(
 	// Create feedback
 	server.tool(
 		"create_feedback",
-		"Create feedback for a specific trace/request. Use this to capture user feedback (thumbs up/down, ratings) on AI generations. Feedback is linked via trace_id and can include custom metadata for analysis. Trace IDs are surfaced in request logs and via log exports (create_log_export).",
+		"Create feedback for a trace or request. Writes a new feedback record linked by trace_id, returns the created feedback IDs and status, and takes effect immediately; use update_feedback when correcting an existing record.",
 		TRACING_TOOL_SCHEMAS.createFeedback,
 		async (params) => {
 			const result = await service.tracing.createFeedback({
@@ -86,7 +86,7 @@ export function registerTracingTools(
 	// Update feedback
 	server.tool(
 		"update_feedback",
-		"Update existing feedback by ID. Use this instead of create_feedback when feedback already exists and needs correction or refinement. Only value, weight, and metadata can be changed; the trace_id association is immutable. Returns the updated feedback status and IDs.",
+		"Update an existing feedback record by ID. Returns the updated status and feedback IDs, changes only value, weight, and metadata, and leaves the trace linkage immutable; use create_feedback only for a new record.",
 		TRACING_TOOL_SCHEMAS.updateFeedback,
 		async (params) => {
 			const result = await service.tracing.updateFeedback(params.id, {

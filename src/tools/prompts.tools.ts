@@ -440,14 +440,7 @@ export function registerPromptsTools(
 	// Create prompt tool
 	server.tool(
 		"create_prompt",
-		`Create a new prompt template in Portkey. Supports both the legacy string template and a structured messages alias for chat prompts.
-
-IMPORTANT: The "string" parameter accepts TWO legacy formats:
-1. Plain text: "Hello {{name}}, how can I help?"
-2. Multi-message JSON array (MUST be a JSON-encoded string):
-   '[{"role":"system","content":[{"type":"text","text":"You are a helpful assistant."}]},{"role":"user","content":[{"type":"text","text":"{{user_input}}"}]}]'
-
-For structured prompts, prefer the "messages" alias and let the server serialize it to the legacy string format.`,
+		"Create a new prompt template and initial version. Use this for first-time setup; use migrate_prompt for idempotent CI/CD flows. Accepts plain text or structured chat messages, creates a new version immediately, and returns the prompt id, slug, and version id. For multi-message chat prompts pass messages (preferred) or a JSON-encoded array as string.",
 		PROMPTS_TOOL_SCHEMAS.createPrompt,
 		async (params) => {
 			if (!params.model && !params.ai_model_id && !params.finetune_id) {
@@ -553,7 +546,7 @@ For structured prompts, prefer the "messages" alias and let the server serialize
 	// List prompts tool
 	server.tool(
 		"list_prompts",
-		"List all prompts in your Portkey organization with optional filtering by collection, workspace, or search query. Returns paginated results with id, name, slug, model, and status. Use collection_id to filter by app. Use to discover prompt_id values before calling get_prompt.",
+		"List prompts across the workspace, with optional collection, workspace, or search filters. Returns a paginated summary with id, name, slug, model, and status so you can choose a prompt_id before get_prompt, update_prompt, or render_prompt.",
 		PROMPTS_TOOL_SCHEMAS.listPrompts,
 		async (params) => {
 			const prompts = await service.prompts.listPrompts(params);
@@ -575,12 +568,7 @@ For structured prompts, prefer the "messages" alias and let the server serialize
 	// Get prompt tool
 	server.tool(
 		"get_prompt",
-		`Retrieve detailed information about a specific prompt including its template, parameters, and version history.
-
-The template field shows the raw "string" value stored in Portkey:
-- If it starts with "[", it is a JSON-encoded messages array (multi-message prompt with roles).
-- Otherwise it is a plain string template.
-When updating a prompt, pass the same format back in the "string" field of update_prompt.`,
+		"Fetch a prompt's full definition, active version, and version history. Use this before updating, publishing, rendering, or copying a prompt when you need the stored template and metadata. For multi-message chat prompts pass messages (preferred) or a JSON-encoded array as string.",
 		PROMPTS_TOOL_SCHEMAS.getPrompt,
 		async (params) => {
 			const prompt = await service.prompts.getPrompt(params.prompt_id);
@@ -652,14 +640,7 @@ When updating a prompt, pass the same format back in the "string" field of updat
 	// Update prompt tool
 	server.tool(
 		"update_prompt",
-		`Update an existing prompt template. Creates a new version. Uses patch mode — only provided fields are updated, others are kept from the current version.
-
-IMPORTANT: The legacy "string" parameter accepts the same two formats as create_prompt:
-1. Plain text: "Hello {{name}}"
-2. Multi-message JSON array (MUST be a JSON-encoded string):
-   '[{"role":"system","content":[{"type":"text","text":"..."}]},{"role":"user","content":[{"type":"text","text":"{{input}}"}]}]'
-
-For structured chat prompts, prefer the "messages" alias and let the server serialize it for you. New versions are created in "archived" status — use publish_prompt to make active.`,
+		"Update an existing prompt and create a new archived version. Only provided fields change, and publish_prompt is what makes the new version active. For multi-message chat prompts pass messages (preferred) or a JSON-encoded array as string.",
 		PROMPTS_TOOL_SCHEMAS.updatePrompt,
 		async (params) => {
 			const { prompt_id, dry_run, messages, ...updateData } = params;
@@ -745,7 +726,7 @@ For structured chat prompts, prefer the "messages" alias and let the server seri
 	// Delete prompt tool
 	server.tool(
 		"delete_prompt",
-		"Delete a prompt and all its versions by ID. This action cannot be undone. Applications calling this prompt slug will fail immediately. Use list_prompt_versions first to review history; consider archiving via update_prompt status instead if an audit trail is needed.",
+		"Delete a prompt and all its versions by id. This cannot be undone, immediately breaks callers using the slug, and should only be used after checking list_prompt_versions or confirming you do not need an audit trail.",
 		PROMPTS_TOOL_SCHEMAS.deletePrompt,
 		async (params) => {
 			await service.prompts.deletePrompt(params.prompt_id);
@@ -770,7 +751,7 @@ For structured chat prompts, prefer the "messages" alias and let the server seri
 	// Publish prompt tool
 	server.tool(
 		"publish_prompt",
-		"Publish a specific version of a prompt, making it the default version that will be used when the prompt is called. This is useful for promoting a tested version to production.",
+		"Publish a specific version of a prompt as the active default. Use list_prompt_versions to choose the version and update_prompt when you need to create new content before promoting it.",
 		PROMPTS_TOOL_SCHEMAS.publishPrompt,
 		async (params) => {
 			await service.prompts.publishPrompt(params.prompt_id, {
@@ -799,7 +780,7 @@ For structured chat prompts, prefer the "messages" alias and let the server seri
 	// List prompt versions tool
 	server.tool(
 		"list_prompt_versions",
-		"List all versions of a specific prompt with their details, including version number, description, template content, and creation date.",
+		"List all versions of one prompt, including version number, description, status, label, and a short template preview. Use this for history or to choose a version_id before publish_prompt or update_prompt_version.",
 		PROMPTS_TOOL_SCHEMAS.listPromptVersions,
 		async (params) => {
 			const versions = await service.prompts.listPromptVersions(
@@ -848,7 +829,7 @@ For structured chat prompts, prefer the "messages" alias and let the server seri
 	// Render prompt tool
 	server.tool(
 		"render_prompt",
-		"Render a prompt template by substituting variables, returning the final messages without executing. Previews the final messages after variable substitution without sending to the AI model. Use to verify template output before running a completion. Differs from run_prompt_completion which actually calls the model.",
+		"Render a prompt by substituting variables and returning the final messages without calling the model. Use this to verify template output before a completion; run_prompt_completion is the tool that actually invokes the model.",
 		PROMPTS_TOOL_SCHEMAS.renderPrompt,
 		async (params) => {
 			const result = await service.prompts.renderPrompt(params.prompt_id, {
@@ -883,7 +864,7 @@ For structured chat prompts, prefer the "messages" alias and let the server seri
 	// Run prompt completion tool
 	server.tool(
 		"run_prompt_completion",
-		"Execute a prompt template against the configured AI model and return the model's response. Costs money — use render_prompt to preview first. REQUIRES billing metadata (client_id, app, env). Use validate_completion_metadata first if uncertain.",
+		"Execute a prompt against the configured model and return the completion. This makes a billable model call, so use render_prompt first when you want to check the template and validate_completion_metadata when billing fields are uncertain.",
 		PROMPTS_TOOL_SCHEMAS.runPromptCompletion,
 		async (params) => {
 			const result = await service.prompts.runPromptCompletion(
@@ -927,7 +908,7 @@ For structured chat prompts, prefer the "messages" alias and let the server seri
 	// Migrate prompt tool
 	server.tool(
 		"migrate_prompt",
-		"Create or update a prompt based on whether it exists. Useful for CI/CD and prompt-as-code workflows. Finds existing prompts by name within the collection. The app and env values are added to template_metadata automatically. For structured chat prompts, prefer the messages alias instead of hand-encoding JSON into string.",
+		"Create or update a prompt in one idempotent step for CI/CD and prompt-as-code flows. Finds existing prompts by name within the collection, stores app/env in template_metadata, and supports dry_run for safe preflight checks.",
 		PROMPTS_TOOL_SCHEMAS.migratePrompt,
 		async (params) => {
 			const templateString = normalizePromptTemplateString(params);
@@ -993,7 +974,7 @@ For structured chat prompts, prefer the "messages" alias and let the server seri
 	// Promote prompt tool
 	server.tool(
 		"promote_prompt",
-		"Promote a prompt from one environment to another (e.g., staging -> prod). Copies the current version to the target environment. If the target prompt already exists it is updated with a new version; otherwise a new prompt is created.",
+		"Copy a prompt from one environment to another and create or update the target automatically. Use this for staged releases when you want the target prompt synchronized without manual edits, and it returns both source and target version ids.",
 		PROMPTS_TOOL_SCHEMAS.promotePrompt,
 		async (params) => {
 			const result = await service.prompts.promotePrompt({
@@ -1034,7 +1015,7 @@ For structured chat prompts, prefer the "messages" alias and let the server seri
 	// Validate completion metadata tool
 	server.tool(
 		"validate_completion_metadata",
-		"Validate billing metadata before running a completion. Checks for required fields (client_id, app, env) and valid values. Call this before run_prompt_completion to catch missing or invalid billing fields. Does not make any changes.",
+		"Preflight billing metadata before run_prompt_completion. Validates required fields and values without making changes, so you can catch attribution errors before paying for the call.",
 		PROMPTS_TOOL_SCHEMAS.validateCompletionMetadata,
 		async (params) => {
 			const result = service.prompts.validateBillingMetadata(params);
@@ -1063,7 +1044,7 @@ For structured chat prompts, prefer the "messages" alias and let the server seri
 
 	server.tool(
 		"get_prompt_version",
-		"Retrieve a specific version of a prompt by its version UUID. Use list_prompt_versions to find version IDs. Returns full template, parameters, and model config for that version.",
+		"Retrieve a specific prompt version by its version UUID. Use list_prompt_versions to find the id first; returns the template, parameters, and model config for that version.",
 		PROMPTS_TOOL_SCHEMAS.getPromptVersion,
 		async (params) => {
 			const version = await service.prompts.getPromptVersion(
@@ -1083,7 +1064,7 @@ For structured chat prompts, prefer the "messages" alias and let the server seri
 
 	server.tool(
 		"update_prompt_version",
-		"Update a specific prompt version. Currently only supports assigning or removing a label. Use list_prompt_labels to find label IDs. Pass null to remove the current label.",
+		"Update a specific prompt version's label assignment. This only assigns or removes a label, and null clears the label after you look up ids with list_prompt_labels.",
 		PROMPTS_TOOL_SCHEMAS.updatePromptVersion,
 		async (params) => {
 			if (params.label_id === undefined) {

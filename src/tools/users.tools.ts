@@ -188,7 +188,7 @@ export function registerUsersTools(
 	// List all users tool
 	server.tool(
 		"list_all_users",
-		"List all users in your Portkey organization. Returns each user's ID, name, email, role, and timestamps. Use this for browsing or auditing the full member list; use get_user to fetch a single user by ID.",
+		"List accepted org users with id, name, email, role, and timestamps. Use this to find a user_id before get_user, update_user, delete_user, or add_workspace_member; use list_user_invites for pending invitations.",
 		USERS_TOOL_SCHEMAS.listAllUsers,
 		async () => {
 			const users = await service.users.listUsers();
@@ -213,7 +213,7 @@ export function registerUsersTools(
 	// Invite user tool
 	server.tool(
 		"invite_user",
-		"Invite a new user to your Portkey organization with specific workspace access and API key permissions. After the invite is accepted, use add_workspace_member to assign workspace roles.",
+		"Invite a new org user and optionally provision workspace access and an API key in one call. Workspace assignments apply only after acceptance; use add_workspace_member or update_workspace_member later for follow-up changes.",
 		USERS_TOOL_SCHEMAS.inviteUser,
 		async (params) => {
 			const result = await service.users.inviteUser(params);
@@ -239,7 +239,7 @@ export function registerUsersTools(
 	// User analytics tool
 	server.tool(
 		"get_user_stats",
-		"Retrieve per-user request count and cost analytics for a required time range (time_of_generation_min/max). Unlike get_users_analytics which tracks active/new user counts over time, this returns usage-based stats grouped by user. Supports filtering by cost, tokens, status codes, and virtual keys.",
+		"Return per-user request and cost analytics for a required time range. This is usage-by-user, not population metrics; use get_users_analytics for active-user or cohort trends.",
 		USERS_TOOL_SCHEMAS.getUserStats,
 		async (params) => {
 			const stats = await service.users.getUserGroupedData(params);
@@ -264,7 +264,7 @@ export function registerUsersTools(
 	// Phase 1: Get user tool
 	server.tool(
 		"get_user",
-		"Retrieve a single user's profile by their ID. Returns ID, name, email, role, and timestamps. Use this when you already have a user ID; use list_all_users to browse or search all organization members.",
+		"Get one accepted user by id and return their profile, role, and timestamps. Use list_all_users to find the id if you only have a name or email, and get_user_invite for pending invitations.",
 		USERS_TOOL_SCHEMAS.getUser,
 		async (params) => {
 			const user = await service.users.getUser(params.user_id);
@@ -282,7 +282,7 @@ export function registerUsersTools(
 	// Phase 1: Update user tool
 	server.tool(
 		"update_user",
-		"Update a user's first name, last name, or organization role (admin/member). Cannot change the user's email address or workspace-level roles; use update_workspace_member for workspace roles.",
+		"Update a user's first name, last name, or organization role by id. Email and workspace roles are not editable here; use update_workspace_member for workspace membership changes.",
 		USERS_TOOL_SCHEMAS.updateUser,
 		async (params) => {
 			const { user_id, ...updateData } = params;
@@ -308,7 +308,7 @@ export function registerUsersTools(
 	// Phase 1: Delete user tool
 	server.tool(
 		"delete_user",
-		"Remove a user from your Portkey organization by ID. This action cannot be undone. Permanently removes org and workspace memberships and revokes the user's API keys; active sessions will fail immediately. Use delete_user_invite for pending invitations instead.",
+		"Delete a user from the org by id. This is permanent, removes org and workspace memberships, revokes API keys, and ends active sessions; use delete_user_invite for pending invites instead.",
 		USERS_TOOL_SCHEMAS.deleteUser,
 		async (params) => {
 			await service.users.deleteUser(params.user_id);
@@ -333,7 +333,7 @@ export function registerUsersTools(
 	// Phase 1: List user invites tool
 	server.tool(
 		"list_user_invites",
-		"List all pending and sent user invitations in your Portkey organization. Returns each invite's ID, email, role, status, and expiry. Use this to check invitation status; use list_all_users for users who have already accepted.",
+		"List pending and sent invitations with id, email, role, status, and expiry. Use this to check invite state; use list_all_users for users who already accepted.",
 		USERS_TOOL_SCHEMAS.listUserInvites,
 		async () => {
 			const invites = await service.users.listUserInvites();
@@ -358,7 +358,7 @@ export function registerUsersTools(
 	// Phase 1: Get user invite tool
 	server.tool(
 		"get_user_invite",
-		"Retrieve a specific invitation by its invite ID. Returns the invite's email, role, status, creation date, and expiry. This looks up a pending invitation, not an existing user; use get_user for accepted members.",
+		"Get one invitation by invite id and return its email, role, status, and expiry. Use this for pending invites only; use get_user for accepted users.",
 		USERS_TOOL_SCHEMAS.getUserInvite,
 		async (params) => {
 			const invite = await service.users.getUserInvite(params.invite_id);
@@ -376,7 +376,7 @@ export function registerUsersTools(
 	// Phase 1: Delete user invite tool
 	server.tool(
 		"delete_user_invite",
-		"Cancel and permanently delete a pending user invitation. This revokes the invite link so it can no longer be accepted. Does not remove existing users; use delete_user for that.",
+		"Delete a pending invite and revoke its invite link. This does not affect existing users; use delete_user for full user removal.",
 		USERS_TOOL_SCHEMAS.deleteUserInvite,
 		async (params) => {
 			await service.users.deleteUserInvite(params.invite_id);
@@ -401,7 +401,7 @@ export function registerUsersTools(
 	// Phase 1: Resend user invite tool
 	server.tool(
 		"resend_user_invite",
-		"Resend the invitation email for a pending invite that has not yet been accepted. Use when the original email was lost or expired. The invite must still exist; check with get_user_invite first if unsure.",
+		"Resend the email for a pending invite that has not been accepted. The invite must still exist; use get_user_invite first if you are unsure.",
 		USERS_TOOL_SCHEMAS.resendUserInvite,
 		async (params) => {
 			await service.users.resendUserInvite(params.invite_id);

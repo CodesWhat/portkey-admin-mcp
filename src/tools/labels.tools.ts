@@ -71,7 +71,7 @@ export function registerLabelsTools(
 	// Create label tool
 	server.tool(
 		"create_prompt_label",
-		"Create a new prompt label to categorize prompt versions (e.g., 'production', 'staging', 'experiment'). Requires either organisation_id or workspace_id to set the label's scope. Returns the new label's id. Use update_prompt_version to assign labels to specific prompt versions.",
+		"Create a prompt label for tagging prompt versions such as production, staging, or experiment. Requires either organisation_id or workspace_id to set scope, returns the new label id, and does not assign it to any versions yet.",
 		LABELS_TOOL_SCHEMAS.createPromptLabel,
 		async (params) => {
 			if (!params.organisation_id && !params.workspace_id) {
@@ -113,7 +113,7 @@ export function registerLabelsTools(
 	// List labels tool
 	server.tool(
 		"list_prompt_labels",
-		"List all prompt labels with optional filtering by workspace, organisation, or search query. Returns id, name, color_code, and status for each label. Use to discover label IDs before assigning them to prompt versions via update_prompt_version.",
+		"List labels across the workspace or organisation, with optional search and scope filters. Returns ids, names, colors, status, and timestamps so you can choose a label_id before get_prompt_label or update_prompt_version.",
 		LABELS_TOOL_SCHEMAS.listPromptLabels,
 		async (params) => {
 			const result = await service.labels.listLabels(params);
@@ -147,7 +147,7 @@ export function registerLabelsTools(
 	// Get label tool
 	server.tool(
 		"get_prompt_label",
-		"Retrieve full details of a specific prompt label including its scope (organisation_id vs workspace_id), color, and status. Use when you need to inspect a label's properties before updating it.",
+		"Fetch one label's full definition, including scope, color, and status. Use this when you already know the label_id; list_prompt_labels is better for browsing candidates.",
 		LABELS_TOOL_SCHEMAS.getPromptLabel,
 		async (params) => {
 			const label = await service.labels.getLabel(params.label_id, {
@@ -183,7 +183,7 @@ export function registerLabelsTools(
 	// Update label tool
 	server.tool(
 		"update_prompt_label",
-		"Update a prompt label's name, description, or color_code. Changes apply to the label definition only; existing prompt version assignments using this label are not affected.",
+		"Update a prompt label's name, description, or color only. This changes the label definition, not existing prompt-version assignments or history.",
 		LABELS_TOOL_SCHEMAS.updatePromptLabel,
 		async (params) => {
 			const { label_id, ...updateData } = params;
@@ -209,7 +209,7 @@ export function registerLabelsTools(
 	// Delete label tool
 	server.tool(
 		"delete_prompt_label",
-		"Delete a prompt label by ID. This action cannot be undone. Prompt versions carrying this label lose it, and any workflow resolving prompts by this label (e.g., 'production', 'staging') will fail until reassigned. Audit label usage via list_prompts before deleting.",
+		"Delete a prompt label by ID. This cannot be undone; versions carrying the label lose it, and any workflow resolving by that label will need a replacement.",
 		LABELS_TOOL_SCHEMAS.deletePromptLabel,
 		async (params) => {
 			await service.labels.deleteLabel(params.label_id);
