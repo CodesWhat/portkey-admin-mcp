@@ -265,7 +265,7 @@ export function registerWorkspacesTools(
 	// Phase 1: Update workspace tool
 	server.tool(
 		"update_workspace",
-		"Update a workspace's name, slug, description, default flag, or metadata by id. Only provided fields change; changing the slug can break URLs and other references.",
+		"Update a workspace's name, slug, description, default flag, or metadata by id, unlike update_workspace_member which changes role assignments within a workspace. Only provided fields change and updates take effect immediately; changing the slug can break URLs, API key references, and other external links, so confirm no dependencies first.",
 		WORKSPACES_TOOL_SCHEMAS.updateWorkspace,
 		async (params) => {
 			const { workspace_id, is_default, metadata, ...rest } = params;

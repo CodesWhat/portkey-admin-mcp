@@ -154,7 +154,7 @@ export function registerGuardrailsTools(
 	// Get guardrail tool
 	server.tool(
 		"get_guardrail",
-		"Fetch one guardrail with its full checks and actions. Use this before updating rules or when you need the exact enforcement policy.",
+		"Fetch one guardrail by id or slug with its full checks and actions; use list_guardrails to discover ids first. Use before update_guardrail or delete_guardrail when you need the exact enforcement policy, and returns the full check and action configuration alongside status and ownership.",
 		GUARDRAILS_TOOL_SCHEMAS.getGuardrail,
 		async (params) => {
 			const guardrail = await service.guardrails.getGuardrail(
@@ -224,7 +224,7 @@ export function registerGuardrailsTools(
 	// Update guardrail tool
 	server.tool(
 		"update_guardrail",
-		"Update a guardrail's name, checks, or actions. This creates a new version, so configs keep pointing at the latest policy after the change.",
+		"Update a guardrail's name, checks, or actions, unlike create_guardrail which registers a new one or delete_guardrail which removes it. This creates a new version that takes effect immediately for dependent configs, so review list_guardrails first; returns the updated id, slug, and version_id.",
 		GUARDRAILS_TOOL_SCHEMAS.updateGuardrail,
 		async (params) => {
 			const updateData: {

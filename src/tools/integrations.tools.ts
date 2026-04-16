@@ -606,7 +606,7 @@ export function registerIntegrationsTools(
 	// Update integration workspaces tool
 	server.tool(
 		"update_integration_workspaces",
-		"Control which workspaces can use an integration and set per-workspace limits. Access changes and new limits apply to downstream usage immediately. Returns success and the number of workspaces updated.",
+		"Control which workspaces can use an integration and set per-workspace limits, unlike update_integration which edits the org-level connection. Call list_integration_workspaces first to review current state; access changes and new limits apply to downstream usage immediately, and the call returns success plus the number of workspaces updated.",
 		INTEGRATIONS_TOOL_SCHEMAS.updateIntegrationWorkspaces,
 		async (params) => {
 			const result = await service.integrations.updateIntegrationWorkspaces(

@@ -401,7 +401,7 @@ export function registerUsersTools(
 	// Phase 1: Resend user invite tool
 	server.tool(
 		"resend_user_invite",
-		"Resend the email for a pending invite that has not been accepted. The invite must still exist; use get_user_invite first if you are unsure.",
+		"Resend the email for a pending invite that has not been accepted, unlike invite_user which creates a new invite. This sends a fresh email without modifying the invite record, expiry, or role; use get_user_invite first if you are unsure whether the invite still exists and list_user_invites to discover invite_ids.",
 		USERS_TOOL_SCHEMAS.resendUserInvite,
 		async (params) => {
 			await service.users.resendUserInvite(params.invite_id);

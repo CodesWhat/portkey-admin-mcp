@@ -452,7 +452,7 @@ export function registerLimitsTools(
 	// Update usage limit
 	server.tool(
 		"update_usage_limit",
-		"Update a usage limit's name, credit_limit, alert_threshold, reset schedule, or reset target by id. Conditions and group_by are immutable after creation.",
+		"Update a usage limit's name, credit_limit, alert_threshold, reset schedule, or reset target by id, unlike update_rate_limit which tunes request throttling. New values apply immediately to tracked usage, conditions and group_by are immutable after creation, and the call returns the updated id without clearing accumulated usage (use reset_usage_limit_entity for that).",
 		LIMITS_TOOL_SCHEMAS.updateUsageLimit,
 		async (params) => {
 			const result = await service.limits.updateUsageLimit(params.id, {

@@ -367,7 +367,7 @@ export function registerLoggingTools(
 	// Cancel log export tool
 	server.tool(
 		"cancel_log_export",
-		"Cancel a pending or running log export job. This permanently stops that export, so create a new log export if you need the same data again.",
+		"Cancel a pending or running log export job, unlike start_log_export which queues one or delete_integration which removes the source. This permanently stops that export, takes effect immediately, and does not roll back already-processed rows; call create_log_export and start_log_export again to retry.",
 		LOGGING_TOOL_SCHEMAS.cancelLogExport,
 		async (params) => {
 			const result = await service.logging.cancelLogExport(params.export_id);

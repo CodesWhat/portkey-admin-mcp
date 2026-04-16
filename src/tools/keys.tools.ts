@@ -598,7 +598,7 @@ export function registerKeysTools(
 	// Phase 2: Update API key tool
 	server.tool(
 		"update_api_key",
-		"Update an API key's name, description, scopes, defaults, or limits. Changes affect what downstream callers can access; type and sub-type stay fixed after creation. Returns success after the update is applied.",
+		"Update an API key's name, description, scopes, defaults, or limits, unlike delete_api_key which revokes it or create_api_key which issues a new one. Changes take effect immediately for downstream callers, type and sub-type stay fixed after creation, and the call returns success without rotating the secret.",
 		KEYS_TOOL_SCHEMAS.updateApiKey,
 		async (params) => {
 			const result = await service.keys.updateApiKey(params.id, {

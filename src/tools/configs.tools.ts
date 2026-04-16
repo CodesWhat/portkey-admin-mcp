@@ -255,7 +255,7 @@ export function registerConfigsTools(
 	// Phase 1: Create configuration tool
 	server.tool(
 		"create_config",
-		"Create a config that defines routing, cache, retry, and targets for requests. At least one of those settings is required; returns the new id and version_id.",
+		"Create a config that defines routing, cache, retry, and targets for requests; use update_config to modify an existing one and list_config_versions for history. At least one setting is required, new configs become active immediately once referenced by a key or prompt, and the call returns the new id and version_id.",
 		CONFIGS_TOOL_SCHEMAS.createConfig,
 		async (params) => {
 			const config = buildConfigPayload(params);

@@ -183,7 +183,7 @@ export function registerLabelsTools(
 	// Update label tool
 	server.tool(
 		"update_prompt_label",
-		"Update a prompt label's name, description, or color only. This changes the label definition, not existing prompt-version assignments or history.",
+		"Update a prompt label's name, description, or color only, unlike update_prompt_version which changes which label a version carries. This takes effect immediately for all versions already tagged with the label, but does not reassign labels or touch history; use list_prompt_labels to find the label_id first.",
 		LABELS_TOOL_SCHEMAS.updatePromptLabel,
 		async (params) => {
 			const { label_id, ...updateData } = params;

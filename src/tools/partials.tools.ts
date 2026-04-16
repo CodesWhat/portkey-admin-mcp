@@ -100,7 +100,7 @@ export function registerPartialsTools(
 	// List partials tool
 	server.tool(
 		"list_prompt_partials",
-		"List partials across collections, with optional collection filtering. Returns ids, slugs, names, collections, and status so you can choose a prompt_partial_id before get/update/delete.",
+		"List partials across collections, with optional collection filtering. Returns ids, slugs, names, collections, and status so you can choose a prompt_partial_id before get_prompt_partial, update_prompt_partial, delete_prompt_partial, or publish_partial.",
 		PARTIALS_TOOL_SCHEMAS.listPromptPartials,
 		async (params) => {
 			const partials = await service.partials.listPromptPartials(params);
@@ -263,7 +263,7 @@ export function registerPartialsTools(
 	// Publish partial tool
 	server.tool(
 		"publish_partial",
-		"Publish a specific partial version as the default version. This changes which content {{> partial_name}} resolves to and replaces the previously active version.",
+		"Publish a specific partial version as the default, unlike update_prompt_partial which creates a new draft without activating it. Use after list_partial_versions to pick a version_id; this immediately changes what {{> partial_name}} resolves to for all prompts and replaces the previously active version without a rollback path.",
 		PARTIALS_TOOL_SCHEMAS.publishPartial,
 		async (params) => {
 			await service.partials.publishPartial(params.prompt_partial_id, {

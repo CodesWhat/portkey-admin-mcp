@@ -751,7 +751,7 @@ export function registerPromptsTools(
 	// Publish prompt tool
 	server.tool(
 		"publish_prompt",
-		"Publish a specific version of a prompt as the active default. Use list_prompt_versions to choose the version and update_prompt when you need to create new content before promoting it.",
+		"Publish a specific version of a prompt as the active default, unlike promote_prompt which copies across environments or update_prompt which creates a new draft. This immediately routes all callers using the slug to that version and there is no rollback, so use list_prompt_versions to pick the version and update_prompt first if you need to create new content before promoting it.",
 		PROMPTS_TOOL_SCHEMAS.publishPrompt,
 		async (params) => {
 			await service.prompts.publishPrompt(params.prompt_id, {
