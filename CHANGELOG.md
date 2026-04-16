@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-04-16
+
+Follow-up description-quality pass targeting the 13 tools that Glama's TDQS rubric left in the B-tier band. Adds a reproducible scoring harness under `docs/glama-score/` and `scripts/glama-score/` so future audits are one command. No behavior, schema, or API surface changes.
+
+### Changed
+
+- Tightened 13 tool descriptions to A-tier TDQS (≥3.5): `cancel_log_export`, `create_config`, `get_guardrail`, `update_guardrail`, `list_prompt_partials`, `publish_partial`, `publish_prompt`, `resend_user_invite`, `update_api_key`, `update_integration_workspaces`, `update_prompt_label`, `update_usage_limit`, `update_workspace`. Each gains one named-sibling disambiguation clause (`unlike X which Y`) plus one behavioral clause covering immediacy, scope, or immutability.
+- Rubric-based scoring of all 150 current descriptions against the reverse-engineered Glama TDQS rubric puts the server at mean 3.81, 150/150 at A-tier (up from baseline mean 3.14 at v1.0.0 with 61 C-tier tools).
+
+### Added
+
+- `docs/glama-score/` — audit artifacts: the v1.0.0 Glama scan (`scores.json`, `scores.csv`), per-dimension justifications bucketed by score, the rewrite plan with per-tool checklist, and the post-fix re-score (`current-scores.json`, `diff.json`).
+- `scripts/glama-score/` — reproducible audit tooling: `extract-current.mjs` pulls every `(name, description)` pair from `src/tools/*.tools.ts`, `score-tools.mjs` re-scores via the Anthropic Messages API with the rubric prompt-cached, and `diff-scores.mjs` emits the baseline-vs-current delta.
+
 ## [0.3.1] - 2026-04-16
 
 Maintenance release. Description-quality pass across every MCP tool and a routine patch-level dependency refresh. No behavior, schema, or API surface changes.
