@@ -25,6 +25,11 @@ dist/
 *.swp
 *.swo
 
+# Agent/tooling artifacts
+.claude/
+.playwright-mcp/
+.vercel/
+
 # OS specific
 .DS_Store
 Thumbs.db
