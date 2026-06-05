@@ -2,6 +2,7 @@
 
 > Last updated: 2026-03-23
 > **Status: COMPLETE** — 150 tools covering ~98% of Portkey admin API surface
+> **Maintenance mode (2026-06):** No further API-coverage work is planned following the Palo Alto Networks acquisition of Portkey. Security and dependency patches only. See [README](./README.md) and [docs/audit-2026-06.md](./docs/audit-2026-06.md).
 > Completed: MCP Integrations (10), MCP Servers (10), Analytics (11), Prompt Versions (2), Usage Limit Entities (2)
 > Skipped: Secret References (not a standard admin CRUD endpoint — requires config/provider headers)
 
@@ -224,4 +225,4 @@ Apply the same audit methodology from this session to all new services:
 | 3B (Usage Limit Entities) | 2 | Done |
 | **Total** | **35** | |
 
-Final tool count: **151 tools** (116 baseline + 35 new)
+Final tool count: **150 tools** (115 baseline + 35 new)

@@ -26,6 +26,7 @@ Maintenance and security release following the Palo Alto Networks acquisition of
 
 - The project is now in **maintenance mode** (security/dependency patches only) pending Palo Alto's post-acquisition Admin API roadmap. Added a status notice to the README and a full assessment under `docs/audit-2026-06.md`.
 - Documented the previously-undocumented `PORTKEY_BASE_URL` environment variable and the new `PORTKEY_ALLOW_PRIVATE_BASE_URL` opt-out.
+- Corrected the `ROADMAP.md` tool count (151 → 150, arithmetic fix) and marked the roadmap as maintenance-mode.
 
 ## [0.3.2] - 2026-04-16
 
