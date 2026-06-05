@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.5] - 2026-06-05
+
+Namespace migration following the GitHub handle rename `s-b-e-n-s-o-n` → `scttbnsn`. No tool schema or API surface changes.
+
+### Changed
+
+- Migrate the MCP Registry namespace from `io.github.s-b-e-n-s-o-n/portkey-admin-mcp` to `io.github.scttbnsn/portkey-admin-mcp` (`server.json` `name` and `package.json` `mcpName`). The registry verifies namespace ownership against the current GitHub account, and the renamed-away handle is no longer controllable, so the prior namespace is retired. The npm package name (`portkey-admin-mcp`) is unchanged, so existing `npx portkey-admin-mcp` installs keep working.
+
 ## [0.3.4] - 2026-06-05
 
 Follow-up hardening release clearing the remaining low/medium items from the v0.3.3 audit (`docs/audit-2026-06.md`). No tool schema or API surface changes.
