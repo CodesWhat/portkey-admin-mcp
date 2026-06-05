@@ -144,7 +144,7 @@ Major hardening release. Fixes critical MCP spec compliance issues, adds tool an
 - **Default HTTP bind address was `0.0.0.0`** — changed to `127.0.0.1` to prevent accidental network exposure
 - **Config JSON responses returned raw strings** — `getConfig()` and `updateConfig()` now parse `config` field into typed objects
 - **`getPromptVersion()` returned `Record<string, unknown>`** — now typed as `RawGetPromptResponse`
-- **CI badge pointed to wrong GitHub org** (SYPartners → s-b-e-n-s-o-n)
+- **CI badge pointed to wrong GitHub org** (SYPartners → scttbnsn)
 - **Hardcoded `app`/`env` enums in prompt tools** — replaced with `z.string()` to allow arbitrary identifiers
 
 ### Changed
@@ -216,8 +216,8 @@ First stable release. Graduates from beta with 151 tools covering ~98% of the Po
 - Vercel deployment support
 - Contract tests, E2E tests, security tests
 
-[Unreleased]: https://github.com/s-b-e-n-s-o-n/portkey-admin-mcp/compare/v0.2.0...HEAD
-[0.2.0]: https://github.com/s-b-e-n-s-o-n/portkey-admin-mcp/compare/v0.1.0...v0.2.0
-[0.1.0]: https://github.com/s-b-e-n-s-o-n/portkey-admin-mcp/compare/v0.1.0-beta.4...v0.1.0
-[0.1.0-beta.4]: https://github.com/s-b-e-n-s-o-n/portkey-admin-mcp/compare/v0.1.0-beta.3...v0.1.0-beta.4
-[0.1.0-beta.3]: https://github.com/s-b-e-n-s-o-n/portkey-admin-mcp/releases/tag/v0.1.0-beta.3
+[Unreleased]: https://github.com/scttbnsn/portkey-admin-mcp/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/scttbnsn/portkey-admin-mcp/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/scttbnsn/portkey-admin-mcp/compare/v0.1.0-beta.4...v0.1.0
+[0.1.0-beta.4]: https://github.com/scttbnsn/portkey-admin-mcp/compare/v0.1.0-beta.3...v0.1.0-beta.4
+[0.1.0-beta.3]: https://github.com/scttbnsn/portkey-admin-mcp/releases/tag/v0.1.0-beta.3

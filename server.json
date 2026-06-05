@@ -3,7 +3,7 @@
 	"name": "io.github.s-b-e-n-s-o-n/portkey-admin-mcp",
 	"description": "Full Portkey Admin API MCP server — configs, prompts, keys, analytics, and more.",
 	"repository": {
-		"url": "https://github.com/s-b-e-n-s-o-n/portkey-admin-mcp",
+		"url": "https://github.com/scttbnsn/portkey-admin-mcp",
 		"source": "github"
 	},
 	"version": "0.3.4",

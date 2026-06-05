@@ -145,7 +145,7 @@ For each tool on the checklist:
 
 ### Re-scan fetch script (to codify)
 
-The current data was pulled from `https://glama.ai/mcp/servers/s-b-e-n-s-o-n/portkey-admin-mcp/score.data` (React Router Turbo Stream payload). Add a small script under `scripts/glama-score/` that:
+The current data was pulled from `https://glama.ai/mcp/servers/scttbnsn/portkey-admin-mcp/score.data` (React Router Turbo Stream payload). Add a small script under `scripts/glama-score/` that:
 - Fetches that URL
 - Decodes the Turbo Stream payload (see `/tmp/glama-score/decode.py` reference implementation)
 - Writes `docs/glama-score/scores.json` and `scores.csv`
