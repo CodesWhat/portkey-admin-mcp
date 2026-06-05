@@ -35,6 +35,7 @@ import { Logger } from "./logger.js";
 import { createMcpServer } from "./mcp-server.js";
 import {
 	getAllowedOrigins,
+	hostValidationMiddleware,
 	originValidationMiddleware,
 	rateLimitMiddleware,
 } from "./security.js";
@@ -384,6 +385,12 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 		}),
 	);
 	app.use(express.json({ limit: requestBodyLimit }));
+	// In unauthenticated (none) mode there is no bearer/JWT gate, so validate the
+	// Host header to block DNS-rebinding against local deployments. Authenticated
+	// modes rely on the token and skip this to avoid rejecting proxied Host headers.
+	if (authConfig.mode === "none") {
+		app.use(hostValidationMiddleware);
+	}
 	app.use(originValidationMiddleware);
 	app.use(rateLimitMiddleware);
 	app.use(mcpAuthMiddleware);
@@ -722,7 +729,9 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 				return;
 			}
 		} else if (!transport) {
-			res.status(400).json({
+			// Unknown session id -> 404 so clients re-initialize (per MCP spec);
+			// a missing id on a non-initialize request is a 400 Bad Request.
+			res.status(sessionId ? 404 : 400).json({
 				jsonrpc: "2.0",
 				error: {
 					code: -32000,
@@ -825,11 +834,11 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 			sessionStore.touch(sessionId);
 			await transport.handleRequest(req, res);
 		} else {
-			res.status(400).json({
+			res.status(404).json({
 				jsonrpc: "2.0",
 				error: {
 					code: -32000,
-					message: "Invalid session ID",
+					message: "Session not found",
 				},
 				id: null,
 			});
@@ -887,11 +896,11 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 
 			await transport.handleRequest(req, res);
 		} else {
-			res.status(400).json({
+			res.status(404).json({
 				jsonrpc: "2.0",
 				error: {
 					code: -32000,
-					message: "Invalid session ID",
+					message: "Session not found",
 				},
 				id: null,
 			});

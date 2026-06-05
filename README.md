@@ -24,6 +24,9 @@ MCP server for the [Portkey](https://portkey.ai/) Admin API. Manage prompts, con
 
 ---
 
+> [!IMPORTANT]
+> **Maintenance mode.** Portkey was acquired by **Palo Alto Networks** (completed 2026‑05‑29) and is being folded into the Prisma AIRS platform. The Portkey Admin API this server targets is **live and unchanged as of June 2026**, and this project still works end‑to‑end — but it is now in **maintenance mode**: security and dependency patches only, no new features, pending Palo Alto's post‑acquisition API roadmap. If the hosted Admin API is ever deprecated, point `PORTKEY_BASE_URL` at a self‑hosted [Portkey gateway](https://github.com/Portkey-AI/gateway). See [docs/audit-2026-06.md](./docs/audit-2026-06.md) for the full assessment.
+
 ## Quick Start
 
 You need a **Portkey API key** with appropriate scopes. Get one from your [Portkey dashboard](https://app.portkey.ai/) under API Keys.
@@ -177,6 +180,8 @@ For local-only HTTP use, leave `MCP_HOST` at its default `127.0.0.1`. Set `MCP_H
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `PORTKEY_API_KEY` | (required) | Your Portkey API key |
+| `PORTKEY_BASE_URL` | `https://api.portkey.ai/v1` | Portkey Admin API base URL. Point at a self-hosted Portkey gateway if needed. Loopback/private-network hosts are rejected unless `PORTKEY_ALLOW_PRIVATE_BASE_URL=true` |
+| `PORTKEY_ALLOW_PRIVATE_BASE_URL` | — | Set to `true` to allow a `PORTKEY_BASE_URL` on loopback or a private network (e.g. a self-hosted gateway at `http://localhost:8787`) |
 | `PORTKEY_TOOL_DOMAINS` | — | Optional comma-separated stdio/HTTP default tool subset, e.g. `prompts,analytics` |
 | `MCP_HOST` | `127.0.0.1` | Bind address |
 | `MCP_PORT` | `3000` | Port |
@@ -190,7 +195,7 @@ For local-only HTTP use, leave `MCP_HOST` at its default `127.0.0.1`. Set `MCP_H
 | `MCP_REDIS_URL` | — | Redis URL for shared event store |
 | `MCP_TLS_KEY_PATH` | — | TLS key for native HTTPS |
 | `MCP_TLS_CERT_PATH` | — | TLS cert for native HTTPS |
-| `ALLOWED_ORIGINS` | — | CORS allow-list |
+| `ALLOWED_ORIGINS` | — | CORS allow-list; also used to validate the `Host` header (DNS-rebinding protection) when `MCP_AUTH_MODE=none` |
 | `MCP_TRUST_PROXY` | `false` | Trust proxy headers (for reverse proxies) |
 | `RATE_LIMIT_MAX_BUCKETS` | `10000` | Maximum distinct in-memory rate-limit buckets before new clients share an overflow bucket |
 

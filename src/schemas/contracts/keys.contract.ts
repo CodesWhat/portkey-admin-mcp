@@ -81,11 +81,7 @@ export const ApiKeySchema = z.object({
 	key: z.string(),
 	name: z.string(),
 	description: z.string().nullable(),
-	type: z.enum([
-		"organisation-service",
-		"workspace-service",
-		"workspace-user",
-	]),
+	type: z.enum(["organisation-service", "workspace-service", "workspace-user"]),
 	organisation_id: z.string(),
 	workspace_id: z.string().nullable().optional(),
 	user_id: z.string().nullable(),

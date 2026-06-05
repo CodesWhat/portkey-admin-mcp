@@ -338,6 +338,36 @@ describe("HTTP server integration", () => {
 		);
 	});
 
+	it("returns 404 for requests against an unknown session id", async () => {
+		await withHttpServer({}, async ({ baseUrl }) => {
+			const response = await fetch(`${baseUrl}/mcp`, {
+				method: "POST",
+				headers: {
+					authorization: `Bearer ${AUTH_TOKEN}`,
+					"content-type": "application/json",
+					accept: "text/event-stream, application/json",
+					"mcp-session-id": "00000000-0000-0000-0000-000000000000",
+				},
+				body: JSON.stringify({
+					jsonrpc: "2.0",
+					id: 1,
+					method: "tools/list",
+					params: {},
+				}),
+			});
+
+			assert.equal(response.status, 404);
+			assert.deepEqual(await response.json(), {
+				jsonrpc: "2.0",
+				error: {
+					code: -32000,
+					message: "Session not found",
+				},
+				id: null,
+			});
+		});
+	});
+
 	it("requires MCP-Protocol-Version on requests after initialization", async () => {
 		await withHttpServer({}, async ({ baseUrl }) => {
 			const initHeaders = {

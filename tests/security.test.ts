@@ -17,6 +17,12 @@ async function loadSecurityModule() {
 	return import(`../src/lib/security.js?test=${Date.now()}-${Math.random()}`);
 }
 
+async function loadBaseService() {
+	return import(
+		`../src/services/base.service.js?test=${Date.now()}-${Math.random()}`
+	);
+}
+
 async function loadOriginHelpers() {
 	const { getAllowedOrigins, isAllowedHost, validateOrigin } =
 		await loadSecurityModule();
@@ -138,6 +144,64 @@ describe("origin security configuration", () => {
 		assert.equal(isAllowedHost("example.local"), true);
 		assert.equal(isAllowedHost("example.local:3000"), true);
 		assert.equal(isAllowedHost("evil-example.local"), false);
+	});
+
+	it("rejects requests whose Host header is not allow-listed", async () => {
+		process.env.ALLOWED_ORIGINS = "https://mcp.example.com";
+		const { hostValidationMiddleware } = await loadSecurityModule();
+		const { response, state } = createMockResponse();
+		let nextCalled = false;
+
+		hostValidationMiddleware(
+			createMockRequest({ headers: { host: "evil.example.com" } }) as never,
+			response as never,
+			() => {
+				nextCalled = true;
+			},
+		);
+
+		assert.equal(nextCalled, false);
+		assert.equal(state.statusCode, 403);
+		assert.deepEqual(state.body, { error: "Forbidden: Host not allowed" });
+	});
+
+	it("allows requests whose Host header matches the allow-list", async () => {
+		process.env.ALLOWED_ORIGINS = "https://mcp.example.com";
+		const { hostValidationMiddleware } = await loadSecurityModule();
+		const { response, state } = createMockResponse();
+		let nextCalled = false;
+
+		hostValidationMiddleware(
+			createMockRequest({ headers: { host: "mcp.example.com:3000" } }) as never,
+			response as never,
+			() => {
+				nextCalled = true;
+			},
+		);
+
+		assert.equal(nextCalled, true);
+		assert.equal(state.statusCode, undefined);
+	});
+
+	it("skips Host validation for health and readiness probes", async () => {
+		process.env.ALLOWED_ORIGINS = "https://mcp.example.com";
+		const { hostValidationMiddleware } = await loadSecurityModule();
+		const { response, state } = createMockResponse();
+		let nextCalled = false;
+
+		hostValidationMiddleware(
+			createMockRequest({
+				headers: { host: "evil.example.com" },
+				path: "/health",
+			}) as never,
+			response as never,
+			() => {
+				nextCalled = true;
+			},
+		);
+
+		assert.equal(nextCalled, true);
+		assert.equal(state.statusCode, undefined);
 	});
 
 	it("caches parsed allowed origins at module load", async () => {
@@ -303,5 +367,83 @@ describe("origin security configuration", () => {
 		assert.equal(fourth.state.statusCode, 429);
 		assert.deepEqual(fourth.state.body, { error: "Too Many Requests" });
 		assert.equal(fourth.state.headers["Retry-After"], "60");
+	});
+});
+
+describe("base URL SSRF validation", () => {
+	afterEach(() => {
+		resetEnv();
+	});
+
+	it("flags loopback, private, and link-local hosts", async () => {
+		const { isPrivateOrLocalHost } = await loadBaseService();
+
+		for (const host of [
+			"localhost",
+			"app.localhost",
+			"127.0.0.1",
+			"10.1.2.3",
+			"172.16.0.1",
+			"192.168.1.1",
+			"169.254.169.254",
+			"100.64.0.1",
+			"::1",
+			"fe80::1",
+			"fd00::1",
+			"::ffff:127.0.0.1",
+		]) {
+			assert.equal(
+				isPrivateOrLocalHost(host),
+				true,
+				`${host} should be treated as private`,
+			);
+		}
+	});
+
+	it("allows public hosts and internal DNS names", async () => {
+		const { isPrivateOrLocalHost } = await loadBaseService();
+
+		for (const host of [
+			"api.portkey.ai",
+			"gateway.internal",
+			"8.8.8.8",
+			"203.0.113.5",
+			"example.com",
+		]) {
+			assert.equal(
+				isPrivateOrLocalHost(host),
+				false,
+				`${host} should be allowed`,
+			);
+		}
+	});
+
+	it("rejects a private PORTKEY_BASE_URL by default", async () => {
+		delete process.env.PORTKEY_ALLOW_PRIVATE_BASE_URL;
+		const { validateUrl } = await loadBaseService();
+
+		assert.throws(
+			() => validateUrl("http://169.254.169.254/latest/meta-data"),
+			/private-network/,
+		);
+	});
+
+	it("allows a private PORTKEY_BASE_URL when explicitly opted in", async () => {
+		process.env.PORTKEY_ALLOW_PRIVATE_BASE_URL = "true";
+		const { validateUrl } = await loadBaseService();
+
+		assert.doesNotThrow(() => validateUrl("http://localhost:8787/v1"));
+	});
+
+	it("rejects non-http(s) base URL protocols", async () => {
+		const { validateUrl } = await loadBaseService();
+
+		assert.throws(() => validateUrl("ftp://example.com"), /protocol/);
+	});
+
+	it("accepts the default public base URL", async () => {
+		const { validateUrl } = await loadBaseService();
+
+		assert.doesNotThrow(() => validateUrl("https://api.portkey.ai/v1"));
 	});
 });

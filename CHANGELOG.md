@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-06-04
+
+Maintenance and security release following the Palo Alto Networks acquisition of Portkey (completed 2026-05-29). The Portkey Admin API remains live and unchanged; this release hardens the HTTP transport, patches transitive CVEs, and marks the project as maintenance-only. No tool schema or API surface changes.
+
+### Security
+
+- Wire `Host`-header validation into the HTTP transport for `MCP_AUTH_MODE=none` deployments, closing a DNS-rebinding gap where the existing `isAllowedHost` check was defined but never called. Authenticated (`bearer`/`clerk`) modes are unaffected.
+- Harden `PORTKEY_BASE_URL` validation against SSRF: loopback, private (RFC-1918), CGNAT, and link-local hosts (including cloud metadata `169.254.169.254`) are now rejected by default. Set `PORTKEY_ALLOW_PRIVATE_BASE_URL=true` to allow a self-hosted gateway on a private address. Internal DNS names remain allowed.
+- Patch transitive advisories via lockfile refresh (`fast-uri`, `hono`, `qs`, `ip-address`/`express-rate-limit`).
+
+### Fixed
+
+- Return HTTP `404` (not `400`) for requests against an unknown MCP session id, per the MCP spec, so clients re-initialize correctly.
+- Correct tool annotations for `run_prompt_completion` and `test_mcp_server`: these are side-effecting and no longer carry `readOnlyHint: true`.
+
+### Changed
+
+- The project is now in **maintenance mode** (security/dependency patches only) pending Palo Alto's post-acquisition Admin API roadmap. Added a status notice to the README and a full assessment under `docs/audit-2026-06.md`.
+- Documented the previously-undocumented `PORTKEY_BASE_URL` environment variable and the new `PORTKEY_ALLOW_PRIVATE_BASE_URL` opt-out.
+
 ## [0.3.2] - 2026-04-16
 
 Follow-up description-quality pass targeting the 13 tools that Glama's TDQS rubric left in the B-tier band. Adds a reproducible scoring harness under `docs/glama-score/` and `scripts/glama-score/` so future audits are one command. No behavior, schema, or API surface changes.

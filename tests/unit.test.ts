@@ -2761,6 +2761,20 @@ describe("Tool annotations", () => {
 			idempotentHint: true,
 			openWorldHint: true,
 		});
+		// Side-effecting tools must not be marked read-only: run_* triggers a
+		// billable completion and test_* opens an outbound connection.
+		assert.deepEqual(getAnnotations("run_prompt_completion"), {
+			readOnlyHint: false,
+			destructiveHint: false,
+			idempotentHint: false,
+			openWorldHint: true,
+		});
+		assert.deepEqual(getAnnotations("test_mcp_server"), {
+			readOnlyHint: false,
+			destructiveHint: false,
+			idempotentHint: false,
+			openWorldHint: true,
+		});
 	});
 
 	it("reuses module-level schema objects across tool registrations", () => {

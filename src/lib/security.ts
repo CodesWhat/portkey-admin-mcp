@@ -143,6 +143,36 @@ export function originValidationMiddleware(
 	next();
 }
 
+/**
+ * Express middleware that rejects requests whose Host header is not in the
+ * configured allow-list. Pairs with originValidationMiddleware to close the
+ * DNS-rebinding gap for unauthenticated (MCP_AUTH_MODE=none) HTTP deployments,
+ * where there is no bearer/JWT gate to fall back on.
+ */
+export function hostValidationMiddleware(
+	req: Request,
+	res: Response,
+	next: NextFunction,
+): void {
+	if (req.path === "/health" || req.path === "/ready") {
+		next();
+		return;
+	}
+
+	const host = req.headers.host;
+	if (host && !isAllowedHost(host)) {
+		Logger.warn("Host validation failed", {
+			path: req.path,
+			method: req.method,
+			metadata: { host, ip: req.ip },
+		});
+		res.status(403).json({ error: "Forbidden: Host not allowed" });
+		return;
+	}
+
+	next();
+}
+
 // ============================================================================
 // Rate Limiting (Token Bucket Algorithm)
 // ============================================================================

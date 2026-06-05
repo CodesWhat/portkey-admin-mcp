@@ -9,17 +9,91 @@ import { Logger } from "../lib/logger.js";
 
 const DEFAULT_BASE_URL = "https://api.portkey.ai/v1";
 
-function validateUrl(url: string): void {
-	try {
-		const parsed = new URL(url);
-		if (!["http:", "https:"].includes(parsed.protocol)) {
-			throw new Error(`Invalid URL protocol: ${parsed.protocol}`);
+const PRIVATE_BASE_URL_OVERRIDE_HINT =
+	"Set PORTKEY_ALLOW_PRIVATE_BASE_URL=true to allow self-hosted gateways on loopback or private networks.";
+
+/**
+ * Detect literal loopback / private / link-local hosts so a malicious or
+ * misconfigured PORTKEY_BASE_URL cannot turn the outbound client into an SSRF
+ * vector against internal services (e.g. cloud metadata at 169.254.169.254).
+ * Only literal IP ranges and localhost are blocked — internal DNS names such as
+ * `gateway.internal` remain allowed, and PORTKEY_ALLOW_PRIVATE_BASE_URL is an
+ * explicit opt-out for self-hosted gateways on literal private addresses.
+ */
+export function isPrivateOrLocalHost(hostname: string): boolean {
+	const host = hostname
+		.trim()
+		.toLowerCase()
+		.replace(/^\[|\]$/g, "");
+	if (host === "localhost" || host.endsWith(".localhost")) {
+		return true;
+	}
+
+	let ipv4 = host;
+	if (host.includes(":")) {
+		// IPv6 literal (URL hostnames never contain ':' for real domains)
+		if (host === "::1") {
+			return true; // loopback
 		}
+		if (host.startsWith("fe80:")) {
+			return true; // link-local
+		}
+		if (host.startsWith("fc") || host.startsWith("fd")) {
+			return true; // unique local fc00::/7
+		}
+		if (host.startsWith("::ffff:")) {
+			ipv4 = host.slice("::ffff:".length); // IPv4-mapped IPv6
+		} else {
+			return false;
+		}
+	}
+
+	const match = ipv4.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+	if (!match) {
+		return false;
+	}
+	const a = Number(match[1]);
+	const b = Number(match[2]);
+	if (a === 0 || a === 10 || a === 127) {
+		return true; // this-network, private 10/8, loopback 127/8
+	}
+	if (a === 169 && b === 254) {
+		return true; // link-local incl. cloud metadata 169.254.169.254
+	}
+	if (a === 172 && b >= 16 && b <= 31) {
+		return true; // private 172.16/12
+	}
+	if (a === 192 && b === 168) {
+		return true; // private 192.168/16
+	}
+	if (a === 100 && b >= 64 && b <= 127) {
+		return true; // CGNAT 100.64/10
+	}
+	return false;
+}
+
+export function validateUrl(url: string): void {
+	let parsed: URL;
+	try {
+		parsed = new URL(url);
 	} catch (error) {
 		if (error instanceof TypeError) {
 			throw new Error(`Invalid base URL: ${url}`);
 		}
 		throw error;
+	}
+
+	if (!["http:", "https:"].includes(parsed.protocol)) {
+		throw new Error(`Invalid URL protocol: ${parsed.protocol}`);
+	}
+
+	const allowPrivate = /^(1|true|yes)$/i.test(
+		process.env.PORTKEY_ALLOW_PRIVATE_BASE_URL?.trim() ?? "",
+	);
+	if (!allowPrivate && isPrivateOrLocalHost(parsed.hostname)) {
+		throw new Error(
+			`Refusing to use a loopback or private-network PORTKEY_BASE_URL host: ${parsed.hostname}. ${PRIVATE_BASE_URL_OVERRIDE_HINT}`,
+		);
 	}
 }
 

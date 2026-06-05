@@ -6,12 +6,12 @@
 		"url": "https://github.com/s-b-e-n-s-o-n/portkey-admin-mcp",
 		"source": "github"
 	},
-	"version": "0.3.2",
+	"version": "0.3.3",
 	"packages": [
 		{
 			"registryType": "npm",
 			"identifier": "portkey-admin-mcp",
-			"version": "0.3.2",
+			"version": "0.3.3",
 			"transport": {
 				"type": "stdio"
 			},
@@ -26,6 +26,13 @@
 				{
 					"name": "PORTKEY_TOOL_DOMAINS",
 					"description": "Optional comma-separated tool domains to expose, for example prompts,analytics",
+					"isRequired": false,
+					"format": "string",
+					"isSecret": false
+				},
+				{
+					"name": "PORTKEY_BASE_URL",
+					"description": "Portkey Admin API base URL. Defaults to https://api.portkey.ai/v1; point at a self-hosted gateway if needed",
 					"isRequired": false,
 					"format": "string",
 					"isSecret": false

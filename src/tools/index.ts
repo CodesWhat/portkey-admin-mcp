@@ -98,8 +98,6 @@ const READ_ONLY_IDEMPOTENT_TOOL_PREFIXES = [
 	"download_",
 ] as const;
 
-const READ_ONLY_NON_IDEMPOTENT_TOOL_PREFIXES = ["run_", "test_"] as const;
-
 const DESTRUCTIVE_TOOL_PREFIXES = [
 	"delete_",
 	"remove_",
@@ -174,19 +172,6 @@ function inferToolAnnotations(toolName: string): ToolAnnotations {
 			readOnlyHint: true,
 			destructiveHint: false,
 			idempotentHint: true,
-			openWorldHint: true,
-		};
-	}
-
-	if (
-		READ_ONLY_NON_IDEMPOTENT_TOOL_PREFIXES.some((prefix) =>
-			toolName.startsWith(prefix),
-		)
-	) {
-		return {
-			readOnlyHint: true,
-			destructiveHint: false,
-			idempotentHint: false,
 			openWorldHint: true,
 		};
 	}
