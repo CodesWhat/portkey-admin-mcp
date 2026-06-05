@@ -10,7 +10,7 @@
  */
 
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
@@ -344,5 +344,36 @@ describe("Contract: Keys API", () => {
 		};
 		const result = CreateApiKeyResponseSchema.safeParse(synthetic);
 		assert.ok(result.success, "CreateApiKeyResponse should parse");
+	});
+});
+
+// ==================== Fixture provenance ====================
+
+describe("Contract: fixtures manifest", () => {
+	it("records when fixtures were captured", () => {
+		const manifest = JSON.parse(
+			readFileSync(join(__dirname, "fixtures", "manifest.json"), "utf-8"),
+		);
+		assert.ok(
+			typeof manifest.recordedAt === "string" &&
+				/^\d{4}-\d{2}-\d{2}/.test(manifest.recordedAt),
+			"manifest.recordedAt must be an ISO date documenting fixture recency",
+		);
+	});
+
+	it("stays in sync with the fixtures on disk", () => {
+		const manifest = JSON.parse(
+			readFileSync(join(__dirname, "fixtures", "manifest.json"), "utf-8"),
+		);
+		const onDisk = readdirSync(FIXTURES_DIR)
+			.filter((file) => file.endsWith(".json"))
+			.map((file) => file.replace(/\.json$/, ""))
+			.sort();
+		const listed = [...manifest.fixtures].sort();
+		assert.deepEqual(
+			listed,
+			onDisk,
+			"manifest.fixtures must match the files in tests/fixtures/responses — re-run `npm run record:fixtures`",
+		);
 	});
 });

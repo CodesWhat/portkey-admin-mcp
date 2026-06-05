@@ -22,6 +22,20 @@ interface MemoryEventRecord {
 
 const EVENT_STORE_CLEANUP_INTERVAL_MS = 30_000;
 
+// Stream and event identifiers are embedded directly in Redis keys. Constrain
+// them to a safe character set so a malformed Last-Event-ID header (client-
+// controlled) cannot inject key separators or control characters.
+const SAFE_EVENT_ID_PATTERN = /^[\w-]{1,128}$/;
+
+function assertSafeRedisId(id: string, kind: "streamId" | "eventId"): string {
+	if (!SAFE_EVENT_ID_PATTERN.test(id)) {
+		throw new Error(
+			`Invalid ${kind} for event store key: ${JSON.stringify(id)}`,
+		);
+	}
+	return id;
+}
+
 class InMemoryEventStore implements EventStore {
 	private sequence = 0;
 	private readonly ttlMs: number;
@@ -186,11 +200,11 @@ class RedisEventStore implements EventStore {
 	}
 
 	private eventKey(eventId: EventId): string {
-		return `${this.keyPrefix}:event:${eventId}`;
+		return `${this.keyPrefix}:event:${assertSafeRedisId(eventId, "eventId")}`;
 	}
 
 	private streamEventsKey(streamId: StreamId): string {
-		return `${this.keyPrefix}:stream:${streamId}:events`;
+		return `${this.keyPrefix}:stream:${assertSafeRedisId(streamId, "streamId")}:events`;
 	}
 
 	private async ensureConnected(): Promise<void> {
@@ -235,6 +249,9 @@ class RedisEventStore implements EventStore {
 	}
 
 	async getStreamIdForEventId(eventId: EventId): Promise<StreamId | undefined> {
+		if (!SAFE_EVENT_ID_PATTERN.test(eventId)) {
+			return undefined;
+		}
 		await this.ensureConnected();
 		const streamId = await this.client.hGet(this.eventKey(eventId), "streamId");
 		return streamId || undefined;

@@ -15,6 +15,29 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const RESPONSES_DIR = join(__dirname, "responses");
+const MANIFEST_PATH = join(__dirname, "manifest.json");
+
+const recordedFixtures = new Set<string>();
+
+function saveFixture(name: string, data: unknown): void {
+	const filePath = join(RESPONSES_DIR, `${name}.json`);
+	writeFileSync(filePath, JSON.stringify(data, null, 2) + "\n");
+	recordedFixtures.add(name);
+	console.log(`  Saved ${filePath}`);
+}
+
+function writeManifest(): void {
+	const manifest = {
+		_comment:
+			"Provenance for the recorded Portkey Admin API fixtures used by contract tests. Regenerate with `PORTKEY_API_KEY=... npm run record:fixtures`, which rewrites this file and stamps recordedAt. The contract suite asserts this list stays in sync with tests/fixtures/responses/.",
+		recordedAt: new Date().toISOString().slice(0, 10),
+		source: BASE_URL,
+		recorderScript: "tests/fixtures/record.ts",
+		fixtures: [...recordedFixtures].sort(),
+	};
+	writeFileSync(MANIFEST_PATH, JSON.stringify(manifest, null, 2) + "\n");
+	console.log(`  Wrote ${MANIFEST_PATH}`);
+}
 
 const BASE_URL = process.env.PORTKEY_BASE_URL ?? "https://api.portkey.ai/v1";
 const API_KEY = process.env.PORTKEY_API_KEY;
@@ -57,9 +80,7 @@ async function fetchEndpoint(endpoint: Endpoint): Promise<void> {
 	}
 
 	const data = await response.json();
-	const filePath = join(RESPONSES_DIR, `${endpoint.name}.json`);
-	writeFileSync(filePath, JSON.stringify(data, null, 2) + "\n");
-	console.log(`  Saved ${filePath}`);
+	saveFixture(endpoint.name, data);
 
 	// If the list has items, record the first item's detail endpoint
 	const items = data.data ?? data;
@@ -80,12 +101,7 @@ async function fetchEndpoint(endpoint: Endpoint): Promise<void> {
 
 			if (detailResponse.ok) {
 				const detailData = await detailResponse.json();
-				const detailFilePath = join(RESPONSES_DIR, `${detailName}.json`);
-				writeFileSync(
-					detailFilePath,
-					JSON.stringify(detailData, null, 2) + "\n",
-				);
-				console.log(`  Saved ${detailFilePath}`);
+				saveFixture(detailName, detailData);
 			}
 		}
 	}
@@ -99,6 +115,7 @@ async function main(): Promise<void> {
 		console.log();
 	}
 
+	writeManifest();
 	console.log("Done. Commit fixtures in tests/fixtures/responses/");
 }
 

@@ -366,12 +366,14 @@ describe("BaseService HTTP execution", () => {
 					"string",
 				);
 			}
+			// Debug logs must carry only param keys, never the composed URL or
+			// query values — guards the log-redaction in BaseService.executeRequest.
 			assert.deepEqual(
 				debugLogs.map((entry) => {
 					const extra = entry.extra as {
 						method?: string;
 						path?: string;
-						metadata?: { url?: string };
+						metadata?: { paramKeys?: string[] };
 					};
 					return {
 						method: extra.method,
@@ -383,30 +385,22 @@ describe("BaseService HTTP execution", () => {
 					{
 						method: "GET",
 						path: "/resource",
-						metadata: {
-							url: "https://example.portkey.test/v1/resource?filter=alpha+beta&page=2",
-						},
+						metadata: { paramKeys: ["filter", "page"] },
 					},
 					{
 						method: "POST",
 						path: "/resource",
-						metadata: {
-							url: "https://example.portkey.test/v1/resource",
-						},
+						metadata: { paramKeys: [] },
 					},
 					{
 						method: "PUT",
 						path: "/resource/123",
-						metadata: {
-							url: "https://example.portkey.test/v1/resource/123",
-						},
+						metadata: { paramKeys: [] },
 					},
 					{
 						method: "DELETE",
 						path: "/resource/123",
-						metadata: {
-							url: "https://example.portkey.test/v1/resource/123",
-						},
+						metadata: { paramKeys: [] },
 					},
 				],
 			);

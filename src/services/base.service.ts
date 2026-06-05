@@ -158,11 +158,15 @@ export class BaseService {
 		const url = this.buildUrl(path, options.params);
 		const startTime = Date.now();
 
+		// Log only the param keys, never the composed URL — query values can carry
+		// sensitive identifiers and should not land in debug logs.
 		Logger.debug("HTTP request started", {
 			requestId,
 			method,
 			path,
-			metadata: { url },
+			metadata: {
+				paramKeys: options.params ? Object.keys(options.params) : [],
+			},
 		});
 
 		try {

@@ -15,7 +15,14 @@ permissions:
   contents: write
 
 jobs:
+  ci:
+    # Gate the release on the full CI suite for the tagged commit, so a broken
+    # tag never produces a GitHub Release or an MCP Registry entry.
+    uses: ./.github/workflows/ci.yml
+    secrets: inherit
+
   github-release:
+    needs: ci
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -63,6 +70,7 @@ jobs:
           gh release create "$tag" "${args[@]}"
 
   publish-registry:
+    needs: ci
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:

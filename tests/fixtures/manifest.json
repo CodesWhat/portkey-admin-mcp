@@ -1,0 +1,15 @@
+{
+	"_comment": "Provenance for the recorded Portkey Admin API fixtures used by contract tests. Regenerate with `PORTKEY_API_KEY=... npm run record:fixtures`, which rewrites this file and stamps recordedAt. The contract suite asserts this list stays in sync with tests/fixtures/responses/.",
+	"recordedAt": "2026-04-08",
+	"source": "https://api.portkey.ai/v1",
+	"recorderScript": "tests/fixtures/record.ts",
+	"fixtures": [
+		"api-keys-get",
+		"api-keys-list",
+		"configs-get",
+		"configs-list",
+		"prompts-get",
+		"prompts-list",
+		"virtual-keys-list"
+	]
+}

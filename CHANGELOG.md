@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.4] - 2026-06-05
+
+Follow-up hardening release clearing the remaining low/medium items from the v0.3.3 audit (`docs/audit-2026-06.md`). No tool schema or API surface changes.
+
+### Security
+
+- Redact outbound request debug logs: log query-param *keys* only, never the composed URL, so identifiers in query values cannot leak into logs.
+- Validate Redis event-store stream/event ids against `^[\w-]{1,128}$` before key construction, preventing key injection via a malformed `Last-Event-ID` header. Unknown/malformed ids resolve to "not found" instead of erroring.
+
+### Changed
+
+- Gate the release workflow on the full CI suite: `release.yml` now calls `ci.yml` (made reusable via `workflow_call`) and both the GitHub Release and MCP Registry publish jobs `need` it, so a broken tag can never ship.
+
+### Added
+
+- `tests/fixtures/manifest.json` records fixture provenance (`recordedAt`, source, list); `record:fixtures` now stamps it on every re-record, and the contract suite asserts it stays in sync with `tests/fixtures/responses/`.
+
 ## [0.3.3] - 2026-06-04
 
 Maintenance and security release following the Palo Alto Networks acquisition of Portkey (completed 2026-05-29). The Portkey Admin API remains live and unchanged; this release hardens the HTTP transport, patches transitive CVEs, and marks the project as maintenance-only. No tool schema or API surface changes.
