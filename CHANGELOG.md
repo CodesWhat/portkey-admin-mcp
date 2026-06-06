@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.6] - 2026-06-05
+
+Corrects the MCP Registry namespace case. No tool schema or API surface changes.
+
+### Fixed
+
+- Publish under `io.github.CodesWhat/portkey-admin-mcp`, matching the exact GitHub organization login case, instead of the lowercased `io.github.codeswhat` shipped in 0.3.5 — the registry's namespace authorization is case-sensitive and rejected the lowercase form with `403`. `package.json` `mcpName` and `server.json` `name` updated to match; the npm package name (`portkey-admin-mcp`) is unchanged.
+
 ## [0.3.5] - 2026-06-05
 
 Moved the project to the **CodesWhat** organization following the `s-b-e-n-s-o-n` → `scttbnsn` GitHub handle rename, consolidating it alongside the other CodesWhat open-source projects. No tool schema or API surface changes.
