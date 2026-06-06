@@ -9,11 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.3.5] - 2026-06-05
 
-Namespace migration following the GitHub handle rename `s-b-e-n-s-o-n` → `scttbnsn`. No tool schema or API surface changes.
+Moved the project to the **CodesWhat** organization following the `s-b-e-n-s-o-n` → `scttbnsn` GitHub handle rename, consolidating it alongside the other CodesWhat open-source projects. No tool schema or API surface changes.
 
 ### Changed
 
-- Migrate the MCP Registry namespace from `io.github.s-b-e-n-s-o-n/portkey-admin-mcp` to `io.github.scttbnsn/portkey-admin-mcp` (`server.json` `name` and `package.json` `mcpName`). The registry verifies namespace ownership against the current GitHub account, and the renamed-away handle is no longer controllable, so the prior namespace is retired. The npm package name (`portkey-admin-mcp`) is unchanged, so existing `npx portkey-admin-mcp` installs keep working.
+- Repo moved to `github.com/CodesWhat/portkey-admin-mcp`; MCP Registry namespace migrated from `io.github.s-b-e-n-s-o-n/portkey-admin-mcp` to `io.github.codeswhat/portkey-admin-mcp` (`server.json` `name`, `package.json` `mcpName`, repository/homepage/bugs URLs). The old handle's registry namespace can no longer be verified, so it is retired.
+- The npm package name (`portkey-admin-mcp`) is unchanged — existing `npx portkey-admin-mcp` installs keep working — and the package now lives under the `codeswhat` npm org.
 
 ## [0.3.4] - 2026-06-05
 
