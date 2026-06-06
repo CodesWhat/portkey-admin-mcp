@@ -41,8 +41,8 @@
 		"zod": "^4.3.6"
 	},
 	"name": "portkey-admin-mcp",
-	"mcpName": "io.github.s-b-e-n-s-o-n/portkey-admin-mcp",
-	"version": "0.3.4",
+	"mcpName": "io.github.scttbnsn/portkey-admin-mcp",
+	"version": "0.3.5",
 	"main": "build/index.js",
 	"keywords": [
 		"mcp",
@@ -62,11 +62,11 @@
 	"description": "Full Portkey Admin API MCP server",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/s-b-e-n-s-o-n/portkey-admin-mcp.git"
+		"url": "git+https://github.com/scttbnsn/portkey-admin-mcp.git"
 	},
-	"homepage": "https://github.com/s-b-e-n-s-o-n/portkey-admin-mcp#readme",
+	"homepage": "https://github.com/scttbnsn/portkey-admin-mcp#readme",
 	"bugs": {
-		"url": "https://github.com/s-b-e-n-s-o-n/portkey-admin-mcp/issues"
+		"url": "https://github.com/scttbnsn/portkey-admin-mcp/issues"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.4.10",

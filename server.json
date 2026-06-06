@@ -1,17 +1,17 @@
 {
 	"$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-	"name": "io.github.s-b-e-n-s-o-n/portkey-admin-mcp",
+	"name": "io.github.scttbnsn/portkey-admin-mcp",
 	"description": "Full Portkey Admin API MCP server — configs, prompts, keys, analytics, and more.",
 	"repository": {
-		"url": "https://github.com/s-b-e-n-s-o-n/portkey-admin-mcp",
+		"url": "https://github.com/scttbnsn/portkey-admin-mcp",
 		"source": "github"
 	},
-	"version": "0.3.4",
+	"version": "0.3.5",
 	"packages": [
 		{
 			"registryType": "npm",
 			"identifier": "portkey-admin-mcp",
-			"version": "0.3.4",
+			"version": "0.3.5",
 			"transport": {
 				"type": "stdio"
 			},

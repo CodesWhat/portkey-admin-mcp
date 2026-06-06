@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.5] - 2026-06-05
+
+Namespace migration following the GitHub handle rename `s-b-e-n-s-o-n` → `scttbnsn`. No tool schema or API surface changes.
+
+### Changed
+
+- Migrate the MCP Registry namespace from `io.github.s-b-e-n-s-o-n/portkey-admin-mcp` to `io.github.scttbnsn/portkey-admin-mcp` (`server.json` `name` and `package.json` `mcpName`). The registry verifies namespace ownership against the current GitHub account, and the renamed-away handle is no longer controllable, so the prior namespace is retired. The npm package name (`portkey-admin-mcp`) is unchanged, so existing `npx portkey-admin-mcp` installs keep working.
+
 ## [0.3.4] - 2026-06-05
 
 Follow-up hardening release clearing the remaining low/medium items from the v0.3.3 audit (`docs/audit-2026-06.md`). No tool schema or API surface changes.
@@ -144,7 +152,7 @@ Major hardening release. Fixes critical MCP spec compliance issues, adds tool an
 - **Default HTTP bind address was `0.0.0.0`** — changed to `127.0.0.1` to prevent accidental network exposure
 - **Config JSON responses returned raw strings** — `getConfig()` and `updateConfig()` now parse `config` field into typed objects
 - **`getPromptVersion()` returned `Record<string, unknown>`** — now typed as `RawGetPromptResponse`
-- **CI badge pointed to wrong GitHub org** (SYPartners → s-b-e-n-s-o-n)
+- **CI badge pointed to wrong GitHub org** (SYPartners → scttbnsn)
 - **Hardcoded `app`/`env` enums in prompt tools** — replaced with `z.string()` to allow arbitrary identifiers
 
 ### Changed
@@ -216,8 +224,8 @@ First stable release. Graduates from beta with 151 tools covering ~98% of the Po
 - Vercel deployment support
 - Contract tests, E2E tests, security tests
 
-[Unreleased]: https://github.com/s-b-e-n-s-o-n/portkey-admin-mcp/compare/v0.2.0...HEAD
-[0.2.0]: https://github.com/s-b-e-n-s-o-n/portkey-admin-mcp/compare/v0.1.0...v0.2.0
-[0.1.0]: https://github.com/s-b-e-n-s-o-n/portkey-admin-mcp/compare/v0.1.0-beta.4...v0.1.0
-[0.1.0-beta.4]: https://github.com/s-b-e-n-s-o-n/portkey-admin-mcp/compare/v0.1.0-beta.3...v0.1.0-beta.4
-[0.1.0-beta.3]: https://github.com/s-b-e-n-s-o-n/portkey-admin-mcp/releases/tag/v0.1.0-beta.3
+[Unreleased]: https://github.com/scttbnsn/portkey-admin-mcp/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/scttbnsn/portkey-admin-mcp/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/scttbnsn/portkey-admin-mcp/compare/v0.1.0-beta.4...v0.1.0
+[0.1.0-beta.4]: https://github.com/scttbnsn/portkey-admin-mcp/compare/v0.1.0-beta.3...v0.1.0-beta.4
+[0.1.0-beta.3]: https://github.com/scttbnsn/portkey-admin-mcp/releases/tag/v0.1.0-beta.3
