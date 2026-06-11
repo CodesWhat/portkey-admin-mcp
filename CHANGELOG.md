@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.7] - 2026-06-11
+
+Security hardening, pagination params, compact tool responses, and a major test-coverage expansion from a four-domain code review. Tool-param additions are additive; no breaking API surface changes.
+
+### Security
+
+- Sanitize the caller-supplied `MCP-Protocol-Version` header before echoing it in HTTP error responses — truncated to 64 chars and restricted to `[A-Za-z0-9._-]`, closing an unvalidated-input reflection path.
+- Remove Redis configuration details from the unauthenticated `/auth/info` response to reduce infrastructure fingerprinting.
+- Send `Strict-Transport-Security` only when TLS is enabled, instead of emitting HSTS on plain-HTTP responses.
+- Emit a startup warning when `ALLOWED_ORIGINS=*` is combined with `MCP_AUTH_MODE=none` — wildcard CORS with no auth gate is a dangerous misconfiguration, now surfaced at boot rather than silently permitted.
+- Hash service-cache map keys with SHA-256 so plaintext API keys are never used as in-process cache identifiers.
+- Route health checks through `BaseService` so they receive the same SSRF URL validation and structured error parsing as every other upstream call (previously a bespoke fetch path bypassed both).
+- `create_api_key` description now warns that the key secret is returned exactly once and will appear in MCP transcripts and LLM context — store it securely immediately.
+
+### Added
+
+- **Pagination params on six list tools** — `list_virtual_keys`, `list_configs`, `list_all_users`, `list_user_invites`, `list_mcp_server_capabilities`, and `list_mcp_server_user_access` now accept optional `current_page`/`page_size` inputs, forwarded to the Portkey Admin API; the two MCP-server lists also surface `has_more` so truncated results are no longer indistinguishable from complete ones.
+- **Cross-field validation for `create_api_key`** — the workspace key type now requires `workspace_id` at the Zod schema layer instead of failing inside the handler.
+- **140 new tests** across 5 new test files: unit coverage for 13 previously untested tool modules, Clerk JWT auth mode, `DELETE /mcp` and SSE `GET /mcp` session endpoints, abort/timeout and upstream-error propagation paths, query-string and pagination edge cases, and contract schemas with live-recorded fixtures for workspaces and users. Total suite: 269 tests (253 unit/integration + 16 e2e).
+
+### Changed
+
+- **Compact JSON tool responses** (~157 call sites) — tool responses no longer pretty-print with 2-space indent, reducing response token usage on every tool call.
+- **Lazy Redis import** — the `redis` client module now loads only when the Redis event store is actually constructed, trimming cold-start weight when the event store is `off` or `memory`.
+- **`create_integration`/`update_integration` preserve empty strings** — explicitly provided empty-string values (e.g. `custom_host`) are now sent to the API instead of being silently dropped by truthiness checks.
+- **`migrate_prompt`/`promote_prompt`** internal prompt lookups now request a small page instead of a full listing.
+- **`PORTKEY_BASE_URL` validated once** per service container instead of once per domain service, so misconfiguration fails fast with a single clear error.
+- **HTTP transport repositioned as proof of concept** — README and the Vercel guide now state there is no hosted version and stdio is the supported transport.
+
 ## [0.3.6] - 2026-06-05
 
 Corrects the MCP Registry namespace case. No tool schema or API surface changes.
@@ -233,7 +262,8 @@ First stable release. Graduates from beta with 151 tools covering ~98% of the Po
 - Vercel deployment support
 - Contract tests, E2E tests, security tests
 
-[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.3.6...HEAD
+[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.3.7...HEAD
+[0.3.7]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.3.6...v0.3.7
 [0.3.6]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.3.5...v0.3.6
 [0.3.5]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.3.4...v0.3.5
 [0.3.4]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.3.3...v0.3.4

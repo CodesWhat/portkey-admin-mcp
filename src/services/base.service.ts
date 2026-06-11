@@ -108,9 +108,9 @@ interface ExecuteRequestOptions {
 export class BaseService {
 	protected readonly apiKey: string;
 	protected readonly baseUrl: string;
-	protected readonly timeout = 30000;
+	protected readonly timeout: number = 30000;
 
-	constructor(apiKeyOverride?: string) {
+	constructor(apiKeyOverride?: string, baseUrlOverride?: string) {
 		// Use provided API key or fall back to environment variable
 		const apiKey = apiKeyOverride ?? process.env.PORTKEY_API_KEY;
 		if (!apiKey) {
@@ -118,10 +118,14 @@ export class BaseService {
 		}
 		this.apiKey = apiKey;
 
-		// Configurable base URL with validation
-		const baseUrl = process.env.PORTKEY_BASE_URL ?? DEFAULT_BASE_URL;
-		validateUrl(baseUrl);
-		this.baseUrl = baseUrl;
+		// Configurable base URL with validation — caller may pre-validate and pass it in
+		if (baseUrlOverride !== undefined) {
+			this.baseUrl = baseUrlOverride;
+		} else {
+			const baseUrl = process.env.PORTKEY_BASE_URL ?? DEFAULT_BASE_URL;
+			validateUrl(baseUrl);
+			this.baseUrl = baseUrl;
+		}
 	}
 
 	protected encodePathSegment(value: string): string {
@@ -204,7 +208,7 @@ export class BaseService {
 				return {} as T;
 			}
 
-			return response.json() as Promise<T>;
+			return (await response.json()) as T;
 		} catch (error) {
 			const duration_ms = Date.now() - startTime;
 			// Only log network/system errors (TypeError, AbortError, etc.)

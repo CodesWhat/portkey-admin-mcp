@@ -527,16 +527,12 @@ export function registerPromptsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully created prompt "${params.name}"`,
-								id: result.id,
-								slug: result.slug,
-								version_id: result.version_id,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully created prompt "${params.name}"`,
+							id: result.id,
+							slug: result.slug,
+							version_id: result.version_id,
+						}),
 					},
 				],
 			};
@@ -554,11 +550,7 @@ export function registerPromptsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							formatPromptListResponse(prompts, params),
-							null,
-							2,
-						),
+						text: JSON.stringify(formatPromptListResponse(prompts, params)),
 					},
 				],
 			};
@@ -598,39 +590,35 @@ export function registerPromptsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								id: prompt.id,
-								name: prompt.name,
-								slug: prompt.slug,
-								collection_id: prompt.collection_id,
-								created_at: prompt.created_at,
-								last_updated_at: prompt.last_updated_at,
-								current_version: prompt.current_version
-									? {
-											id: prompt.current_version.id,
-											version_number: prompt.current_version.version_number,
-											description: prompt.current_version.version_description,
-											model: prompt.current_version.model,
-											template_format: templateFormat,
-											template: templateString,
-											parameters: prompt.current_version.parameters,
-											metadata: prompt.current_version.template_metadata,
-											has_tools: !!prompt.current_version.tools?.length,
-											has_functions: !!prompt.current_version.functions?.length,
-										}
-									: null,
-								version_count: (prompt.versions || []).length,
-								versions: (prompt.versions || []).map((v) => ({
-									id: v.id,
-									version_number: v.version_number,
-									description: v.version_description,
-									created_at: v.created_at,
-								})),
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							id: prompt.id,
+							name: prompt.name,
+							slug: prompt.slug,
+							collection_id: prompt.collection_id,
+							created_at: prompt.created_at,
+							last_updated_at: prompt.last_updated_at,
+							current_version: prompt.current_version
+								? {
+										id: prompt.current_version.id,
+										version_number: prompt.current_version.version_number,
+										description: prompt.current_version.version_description,
+										model: prompt.current_version.model,
+										template_format: templateFormat,
+										template: templateString,
+										parameters: prompt.current_version.parameters,
+										metadata: prompt.current_version.template_metadata,
+										has_tools: !!prompt.current_version.tools?.length,
+										has_functions: !!prompt.current_version.functions?.length,
+									}
+								: null,
+							version_count: (prompt.versions || []).length,
+							versions: (prompt.versions || []).map((v) => ({
+								id: v.id,
+								version_number: v.version_number,
+								description: v.version_description,
+								created_at: v.created_at,
+							})),
+						}),
 					},
 				],
 			};
@@ -707,16 +695,12 @@ export function registerPromptsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: "Successfully updated prompt",
-								id: result.id,
-								slug: result.slug,
-								new_version_id: result.prompt_version_id,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: "Successfully updated prompt",
+							id: result.id,
+							slug: result.slug,
+							new_version_id: result.prompt_version_id,
+						}),
 					},
 				],
 			};
@@ -734,14 +718,10 @@ export function registerPromptsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully deleted prompt "${params.prompt_id}"`,
-								success: true,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully deleted prompt "${params.prompt_id}"`,
+							success: true,
+						}),
 					},
 				],
 			};
@@ -761,16 +741,12 @@ export function registerPromptsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully published version ${params.version} of prompt "${params.prompt_id}"`,
-								prompt_id: params.prompt_id,
-								published_version: params.version,
-								success: true,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully published version ${params.version} of prompt "${params.prompt_id}"`,
+							prompt_id: params.prompt_id,
+							published_version: params.version,
+							success: true,
+						}),
 					},
 				],
 			};
@@ -790,36 +766,32 @@ export function registerPromptsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								prompt_id: params.prompt_id,
-								total_versions: versions.length,
-								versions: versions.map((v) => ({
-									id: v.id,
-									version_number: v.prompt_version,
-									description: v.prompt_description,
-									status: v.status,
-									label_id: v.label_id,
-									created_at: v.created_at,
-									template_preview: (() => {
-										const tmpl = v.prompt_template;
-										const str =
-											typeof tmpl === "string"
-												? tmpl
-												: typeof tmpl === "object" &&
-														tmpl !== null &&
-														"string" in tmpl
-													? (tmpl as { string: string }).string
-													: JSON.stringify(tmpl);
-										return (
-											str.substring(0, 200) + (str.length > 200 ? "..." : "")
-										);
-									})(),
-								})),
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							prompt_id: params.prompt_id,
+							total_versions: versions.length,
+							versions: versions.map((v) => ({
+								id: v.id,
+								version_number: v.prompt_version,
+								description: v.prompt_description,
+								status: v.status,
+								label_id: v.label_id,
+								created_at: v.created_at,
+								template_preview: (() => {
+									const tmpl = v.prompt_template;
+									const str =
+										typeof tmpl === "string"
+											? tmpl
+											: typeof tmpl === "object" &&
+													tmpl !== null &&
+													"string" in tmpl
+												? (tmpl as { string: string }).string
+												: JSON.stringify(tmpl);
+									return (
+										str.substring(0, 200) + (str.length > 200 ? "..." : "")
+									);
+								})(),
+							})),
+						}),
 					},
 				],
 			};
@@ -841,20 +813,16 @@ export function registerPromptsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								success: result.success,
-								rendered_messages: result.data.messages,
-								model: result.data.model,
-								hyperparameters: {
-									max_tokens: result.data.max_tokens,
-									temperature: result.data.temperature,
-									top_p: result.data.top_p,
-								},
+						text: JSON.stringify({
+							success: result.success,
+							rendered_messages: result.data.messages,
+							model: result.data.model,
+							hyperparameters: {
+								max_tokens: result.data.max_tokens,
+								temperature: result.data.temperature,
+								top_p: result.data.top_p,
 							},
-							null,
-							2,
-						),
+						}),
 					},
 				],
 			};
@@ -882,23 +850,19 @@ export function registerPromptsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								id: result.id,
-								model: result.model,
-								response: choice?.message?.content ?? null,
-								finish_reason: choice?.finish_reason ?? null,
-								usage: result.usage
-									? {
-											prompt_tokens: result.usage.prompt_tokens,
-											completion_tokens: result.usage.completion_tokens,
-											total_tokens: result.usage.total_tokens,
-										}
-									: null,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							id: result.id,
+							model: result.model,
+							response: choice?.message?.content ?? null,
+							finish_reason: choice?.finish_reason ?? null,
+							usage: result.usage
+								? {
+										prompt_tokens: result.usage.prompt_tokens,
+										completion_tokens: result.usage.completion_tokens,
+										total_tokens: result.usage.total_tokens,
+									}
+								: null,
+						}),
 					},
 				],
 			};
@@ -953,18 +917,14 @@ export function registerPromptsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								action: result.action,
-								dry_run: result.dry_run,
-								message: result.message,
-								prompt_id: result.prompt_id ?? undefined,
-								slug: result.slug ?? undefined,
-								version_id: result.version_id ?? undefined,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							action: result.action,
+							dry_run: result.dry_run,
+							message: result.message,
+							prompt_id: result.prompt_id ?? undefined,
+							slug: result.slug ?? undefined,
+							version_id: result.version_id ?? undefined,
+						}),
 					},
 				],
 			};
@@ -989,23 +949,19 @@ export function registerPromptsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully promoted prompt to ${params.target_env}`,
-								source: {
-									prompt_id: result.source_prompt_id,
-									version_id: result.source_version_id,
-								},
-								target: {
-									prompt_id: result.target_prompt_id,
-									version_id: result.target_version_id,
-									action: result.action,
-								},
-								promoted_at: result.promoted_at,
+						text: JSON.stringify({
+							message: `Successfully promoted prompt to ${params.target_env}`,
+							source: {
+								prompt_id: result.source_prompt_id,
+								version_id: result.source_version_id,
 							},
-							null,
-							2,
-						),
+							target: {
+								prompt_id: result.target_prompt_id,
+								version_id: result.target_version_id,
+								action: result.action,
+							},
+							promoted_at: result.promoted_at,
+						}),
 					},
 				],
 			};
@@ -1024,16 +980,12 @@ export function registerPromptsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								valid: result.valid,
-								errors: result.errors,
-								warnings: result.warnings,
-								metadata: params,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							valid: result.valid,
+							errors: result.errors,
+							warnings: result.warnings,
+							metadata: params,
+						}),
 					},
 				],
 			};
@@ -1055,7 +1007,7 @@ export function registerPromptsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(formatPromptVersion(version), null, 2),
+						text: JSON.stringify(formatPromptVersion(version)),
 					},
 				],
 			};
@@ -1067,17 +1019,6 @@ export function registerPromptsTools(
 		"Update a specific prompt version's label assignment. This only assigns or removes a label, and null clears the label after you look up ids with list_prompt_labels.",
 		PROMPTS_TOOL_SCHEMAS.updatePromptVersion,
 		async (params) => {
-			if (params.label_id === undefined) {
-				return {
-					content: [
-						{
-							type: "text" as const,
-							text: "Error: label_id is required — pass a label ID to assign, or null to remove the label",
-						},
-					],
-					isError: true,
-				};
-			}
 			await service.prompts.updatePromptVersion(
 				params.prompt_id,
 				params.version_id,
@@ -1089,14 +1030,10 @@ export function registerPromptsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully updated version "${params.version_id}" of prompt "${params.prompt_id}"`,
-								success: true,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully updated version "${params.version_id}" of prompt "${params.prompt_id}"`,
+							success: true,
+						}),
 					},
 				],
 			};

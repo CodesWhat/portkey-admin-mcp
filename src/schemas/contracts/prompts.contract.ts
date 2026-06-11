@@ -108,3 +108,33 @@ export const ListPromptVersionsResponseSchema = z.object({
 	total: z.number(),
 	data: z.array(PromptVersionListItemSchema),
 });
+
+/**
+ * Raw GET /prompts/:id response — the flat shape returned directly by the
+ * Portkey API before PromptsService remaps it into GetPromptResponse.
+ */
+export const RawGetPromptResponseSchema = z.object({
+	id: z.string(),
+	name: z.string(),
+	slug: z.string(),
+	collection_id: z.string(),
+	workspace_id: z.string().optional(),
+	created_at: z.string(),
+	last_updated_at: z.string(),
+	status: z.string().optional(),
+	model: z.string().optional(),
+	// Version fields flattened at top level
+	prompt_version_id: z.string().nullish(),
+	prompt_version: z.number().nullish(),
+	prompt_version_description: z.string().nullish(),
+	prompt_version_status: z.string().nullish(),
+	// Template — string, object, or null depending on API version
+	string: z.unknown().optional(),
+	parameters: z.record(z.string(), z.unknown()).nullish(),
+	functions: z.array(z.unknown()).nullish(),
+	tools: z.array(z.unknown()).nullish(),
+	tool_choice: z.unknown().nullish(),
+	template_metadata: z.record(z.string(), z.unknown()).nullish(),
+	virtual_key: z.string().nullish(),
+	object: z.literal("prompt"),
+});

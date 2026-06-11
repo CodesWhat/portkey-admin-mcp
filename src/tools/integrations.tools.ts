@@ -226,6 +226,39 @@ const INTEGRATIONS_TOOL_SCHEMAS = {
 	},
 } as const;
 
+function buildIntegrationConfigurations(params: {
+	api_version?: string;
+	resource_name?: string;
+	deployment_name?: string;
+	aws_region?: string;
+	aws_access_key_id?: string;
+	aws_secret_access_key?: string;
+	vertex_project_id?: string;
+	vertex_region?: string;
+	custom_host?: string;
+}): Record<string, unknown> | undefined {
+	const configurations: Record<string, unknown> = {};
+	if (params.api_version !== undefined)
+		configurations.api_version = params.api_version;
+	if (params.resource_name !== undefined)
+		configurations.resource_name = params.resource_name;
+	if (params.deployment_name !== undefined)
+		configurations.deployment_name = params.deployment_name;
+	if (params.aws_region !== undefined)
+		configurations.aws_region = params.aws_region;
+	if (params.aws_access_key_id !== undefined)
+		configurations.aws_access_key_id = params.aws_access_key_id;
+	if (params.aws_secret_access_key !== undefined)
+		configurations.aws_secret_access_key = params.aws_secret_access_key;
+	if (params.vertex_project_id !== undefined)
+		configurations.vertex_project_id = params.vertex_project_id;
+	if (params.vertex_region !== undefined)
+		configurations.vertex_region = params.vertex_region;
+	if (params.custom_host !== undefined)
+		configurations.custom_host = params.custom_host;
+	return Object.keys(configurations).length > 0 ? configurations : undefined;
+}
+
 export function registerIntegrationsTools(
 	server: McpServer,
 	service: PortkeyService,
@@ -247,24 +280,20 @@ export function registerIntegrationsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								total: integrations.total,
-								integrations: integrations.data.map((integration) => ({
-									id: integration.id,
-									name: integration.name,
-									slug: integration.slug,
-									ai_provider_id: integration.ai_provider_id,
-									status: integration.status,
-									description: integration.description,
-									organisation_id: integration.organisation_id,
-									created_at: integration.created_at,
-									last_updated_at: integration.last_updated_at,
-								})),
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							total: integrations.total,
+							integrations: integrations.data.map((integration) => ({
+								id: integration.id,
+								name: integration.name,
+								slug: integration.slug,
+								ai_provider_id: integration.ai_provider_id,
+								status: integration.status,
+								description: integration.description,
+								organisation_id: integration.organisation_id,
+								created_at: integration.created_at,
+								last_updated_at: integration.last_updated_at,
+							})),
+						}),
 					},
 				],
 			};
@@ -277,31 +306,6 @@ export function registerIntegrationsTools(
 		"Create an org-level provider integration. Some backends need provider-specific fields, and the new integration becomes the source for downstream providers and workspace access. Returns the new integration id and slug.",
 		INTEGRATIONS_TOOL_SCHEMAS.createIntegration,
 		async (params) => {
-			const configurations: Record<string, unknown> = {};
-
-			// Azure OpenAI configurations
-			if (params.api_version) configurations.api_version = params.api_version;
-			if (params.resource_name)
-				configurations.resource_name = params.resource_name;
-			if (params.deployment_name)
-				configurations.deployment_name = params.deployment_name;
-
-			// AWS Bedrock configurations
-			if (params.aws_region) configurations.aws_region = params.aws_region;
-			if (params.aws_access_key_id)
-				configurations.aws_access_key_id = params.aws_access_key_id;
-			if (params.aws_secret_access_key)
-				configurations.aws_secret_access_key = params.aws_secret_access_key;
-
-			// Vertex AI configurations
-			if (params.vertex_project_id)
-				configurations.vertex_project_id = params.vertex_project_id;
-			if (params.vertex_region)
-				configurations.vertex_region = params.vertex_region;
-
-			// Custom host
-			if (params.custom_host) configurations.custom_host = params.custom_host;
-
 			const result = await service.integrations.createIntegration({
 				name: params.name,
 				ai_provider_id: params.ai_provider_id,
@@ -309,23 +313,18 @@ export function registerIntegrationsTools(
 				key: params.key,
 				description: params.description,
 				workspace_id: params.workspace_id,
-				configurations:
-					Object.keys(configurations).length > 0 ? configurations : undefined,
+				configurations: buildIntegrationConfigurations(params),
 			});
 
 			return {
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully created integration "${params.name}"`,
-								id: result.id,
-								slug: result.slug,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully created integration "${params.name}"`,
+							id: result.id,
+							slug: result.slug,
+						}),
 					},
 				],
 			};
@@ -346,27 +345,23 @@ export function registerIntegrationsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								id: integration.id,
-								name: integration.name,
-								slug: integration.slug,
-								ai_provider_id: integration.ai_provider_id,
-								status: integration.status,
-								description: integration.description,
-								organisation_id: integration.organisation_id,
-								masked_key: integration.masked_key,
-								configurations: integration.configurations,
-								global_workspace_access_settings:
-									integration.global_workspace_access_settings,
-								allow_all_models: integration.allow_all_models,
-								workspace_count: integration.workspace_count,
-								created_at: integration.created_at,
-								last_updated_at: integration.last_updated_at,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							id: integration.id,
+							name: integration.name,
+							slug: integration.slug,
+							ai_provider_id: integration.ai_provider_id,
+							status: integration.status,
+							description: integration.description,
+							organisation_id: integration.organisation_id,
+							masked_key: integration.masked_key,
+							configurations: integration.configurations,
+							global_workspace_access_settings:
+								integration.global_workspace_access_settings,
+							allow_all_models: integration.allow_all_models,
+							workspace_count: integration.workspace_count,
+							created_at: integration.created_at,
+							last_updated_at: integration.last_updated_at,
+						}),
 					},
 				],
 			};
@@ -379,54 +374,21 @@ export function registerIntegrationsTools(
 		"Update an integration's name, key, or provider-specific config. Key and config changes take effect immediately and can disrupt dependent providers or live requests.",
 		INTEGRATIONS_TOOL_SCHEMAS.updateIntegration,
 		async (params) => {
-			const configurations: Record<string, unknown> = {};
-
-			// Azure OpenAI configurations
-			if (params.api_version !== undefined)
-				configurations.api_version = params.api_version;
-			if (params.resource_name !== undefined)
-				configurations.resource_name = params.resource_name;
-			if (params.deployment_name !== undefined)
-				configurations.deployment_name = params.deployment_name;
-
-			// AWS Bedrock configurations
-			if (params.aws_region !== undefined)
-				configurations.aws_region = params.aws_region;
-			if (params.aws_access_key_id !== undefined)
-				configurations.aws_access_key_id = params.aws_access_key_id;
-			if (params.aws_secret_access_key !== undefined)
-				configurations.aws_secret_access_key = params.aws_secret_access_key;
-
-			// Vertex AI configurations
-			if (params.vertex_project_id !== undefined)
-				configurations.vertex_project_id = params.vertex_project_id;
-			if (params.vertex_region !== undefined)
-				configurations.vertex_region = params.vertex_region;
-
-			// Custom host
-			if (params.custom_host !== undefined)
-				configurations.custom_host = params.custom_host;
-
 			const result = await service.integrations.updateIntegration(params.slug, {
 				name: params.name,
 				key: params.key,
 				description: params.description,
-				configurations:
-					Object.keys(configurations).length > 0 ? configurations : undefined,
+				configurations: buildIntegrationConfigurations(params),
 			});
 
 			return {
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully updated integration "${params.slug}"`,
-								success: result.success,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully updated integration "${params.slug}"`,
+							success: result.success,
+						}),
 					},
 				],
 			};
@@ -445,14 +407,10 @@ export function registerIntegrationsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully deleted integration "${params.slug}"`,
-								success: result.success,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully deleted integration "${params.slug}"`,
+							success: result.success,
+						}),
 					},
 				],
 			};
@@ -477,23 +435,19 @@ export function registerIntegrationsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								total: models.total,
-								integration_slug: params.slug,
-								models: models.data.map((model) => ({
-									id: model.id,
-									model_id: model.model_id,
-									model_name: model.model_name,
-									enabled: model.enabled,
-									custom: model.custom,
-									created_at: model.created_at,
-									last_updated_at: model.last_updated_at,
-								})),
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							total: models.total,
+							integration_slug: params.slug,
+							models: models.data.map((model) => ({
+								id: model.id,
+								model_id: model.model_id,
+								model_name: model.model_name,
+								enabled: model.enabled,
+								custom: model.custom,
+								created_at: model.created_at,
+								last_updated_at: model.last_updated_at,
+							})),
+						}),
 					},
 				],
 			};
@@ -517,15 +471,11 @@ export function registerIntegrationsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully updated models for integration "${params.slug}"`,
-								success: result.success,
-								models_updated: params.models.length,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully updated models for integration "${params.slug}"`,
+							success: result.success,
+							models_updated: params.models.length,
+						}),
 					},
 				],
 			};
@@ -547,14 +497,10 @@ export function registerIntegrationsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully deleted model "${params.model_slug}" from integration "${params.slug}"`,
-								success: result.success,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully deleted model "${params.model_slug}" from integration "${params.slug}"`,
+							success: result.success,
+						}),
 					},
 				],
 			};
@@ -579,24 +525,20 @@ export function registerIntegrationsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								total: workspaces.total,
-								integration_slug: params.slug,
-								workspaces: workspaces.data.map((ws) => ({
-									id: ws.id,
-									workspace_id: ws.workspace_id,
-									workspace_name: ws.workspace_name,
-									enabled: ws.enabled,
-									usage_limits: ws.usage_limits,
-									rate_limits: ws.rate_limits,
-									created_at: ws.created_at,
-									last_updated_at: ws.last_updated_at,
-								})),
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							total: workspaces.total,
+							integration_slug: params.slug,
+							workspaces: workspaces.data.map((ws) => ({
+								id: ws.id,
+								workspace_id: ws.workspace_id,
+								workspace_name: ws.workspace_name,
+								enabled: ws.enabled,
+								usage_limits: ws.usage_limits,
+								rate_limits: ws.rate_limits,
+								created_at: ws.created_at,
+								last_updated_at: ws.last_updated_at,
+							})),
+						}),
 					},
 				],
 			};
@@ -631,15 +573,11 @@ export function registerIntegrationsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully updated workspace access for integration "${params.slug}"`,
-								success: result.success,
-								workspaces_updated: params.workspaces.length,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully updated workspace access for integration "${params.slug}"`,
+							success: result.success,
+							workspaces_updated: params.workspaces.length,
+						}),
 					},
 				],
 			};

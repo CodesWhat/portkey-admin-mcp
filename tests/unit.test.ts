@@ -15,7 +15,11 @@ import { fileURLToPath } from "node:url";
 import { toJsonSchemaCompat } from "@modelcontextprotocol/sdk/server/zod-json-schema-compat.js";
 import { z } from "zod";
 import { createManagedEventStore } from "../src/lib/event-store.js";
-import { parseErrorResponse } from "../src/lib/fetch.js";
+import {
+	buildQueryString,
+	FetchError,
+	parseErrorResponse,
+} from "../src/lib/fetch.js";
 import { Logger } from "../src/lib/logger.js";
 import { ToolChoiceSchema, toPromptToolChoice } from "../src/lib/schemas.js";
 import { SessionStore } from "../src/lib/session-store.js";
@@ -184,22 +188,22 @@ describe("PortkeyService facade shape", () => {
 });
 
 describe("HealthService cache sharing", () => {
-	it("reuses one HealthService across PortkeyService instances with the same config", async () => {
+	it("reuses one HealthService via getSharedPortkeyService for the same config", async () => {
 		const originalApiKey = process.env.PORTKEY_API_KEY;
 		const originalBaseUrl = process.env.PORTKEY_BASE_URL;
 		process.env.PORTKEY_API_KEY = "test-dummy-key";
 		process.env.PORTKEY_BASE_URL = "https://example.portkey.test/v1";
 
 		try {
-			const { PortkeyService: FreshPortkeyService } = await import(
+			const { getSharedPortkeyService: freshGetShared } = await import(
 				`../src/services/index.js?test=${Date.now()}-${Math.random()}`
 			);
 
-			const first = new FreshPortkeyService();
-			const second = new FreshPortkeyService();
+			const first = freshGetShared();
+			const second = freshGetShared();
 
+			assert.equal(first, second);
 			assert.equal(first.health, second.health);
-			assert.notEqual(first.users, second.users);
 		} finally {
 			if (originalApiKey === undefined) {
 				delete process.env.PORTKEY_API_KEY;
@@ -1351,7 +1355,7 @@ describe("Curated tool responses", () => {
 
 		assert.ok(listUsersCallback, "expected list_all_users to be registered");
 
-		const result = (await listUsersCallback()) as {
+		const result = (await listUsersCallback({})) as {
 			content: Array<{ text: string }>;
 		};
 		const payload = JSON.parse(result.content[0]?.text || "{}") as {
@@ -2800,5 +2804,296 @@ describe("Tool annotations", () => {
 				`expected ${toolName} to reuse its module-level schema object`,
 			);
 		}
+	});
+});
+
+// ---------------------------------------------------------------------------
+// AbortError path — fetchWithTimeout timeout classification
+// ---------------------------------------------------------------------------
+
+describe("fetchWithTimeout AbortError classification", () => {
+	it("re-throws DOMException AbortError so BaseService does not swallow timeouts", async () => {
+		const originalFetch = globalThis.fetch;
+		const originalApiKey = process.env.PORTKEY_API_KEY;
+		const originalBaseUrl = process.env.PORTKEY_BASE_URL;
+		const originalLoggerError = Logger.error;
+		const loggedErrors: Array<{ message: string; extra?: object }> = [];
+
+		const abortError = new DOMException(
+			"The operation was aborted.",
+			"AbortError",
+		);
+
+		globalThis.fetch = (async () => {
+			throw abortError;
+		}) as typeof globalThis.fetch;
+
+		Logger.error = ((message: string, extra?: object) => {
+			loggedErrors.push({ message, extra });
+		}) as typeof Logger.error;
+
+		process.env.PORTKEY_API_KEY = "test-dummy-key";
+		process.env.PORTKEY_BASE_URL = "https://example.portkey.test/v1";
+
+		try {
+			const service = new TestBaseServiceClient();
+
+			let thrown: unknown;
+			try {
+				await service.requestGet("/resource");
+			} catch (err) {
+				thrown = err;
+			}
+
+			assert.ok(
+				thrown,
+				"expected requestGet to throw when fetch rejects with AbortError",
+			);
+			assert.ok(
+				thrown instanceof DOMException,
+				"thrown error should be a DOMException",
+			);
+			assert.equal((thrown as DOMException).name, "AbortError");
+			// BaseService must not convert/swallow it — the original AbortError propagates
+			assert.strictEqual(thrown, abortError);
+			// BaseService should log the network error (not a FetchError path)
+			assert.equal(loggedErrors.length, 1);
+			assert.equal(loggedErrors[0]?.message, "HTTP request error");
+		} finally {
+			globalThis.fetch = originalFetch;
+			Logger.error = originalLoggerError;
+			if (originalApiKey === undefined) {
+				delete process.env.PORTKEY_API_KEY;
+			} else {
+				process.env.PORTKEY_API_KEY = originalApiKey;
+			}
+			if (originalBaseUrl === undefined) {
+				delete process.env.PORTKEY_BASE_URL;
+			} else {
+				process.env.PORTKEY_BASE_URL = originalBaseUrl;
+			}
+		}
+	});
+});
+
+// ---------------------------------------------------------------------------
+// Upstream FetchError propagation through tool callbacks
+// ---------------------------------------------------------------------------
+
+describe("Upstream FetchError propagation through tool callbacks", () => {
+	it("surfaces 403 FetchError as isError result with structured error message and code", async () => {
+		const originalLoggerError = Logger.error;
+		Logger.error = (() => {
+			// suppress error logging for this test
+		}) as typeof Logger.error;
+
+		try {
+			const callbacks = new Map<
+				string,
+				(...args: unknown[]) => Promise<unknown>
+			>();
+
+			// registerAllTools provides the wrapToolCallback error-handling layer
+			registerAllTools(
+				{
+					tool(name: string, ...rest: unknown[]) {
+						callbacks.set(
+							name,
+							rest[rest.length - 1] as (...args: unknown[]) => Promise<unknown>,
+						);
+						return {} as never;
+					},
+				} as never,
+				{
+					prompts: {
+						listPrompts: async () => {
+							throw new FetchError("Forbidden: insufficient permissions", 403, {
+								status_code: 403,
+								message: "Forbidden: insufficient permissions",
+								code: "FORBIDDEN",
+								slug: "forbidden",
+							});
+						},
+					},
+				} as never,
+			);
+
+			const listPromptsCallback = callbacks.get("list_prompts");
+			assert.ok(listPromptsCallback, "expected list_prompts to be registered");
+
+			const result = (await listPromptsCallback({})) as {
+				content: Array<{ type: string; text: string }>;
+				isError?: boolean;
+			};
+
+			assert.equal(
+				result.isError,
+				true,
+				"result.isError should be true for upstream errors",
+			);
+
+			const payload = JSON.parse(result.content[0]?.text || "{}") as {
+				ok?: boolean;
+				error?: {
+					message?: string;
+				};
+			};
+
+			assert.equal(payload.ok, false, "payload.ok should be false");
+			assert.ok(
+				payload.error?.message?.includes("Forbidden: insufficient permissions"),
+				`expected error message to include upstream message, got: ${JSON.stringify(payload.error?.message)}`,
+			);
+		} finally {
+			Logger.error = originalLoggerError;
+		}
+	});
+});
+
+// ---------------------------------------------------------------------------
+// buildQueryString edge cases
+// ---------------------------------------------------------------------------
+
+describe("buildQueryString edge cases", () => {
+	it("drops undefined and null values", () => {
+		const qs = buildQueryString({
+			a: undefined,
+			b: null,
+			c: "hello",
+		});
+		assert.ok(!qs.includes("a="), "undefined values should be dropped");
+		assert.ok(!qs.includes("b="), "null values should be dropped");
+		assert.ok(qs.includes("c=hello"), "defined values should be kept");
+	});
+
+	it("preserves 0, false, and empty string", () => {
+		const qs = buildQueryString({
+			zero: 0,
+			falsy: false,
+			empty: "",
+		});
+		assert.ok(qs.includes("zero=0"), `expected zero=0 in: ${qs}`);
+		assert.ok(qs.includes("falsy=false"), `expected falsy=false in: ${qs}`);
+		assert.ok(qs.includes("empty="), `expected empty= in: ${qs}`);
+	});
+
+	it("returns empty string when all values are undefined or null", () => {
+		const qs = buildQueryString({ a: undefined, b: null });
+		assert.equal(qs, "");
+	});
+
+	it("returns empty string for empty params object", () => {
+		const qs = buildQueryString({});
+		assert.equal(qs, "");
+	});
+
+	it("returns empty string for undefined params", () => {
+		const qs = buildQueryString(undefined);
+		assert.equal(qs, "");
+	});
+});
+
+// ---------------------------------------------------------------------------
+// list_prompts pagination boundaries
+// ---------------------------------------------------------------------------
+
+describe("list_prompts pagination boundaries", () => {
+	function makeListPromptsCallback(
+		serviceResponse: Record<string, unknown>,
+	): (...args: unknown[]) => Promise<unknown> {
+		const cb = registerToolCallbacks((server) => {
+			registerPromptsTools(
+				server as never,
+				{
+					prompts: {
+						listPrompts: async () => serviceResponse,
+					},
+				} as never,
+			);
+		}).get("list_prompts");
+
+		assert.ok(cb, "expected list_prompts to be registered");
+		return cb;
+	}
+
+	it("last page: has_more=false and next_offset=null when returned items fill the page exactly and no more exist", async () => {
+		const cb = makeListPromptsCallback({
+			object: "list",
+			total: 4,
+			data: [
+				{
+					id: "prompt-3",
+					name: "Prompt Three",
+					slug: "prompt-three",
+					collection_id: "collection-1",
+					workspace_id: "workspace-1",
+					model: "gpt-4.1",
+					status: "active",
+					created_at: "2026-01-01T00:00:00.000Z",
+					last_updated_at: "2026-01-02T00:00:00.000Z",
+					object: "prompt",
+				},
+				{
+					id: "prompt-4",
+					name: "Prompt Four",
+					slug: "prompt-four",
+					collection_id: "collection-1",
+					workspace_id: "workspace-1",
+					model: "gpt-4.1",
+					status: "active",
+					created_at: "2026-01-03T00:00:00.000Z",
+					last_updated_at: "2026-01-04T00:00:00.000Z",
+					object: "prompt",
+				},
+			],
+		});
+
+		const result = (await cb({ current_page: 2, page_size: 2 })) as {
+			content: Array<{ text: string }>;
+		};
+		const payload = JSON.parse(result.content[0]?.text || "{}") as {
+			total?: number;
+			has_more?: boolean;
+			next_offset?: number | null;
+			returned_count?: number;
+		};
+
+		assert.equal(payload.total, 4);
+		assert.equal(payload.returned_count, 2);
+		assert.equal(
+			payload.has_more,
+			false,
+			"has_more should be false on last page",
+		);
+		assert.equal(
+			payload.next_offset,
+			null,
+			"next_offset should be null on last page",
+		);
+	});
+
+	it("empty result: total=0, returned_count=0, has_more=false", async () => {
+		const cb = makeListPromptsCallback({
+			object: "list",
+			total: 0,
+			data: [],
+		});
+
+		const result = (await cb({ current_page: 1, page_size: 10 })) as {
+			content: Array<{ text: string }>;
+		};
+		const payload = JSON.parse(result.content[0]?.text || "{}") as {
+			total?: number;
+			has_more?: boolean;
+			next_offset?: number | null;
+			returned_count?: number;
+			prompts?: unknown[];
+		};
+
+		assert.equal(payload.total, 0);
+		assert.equal(payload.returned_count, 0);
+		assert.equal(payload.has_more, false);
+		assert.equal(payload.next_offset, null);
+		assert.deepEqual(payload.prompts, []);
 	});
 });

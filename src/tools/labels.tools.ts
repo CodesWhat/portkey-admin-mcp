@@ -96,14 +96,10 @@ export function registerLabelsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully created label "${params.name}"`,
-								id: result.id,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully created label "${params.name}"`,
+							id: result.id,
+						}),
 					},
 				],
 			};
@@ -121,23 +117,19 @@ export function registerLabelsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								total: result.total,
-								labels: result.data.map((label) => ({
-									id: label.id,
-									name: label.name,
-									description: label.description,
-									color_code: label.color_code,
-									is_universal: label.is_universal,
-									status: label.status,
-									created_at: label.created_at,
-									last_updated_at: label.last_updated_at,
-								})),
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							total: result.total,
+							labels: result.data.map((label) => ({
+								id: label.id,
+								name: label.name,
+								description: label.description,
+								color_code: label.color_code,
+								is_universal: label.is_universal,
+								status: label.status,
+								created_at: label.created_at,
+								last_updated_at: label.last_updated_at,
+							})),
+						}),
 					},
 				],
 			};
@@ -158,22 +150,18 @@ export function registerLabelsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								id: label.id,
-								name: label.name,
-								description: label.description,
-								color_code: label.color_code,
-								organisation_id: label.organisation_id,
-								workspace_id: label.workspace_id,
-								is_universal: label.is_universal,
-								status: label.status,
-								created_at: label.created_at,
-								last_updated_at: label.last_updated_at,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							id: label.id,
+							name: label.name,
+							description: label.description,
+							color_code: label.color_code,
+							organisation_id: label.organisation_id,
+							workspace_id: label.workspace_id,
+							is_universal: label.is_universal,
+							status: label.status,
+							created_at: label.created_at,
+							last_updated_at: label.last_updated_at,
+						}),
 					},
 				],
 			};
@@ -192,14 +180,10 @@ export function registerLabelsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully updated label "${label_id}"`,
-								success: true,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully updated label "${label_id}"`,
+							success: true,
+						}),
 					},
 				],
 			};
@@ -217,14 +201,10 @@ export function registerLabelsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully deleted label "${params.label_id}"`,
-								success: true,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully deleted label "${params.label_id}"`,
+							success: true,
+						}),
 					},
 				],
 			};

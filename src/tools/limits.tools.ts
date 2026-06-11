@@ -249,14 +249,10 @@ export function registerLimitsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								total: result.total,
-								rate_limits: result.data.map(formatRateLimit),
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							total: result.total,
+							rate_limits: result.data.map(formatRateLimit),
+						}),
 					},
 				],
 			};
@@ -274,7 +270,7 @@ export function registerLimitsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(formatRateLimit(result), null, 2),
+						text: JSON.stringify(formatRateLimit(result)),
 					},
 				],
 			};
@@ -301,14 +297,10 @@ export function registerLimitsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully created rate limit${params.name ? ` "${params.name}"` : ""}`,
-								rate_limit: formatRateLimit(result),
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully created rate limit${params.name ? ` "${params.name}"` : ""}`,
+							rate_limit: formatRateLimit(result),
+						}),
 					},
 				],
 			};
@@ -330,14 +322,10 @@ export function registerLimitsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully updated rate limit "${params.id}"`,
-								rate_limit: formatRateLimit(result),
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully updated rate limit "${params.id}"`,
+							rate_limit: formatRateLimit(result),
+						}),
 					},
 				],
 			};
@@ -355,14 +343,10 @@ export function registerLimitsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully deleted rate limit "${params.id}"`,
-								success: true,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully deleted rate limit "${params.id}"`,
+							success: true,
+						}),
 					},
 				],
 			};
@@ -382,14 +366,10 @@ export function registerLimitsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								total: result.total,
-								usage_limits: result.data.map(formatUsageLimit),
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							total: result.total,
+							usage_limits: result.data.map(formatUsageLimit),
+						}),
 					},
 				],
 			};
@@ -407,7 +387,7 @@ export function registerLimitsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(formatUsageLimit(result), null, 2),
+						text: JSON.stringify(formatUsageLimit(result)),
 					},
 				],
 			};
@@ -435,14 +415,10 @@ export function registerLimitsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully created usage limit${params.name ? ` "${params.name}"` : ""}`,
-								usage_limit: formatUsageLimit(result),
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully created usage limit${params.name ? ` "${params.name}"` : ""}`,
+							usage_limit: formatUsageLimit(result),
+						}),
 					},
 				],
 			};
@@ -466,14 +442,10 @@ export function registerLimitsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully updated usage limit "${params.id}"`,
-								usage_limit: formatUsageLimit(result),
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully updated usage limit "${params.id}"`,
+							usage_limit: formatUsageLimit(result),
+						}),
 					},
 				],
 			};
@@ -491,14 +463,10 @@ export function registerLimitsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully deleted usage limit "${params.id}"`,
-								success: true,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully deleted usage limit "${params.id}"`,
+							success: true,
+						}),
 					},
 				],
 			};
@@ -519,14 +487,10 @@ export function registerLimitsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								total: result.total,
-								entities: result.data.map(formatUsageLimitEntity),
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							total: result.total,
+							entities: result.data.map(formatUsageLimitEntity),
+						}),
 					},
 				],
 			};
@@ -546,14 +510,10 @@ export function registerLimitsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully reset usage for entity "${params.entity_id}" on limit "${params.limit_id}"`,
-								success: true,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully reset usage for entity "${params.entity_id}" on limit "${params.limit_id}"`,
+							success: true,
+						}),
 					},
 				],
 			};

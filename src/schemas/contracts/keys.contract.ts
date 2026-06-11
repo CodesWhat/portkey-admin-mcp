@@ -64,12 +64,14 @@ const ApiKeyRateLimitSchema = z.object({
 	value: z.number(),
 });
 
-const ApiKeyUsageLimitsSchema = z.object({
-	type: z.enum(["cost", "tokens"]),
-	credit_limit: z.number(),
-	periodic_reset: z.enum(["monthly", "weekly"]),
-	alert_threshold: z.number(),
-});
+const ApiKeyUsageLimitsSchema = z
+	.object({
+		type: z.enum(["cost", "tokens"]).optional(),
+		credit_limit: z.number().optional(),
+		periodic_reset: z.enum(["monthly", "weekly"]).optional(),
+		alert_threshold: z.number().optional(),
+	})
+	.passthrough();
 
 const ApiKeyDefaultsSchema = z.object({
 	metadata: z.record(z.string(), z.string()).nullable(),
@@ -85,7 +87,7 @@ export const ApiKeySchema = z.object({
 	organisation_id: z.string(),
 	workspace_id: z.string().nullable().optional(),
 	user_id: z.string().nullable(),
-	status: z.enum(["active", "exhausted"]),
+	status: z.enum(["active", "exhausted", "expired"]),
 	created_at: z.string(),
 	last_updated_at: z.string(),
 	creation_mode: z.enum(["ui", "api", "auto"]),

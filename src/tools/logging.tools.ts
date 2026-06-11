@@ -210,14 +210,10 @@ export function registerLoggingTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: "Successfully inserted log entry",
-								success: result.success,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: "Successfully inserted log entry",
+							success: result.success,
+						}),
 					},
 				],
 			};
@@ -249,16 +245,12 @@ export function registerLoggingTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: "Successfully created log export",
-								id: result.id,
-								total: result.total,
-								object: result.object,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: "Successfully created log export",
+							id: result.id,
+							total: result.total,
+							object: result.object,
+						}),
 					},
 				],
 			};
@@ -279,24 +271,20 @@ export function registerLoggingTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								total: result.total,
-								exports: result.data.map((exp) => ({
-									id: exp.id,
-									status: exp.status,
-									description: exp.description,
-									filters: exp.filters,
-									requested_data: exp.requested_data,
-									workspace_id: exp.workspace_id,
-									created_at: exp.created_at,
-									last_updated_at: exp.last_updated_at,
-									created_by: exp.created_by,
-								})),
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							total: result.total,
+							exports: result.data.map((exp) => ({
+								id: exp.id,
+								status: exp.status,
+								description: exp.description,
+								filters: exp.filters,
+								requested_data: exp.requested_data,
+								workspace_id: exp.workspace_id,
+								created_at: exp.created_at,
+								last_updated_at: exp.last_updated_at,
+								created_by: exp.created_by,
+							})),
+						}),
 					},
 				],
 			};
@@ -315,22 +303,18 @@ export function registerLoggingTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								id: result.id,
-								status: result.status,
-								description: result.description,
-								filters: result.filters,
-								requested_data: result.requested_data,
-								organisation_id: result.organisation_id,
-								workspace_id: result.workspace_id,
-								created_at: result.created_at,
-								last_updated_at: result.last_updated_at,
-								created_by: result.created_by,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							id: result.id,
+							status: result.status,
+							description: result.description,
+							filters: result.filters,
+							requested_data: result.requested_data,
+							organisation_id: result.organisation_id,
+							workspace_id: result.workspace_id,
+							created_at: result.created_at,
+							last_updated_at: result.last_updated_at,
+							created_by: result.created_by,
+						}),
 					},
 				],
 			};
@@ -349,15 +333,11 @@ export function registerLoggingTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: result.message,
-								export_id: params.export_id,
-								status: "started",
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: result.message,
+							export_id: params.export_id,
+							status: "started",
+						}),
 					},
 				],
 			};
@@ -376,15 +356,11 @@ export function registerLoggingTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: result.message,
-								export_id: params.export_id,
-								status: "cancelled",
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: result.message,
+							export_id: params.export_id,
+							status: "cancelled",
+						}),
 					},
 				],
 			};
@@ -403,15 +379,11 @@ export function registerLoggingTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: "Download URL generated successfully",
-								export_id: params.export_id,
-								signed_url: result.signed_url,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: "Download URL generated successfully",
+							export_id: params.export_id,
+							signed_url: result.signed_url,
+						}),
 					},
 				],
 			};
@@ -453,16 +425,12 @@ export function registerLoggingTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: "Successfully updated log export",
-								id: result.id,
-								total: result.total,
-								object: result.object,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: "Successfully updated log export",
+							id: result.id,
+							total: result.total,
+							object: result.object,
+						}),
 					},
 				],
 			};

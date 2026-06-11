@@ -4,30 +4,25 @@ export type * from "./analytics.service.js";
 export { AnalyticsService } from "./analytics.service.js";
 export type * from "./audit.service.js";
 export { AuditService } from "./audit.service.js";
-export { BaseService } from "./base.service.js";
+export { BaseService, validateUrl } from "./base.service.js";
 export type * from "./collections.service.js";
 export { CollectionsService } from "./collections.service.js";
 export type * from "./configs.service.js";
 export { ConfigsService } from "./configs.service.js";
 export type * from "./guardrails.service.js";
 export { GuardrailsService } from "./guardrails.service.js";
-// Phase 8: Health
 export type * from "./health.service.js";
 export { HealthService } from "./health.service.js";
-// Phase 5: Integrations
 export type * from "./integrations.service.js";
 export { IntegrationsService } from "./integrations.service.js";
 export type * from "./keys.service.js";
 export { KeysService } from "./keys.service.js";
-// Phase 3: Labels and Partials
 export type * from "./labels.service.js";
 export { LabelsService } from "./labels.service.js";
 export type * from "./limits.service.js";
 export { LimitsService } from "./limits.service.js";
-// Phase 4: Logging
 export type * from "./logging.service.js";
 export { LoggingService } from "./logging.service.js";
-// MCP resource management
 export type * from "./mcp-integrations.service.js";
 export { McpIntegrationsService } from "./mcp-integrations.service.js";
 export type * from "./mcp-servers.service.js";
@@ -36,27 +31,25 @@ export type * from "./partials.service.js";
 export { PartialsService } from "./partials.service.js";
 export type * from "./prompts.service.js";
 export { PromptsService } from "./prompts.service.js";
-// Phase 5: Providers
 export type * from "./providers.service.js";
 export { ProvidersService } from "./providers.service.js";
-// Phase 4: Tracing
 export type * from "./tracing.service.js";
 export { TracingService } from "./tracing.service.js";
-// Type re-exports
 export type * from "./users.service.js";
 export { UsersService } from "./users.service.js";
 export type * from "./workspaces.service.js";
 export { WorkspacesService } from "./workspaces.service.js";
 
+import crypto from "node:crypto";
 import { AnalyticsService } from "./analytics.service.js";
 import { AuditService } from "./audit.service.js";
+import { validateUrl } from "./base.service.js";
 import { CollectionsService } from "./collections.service.js";
 import { ConfigsService } from "./configs.service.js";
 import { GuardrailsService } from "./guardrails.service.js";
 import { HealthService } from "./health.service.js";
 import { IntegrationsService } from "./integrations.service.js";
 import { KeysService } from "./keys.service.js";
-// Import services for facade
 import { LabelsService } from "./labels.service.js";
 import { LimitsService } from "./limits.service.js";
 import { LoggingService } from "./logging.service.js";
@@ -81,26 +74,17 @@ function resolvePortkeyApiKey(apiKey?: string): string {
 }
 
 function getSharedServiceCacheKey(apiKey?: string): string {
+	const keyDigest = crypto
+		.createHash("sha256")
+		.update(resolvePortkeyApiKey(apiKey))
+		.digest("hex");
 	return JSON.stringify({
-		apiKey: resolvePortkeyApiKey(apiKey),
+		apiKey: keyDigest,
 		baseUrl: process.env.PORTKEY_BASE_URL?.trim() || "",
 	});
 }
 
 const sharedPortkeyServices = new Map<string, PortkeyService>();
-const sharedHealthServices = new Map<string, HealthService>();
-
-export function getSharedHealthService(apiKey?: string): HealthService {
-	const cacheKey = getSharedServiceCacheKey(apiKey);
-	const cached = sharedHealthServices.get(cacheKey);
-	if (cached) {
-		return cached;
-	}
-
-	const service = new HealthService(resolvePortkeyApiKey(apiKey));
-	sharedHealthServices.set(cacheKey, service);
-	return service;
-}
 
 /**
  * PortkeyService - container for domain-specific service clients
@@ -128,25 +112,34 @@ export class PortkeyService {
 
 	constructor(apiKey?: string) {
 		const resolvedApiKey = resolvePortkeyApiKey(apiKey);
-		this.users = new UsersService(resolvedApiKey);
-		this.workspaces = new WorkspacesService(resolvedApiKey);
-		this.configs = new ConfigsService(resolvedApiKey);
-		this.keys = new KeysService(resolvedApiKey);
-		this.collections = new CollectionsService(resolvedApiKey);
-		this.prompts = new PromptsService(resolvedApiKey);
-		this.analytics = new AnalyticsService(resolvedApiKey);
-		this.guardrails = new GuardrailsService(resolvedApiKey);
-		this.integrations = new IntegrationsService(resolvedApiKey);
-		this.limits = new LimitsService(resolvedApiKey);
-		this.audit = new AuditService(resolvedApiKey);
-		this.labels = new LabelsService(resolvedApiKey);
-		this.partials = new PartialsService(resolvedApiKey);
-		this.tracing = new TracingService(resolvedApiKey);
-		this.logging = new LoggingService(resolvedApiKey);
-		this.providers = new ProvidersService(resolvedApiKey);
-		this.mcpIntegrations = new McpIntegrationsService(resolvedApiKey);
-		this.mcpServers = new McpServersService(resolvedApiKey);
-		this.health = getSharedHealthService(resolvedApiKey);
+		const resolvedBaseUrl =
+			process.env.PORTKEY_BASE_URL ?? "https://api.portkey.ai/v1";
+		validateUrl(resolvedBaseUrl);
+		this.users = new UsersService(resolvedApiKey, resolvedBaseUrl);
+		this.workspaces = new WorkspacesService(resolvedApiKey, resolvedBaseUrl);
+		this.configs = new ConfigsService(resolvedApiKey, resolvedBaseUrl);
+		this.keys = new KeysService(resolvedApiKey, resolvedBaseUrl);
+		this.collections = new CollectionsService(resolvedApiKey, resolvedBaseUrl);
+		this.prompts = new PromptsService(resolvedApiKey, resolvedBaseUrl);
+		this.analytics = new AnalyticsService(resolvedApiKey, resolvedBaseUrl);
+		this.guardrails = new GuardrailsService(resolvedApiKey, resolvedBaseUrl);
+		this.integrations = new IntegrationsService(
+			resolvedApiKey,
+			resolvedBaseUrl,
+		);
+		this.limits = new LimitsService(resolvedApiKey, resolvedBaseUrl);
+		this.audit = new AuditService(resolvedApiKey, resolvedBaseUrl);
+		this.labels = new LabelsService(resolvedApiKey, resolvedBaseUrl);
+		this.partials = new PartialsService(resolvedApiKey, resolvedBaseUrl);
+		this.tracing = new TracingService(resolvedApiKey, resolvedBaseUrl);
+		this.logging = new LoggingService(resolvedApiKey, resolvedBaseUrl);
+		this.providers = new ProvidersService(resolvedApiKey, resolvedBaseUrl);
+		this.mcpIntegrations = new McpIntegrationsService(
+			resolvedApiKey,
+			resolvedBaseUrl,
+		);
+		this.mcpServers = new McpServersService(resolvedApiKey, resolvedBaseUrl);
+		this.health = new HealthService(resolvedApiKey, resolvedBaseUrl);
 	}
 }
 

@@ -117,6 +117,7 @@ export function toPromptToolChoice(
 	}
 
 	if (toolChoice.mode === "function") {
+		// superRefine above guarantees function_name is defined when mode === "function"
 		return {
 			type: "function",
 			function: {

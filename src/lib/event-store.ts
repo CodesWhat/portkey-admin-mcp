@@ -4,7 +4,7 @@ import type {
 	StreamId,
 } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import type { JSONRPCMessage } from "@modelcontextprotocol/sdk/types.js";
-import { createClient, type RedisClientType } from "redis";
+import type { RedisClientType } from "redis";
 import type { ServerConfig } from "./config.js";
 import { Logger } from "./logger.js";
 
@@ -174,25 +174,16 @@ class InMemoryEventStore implements EventStore {
 }
 
 class RedisEventStore implements EventStore {
-	private readonly client: RedisClientType;
+	client: RedisClientType | undefined;
+	private readonly redisUrl: string;
 	private readonly ttlSeconds: number;
 	private readonly keyPrefix: string;
 	private connectPromise: Promise<unknown> | undefined;
 
 	constructor(redisUrl: string, keyPrefix: string, ttlSeconds: number) {
+		this.redisUrl = redisUrl;
 		this.ttlSeconds = ttlSeconds;
 		this.keyPrefix = keyPrefix;
-
-		this.client = createClient({
-			url: redisUrl,
-		});
-		this.client.on("error", (error) => {
-			Logger.error("Redis event store error", {
-				metadata: {
-					error: error instanceof Error ? error.message : String(error),
-				},
-			});
-		});
 	}
 
 	private counterKey(): string {
@@ -208,6 +199,18 @@ class RedisEventStore implements EventStore {
 	}
 
 	private async ensureConnected(): Promise<void> {
+		if (!this.client) {
+			const { createClient } = await import("redis");
+			this.client = createClient({ url: this.redisUrl });
+			this.client.on("error", (error) => {
+				Logger.error("Redis event store error", {
+					metadata: {
+						error: error instanceof Error ? error.message : String(error),
+					},
+				});
+			});
+		}
+
 		if (this.client.isOpen) {
 			return;
 		}
@@ -222,17 +225,25 @@ class RedisEventStore implements EventStore {
 		await this.connectPromise;
 	}
 
+	private getConnectedClient(): RedisClientType {
+		if (!this.client) {
+			throw new Error("Redis client not initialized");
+		}
+		return this.client;
+	}
+
 	async storeEvent(
 		streamId: StreamId,
 		message: JSONRPCMessage,
 	): Promise<EventId> {
 		await this.ensureConnected();
+		const client = this.getConnectedClient();
 
-		const eventId = String(await this.client.incr(this.counterKey()));
+		const eventId = String(await client.incr(this.counterKey()));
 		const eventKey = this.eventKey(eventId);
 		const streamKey = this.streamEventsKey(streamId);
 
-		const tx = this.client.multi();
+		const tx = client.multi();
 		tx.hSet(eventKey, {
 			streamId,
 			message: JSON.stringify(message),
@@ -253,7 +264,10 @@ class RedisEventStore implements EventStore {
 			return undefined;
 		}
 		await this.ensureConnected();
-		const streamId = await this.client.hGet(this.eventKey(eventId), "streamId");
+		const streamId = await this.getConnectedClient().hGet(
+			this.eventKey(eventId),
+			"streamId",
+		);
 		return streamId || undefined;
 	}
 
@@ -264,8 +278,9 @@ class RedisEventStore implements EventStore {
 		}: { send: (eventId: EventId, message: JSONRPCMessage) => Promise<void> },
 	): Promise<StreamId> {
 		await this.ensureConnected();
+		const client = this.getConnectedClient();
 
-		const baseEvent = await this.client.hGetAll(this.eventKey(lastEventId));
+		const baseEvent = await client.hGetAll(this.eventKey(lastEventId));
 		const streamId = baseEvent.streamId;
 		if (!streamId) {
 			throw new Error(`Event not found for replay: ${lastEventId}`);
@@ -276,7 +291,7 @@ class RedisEventStore implements EventStore {
 			throw new Error(`Invalid replay event ID: ${lastEventId}`);
 		}
 
-		const eventIds = await this.client.zRangeByScore(
+		const eventIds = await client.zRangeByScore(
 			this.streamEventsKey(streamId),
 			`(${baseScore}`,
 			"+inf",
@@ -286,7 +301,7 @@ class RedisEventStore implements EventStore {
 			return streamId;
 		}
 
-		const tx = this.client.multi();
+		const tx = client.multi();
 		for (const eventId of eventIds) {
 			tx.hGet(this.eventKey(eventId), "message");
 		}
@@ -310,6 +325,9 @@ class RedisEventStore implements EventStore {
 	}
 
 	async close(): Promise<void> {
+		if (!this.client) {
+			return;
+		}
 		if (!this.client.isOpen && this.connectPromise) {
 			try {
 				await this.connectPromise;

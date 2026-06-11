@@ -157,9 +157,14 @@ export class McpServersService extends BaseService {
 
 	async listMcpServerCapabilities(
 		id: string,
+		params?: { current_page?: number; page_size?: number },
 	): Promise<ListMcpServerCapabilitiesResponse> {
 		return this.get<ListMcpServerCapabilitiesResponse>(
 			`/mcp-servers/${this.encodePathSegment(id)}/capabilities`,
+			{
+				current_page: params?.current_page,
+				page_size: params?.page_size,
+			},
 		);
 	}
 
@@ -176,9 +181,14 @@ export class McpServersService extends BaseService {
 
 	async listMcpServerUserAccess(
 		id: string,
+		params?: { current_page?: number; page_size?: number },
 	): Promise<ListMcpServerUserAccessResponse> {
 		return this.get<ListMcpServerUserAccessResponse>(
 			`/mcp-servers/${this.encodePathSegment(id)}/user-access`,
+			{
+				current_page: params?.current_page,
+				page_size: params?.page_size,
+			},
 		);
 	}
 

@@ -30,6 +30,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Knip (unused exports/deps)
+        run: npm run knip
+
       - name: Typecheck
         run: npm run typecheck
 

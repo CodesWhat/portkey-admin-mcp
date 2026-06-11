@@ -57,8 +57,6 @@ export interface CostAnalyticsResponse {
 	summary: CostSummary;
 }
 
-export interface CostAnalyticsParams extends BaseAnalyticsParams {}
-
 // ==================== Graph Analytics Types ====================
 
 export interface RequestDataPoint {
@@ -268,7 +266,7 @@ export class AnalyticsService extends BaseService {
 	// ==================== Cost Analytics ====================
 
 	async getCostAnalytics(
-		params: CostAnalyticsParams,
+		params: BaseAnalyticsParams,
 	): Promise<CostAnalyticsResponse> {
 		return this.get<CostAnalyticsResponse>(
 			"/analytics/graphs/cost",

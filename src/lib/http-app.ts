@@ -17,7 +17,7 @@ import {
 import cors from "cors";
 import express from "express";
 import helmet from "helmet";
-import { getSharedHealthService } from "../services/index.js";
+import { getSharedPortkeyService } from "../services/index.js";
 import {
 	isToolDomain,
 	normalizeToolDomains,
@@ -40,6 +40,7 @@ import {
 	rateLimitMiddleware,
 } from "./security.js";
 import { SessionStore } from "./session-store.js";
+import { isRecord } from "./type-guards.js";
 
 export interface HttpAppRuntime {
 	app: express.Express;
@@ -204,10 +205,6 @@ function respondJsonRpcClientError(
 	});
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-	return typeof value === "object" && value !== null;
-}
-
 function parseRequestedToolDomains(
 	rawQuery: unknown,
 ): ToolDomain[] | undefined {
@@ -279,6 +276,15 @@ function getNegotiatedProtocolVersion(body: unknown): string | undefined {
 		: LATEST_PROTOCOL_VERSION;
 }
 
+function sanitizeProtocolVersion(version: string): string {
+	return version.replace(/[^A-Za-z0-9._-]/g, "").slice(0, 64);
+}
+
+function getMcpProtocolVersion(req: express.Request): string | undefined {
+	const raw = req.headers["mcp-protocol-version"];
+	return typeof raw === "string" ? raw : undefined;
+}
+
 function validateRequiredProtocolVersion(
 	protocolVersion: string | undefined,
 	expectedProtocolVersion?: string,
@@ -288,14 +294,16 @@ function validateRequiredProtocolVersion(
 	}
 
 	if (!SUPPORTED_PROTOCOL_VERSIONS.includes(protocolVersion)) {
-		return `Bad Request: Unsupported protocol version: ${protocolVersion} (supported versions: ${SUPPORTED_PROTOCOL_VERSIONS.join(", ")})`;
+		const safe = sanitizeProtocolVersion(protocolVersion);
+		return `Bad Request: Unsupported protocol version: ${safe} (supported versions: ${SUPPORTED_PROTOCOL_VERSIONS.join(", ")})`;
 	}
 
 	if (
 		expectedProtocolVersion !== undefined &&
 		protocolVersion !== expectedProtocolVersion
 	) {
-		return `Bad Request: MCP-Protocol-Version ${protocolVersion} does not match negotiated session protocol version ${expectedProtocolVersion}`;
+		const safe = sanitizeProtocolVersion(protocolVersion);
+		return `Bad Request: MCP-Protocol-Version ${safe} does not match negotiated session protocol version ${expectedProtocolVersion}`;
 	}
 
 	return undefined;
@@ -314,8 +322,14 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 	)
 		? true
 		: allowedOrigins;
+	if (allowedOrigins.includes("*") && authConfig.mode === "none") {
+		Logger.warn(
+			"CORS wildcard (ALLOWED_ORIGINS=*) combined with MCP_AUTH_MODE=none: all origins are accepted with no authentication. Do not expose this server publicly.",
+		);
+	}
+
 	const healthService = process.env.PORTKEY_API_KEY
-		? getSharedHealthService()
+		? getSharedPortkeyService().health
 		: null;
 	const isStatefulSessionMode = config.sessionMode === "stateful";
 	const publicBaseUrl = buildConfiguredPublicBaseUrl(config);
@@ -378,10 +392,12 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 	app.use(
 		helmet({
 			frameguard: { action: "deny" },
-			strictTransportSecurity: {
-				maxAge: 31_536_000,
-				includeSubDomains: true,
-			},
+			strictTransportSecurity: config.tls.enabled
+				? {
+						maxAge: 31_536_000,
+						includeSubDomains: true,
+					}
+				: false,
 		}),
 	);
 	app.use(express.json({ limit: requestBodyLimit }));
@@ -576,9 +592,6 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 				enabled: config.tls.enabled,
 				protocol: config.protocol,
 			},
-			redis: {
-				configured: Boolean(config.eventStore.redisUrl),
-			},
 		});
 	});
 
@@ -588,10 +601,7 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 	 */
 	app.post("/mcp", async (req, res) => {
 		let requestedToolDomains: ToolDomain[] | undefined;
-		const protocolVersionHeader =
-			typeof req.headers["mcp-protocol-version"] === "string"
-				? req.headers["mcp-protocol-version"]
-				: undefined;
+		const protocolVersionHeader = getMcpProtocolVersion(req);
 		try {
 			requestedToolDomains = parseRequestedToolDomains(req.query.tools);
 		} catch (error) {
@@ -777,10 +787,7 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 		}
 
 		const sessionId = req.headers["mcp-session-id"] as string | undefined;
-		const protocolVersionHeader =
-			typeof req.headers["mcp-protocol-version"] === "string"
-				? req.headers["mcp-protocol-version"]
-				: undefined;
+		const protocolVersionHeader = getMcpProtocolVersion(req);
 		let requestedToolDomains: ToolDomain[] | undefined;
 		try {
 			requestedToolDomains = parseRequestedToolDomains(req.query.tools);
@@ -862,10 +869,7 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 		}
 
 		const sessionId = req.headers["mcp-session-id"] as string | undefined;
-		const protocolVersionHeader =
-			typeof req.headers["mcp-protocol-version"] === "string"
-				? req.headers["mcp-protocol-version"]
-				: undefined;
+		const protocolVersionHeader = getMcpProtocolVersion(req);
 
 		if (!sessionId) {
 			res.status(400).json({

@@ -2,20 +2,20 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { PortkeyService } from "../services/index.js";
 
-type ConfigToolParams = {
-	cache_mode?: "simple" | "semantic";
-	cache_max_age?: number;
-	retry_attempts?: number;
-	retry_on_status_codes?: number[];
-	strategy_mode?: "loadbalance" | "fallback";
-	targets?: Array<{
-		provider?: string;
-		virtual_key?: string;
-	}>;
-};
-
 const CONFIGS_TOOL_SCHEMAS = {
-	listConfigs: {},
+	listConfigs: {
+		current_page: z.coerce
+			.number()
+			.positive()
+			.optional()
+			.describe("Page number for pagination"),
+		page_size: z.coerce
+			.number()
+			.positive()
+			.max(100)
+			.optional()
+			.describe("Number of results per page (max 100)"),
+	},
 	getConfig: {
 		slug: z
 			.string()
@@ -119,7 +119,25 @@ const CONFIGS_TOOL_SCHEMAS = {
 	},
 } as const;
 
-function buildConfigPayload(params: ConfigToolParams) {
+const configPayloadSchema = z.object({
+	cache_mode: z.enum(["simple", "semantic"]).optional(),
+	cache_max_age: z.coerce.number().positive().optional(),
+	retry_attempts: z.coerce.number().positive().max(5).optional(),
+	retry_on_status_codes: z.array(z.coerce.number()).optional(),
+	strategy_mode: z.enum(["loadbalance", "fallback"]).optional(),
+	targets: z
+		.array(
+			z.object({
+				provider: z.string().optional(),
+				virtual_key: z.string().optional(),
+			}),
+		)
+		.optional(),
+});
+
+type ConfigPayloadParams = z.infer<typeof configPayloadSchema>;
+
+function buildConfigPayload(params: ConfigPayloadParams) {
 	const cache =
 		params.cache_mode !== undefined || params.cache_max_age !== undefined
 			? {
@@ -175,31 +193,30 @@ export function registerConfigsTools(
 		"list_configs",
 		"List configs in the org with id, slug, name, status, workspace, and timestamps. Use this summary view to find a slug; use get_config for the full routing, cache, retry, and target settings before updating or deleting.",
 		CONFIGS_TOOL_SCHEMAS.listConfigs,
-		async () => {
-			const configs = await service.configs.listConfigs();
+		async (params) => {
+			const configs = await service.configs.listConfigs({
+				current_page: params.current_page,
+				page_size: params.page_size,
+			});
 			return {
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								total: configs.total,
-								configurations: (configs.data ?? []).map((config) => ({
-									id: config.id,
-									name: config.name,
-									slug: config.slug,
-									workspace_id: config.workspace_id,
-									status: config.status,
-									is_default: config.is_default,
-									created_at: config.created_at,
-									last_updated_at: config.last_updated_at,
-									owner_id: config.owner_id,
-									updated_by: config.updated_by,
-								})),
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							total: configs.total,
+							configurations: (configs.data ?? []).map((config) => ({
+								id: config.id,
+								name: config.name,
+								slug: config.slug,
+								workspace_id: config.workspace_id,
+								status: config.status,
+								is_default: config.is_default,
+								created_at: config.created_at,
+								last_updated_at: config.last_updated_at,
+								owner_id: config.owner_id,
+								updated_by: config.updated_by,
+							})),
+						}),
 					},
 				],
 			};
@@ -217,35 +234,31 @@ export function registerConfigsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								id: response.id,
-								slug: response.slug,
-								name: response.name,
-								status: response.status,
-								config: {
-									cache: response.config.cache && {
-										mode: response.config.cache.mode,
-										max_age: response.config.cache.max_age,
-									},
-									retry: response.config.retry && {
-										attempts: response.config.retry.attempts,
-										on_status_codes: response.config.retry.on_status_codes,
-									},
-									strategy: response.config.strategy && {
-										mode: response.config.strategy.mode,
-									},
-									targets: response.config.targets?.map(
-										(target: { provider?: string; virtual_key?: string }) => ({
-											provider: target.provider,
-											virtual_key: target.virtual_key,
-										}),
-									),
+						text: JSON.stringify({
+							id: response.id,
+							slug: response.slug,
+							name: response.name,
+							status: response.status,
+							config: {
+								cache: response.config.cache && {
+									mode: response.config.cache.mode,
+									max_age: response.config.cache.max_age,
 								},
+								retry: response.config.retry && {
+									attempts: response.config.retry.attempts,
+									on_status_codes: response.config.retry.on_status_codes,
+								},
+								strategy: response.config.strategy && {
+									mode: response.config.strategy.mode,
+								},
+								targets: response.config.targets?.map(
+									(target: { provider?: string; virtual_key?: string }) => ({
+										provider: target.provider,
+										virtual_key: target.virtual_key,
+									}),
+								),
 							},
-							null,
-							2,
-						),
+						}),
 					},
 				],
 			};
@@ -283,15 +296,11 @@ export function registerConfigsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully created configuration "${params.name}"`,
-								id: result.id,
-								version_id: result.version_id,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully created configuration "${params.name}"`,
+							id: result.id,
+							version_id: result.version_id,
+						}),
 					},
 				],
 			};
@@ -323,16 +332,12 @@ export function registerConfigsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully updated configuration "${params.slug}"`,
-								id: result.id,
-								slug: result.slug,
-								config: result.config,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully updated configuration "${params.slug}"`,
+							id: result.id,
+							slug: result.slug,
+							config: result.config,
+						}),
 					},
 				],
 			};
@@ -350,14 +355,10 @@ export function registerConfigsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully deleted configuration "${params.slug}"`,
-								success: result.success,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully deleted configuration "${params.slug}"`,
+							success: result.success,
+						}),
 					},
 				],
 			};
@@ -375,20 +376,16 @@ export function registerConfigsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								total: result.total,
-								versions: (result.data ?? []).map((version) => ({
-									id: version.id,
-									version: version.version,
-									config: version.config,
-									created_at: version.created_at,
-									created_by: version.created_by,
-								})),
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							total: result.total,
+							versions: (result.data ?? []).map((version) => ({
+								id: version.id,
+								version: version.version,
+								config: version.config,
+								created_at: version.created_at,
+								created_by: version.created_by,
+							})),
+						}),
 					},
 				],
 			};

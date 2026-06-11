@@ -59,6 +59,8 @@ const ENDPOINTS: Endpoint[] = [
 	{ name: "prompts-list", path: "/prompts" },
 	{ name: "virtual-keys-list", path: "/virtual-keys" },
 	{ name: "api-keys-list", path: "/api-keys" },
+	{ name: "workspaces-list", path: "/admin/workspaces" },
+	{ name: "users-list", path: "/admin/users" },
 ];
 
 async function fetchEndpoint(endpoint: Endpoint): Promise<void> {

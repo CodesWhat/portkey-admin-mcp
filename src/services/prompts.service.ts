@@ -197,6 +197,7 @@ export class PromptsService extends BaseService {
 		const existingPrompts = await this.listPrompts({
 			collection_id: data.collection_id,
 			search: data.name,
+			page_size: 10,
 		});
 
 		const existingPrompt = existingPrompts.data.find(
@@ -327,6 +328,7 @@ export class PromptsService extends BaseService {
 		const existingTargets = await this.listPrompts({
 			collection_id: data.target_collection_id,
 			search: targetName,
+			page_size: 10,
 		});
 
 		const existingTarget = existingTargets.data.find(

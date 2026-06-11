@@ -15,6 +15,7 @@ interface CachedHealth {
 const CACHE_TTL_MS = 10000; // 10 seconds
 
 export class HealthService extends BaseService {
+	protected override readonly timeout = 5000;
 	private cachedHealth: CachedHealth | null = null;
 
 	/**
@@ -37,8 +38,7 @@ export class HealthService extends BaseService {
 		const startTime = Date.now();
 
 		try {
-			// Override timeout to 5s for health check
-			await this.getWithTimeout<unknown>("/configs", 5000);
+			await this.get<unknown>("/configs");
 
 			const latency_ms = Date.now() - startTime;
 			const result: HealthCheckResult = {
@@ -60,40 +60,6 @@ export class HealthService extends BaseService {
 
 			// Don't cache errors
 			throw new Error(`Health check failed: ${errorMessage} (${latency_ms}ms)`);
-		}
-	}
-
-	/**
-	 * Internal method to call GET with custom timeout
-	 */
-	private async getWithTimeout<T>(path: string, timeout: number): Promise<T> {
-		const url = `${this.baseUrl}${path}`;
-
-		const controller = new AbortController();
-		const timeoutId = setTimeout(() => controller.abort(), timeout);
-
-		try {
-			const response = await fetch(url, {
-				method: "GET",
-				headers: {
-					"x-portkey-api-key": this.apiKey,
-					Accept: "application/json",
-				},
-				signal: controller.signal,
-			});
-
-			if (!response.ok) {
-				throw new Error(`HTTP ${response.status}`);
-			}
-
-			return response.json() as Promise<T>;
-		} catch (error) {
-			if (error instanceof Error && error.name === "AbortError") {
-				throw new Error(`Request timed out after ${timeout}ms`);
-			}
-			throw error;
-		} finally {
-			clearTimeout(timeoutId);
 		}
 	}
 }

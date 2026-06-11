@@ -7,6 +7,7 @@ import type {
 	WorkspaceDefaults,
 	WorkspaceUser,
 } from "../services/workspaces.service.js";
+import { formatFullName } from "./utils.js";
 
 const WORKSPACES_TOOL_SCHEMAS = {
 	listWorkspaces: {
@@ -98,10 +99,6 @@ const WORKSPACES_TOOL_SCHEMAS = {
 	},
 } as const;
 
-function formatFullName(firstName?: string, lastName?: string): string {
-	return [firstName, lastName].filter(Boolean).join(" ").trim();
-}
-
 function formatWorkspaceDefaults(
 	defaults: WorkspaceDefaults | null,
 ): { is_default?: number; metadata?: Record<string, string> } | null {
@@ -192,14 +189,10 @@ export function registerWorkspacesTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								total: workspaces.total,
-								workspaces: workspaces.data.map(formatWorkspaceSummary),
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							total: workspaces.total,
+							workspaces: workspaces.data.map(formatWorkspaceSummary),
+						}),
 					},
 				],
 			};
@@ -219,7 +212,7 @@ export function registerWorkspacesTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(formatWorkspaceDetail(workspace), null, 2),
+						text: JSON.stringify(formatWorkspaceDetail(workspace)),
 					},
 				],
 			};
@@ -248,14 +241,10 @@ export function registerWorkspacesTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully created workspace "${params.name}"`,
-								workspace: formatWorkspaceSummary(workspace),
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully created workspace "${params.name}"`,
+							workspace: formatWorkspaceSummary(workspace),
+						}),
 					},
 				],
 			};
@@ -282,14 +271,10 @@ export function registerWorkspacesTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: "Successfully updated workspace",
-								workspace: formatWorkspaceSummary(workspace),
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: "Successfully updated workspace",
+							workspace: formatWorkspaceSummary(workspace),
+						}),
 					},
 				],
 			};
@@ -307,14 +292,10 @@ export function registerWorkspacesTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully deleted workspace ${params.workspace_id}`,
-								success: true,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully deleted workspace ${params.workspace_id}`,
+							success: true,
+						}),
 					},
 				],
 			};
@@ -338,14 +319,10 @@ export function registerWorkspacesTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully added user to workspace as ${params.role}`,
-								member: formatWorkspaceMember(member),
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully added user to workspace as ${params.role}`,
+							member: formatWorkspaceMember(member),
+						}),
 					},
 				],
 			};
@@ -365,14 +342,10 @@ export function registerWorkspacesTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								total: members.total,
-								members: members.data.map(formatWorkspaceMember),
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							total: members.total,
+							members: members.data.map(formatWorkspaceMember),
+						}),
 					},
 				],
 			};
@@ -393,7 +366,7 @@ export function registerWorkspacesTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(formatWorkspaceMember(member), null, 2),
+						text: JSON.stringify(formatWorkspaceMember(member)),
 					},
 				],
 			};
@@ -417,14 +390,10 @@ export function registerWorkspacesTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully updated member role to ${params.role}`,
-								member: formatWorkspaceMember(member),
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully updated member role to ${params.role}`,
+							member: formatWorkspaceMember(member),
+						}),
 					},
 				],
 			};
@@ -445,14 +414,10 @@ export function registerWorkspacesTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully removed user from workspace`,
-								success: true,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully removed user from workspace`,
+							success: true,
+						}),
 					},
 				],
 			};

@@ -32,6 +32,8 @@ This document lists all API endpoints used by the Portkey Admin MCP Server, veri
 
 **Tested**: Both paths return 403 (permission denied). This is an API key scope issue, not a path issue. Unable to verify correct path.
 
+**Pagination**: `list_all_users` accepts `current_page` (page number, default 1) and `page_size` (results per page, max 100).
+
 ---
 
 ## 2. User Invites
@@ -48,6 +50,8 @@ This document lists all API endpoints used by the Portkey Admin MCP Server, veri
 | [?] | POST | `/admin/users/invites/{inviteId}/resend` | `/user-invites/{id}/resend` | Resend invite |
 
 **Tested**: Both paths return 403 (permission denied). This is an API key scope issue, not a path issue. Unable to verify correct path.
+
+**Pagination**: `list_user_invites` accepts `current_page` (page number, default 1) and `page_size` (results per page, max 100).
 
 ---
 
@@ -110,6 +114,8 @@ This document lists all API endpoints used by the Portkey Admin MCP Server, veri
 | [x] | DELETE | `/configs/{slug}` | `/configs/{id}` | Delete config |
 | [x] | GET | `/configs/{slug}/versions` | `/configs/{id}/versions` | List versions |
 
+**Pagination**: `list_configs` accepts `current_page` (page number, default 1) and `page_size` (results per page, max 100).
+
 ---
 
 ## 7. Virtual Keys
@@ -124,6 +130,8 @@ This document lists all API endpoints used by the Portkey Admin MCP Server, veri
 | [x] | GET | `/virtual-keys/{slug}` | `/virtual-keys/{id}` | Get virtual key |
 | [x] | PUT | `/virtual-keys/{slug}` | `/virtual-keys/{id}` | Update virtual key |
 | [x] | DELETE | `/virtual-keys/{slug}` | `/virtual-keys/{id}` | Delete virtual key |
+
+**Pagination**: `list_virtual_keys` accepts `current_page` (page number, default 1) and `page_size` (results per page, max 100).
 
 ---
 
@@ -564,4 +572,6 @@ All verified with live API 2026-03-23. List returns `{ object: "list", total, ha
 | [x] | GET | `/mcp-servers/{id}/user-access` | List user access |
 | [x] | PUT | `/mcp-servers/{id}/user-access` | Update user access |
 
-All verified with live API 2026-03-23. List returns `{ object: "list", total, data }`. User access returns `{ object: "list", default_user_access, total, has_more, data }`.
+All verified with live API 2026-03-23. List returns `{ object: "list", total, data }`. Capabilities list returns `{ total, has_more, capabilities }`. User access returns `{ object: "list", default_user_access, total, has_more, data }`.
+
+**Pagination**: `list_mcp_server_capabilities` and `list_mcp_server_user_access` accept `current_page` (page number, default 1) and `page_size` (results per page, max 100).

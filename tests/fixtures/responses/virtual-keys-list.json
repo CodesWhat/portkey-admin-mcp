@@ -1,7 +1,28 @@
 {
 	"object": "list",
-	"total": 4,
+	"total": 5,
 	"data": [
+		{
+			"id": "b0800161-93cf-4d3d-b5cc-309a9a331f42",
+			"organisation_id": "02dc3530-8fba-409d-9d39-9d90a345a0bf",
+			"name": "voyageai",
+			"note": "Created automatically on integration access grant",
+			"status": "active",
+			"usage_limits": null,
+			"reset_usage": null,
+			"created_at": "2026-05-02T12:31:48.000Z",
+			"slug": "voyageai-prod",
+			"workspace_id": "6e5a9f93-ae3a-46b4-a87d-2464d373ef7e",
+			"model_config": null,
+			"rate_limits": null,
+			"expires_at": null,
+			"last_reset_at": null,
+			"integration_id": "voyageai-prod",
+			"tags": null,
+			"workspace_name": "Shared Team Workspace",
+			"provider": "voyage",
+			"object": "virtual-key"
+		},
 		{
 			"id": "fcb56634-53ed-46e6-8d28-aa6da3225c71",
 			"organisation_id": "02dc3530-8fba-409d-9d39-9d90a345a0bf",
