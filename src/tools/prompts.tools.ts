@@ -1067,17 +1067,6 @@ export function registerPromptsTools(
 		"Update a specific prompt version's label assignment. This only assigns or removes a label, and null clears the label after you look up ids with list_prompt_labels.",
 		PROMPTS_TOOL_SCHEMAS.updatePromptVersion,
 		async (params) => {
-			if (params.label_id === undefined) {
-				return {
-					content: [
-						{
-							type: "text" as const,
-							text: "Error: label_id is required — pass a label ID to assign, or null to remove the label",
-						},
-					],
-					isError: true,
-				};
-			}
 			await service.prompts.updatePromptVersion(
 				params.prompt_id,
 				params.version_id,

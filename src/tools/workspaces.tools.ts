@@ -7,6 +7,7 @@ import type {
 	WorkspaceDefaults,
 	WorkspaceUser,
 } from "../services/workspaces.service.js";
+import { formatFullName } from "./utils.js";
 
 const WORKSPACES_TOOL_SCHEMAS = {
 	listWorkspaces: {
@@ -97,10 +98,6 @@ const WORKSPACES_TOOL_SCHEMAS = {
 		user_id: z.string().describe("The user ID to remove"),
 	},
 } as const;
-
-function formatFullName(firstName?: string, lastName?: string): string {
-	return [firstName, lastName].filter(Boolean).join(" ").trim();
-}
 
 function formatWorkspaceDefaults(
 	defaults: WorkspaceDefaults | null,

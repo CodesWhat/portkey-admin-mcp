@@ -179,65 +179,6 @@ const baseAnalyticsSchema = {
 	prompt_slug: z.string().optional().describe("Filter by prompt slug"),
 };
 
-const requestAnalyticsSchema = {
-	...baseAnalyticsSchema,
-	status_codes: z
-		.array(z.string())
-		.optional()
-		.describe(
-			"Structured alias for status_code. Use an array of HTTP status codes; normalized to the legacy comma-separated Portkey query param.",
-		),
-	virtual_key_slugs: z
-		.array(z.string())
-		.optional()
-		.describe(
-			"Structured alias for virtual_keys. Use an array of virtual key slugs; normalized to the legacy comma-separated Portkey query param.",
-		),
-	config_slugs: z
-		.array(z.string())
-		.optional()
-		.describe(
-			"Structured alias for configs. Use an array of config slugs; normalized to the legacy comma-separated Portkey query param.",
-		),
-	api_key_ids: z
-		.preprocess((value) => {
-			if (value == null) {
-				return value;
-			}
-			if (Array.isArray(value)) {
-				return value.map((item) => String(item)).join(",");
-			}
-			return value;
-		}, z.string().optional())
-		.describe(
-			"API key UUIDs. Accepts the legacy comma-separated string or a structured array; normalized to the legacy Portkey query param before the request is sent.",
-		),
-	trace_ids: z
-		.array(z.string())
-		.optional()
-		.describe(
-			"Structured alias for trace_id. Use an array of trace IDs; normalized to the legacy comma-separated Portkey query param.",
-		),
-	span_ids: z
-		.array(z.string())
-		.optional()
-		.describe(
-			"Structured alias for span_id. Use an array of span IDs; normalized to the legacy comma-separated Portkey query param.",
-		),
-	provider_models: z
-		.array(z.string())
-		.optional()
-		.describe(
-			"Structured alias for ai_org_model. Use provider__model strings in an array; normalized to the legacy comma-separated Portkey query param.",
-		),
-	metadata_filter: z
-		.record(z.string(), z.unknown())
-		.optional()
-		.describe(
-			"Structured alias for metadata. Use an object such as { env: 'prod' }; normalized to a JSON string before the request is sent.",
-		),
-};
-
 const paginatedAnalyticsSchema = {
 	...baseAnalyticsSchema,
 	current_page: z.coerce
@@ -323,8 +264,8 @@ function normalizeMetadataFilter(value: unknown): string | undefined {
 	return undefined;
 }
 
-function normalizeAnalyticsParams(
-	params: Record<string, unknown>,
+function normalizeAnalyticsParams<T extends Record<string, unknown>>(
+	params: T,
 ): Record<string, unknown> & BaseAnalyticsParams {
 	const {
 		status_codes,
@@ -413,7 +354,7 @@ export function registerAnalyticsTools(
 		baseAnalyticsSchema,
 		async (params) => {
 			const analytics = await service.analytics.getCostAnalytics(
-				normalizeAnalyticsParams(params as Record<string, unknown>),
+				normalizeAnalyticsParams(params),
 			);
 			const dataPoints = analytics.data_points.map((point) => ({
 				timestamp: point.timestamp,
@@ -446,10 +387,10 @@ export function registerAnalyticsTools(
 	server.tool(
 		"get_request_analytics",
 		"Get request-volume time-series data with summary.total_requests, summary.successful_requests, summary.failed_requests, and per-bucket total/success/failed counts. Use this for traffic and reliability trends; use get_error_analytics when you only need error counts.",
-		requestAnalyticsSchema,
+		baseAnalyticsSchema,
 		async (params) => {
 			const analytics = await service.analytics.getRequestAnalytics(
-				normalizeAnalyticsParams(params as Record<string, unknown>),
+				normalizeAnalyticsParams(params),
 			);
 			const dataPoints = analytics.data_points.map((point) => ({
 				timestamp: point.timestamp,
@@ -485,7 +426,7 @@ export function registerAnalyticsTools(
 		baseAnalyticsSchema,
 		async (params) => {
 			const analytics = await service.analytics.getTokenAnalytics(
-				normalizeAnalyticsParams(params as Record<string, unknown>),
+				normalizeAnalyticsParams(params),
 			);
 			const dataPoints = analytics.data_points.map((point) => ({
 				timestamp: point.timestamp,
@@ -521,7 +462,7 @@ export function registerAnalyticsTools(
 		baseAnalyticsSchema,
 		async (params) => {
 			const analytics = await service.analytics.getLatencyAnalytics(
-				normalizeAnalyticsParams(params as Record<string, unknown>),
+				normalizeAnalyticsParams(params),
 			);
 			const dataPoints = analytics.data_points.map((point) => ({
 				timestamp: point.timestamp,
@@ -559,7 +500,7 @@ export function registerAnalyticsTools(
 		baseAnalyticsSchema,
 		async (params) => {
 			const analytics = await service.analytics.getErrorAnalytics(
-				normalizeAnalyticsParams(params as Record<string, unknown>),
+				normalizeAnalyticsParams(params),
 			);
 			const dataPoints = analytics.data_points.map((point) => ({
 				timestamp: point.timestamp,
@@ -591,7 +532,7 @@ export function registerAnalyticsTools(
 		baseAnalyticsSchema,
 		async (params) => {
 			const analytics = await service.analytics.getErrorRateAnalytics(
-				normalizeAnalyticsParams(params as Record<string, unknown>),
+				normalizeAnalyticsParams(params),
 			);
 			const dataPoints = analytics.data_points.map((point) => ({
 				timestamp: point.timestamp,
@@ -625,7 +566,7 @@ export function registerAnalyticsTools(
 		baseAnalyticsSchema,
 		async (params) => {
 			const analytics = await service.analytics.getCacheHitLatency(
-				normalizeAnalyticsParams(params as Record<string, unknown>),
+				normalizeAnalyticsParams(params),
 			);
 			const dataPoints = analytics.data_points.map((point) => ({
 				timestamp: point.timestamp,
@@ -659,7 +600,7 @@ export function registerAnalyticsTools(
 		baseAnalyticsSchema,
 		async (params) => {
 			const analytics = await service.analytics.getCacheHitRate(
-				normalizeAnalyticsParams(params as Record<string, unknown>),
+				normalizeAnalyticsParams(params),
 			);
 			const dataPoints = analytics.data_points.map((point) => ({
 				timestamp: point.timestamp,
@@ -697,7 +638,7 @@ export function registerAnalyticsTools(
 		baseAnalyticsSchema,
 		async (params) => {
 			const analytics = await service.analytics.getUsersAnalytics(
-				normalizeAnalyticsParams(params as Record<string, unknown>),
+				normalizeAnalyticsParams(params),
 			);
 			const dataPoints = analytics.data_points.map((point) => ({
 				timestamp: point.timestamp,
@@ -733,7 +674,7 @@ export function registerAnalyticsTools(
 		baseAnalyticsSchema,
 		async (params) => {
 			const analytics = await service.analytics.getErrorStacksAnalytics(
-				normalizeAnalyticsParams(params as Record<string, unknown>),
+				normalizeAnalyticsParams(params),
 			);
 			return {
 				content: [
@@ -756,7 +697,7 @@ export function registerAnalyticsTools(
 		baseAnalyticsSchema,
 		async (params) => {
 			const analytics = await service.analytics.getErrorStatusCodesAnalytics(
-				normalizeAnalyticsParams(params as Record<string, unknown>),
+				normalizeAnalyticsParams(params),
 			);
 			return {
 				content: [
@@ -779,7 +720,7 @@ export function registerAnalyticsTools(
 		baseAnalyticsSchema,
 		async (params) => {
 			const analytics = await service.analytics.getUserRequestsAnalytics(
-				normalizeAnalyticsParams(params as Record<string, unknown>),
+				normalizeAnalyticsParams(params),
 			);
 			return {
 				content: [
@@ -802,7 +743,7 @@ export function registerAnalyticsTools(
 		baseAnalyticsSchema,
 		async (params) => {
 			const analytics = await service.analytics.getRescuedRequestsAnalytics(
-				normalizeAnalyticsParams(params as Record<string, unknown>),
+				normalizeAnalyticsParams(params),
 			);
 			return {
 				content: [
@@ -825,7 +766,7 @@ export function registerAnalyticsTools(
 		baseAnalyticsSchema,
 		async (params) => {
 			const analytics = await service.analytics.getFeedbackAnalytics(
-				normalizeAnalyticsParams(params as Record<string, unknown>),
+				normalizeAnalyticsParams(params),
 			);
 			return {
 				content: [
@@ -848,7 +789,7 @@ export function registerAnalyticsTools(
 		baseAnalyticsSchema,
 		async (params) => {
 			const analytics = await service.analytics.getFeedbackModelsAnalytics(
-				normalizeAnalyticsParams(params as Record<string, unknown>),
+				normalizeAnalyticsParams(params),
 			);
 			return {
 				content: [
@@ -871,7 +812,7 @@ export function registerAnalyticsTools(
 		baseAnalyticsSchema,
 		async (params) => {
 			const analytics = await service.analytics.getFeedbackScoresAnalytics(
-				normalizeAnalyticsParams(params as Record<string, unknown>),
+				normalizeAnalyticsParams(params),
 			);
 			return {
 				content: [
@@ -894,7 +835,7 @@ export function registerAnalyticsTools(
 		baseAnalyticsSchema,
 		async (params) => {
 			const analytics = await service.analytics.getFeedbackWeightedAnalytics(
-				normalizeAnalyticsParams(params as Record<string, unknown>),
+				normalizeAnalyticsParams(params),
 			);
 			return {
 				content: [
@@ -919,7 +860,7 @@ export function registerAnalyticsTools(
 		paginatedAnalyticsSchema,
 		async (params) => {
 			const analytics = await service.analytics.getAnalyticsGroupUsers(
-				normalizeAnalyticsParams(params as Record<string, unknown>),
+				normalizeAnalyticsParams(params),
 			);
 			return {
 				content: [
@@ -942,7 +883,7 @@ export function registerAnalyticsTools(
 		paginatedAnalyticsSchema,
 		async (params) => {
 			const analytics = await service.analytics.getAnalyticsGroupModels(
-				normalizeAnalyticsParams(params as Record<string, unknown>),
+				normalizeAnalyticsParams(params),
 			);
 			return {
 				content: [
@@ -967,7 +908,7 @@ export function registerAnalyticsTools(
 			const { metadata_key, ...analyticsParams } = params;
 			const analytics = await service.analytics.getAnalyticsGroupMetadata(
 				metadata_key,
-				normalizeAnalyticsParams(analyticsParams as Record<string, unknown>),
+				normalizeAnalyticsParams(analyticsParams),
 			);
 			return {
 				content: [

@@ -6,9 +6,22 @@ import type {
 	PortkeyUser,
 	UserInvite,
 } from "../services/users.service.js";
+import { formatFullName } from "./utils.js";
 
 const USERS_TOOL_SCHEMAS = {
-	listAllUsers: {},
+	listAllUsers: {
+		current_page: z.coerce
+			.number()
+			.positive()
+			.optional()
+			.describe("Page number for pagination"),
+		page_size: z.coerce
+			.number()
+			.positive()
+			.max(100)
+			.optional()
+			.describe("Number of results per page (max 100)"),
+	},
 	inviteUser: {
 		email: z.string().email().describe("Email address of the user to invite"),
 		role: z
@@ -117,7 +130,19 @@ const USERS_TOOL_SCHEMAS = {
 	deleteUser: {
 		user_id: z.string().describe("The user ID to delete"),
 	},
-	listUserInvites: {},
+	listUserInvites: {
+		current_page: z.coerce
+			.number()
+			.positive()
+			.optional()
+			.describe("Page number for pagination"),
+		page_size: z.coerce
+			.number()
+			.positive()
+			.max(100)
+			.optional()
+			.describe("Number of results per page (max 100)"),
+	},
 	getUserInvite: {
 		invite_id: z.string().describe("The invite ID to retrieve"),
 	},
@@ -128,10 +153,6 @@ const USERS_TOOL_SCHEMAS = {
 		invite_id: z.string().describe("The invite ID to resend"),
 	},
 } as const;
-
-function formatFullName(firstName?: string, lastName?: string): string {
-	return [firstName, lastName].filter(Boolean).join(" ").trim();
-}
 
 function formatUser(user: PortkeyUser): {
 	id: string;
@@ -190,8 +211,11 @@ export function registerUsersTools(
 		"list_all_users",
 		"List accepted org users with id, name, email, role, and timestamps. Use this to find a user_id before get_user, update_user, delete_user, or add_workspace_member; use list_user_invites for pending invitations.",
 		USERS_TOOL_SCHEMAS.listAllUsers,
-		async () => {
-			const users = await service.users.listUsers();
+		async (params) => {
+			const users = await service.users.listUsers({
+				current_page: params.current_page,
+				page_size: params.page_size,
+			});
 			return {
 				content: [
 					{
@@ -335,8 +359,11 @@ export function registerUsersTools(
 		"list_user_invites",
 		"List pending and sent invitations with id, email, role, status, and expiry. Use this to check invite state; use list_all_users for users who already accepted.",
 		USERS_TOOL_SCHEMAS.listUserInvites,
-		async () => {
-			const invites = await service.users.listUserInvites();
+		async (params) => {
+			const invites = await service.users.listUserInvites({
+				current_page: params.current_page,
+				page_size: params.page_size,
+			});
 			return {
 				content: [
 					{

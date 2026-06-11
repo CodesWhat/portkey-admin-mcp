@@ -359,6 +359,28 @@ function wrapToolCallback(
 	};
 }
 
+/*
+ * buildToolRegistration reconstructs the overload variants of the MCP SDK's
+ * server.tool() signature, which accepts arguments in the forms:
+ *   (name, callback)
+ *   (name, description, callback)
+ *   (name, schema, callback)
+ *   (name, description, schema, callback)
+ *   (name, description, schema, annotations, callback)
+ * Runtime probing is necessary because the SDK does not expose a single
+ * canonical signature; instead it uses overloads that cannot be resolved
+ * statically from the call-site. The function strips the trailing callback,
+ * identifies optional description and inputSchema positionally, and falls back
+ * to inferredAnnotations when no explicit annotations object is present.
+ *
+ * Invariants isToolAnnotationsLike relies on:
+ *   - The value must be a non-null plain object (isRecord).
+ *   - Every own key must appear in TOOL_ANNOTATION_KEYS (no extra fields).
+ *   - The object must have at least one key (empty objects are not annotations).
+ *   - All values must be undefined, boolean, or string (matching ToolAnnotations).
+ * These constraints distinguish an annotations object from an inputSchema
+ * object, which may have arbitrary keys and Zod-schema values.
+ */
 function buildToolRegistration(
 	name: string,
 	rest: unknown[],
@@ -409,6 +431,20 @@ function buildToolRegistration(
 	};
 }
 
+/*
+ * createSafeToolServer wraps the MCP server's tool() method so that every
+ * registered tool is automatically:
+ *   1. Wrapped in wrapToolCallback for consistent error handling and envelope
+ *      normalization (normalizeToolResult / StandardToolEnvelope).
+ *   2. Augmented with inferred ToolAnnotations (read-only, destructive,
+ *      idempotent) derived from the tool name prefix.
+ *   3. Optionally upgraded to the registerTool() API (which accepts an
+ *      outputSchema) when the underlying SDK supports it — detected at runtime
+ *      via `"registerTool" in server`. When registerTool is available, the
+ *      STANDARD_TOOL_OUTPUT_SCHEMA is attached so the SDK can validate and
+ *      surface structured output; otherwise the wrapped call falls through to
+ *      the legacy tool() overload set reconstructed by buildToolRegistration.
+ */
 function createSafeToolServer(server: McpServer): McpServer {
 	const originalTool = server.tool.bind(server);
 	const originalRegisterTool =

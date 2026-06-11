@@ -2,20 +2,20 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { PortkeyService } from "../services/index.js";
 
-type ConfigToolParams = {
-	cache_mode?: "simple" | "semantic";
-	cache_max_age?: number;
-	retry_attempts?: number;
-	retry_on_status_codes?: number[];
-	strategy_mode?: "loadbalance" | "fallback";
-	targets?: Array<{
-		provider?: string;
-		virtual_key?: string;
-	}>;
-};
-
 const CONFIGS_TOOL_SCHEMAS = {
-	listConfigs: {},
+	listConfigs: {
+		current_page: z.coerce
+			.number()
+			.positive()
+			.optional()
+			.describe("Page number for pagination"),
+		page_size: z.coerce
+			.number()
+			.positive()
+			.max(100)
+			.optional()
+			.describe("Number of results per page (max 100)"),
+	},
 	getConfig: {
 		slug: z
 			.string()
@@ -119,7 +119,25 @@ const CONFIGS_TOOL_SCHEMAS = {
 	},
 } as const;
 
-function buildConfigPayload(params: ConfigToolParams) {
+const configPayloadSchema = z.object({
+	cache_mode: z.enum(["simple", "semantic"]).optional(),
+	cache_max_age: z.coerce.number().positive().optional(),
+	retry_attempts: z.coerce.number().positive().max(5).optional(),
+	retry_on_status_codes: z.array(z.coerce.number()).optional(),
+	strategy_mode: z.enum(["loadbalance", "fallback"]).optional(),
+	targets: z
+		.array(
+			z.object({
+				provider: z.string().optional(),
+				virtual_key: z.string().optional(),
+			}),
+		)
+		.optional(),
+});
+
+type ConfigPayloadParams = z.infer<typeof configPayloadSchema>;
+
+function buildConfigPayload(params: ConfigPayloadParams) {
 	const cache =
 		params.cache_mode !== undefined || params.cache_max_age !== undefined
 			? {
@@ -175,8 +193,11 @@ export function registerConfigsTools(
 		"list_configs",
 		"List configs in the org with id, slug, name, status, workspace, and timestamps. Use this summary view to find a slug; use get_config for the full routing, cache, retry, and target settings before updating or deleting.",
 		CONFIGS_TOOL_SCHEMAS.listConfigs,
-		async () => {
-			const configs = await service.configs.listConfigs();
+		async (params) => {
+			const configs = await service.configs.listConfigs({
+				current_page: params.current_page,
+				page_size: params.page_size,
+			});
 			return {
 				content: [
 					{

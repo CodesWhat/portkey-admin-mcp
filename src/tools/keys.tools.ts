@@ -4,7 +4,19 @@ import { buildRateLimitsRpm, buildUsageLimits } from "../lib/limits.js";
 import type { PortkeyService } from "../services/index.js";
 
 const KEYS_TOOL_SCHEMAS = {
-	listVirtualKeys: {},
+	listVirtualKeys: {
+		current_page: z.coerce
+			.number()
+			.positive()
+			.optional()
+			.describe("Page number for pagination"),
+		page_size: z.coerce
+			.number()
+			.positive()
+			.max(100)
+			.optional()
+			.describe("Number of results per page (max 100)"),
+	},
 	createVirtualKey: {
 		name: z.string().describe("Display name for the virtual key"),
 		provider: z
@@ -210,6 +222,25 @@ const KEYS_TOOL_SCHEMAS = {
 	},
 } as const;
 
+const createApiKeySchema = z
+	.object(KEYS_TOOL_SCHEMAS.createApiKey)
+	.superRefine((value, ctx) => {
+		if (value.type === "workspace" && !value.workspace_id) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["workspace_id"],
+				message: "workspace_id is required when type is 'workspace'",
+			});
+		}
+		if (value.sub_type === "user" && !value.user_id) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["user_id"],
+				message: "user_id is required when sub_type is 'user'",
+			});
+		}
+	});
+
 export function registerKeysTools(
 	server: McpServer,
 	service: PortkeyService,
@@ -219,8 +250,11 @@ export function registerKeysTools(
 		"list_virtual_keys",
 		"List provider API keys stored as virtual keys in your Portkey org. Use this to find slugs before wiring prompts/configs or auditing limits. Returns total plus name, slug, status, usage limits, rate limits, reset state, and model config.",
 		KEYS_TOOL_SCHEMAS.listVirtualKeys,
-		async () => {
-			const virtualKeys = await service.keys.listVirtualKeys();
+		async (params) => {
+			const virtualKeys = await service.keys.listVirtualKeys({
+				current_page: params.current_page,
+				page_size: params.page_size,
+			});
 			return {
 				content: [
 					{
@@ -411,57 +445,34 @@ export function registerKeysTools(
 	// Phase 2: Create API key tool
 	server.tool(
 		"create_api_key",
-		"Create a Portkey API key for auth. Org keys grant broader access; workspace keys are scoped. The secret is only returned once, and using the key grants access immediately according to its scopes, defaults, and limits. Workspace keys require workspace_id and user keys require user_id.",
+		"Create a Portkey API key for auth. Org keys grant broader access; workspace keys are scoped. WARNING: The key secret is returned ONCE in the tool result and will be visible in MCP transcripts and LLM context — store it securely immediately. Using the key grants access immediately according to its scopes, defaults, and limits. Workspace keys require workspace_id and user keys require user_id.",
 		KEYS_TOOL_SCHEMAS.createApiKey,
 		async (params) => {
-			// Validate required fields based on type and sub_type
-			if (params.type === "workspace" && !params.workspace_id) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: "Error creating API key: workspace_id is required for workspace-type keys",
-						},
-					],
-					isError: true,
-				};
-			}
-			if (params.sub_type === "user" && !params.user_id) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: "Error creating API key: user_id is required for user sub-type keys",
-						},
-					],
-					isError: true,
-				};
-			}
-
+			const validated = createApiKeySchema.parse(params);
 			const result = await service.keys.createApiKey(
-				params.type,
-				params.sub_type,
+				validated.type,
+				validated.sub_type,
 				{
-					name: params.name,
-					description: params.description,
-					workspace_id: params.workspace_id,
-					user_id: params.user_id,
-					scopes: params.scopes,
+					name: validated.name,
+					description: validated.description,
+					workspace_id: validated.workspace_id,
+					user_id: validated.user_id,
+					scopes: validated.scopes,
 					usage_limits: buildUsageLimits({
-						credit_limit: params.credit_limit,
-						alert_threshold: params.alert_threshold,
+						credit_limit: validated.credit_limit,
+						alert_threshold: validated.alert_threshold,
 					}),
-					rate_limits: buildRateLimitsRpm(params.rate_limit_rpm),
+					rate_limits: buildRateLimitsRpm(validated.rate_limit_rpm),
 					defaults: (() => {
 						const d: Record<string, unknown> = {};
-						if (params.default_config_id !== undefined)
-							d.config_id = params.default_config_id;
-						if (params.default_metadata !== undefined)
-							d.metadata = params.default_metadata;
+						if (validated.default_config_id !== undefined)
+							d.config_id = validated.default_config_id;
+						if (validated.default_metadata !== undefined)
+							d.metadata = validated.default_metadata;
 						return Object.keys(d).length > 0 ? d : undefined;
 					})(),
-					alert_emails: params.alert_emails,
-					expires_at: params.expires_at,
+					alert_emails: validated.alert_emails,
+					expires_at: validated.expires_at,
 				},
 			);
 
@@ -471,7 +482,7 @@ export function registerKeysTools(
 						type: "text",
 						text: JSON.stringify(
 							{
-								message: `Successfully created API key "${params.name}"`,
+								message: `Successfully created API key "${validated.name}"`,
 								id: result.id,
 								key: result.key,
 							},
