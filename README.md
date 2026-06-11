@@ -153,7 +153,7 @@ If a tool returns a `403` with Portkey error `AB03`, it means missing scopes —
 
 ## HTTP Server (Experimental)
 
-> **Status**: The HTTP transport works but hosted deployment is not fully validated for production. Use stdio (npx) for reliable operation.
+> **Status**: The HTTP transport works locally and is covered by the integration test suite, but it is a proof of concept — there is **no hosted version** of this server, and hosted deployment is not currently a goal. Use stdio (npx) as the supported transport.
 
 The server supports Streamable HTTP for remote access:
 
@@ -202,7 +202,7 @@ For local-only HTTP use, leave `MCP_HOST` at its default `127.0.0.1`. Set `MCP_H
 <details>
 <summary><strong>Vercel deployment</strong></summary>
 
-Experimental Vercel support is included. See [docs/VERCEL_DEPLOYMENT.md](./docs/VERCEL_DEPLOYMENT.md) for setup instructions.
+Vercel support is kept as a reference proof of concept — we do not run a hosted deployment. See [docs/VERCEL_DEPLOYMENT.md](./docs/VERCEL_DEPLOYMENT.md) if you want to self-deploy.
 
 Key points:
 - Uses stateless mode with Redis event store

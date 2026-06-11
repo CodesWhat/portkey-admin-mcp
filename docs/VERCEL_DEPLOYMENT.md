@@ -1,6 +1,8 @@
 # Vercel Deployment Guide (Public Repo Safe)
 
-This guide is the canonical setup for hosting this MCP server on Vercel in 2026.
+> **Status (June 2026)**: This deployment path is a **proof of concept kept for reference**. There is no hosted version of this server and hosting is not currently a goal — the supported transport is stdio via `npx`. The steps below remain valid if you want to self-deploy.
+
+This guide describes how to self-deploy this MCP server on Vercel.
 
 ## Recommended Architecture
 
