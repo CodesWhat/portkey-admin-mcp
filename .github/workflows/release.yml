@@ -69,8 +69,80 @@ jobs:
 
           gh release create "$tag" "${args[@]}"
 
-  publish-registry:
+  publish-npm:
     needs: ci
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      # OIDC token for npm trusted publishing; npm also derives provenance
+      # attestation from it, so no long-lived npm token exists anywhere.
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          cache: npm
+
+      - name: Resolve tag
+        id: tag
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_TAG: ${{ github.event.inputs.tag }}
+        run: |
+          set -euo pipefail
+
+          tag="${GITHUB_REF_NAME}"
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            tag="$INPUT_TAG"
+          fi
+
+          if [[ ! "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "Refusing to publish non-semver tag: $tag" >&2
+            exit 1
+          fi
+
+          echo "version=${tag#v}" >>"$GITHUB_OUTPUT"
+
+      - name: Verify package.json matches tag
+        env:
+          VERSION: ${{ steps.tag.outputs.version }}
+        run: |
+          set -euo pipefail
+
+          package_version="$(node -p "require('./package.json').version")"
+          if [[ "$package_version" != "$VERSION" ]]; then
+            echo "package.json ($package_version) does not match tag v$VERSION" >&2
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Publish to npm
+        env:
+          VERSION: ${{ steps.tag.outputs.version }}
+        run: |
+          set -euo pipefail
+
+          if npm view "portkey-admin-mcp@${VERSION}" version >/dev/null 2>&1; then
+            echo "portkey-admin-mcp@${VERSION} is already on npm; nothing to do."
+            exit 0
+          fi
+
+          # Authenticates via OIDC trusted publishing (configured on npmjs.com
+          # for this repo + workflow). prepublishOnly re-runs the full CI suite.
+          npm publish --access public
+
+  publish-registry:
+    needs: [ci, publish-npm]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
