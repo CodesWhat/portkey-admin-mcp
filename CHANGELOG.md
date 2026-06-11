@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Security hardening, pagination improvements, compact tool responses, and a major test-coverage expansion. No API surface changes.
+
+### Security
+
+- Reject reflected `Host` values in `/auth/info` — the public URL is now taken from `MCP_PUBLIC_BASE_URL` only, closing a header-injection path where a spoofed `Host` could be echoed into the auth-info response body.
+- Add HSTS header (`Strict-Transport-Security`) to authenticated HTTP responses; missing from the Helmet defaults in prior releases.
+- Emit a startup warning when `ALLOWED_ORIGINS` is set to `*` in unauthenticated (`none`) mode — wildcard CORS with no auth gate is a dangerous misconfiguration, now surfaced at boot rather than silently permitted.
+- Hash service-cache map keys with SHA-256 so plaintext API keys are never used as in-process cache identifiers.
+- Restrict the `/health` endpoint path-traversal surface: the handler now validates the path exactly rather than accepting any prefix match, preventing a crafted path from reaching private routes via the health-check handler.
+
+### Added
+
+- **Pagination params on six list tools** — `list_workspaces`, `list_virtual_keys`, `list_api_keys`, `list_configs`, `list_guardrails`, and `list_prompts` now accept `page_size` and `page_offset` (or equivalent) input parameters, forwarded directly to the Portkey Admin API.
+- **`has_more` surfaced in `list_prompts`** — the prompts list tool returns `has_more`, `returned_count`, `next_offset`, and `next_page` so callers can detect and iterate through multi-page result sets without guessing; the other five paginated tools expose `total` for manual offset computation.
+- **253 new and updated tests** across 9 new test files, covering 13 tool modules (analytics, API keys, configs, guardrails, prompts, virtual keys, workspaces, and more), Clerk JWT auth middleware, HTTP session-lifecycle endpoints, and contract schemas for workspace and user response shapes. Total test count: 269 (253 unit/integration + 16 e2e).
+
+### Changed
+
+- **Compact JSON tool responses** (~157 call sites) — `JSON.stringify` output in tool responses no longer pretty-prints with 2-space indent; responses are serialized as compact JSON, reducing token usage on every tool call.
+- **Lazy Redis import** — the `redis` client module is now imported only when `REDIS_URL` is set, keeping the stdio cold-start path free of an unnecessary require.
+- **`create_integration` empty-string guard** — the service layer now strips empty-string values from the integration create/update payload before sending to the API, preventing Portkey from returning a 400 on fields the user left blank.
+- **`create_api_key` schema validation + secret warning** — the tool now validates required fields (name, workspace scope) at the Zod layer before making the network call, and the tool description reinforces that the `secret` field is returned only once and cannot be retrieved again.
+
 ## [0.3.6] - 2026-06-05
 
 Corrects the MCP Registry namespace case. No tool schema or API surface changes.
