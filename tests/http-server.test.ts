@@ -502,4 +502,217 @@ describe("HTTP server integration", () => {
 			}
 		});
 	});
+
+	// ---------------------------------------------------------------------------
+	// DELETE /mcp
+	// ---------------------------------------------------------------------------
+
+	it("DELETE /mcp succeeds for an open stateful session", async () => {
+		await withHttpServer({}, async ({ baseUrl }) => {
+			const authHeaders = {
+				authorization: `Bearer ${AUTH_TOKEN}`,
+				"content-type": "application/json",
+				accept: "text/event-stream, application/json",
+			};
+
+			const initialize = await fetch(`${baseUrl}/mcp`, {
+				method: "POST",
+				headers: authHeaders,
+				body: JSON.stringify(INIT_PAYLOAD),
+			});
+			assert.equal(initialize.status, 200);
+
+			const sessionId = initialize.headers.get("mcp-session-id");
+			assert.ok(
+				sessionId,
+				"expected initialize response to include mcp-session-id",
+			);
+
+			const deleteResponse = await fetch(`${baseUrl}/mcp`, {
+				method: "DELETE",
+				headers: {
+					authorization: `Bearer ${AUTH_TOKEN}`,
+					"mcp-session-id": sessionId,
+					"mcp-protocol-version": "2024-11-05",
+				},
+			});
+
+			assert.equal(deleteResponse.status, 200);
+		});
+	});
+
+	it("DELETE /mcp without mcp-session-id header returns 400", async () => {
+		await withHttpServer({}, async ({ baseUrl }) => {
+			const deleteResponse = await fetch(`${baseUrl}/mcp`, {
+				method: "DELETE",
+				headers: {
+					authorization: `Bearer ${AUTH_TOKEN}`,
+				},
+			});
+
+			assert.equal(deleteResponse.status, 400);
+			assert.deepEqual(await deleteResponse.json(), {
+				jsonrpc: "2.0",
+				error: {
+					code: -32000,
+					message: "Missing session ID",
+				},
+				id: null,
+			});
+		});
+	});
+
+	it("DELETE /mcp in stateless session mode returns 405", async () => {
+		await withHttpServer(
+			{ MCP_SESSION_MODE: "stateless" },
+			async ({ baseUrl }) => {
+				const deleteResponse = await fetch(`${baseUrl}/mcp`, {
+					method: "DELETE",
+					headers: {
+						authorization: `Bearer ${AUTH_TOKEN}`,
+						"mcp-session-id": "00000000-0000-0000-0000-000000000000",
+					},
+				});
+
+				assert.equal(deleteResponse.status, 405);
+				assert.deepEqual(await deleteResponse.json(), {
+					jsonrpc: "2.0",
+					error: {
+						code: -32000,
+						message: "DELETE /mcp is not used in stateless session mode",
+					},
+					id: null,
+				});
+			},
+		);
+	});
+
+	// ---------------------------------------------------------------------------
+	// GET /mcp (SSE notifications stream)
+	// ---------------------------------------------------------------------------
+
+	it("GET /mcp without mcp-session-id header returns 400", async () => {
+		await withHttpServer({}, async ({ baseUrl }) => {
+			const getResponse = await fetch(`${baseUrl}/mcp`, {
+				method: "GET",
+				headers: {
+					authorization: `Bearer ${AUTH_TOKEN}`,
+					accept: "text/event-stream",
+				},
+			});
+
+			assert.equal(getResponse.status, 400);
+			assert.deepEqual(await getResponse.json(), {
+				jsonrpc: "2.0",
+				error: {
+					code: -32000,
+					message: "Missing session ID",
+				},
+				id: null,
+			});
+		});
+	});
+
+	it("GET /mcp with unknown session id returns 404", async () => {
+		await withHttpServer({}, async ({ baseUrl }) => {
+			const getResponse = await fetch(`${baseUrl}/mcp`, {
+				method: "GET",
+				headers: {
+					authorization: `Bearer ${AUTH_TOKEN}`,
+					accept: "text/event-stream",
+					"mcp-session-id": "00000000-0000-0000-0000-000000000000",
+					"mcp-protocol-version": "2024-11-05",
+				},
+			});
+
+			assert.equal(getResponse.status, 404);
+			assert.deepEqual(await getResponse.json(), {
+				jsonrpc: "2.0",
+				error: {
+					code: -32000,
+					message: "Session not found",
+				},
+				id: null,
+			});
+		});
+	});
+
+	it("GET /mcp in stateless session mode returns 405", async () => {
+		await withHttpServer(
+			{ MCP_SESSION_MODE: "stateless" },
+			async ({ baseUrl }) => {
+				const getResponse = await fetch(`${baseUrl}/mcp`, {
+					method: "GET",
+					headers: {
+						authorization: `Bearer ${AUTH_TOKEN}`,
+						accept: "text/event-stream",
+						"mcp-session-id": "00000000-0000-0000-0000-000000000000",
+					},
+				});
+
+				assert.equal(getResponse.status, 405);
+				assert.deepEqual(await getResponse.json(), {
+					jsonrpc: "2.0",
+					error: {
+						code: -32000,
+						message: "GET /mcp is not used in stateless session mode",
+					},
+					id: null,
+				});
+			},
+		);
+	});
+
+	// ---------------------------------------------------------------------------
+	// ?tools=nonexistent-domain — parseRequestedToolDomains rejection
+	// ---------------------------------------------------------------------------
+
+	it("POST /mcp with unknown ?tools domain returns 400 JSON-RPC error", async () => {
+		await withHttpServer({}, async ({ baseUrl }) => {
+			const response = await fetch(`${baseUrl}/mcp?tools=nonexistent-domain`, {
+				method: "POST",
+				headers: {
+					authorization: `Bearer ${AUTH_TOKEN}`,
+					"content-type": "application/json",
+					accept: "text/event-stream, application/json",
+				},
+				body: JSON.stringify(INIT_PAYLOAD),
+			});
+
+			assert.equal(response.status, 400);
+			const body = (await response.json()) as Record<string, unknown>;
+			assert.equal(body.jsonrpc, "2.0");
+			assert.equal(body.id, null);
+			const error = body.error as Record<string, unknown>;
+			assert.ok(
+				typeof error.message === "string" &&
+					error.message.includes("nonexistent-domain"),
+				`expected error message to mention "nonexistent-domain", got: ${error.message}`,
+			);
+		});
+	});
+
+	it("GET /mcp with unknown ?tools domain returns 400 JSON-RPC error", async () => {
+		await withHttpServer({}, async ({ baseUrl }) => {
+			const response = await fetch(`${baseUrl}/mcp?tools=nonexistent-domain`, {
+				method: "GET",
+				headers: {
+					authorization: `Bearer ${AUTH_TOKEN}`,
+					accept: "text/event-stream",
+					"mcp-session-id": "00000000-0000-0000-0000-000000000000",
+				},
+			});
+
+			assert.equal(response.status, 400);
+			const body = (await response.json()) as Record<string, unknown>;
+			assert.equal(body.jsonrpc, "2.0");
+			assert.equal(body.id, null);
+			const error = body.error as Record<string, unknown>;
+			assert.ok(
+				typeof error.message === "string" &&
+					error.message.includes("nonexistent-domain"),
+				`expected error message to mention "nonexistent-domain", got: ${error.message}`,
+			);
+		});
+	});
 });

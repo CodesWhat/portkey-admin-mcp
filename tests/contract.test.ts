@@ -37,6 +37,7 @@ import {
 	ListPromptsResponseSchema,
 	ListPromptVersionsResponseSchema,
 	PromptListItemSchema,
+	RawGetPromptResponseSchema,
 	UpdatePromptResponseSchema,
 } from "../src/schemas/contracts/prompts.contract.js";
 
@@ -261,6 +262,20 @@ describe("Contract: Prompts API", () => {
 		assert.ok(
 			result.success,
 			"ListPromptVersionsResponse should parse object-wrapped template",
+		);
+	});
+
+	it("RawGetPromptResponse schema parses prompts-get fixture", () => {
+		const fixture = loadFixture("prompts-get");
+		const result = RawGetPromptResponseSchema.safeParse(fixture);
+		assert.ok(
+			result.success,
+			`Schema validation failed: ${JSON.stringify(result.error?.issues, null, 2)}`,
+		);
+		assert.ok(result.data.id, "fixture should have an id");
+		assert.ok(
+			result.data.prompt_version_id,
+			"fixture should have a prompt_version_id",
 		);
 	});
 });

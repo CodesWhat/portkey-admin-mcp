@@ -7,10 +7,61 @@
  */
 
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { after, before, describe, it } from "node:test";
+import { fileURLToPath } from "node:url";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+
+// ---------------------------------------------------------------------------
+// Pre-flight: verify the build artifact exists and is not stale
+// ---------------------------------------------------------------------------
+
+const BUILD_INDEX = fileURLToPath(
+	new URL("../build/index.js", import.meta.url),
+);
+const SRC_DIR = fileURLToPath(new URL("../src", import.meta.url));
+
+if (!existsSync(BUILD_INDEX)) {
+	console.error(
+		"ERROR: build/index.js not found.\n" +
+			"Run 'npm run build' first, then re-run the e2e tests.",
+	);
+	process.exit(1);
+}
+
+// Check whether build/index.js is older than the newest file in src/.
+// Emits a console warning — does not fail the test suite — so CI still
+// runs the full suite against the existing artifact while alerting the
+// developer that they may be testing stale output.
+(function checkBuildStaleness() {
+	const buildMtime = statSync(BUILD_INDEX).mtimeMs;
+
+	function newestMtimeInDir(dir: string): number {
+		let newest = 0;
+		const entries = readdirSync(dir, { withFileTypes: true });
+		for (const entry of entries) {
+			const full = `${dir}/${entry.name}`;
+			if (entry.isDirectory()) {
+				const sub = newestMtimeInDir(full);
+				if (sub > newest) newest = sub;
+			} else if (entry.isFile()) {
+				const mtime = statSync(full).mtimeMs;
+				if (mtime > newest) newest = mtime;
+			}
+		}
+		return newest;
+	}
+
+	const srcNewest = newestMtimeInDir(SRC_DIR);
+	if (srcNewest > buildMtime) {
+		console.warn(
+			"WARNING: build/index.js is older than one or more files in src/.\n" +
+				"The e2e tests may be exercising a stale build.\n" +
+				"Consider running 'npm run build' before running the e2e tests.",
+		);
+	}
+})();
 
 const PKG = JSON.parse(
 	readFileSync(new URL("../package.json", import.meta.url), "utf-8"),

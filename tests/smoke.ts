@@ -8,6 +8,26 @@
 import "dotenv/config";
 import { HealthService, PortkeyService } from "../src/services/index.js";
 
+// Guard: abort early when running in CI or when no API key is present.
+// The smoke suite hits the live Portkey API and must not run in automated
+// pipelines that lack real credentials.
+if (process.env.CI) {
+	console.error(
+		"SKIP: smoke tests are disabled in CI (CI env var is set).\n" +
+			"Smoke tests require a live PORTKEY_API_KEY and are intended for\n" +
+			"manual pre-release verification only.",
+	);
+	process.exit(0);
+}
+if (!process.env.PORTKEY_API_KEY) {
+	console.error(
+		"SKIP: PORTKEY_API_KEY is not set.\n" +
+			"Smoke tests require a valid Portkey API key to run.\n" +
+			"Set PORTKEY_API_KEY in your environment or a local .env file.",
+	);
+	process.exit(0);
+}
+
 let portkey: PortkeyService;
 let health: HealthService;
 
@@ -82,12 +102,7 @@ async function main() {
 	console.log(`Base URL: ${process.env.PORTKEY_BASE_URL ?? "default"}`);
 	console.log(`Time: ${new Date().toISOString()}\n`);
 
-	if (!process.env.PORTKEY_API_KEY) {
-		console.error("ERROR: PORTKEY_API_KEY not set");
-		process.exit(1);
-	}
-
-	// Initialize services after API key validation
+	// Initialize services
 	portkey = new PortkeyService();
 	health = new HealthService();
 
