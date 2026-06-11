@@ -5,6 +5,7 @@ import type {
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import { Logger } from "../lib/logger.js";
+import { isRecord } from "../lib/type-guards.js";
 import type { PortkeyService } from "../services/index.js";
 import { registerAnalyticsTools } from "./analytics.tools.js";
 import { registerAuditTools } from "./audit.tools.js";
@@ -252,10 +253,6 @@ const STANDARD_TOOL_OUTPUT_SCHEMA = {
 		.optional()
 		.describe("Structured error payload when ok is false"),
 } as const;
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-	return typeof value === "object" && value !== null;
-}
 
 function isStandardToolEnvelope(value: unknown): value is StandardToolEnvelope {
 	if (!isRecord(value) || typeof value.ok !== "boolean") {

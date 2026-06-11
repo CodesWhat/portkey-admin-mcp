@@ -241,7 +241,7 @@ describe("HTTP server integration", () => {
 		});
 	});
 
-	it("adds HSTS on requests resolved as HTTPS", async () => {
+	it("omits HSTS when TLS is not configured in app (even with x-forwarded-proto: https)", async () => {
 		await withHttpServer(
 			{
 				MCP_TRUST_PROXY: "true",
@@ -254,10 +254,7 @@ describe("HTTP server integration", () => {
 				});
 
 				assert.equal(authInfo.status, 200);
-				assert.equal(
-					authInfo.headers.get("strict-transport-security"),
-					"max-age=31536000; includeSubDomains",
-				);
+				assert.equal(authInfo.headers.get("strict-transport-security"), null);
 			},
 		);
 	});
