@@ -146,10 +146,20 @@ export interface UpdateApiKeyRequest {
 	expires_at?: string | null;
 }
 
+export interface ListVirtualKeysParams {
+	page_size?: number;
+	current_page?: number;
+}
+
 export class KeysService extends BaseService {
 	// Virtual Keys
-	async listVirtualKeys(): Promise<ListVirtualKeysResponse> {
-		return this.get<ListVirtualKeysResponse>("/virtual-keys");
+	async listVirtualKeys(
+		params?: ListVirtualKeysParams,
+	): Promise<ListVirtualKeysResponse> {
+		return this.get<ListVirtualKeysResponse>("/virtual-keys", {
+			page_size: params?.page_size,
+			current_page: params?.current_page,
+		});
 	}
 
 	// Phase 2: Virtual Keys CRUD

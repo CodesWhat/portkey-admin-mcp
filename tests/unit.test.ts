@@ -184,22 +184,22 @@ describe("PortkeyService facade shape", () => {
 });
 
 describe("HealthService cache sharing", () => {
-	it("reuses one HealthService across PortkeyService instances with the same config", async () => {
+	it("reuses one HealthService via getSharedPortkeyService for the same config", async () => {
 		const originalApiKey = process.env.PORTKEY_API_KEY;
 		const originalBaseUrl = process.env.PORTKEY_BASE_URL;
 		process.env.PORTKEY_API_KEY = "test-dummy-key";
 		process.env.PORTKEY_BASE_URL = "https://example.portkey.test/v1";
 
 		try {
-			const { PortkeyService: FreshPortkeyService } = await import(
+			const { getSharedPortkeyService: freshGetShared } = await import(
 				`../src/services/index.js?test=${Date.now()}-${Math.random()}`
 			);
 
-			const first = new FreshPortkeyService();
-			const second = new FreshPortkeyService();
+			const first = freshGetShared();
+			const second = freshGetShared();
 
+			assert.equal(first, second);
 			assert.equal(first.health, second.health);
-			assert.notEqual(first.users, second.users);
 		} finally {
 			if (originalApiKey === undefined) {
 				delete process.env.PORTKEY_API_KEY;

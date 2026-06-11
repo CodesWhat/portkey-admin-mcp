@@ -104,9 +104,22 @@ export interface UserGroupedData {
 	data: AnalyticsGroup[];
 }
 
+export interface ListUsersParams {
+	page_size?: number;
+	current_page?: number;
+}
+
+export interface ListUserInvitesParams {
+	page_size?: number;
+	current_page?: number;
+}
+
 export class UsersService extends BaseService {
-	async listUsers(): Promise<PortkeyUsersResponse> {
-		return this.get<PortkeyUsersResponse>("/admin/users");
+	async listUsers(params?: ListUsersParams): Promise<PortkeyUsersResponse> {
+		return this.get<PortkeyUsersResponse>("/admin/users", {
+			page_size: params?.page_size,
+			current_page: params?.current_page,
+		});
 	}
 
 	async inviteUser(data: InviteUserRequest): Promise<InviteUserResponse> {
@@ -166,8 +179,13 @@ export class UsersService extends BaseService {
 	}
 
 	// Phase 1: User Invites CRUD
-	async listUserInvites(): Promise<UserInvitesResponse> {
-		return this.get<UserInvitesResponse>("/admin/users/invites");
+	async listUserInvites(
+		params?: ListUserInvitesParams,
+	): Promise<UserInvitesResponse> {
+		return this.get<UserInvitesResponse>("/admin/users/invites", {
+			page_size: params?.page_size,
+			current_page: params?.current_page,
+		});
 	}
 
 	async getUserInvite(inviteId: string): Promise<UserInvite> {

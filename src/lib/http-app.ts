@@ -17,7 +17,7 @@ import {
 import cors from "cors";
 import express from "express";
 import helmet from "helmet";
-import { getSharedHealthService } from "../services/index.js";
+import { getSharedPortkeyService } from "../services/index.js";
 import {
 	isToolDomain,
 	normalizeToolDomains,
@@ -329,7 +329,7 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 	}
 
 	const healthService = process.env.PORTKEY_API_KEY
-		? getSharedHealthService()
+		? getSharedPortkeyService().health
 		: null;
 	const isStatefulSessionMode = config.sessionMode === "stateful";
 	const publicBaseUrl = buildConfiguredPublicBaseUrl(config);

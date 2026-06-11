@@ -119,6 +119,11 @@ export interface ConfigVersionsResponse {
 	data: ConfigVersion[];
 }
 
+export interface ListConfigsParams {
+	page_size?: number;
+	current_page?: number;
+}
+
 export class ConfigsService extends BaseService {
 	private parseConfigResponse(
 		response: RawGetConfigResponse,
@@ -129,8 +134,11 @@ export class ConfigsService extends BaseService {
 		};
 	}
 
-	async listConfigs(): Promise<ListConfigsResponse> {
-		return this.get<ListConfigsResponse>("/configs");
+	async listConfigs(params?: ListConfigsParams): Promise<ListConfigsResponse> {
+		return this.get<ListConfigsResponse>("/configs", {
+			page_size: params?.page_size,
+			current_page: params?.current_page,
+		});
 	}
 
 	async getConfig(slug: string): Promise<GetConfigResponse> {
