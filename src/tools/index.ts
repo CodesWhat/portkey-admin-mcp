@@ -311,7 +311,7 @@ function getErrorDetails(result: CallToolResult): {
 }
 
 function formatToolEnvelope(envelope: StandardToolEnvelope): string {
-	return JSON.stringify(envelope, null, 2);
+	return JSON.stringify(envelope);
 }
 
 function normalizeToolResult(result: CallToolResult): CallToolResult {

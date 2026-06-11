@@ -202,25 +202,21 @@ export function registerConfigsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								total: configs.total,
-								configurations: (configs.data ?? []).map((config) => ({
-									id: config.id,
-									name: config.name,
-									slug: config.slug,
-									workspace_id: config.workspace_id,
-									status: config.status,
-									is_default: config.is_default,
-									created_at: config.created_at,
-									last_updated_at: config.last_updated_at,
-									owner_id: config.owner_id,
-									updated_by: config.updated_by,
-								})),
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							total: configs.total,
+							configurations: (configs.data ?? []).map((config) => ({
+								id: config.id,
+								name: config.name,
+								slug: config.slug,
+								workspace_id: config.workspace_id,
+								status: config.status,
+								is_default: config.is_default,
+								created_at: config.created_at,
+								last_updated_at: config.last_updated_at,
+								owner_id: config.owner_id,
+								updated_by: config.updated_by,
+							})),
+						}),
 					},
 				],
 			};
@@ -238,35 +234,31 @@ export function registerConfigsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								id: response.id,
-								slug: response.slug,
-								name: response.name,
-								status: response.status,
-								config: {
-									cache: response.config.cache && {
-										mode: response.config.cache.mode,
-										max_age: response.config.cache.max_age,
-									},
-									retry: response.config.retry && {
-										attempts: response.config.retry.attempts,
-										on_status_codes: response.config.retry.on_status_codes,
-									},
-									strategy: response.config.strategy && {
-										mode: response.config.strategy.mode,
-									},
-									targets: response.config.targets?.map(
-										(target: { provider?: string; virtual_key?: string }) => ({
-											provider: target.provider,
-											virtual_key: target.virtual_key,
-										}),
-									),
+						text: JSON.stringify({
+							id: response.id,
+							slug: response.slug,
+							name: response.name,
+							status: response.status,
+							config: {
+								cache: response.config.cache && {
+									mode: response.config.cache.mode,
+									max_age: response.config.cache.max_age,
 								},
+								retry: response.config.retry && {
+									attempts: response.config.retry.attempts,
+									on_status_codes: response.config.retry.on_status_codes,
+								},
+								strategy: response.config.strategy && {
+									mode: response.config.strategy.mode,
+								},
+								targets: response.config.targets?.map(
+									(target: { provider?: string; virtual_key?: string }) => ({
+										provider: target.provider,
+										virtual_key: target.virtual_key,
+									}),
+								),
 							},
-							null,
-							2,
-						),
+						}),
 					},
 				],
 			};
@@ -304,15 +296,11 @@ export function registerConfigsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully created configuration "${params.name}"`,
-								id: result.id,
-								version_id: result.version_id,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully created configuration "${params.name}"`,
+							id: result.id,
+							version_id: result.version_id,
+						}),
 					},
 				],
 			};
@@ -344,16 +332,12 @@ export function registerConfigsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully updated configuration "${params.slug}"`,
-								id: result.id,
-								slug: result.slug,
-								config: result.config,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully updated configuration "${params.slug}"`,
+							id: result.id,
+							slug: result.slug,
+							config: result.config,
+						}),
 					},
 				],
 			};
@@ -371,14 +355,10 @@ export function registerConfigsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully deleted configuration "${params.slug}"`,
-								success: result.success,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully deleted configuration "${params.slug}"`,
+							success: result.success,
+						}),
 					},
 				],
 			};
@@ -396,20 +376,16 @@ export function registerConfigsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								total: result.total,
-								versions: (result.data ?? []).map((version) => ({
-									id: version.id,
-									version: version.version,
-									config: version.config,
-									created_at: version.created_at,
-									created_by: version.created_by,
-								})),
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							total: result.total,
+							versions: (result.data ?? []).map((version) => ({
+								id: version.id,
+								version: version.version,
+								config: version.config,
+								created_at: version.created_at,
+								created_by: version.created_by,
+							})),
+						}),
 					},
 				],
 			};

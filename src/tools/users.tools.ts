@@ -220,14 +220,10 @@ export function registerUsersTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								total: users.total,
-								users: users.data.map(formatUser),
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							total: users.total,
+							users: users.data.map(formatUser),
+						}),
 					},
 				],
 			};
@@ -245,15 +241,11 @@ export function registerUsersTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully invited ${params.email} as ${params.role}`,
-								invite_id: result.id,
-								invite_link: result.invite_link,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully invited ${params.email} as ${params.role}`,
+							invite_id: result.id,
+							invite_link: result.invite_link,
+						}),
 					},
 				],
 			};
@@ -271,14 +263,10 @@ export function registerUsersTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								total_users: stats.total,
-								users: stats.data.map(formatUserAnalyticsGroup),
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							total_users: stats.total,
+							users: stats.data.map(formatUserAnalyticsGroup),
+						}),
 					},
 				],
 			};
@@ -296,7 +284,7 @@ export function registerUsersTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(formatUser(user), null, 2),
+						text: JSON.stringify(formatUser(user)),
 					},
 				],
 			};
@@ -315,14 +303,10 @@ export function registerUsersTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: "Successfully updated user",
-								user: formatUser(user),
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: "Successfully updated user",
+							user: formatUser(user),
+						}),
 					},
 				],
 			};
@@ -340,14 +324,10 @@ export function registerUsersTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully deleted user ${params.user_id}`,
-								success: true,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully deleted user ${params.user_id}`,
+							success: true,
+						}),
 					},
 				],
 			};
@@ -368,14 +348,10 @@ export function registerUsersTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								total: invites.total,
-								invites: invites.data.map(formatUserInvite),
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							total: invites.total,
+							invites: invites.data.map(formatUserInvite),
+						}),
 					},
 				],
 			};
@@ -393,7 +369,7 @@ export function registerUsersTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(formatUserInvite(invite), null, 2),
+						text: JSON.stringify(formatUserInvite(invite)),
 					},
 				],
 			};
@@ -411,14 +387,10 @@ export function registerUsersTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully deleted invite ${params.invite_id}`,
-								success: true,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully deleted invite ${params.invite_id}`,
+							success: true,
+						}),
 					},
 				],
 			};
@@ -436,14 +408,10 @@ export function registerUsersTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully resent invite ${params.invite_id}`,
-								success: true,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully resent invite ${params.invite_id}`,
+							success: true,
+						}),
 					},
 				],
 			};

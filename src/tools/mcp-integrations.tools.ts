@@ -228,15 +228,11 @@ export function registerMcpIntegrationsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								total: result.total,
-								has_more: result.has_more,
-								integrations: result.data.map(formatMcpIntegration),
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							total: result.total,
+							has_more: result.has_more,
+							integrations: result.data.map(formatMcpIntegration),
+						}),
 					},
 				],
 			};
@@ -272,15 +268,11 @@ export function registerMcpIntegrationsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully created MCP integration "${params.name}"`,
-								id: result.id,
-								slug: result.slug,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully created MCP integration "${params.name}"`,
+							id: result.id,
+							slug: result.slug,
+						}),
 					},
 				],
 			};
@@ -299,7 +291,7 @@ export function registerMcpIntegrationsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(formatMcpIntegration(integration), null, 2),
+						text: JSON.stringify(formatMcpIntegration(integration)),
 					},
 				],
 			};
@@ -320,14 +312,10 @@ export function registerMcpIntegrationsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully updated MCP integration "${id}"`,
-								success: true,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully updated MCP integration "${id}"`,
+							success: true,
+						}),
 					},
 				],
 			};
@@ -344,14 +332,10 @@ export function registerMcpIntegrationsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully deleted MCP integration "${params.id}"`,
-								success: true,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully deleted MCP integration "${params.id}"`,
+							success: true,
+						}),
 					},
 				],
 			};
@@ -370,11 +354,7 @@ export function registerMcpIntegrationsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							formatMcpIntegrationMetadata(metadata),
-							null,
-							2,
-						),
+						text: JSON.stringify(formatMcpIntegrationMetadata(metadata)),
 					},
 				],
 			};
@@ -392,11 +372,10 @@ export function registerMcpIntegrationsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{ total: result.total, capabilities: result.data },
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							total: result.total,
+							capabilities: result.data,
+						}),
 					},
 				],
 			};
@@ -418,14 +397,10 @@ export function registerMcpIntegrationsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully updated capabilities for MCP integration "${params.id}"`,
-								success: true,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully updated capabilities for MCP integration "${params.id}"`,
+							success: true,
+						}),
 					},
 				],
 			};
@@ -444,17 +419,11 @@ export function registerMcpIntegrationsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								global_workspace_access: result.global_workspace_access,
-								workspace_count: result.workspaces.length,
-								workspaces: result.workspaces.map(
-									formatMcpIntegrationWorkspace,
-								),
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							global_workspace_access: result.global_workspace_access,
+							workspace_count: result.workspaces.length,
+							workspaces: result.workspaces.map(formatMcpIntegrationWorkspace),
+						}),
 					},
 				],
 			};
@@ -473,14 +442,10 @@ export function registerMcpIntegrationsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully updated workspace access for MCP integration "${params.id}"`,
-								success: true,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully updated workspace access for MCP integration "${params.id}"`,
+							success: true,
+						}),
 					},
 				],
 			};

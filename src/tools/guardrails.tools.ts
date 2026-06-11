@@ -126,25 +126,21 @@ export function registerGuardrailsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								total: result.total,
-								guardrails: result.data.map((guardrail) => ({
-									id: guardrail.id,
-									name: guardrail.name,
-									slug: guardrail.slug,
-									status: guardrail.status,
-									workspace_id: guardrail.workspace_id,
-									organisation_id: guardrail.organisation_id,
-									created_at: guardrail.created_at,
-									last_updated_at: guardrail.last_updated_at,
-									owner_id: guardrail.owner_id,
-									updated_by: guardrail.updated_by,
-								})),
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							total: result.total,
+							guardrails: result.data.map((guardrail) => ({
+								id: guardrail.id,
+								name: guardrail.name,
+								slug: guardrail.slug,
+								status: guardrail.status,
+								workspace_id: guardrail.workspace_id,
+								organisation_id: guardrail.organisation_id,
+								created_at: guardrail.created_at,
+								last_updated_at: guardrail.last_updated_at,
+								owner_id: guardrail.owner_id,
+								updated_by: guardrail.updated_by,
+							})),
+						}),
 					},
 				],
 			};
@@ -164,24 +160,20 @@ export function registerGuardrailsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								id: guardrail.id,
-								name: guardrail.name,
-								slug: guardrail.slug,
-								status: guardrail.status,
-								workspace_id: guardrail.workspace_id,
-								organisation_id: guardrail.organisation_id,
-								checks: guardrail.checks,
-								actions: guardrail.actions,
-								created_at: guardrail.created_at,
-								last_updated_at: guardrail.last_updated_at,
-								owner_id: guardrail.owner_id,
-								updated_by: guardrail.updated_by,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							id: guardrail.id,
+							name: guardrail.name,
+							slug: guardrail.slug,
+							status: guardrail.status,
+							workspace_id: guardrail.workspace_id,
+							organisation_id: guardrail.organisation_id,
+							checks: guardrail.checks,
+							actions: guardrail.actions,
+							created_at: guardrail.created_at,
+							last_updated_at: guardrail.last_updated_at,
+							owner_id: guardrail.owner_id,
+							updated_by: guardrail.updated_by,
+						}),
 					},
 				],
 			};
@@ -205,16 +197,12 @@ export function registerGuardrailsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully created guardrail "${params.name}"`,
-								id: result.id,
-								slug: result.slug,
-								version_id: result.version_id,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully created guardrail "${params.name}"`,
+							id: result.id,
+							slug: result.slug,
+							version_id: result.version_id,
+						}),
 					},
 				],
 			};
@@ -251,16 +239,12 @@ export function registerGuardrailsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully updated guardrail "${params.guardrail_id}"`,
-								id: result.id,
-								slug: result.slug,
-								version_id: result.version_id,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully updated guardrail "${params.guardrail_id}"`,
+							id: result.id,
+							slug: result.slug,
+							version_id: result.version_id,
+						}),
 					},
 				],
 			};
@@ -280,14 +264,10 @@ export function registerGuardrailsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully deleted guardrail "${params.guardrail_id}"`,
-								success: result.success,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully deleted guardrail "${params.guardrail_id}"`,
+							success: result.success,
+						}),
 					},
 				],
 			};

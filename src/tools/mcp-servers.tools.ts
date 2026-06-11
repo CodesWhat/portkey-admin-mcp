@@ -177,14 +177,10 @@ export function registerMcpServersTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								total: result.total,
-								servers: result.data.map(formatMcpServer),
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							total: result.total,
+							servers: result.data.map(formatMcpServer),
+						}),
 					},
 				],
 			};
@@ -201,15 +197,11 @@ export function registerMcpServersTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully created MCP server "${params.name}"`,
-								id: result.id,
-								slug: result.slug,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully created MCP server "${params.name}"`,
+							id: result.id,
+							slug: result.slug,
+						}),
 					},
 				],
 			};
@@ -226,7 +218,7 @@ export function registerMcpServersTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(formatMcpServer(mcpServer), null, 2),
+						text: JSON.stringify(formatMcpServer(mcpServer)),
 					},
 				],
 			};
@@ -244,14 +236,10 @@ export function registerMcpServersTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully updated MCP server "${id}"`,
-								success: true,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully updated MCP server "${id}"`,
+							success: true,
+						}),
 					},
 				],
 			};
@@ -268,14 +256,10 @@ export function registerMcpServersTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully deleted MCP server "${params.id}"`,
-								success: true,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully deleted MCP server "${params.id}"`,
+							success: true,
+						}),
 					},
 				],
 			};
@@ -292,7 +276,7 @@ export function registerMcpServersTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(formatMcpServerTest(result), null, 2),
+						text: JSON.stringify(formatMcpServerTest(result)),
 					},
 				],
 			};
@@ -315,15 +299,11 @@ export function registerMcpServersTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								total: result.total,
-								has_more: result.has_more,
-								capabilities: result.data,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							total: result.total,
+							has_more: result.has_more,
+							capabilities: result.data,
+						}),
 					},
 				],
 			};
@@ -342,14 +322,10 @@ export function registerMcpServersTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully updated capabilities for MCP server "${params.id}"`,
-								success: true,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully updated capabilities for MCP server "${params.id}"`,
+							success: true,
+						}),
 					},
 				],
 			};
@@ -372,16 +348,12 @@ export function registerMcpServersTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								default_user_access: result.default_user_access,
-								total: result.total,
-								has_more: result.has_more,
-								users: result.data.map(formatMcpServerUserAccess),
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							default_user_access: result.default_user_access,
+							total: result.total,
+							has_more: result.has_more,
+							users: result.data.map(formatMcpServerUserAccess),
+						}),
 					},
 				],
 			};
@@ -400,14 +372,10 @@ export function registerMcpServersTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully updated user access for MCP server "${params.id}"`,
-								success: true,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully updated user access for MCP server "${params.id}"`,
+							success: true,
+						}),
 					},
 				],
 			};

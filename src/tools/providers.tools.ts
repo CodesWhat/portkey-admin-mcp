@@ -178,36 +178,32 @@ export function registerProvidersTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								total: providers.total,
-								providers: providers.data.map((provider) => ({
-									name: provider.name,
-									slug: provider.slug,
-									integration_id: provider.integration_id,
-									status: provider.status,
-									note: provider.note,
-									usage_limits: provider.usage_limits
-										? {
-												credit_limit: provider.usage_limits.credit_limit,
-												alert_threshold: provider.usage_limits.alert_threshold,
-												periodic_reset: provider.usage_limits.periodic_reset,
-											}
-										: null,
-									rate_limits:
-										provider.rate_limits?.map((limit) => ({
-											type: limit.type,
-											unit: limit.unit,
-											value: limit.value,
-										})) ?? null,
-									reset_usage: provider.reset_usage,
-									expires_at: provider.expires_at,
-									created_at: provider.created_at,
-								})),
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							total: providers.total,
+							providers: providers.data.map((provider) => ({
+								name: provider.name,
+								slug: provider.slug,
+								integration_id: provider.integration_id,
+								status: provider.status,
+								note: provider.note,
+								usage_limits: provider.usage_limits
+									? {
+											credit_limit: provider.usage_limits.credit_limit,
+											alert_threshold: provider.usage_limits.alert_threshold,
+											periodic_reset: provider.usage_limits.periodic_reset,
+										}
+									: null,
+								rate_limits:
+									provider.rate_limits?.map((limit) => ({
+										type: limit.type,
+										unit: limit.unit,
+										value: limit.value,
+									})) ?? null,
+								reset_usage: provider.reset_usage,
+								expires_at: provider.expires_at,
+								created_at: provider.created_at,
+							})),
+						}),
 					},
 				],
 			};
@@ -247,15 +243,11 @@ export function registerProvidersTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully created provider "${params.name}"`,
-								id: result.id,
-								slug: result.slug,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully created provider "${params.name}"`,
+							id: result.id,
+							slug: result.slug,
+						}),
 					},
 				],
 			};
@@ -277,33 +269,29 @@ export function registerProvidersTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								name: provider.name,
-								slug: provider.slug,
-								integration_id: provider.integration_id,
-								status: provider.status,
-								note: provider.note,
-								usage_limits: provider.usage_limits
-									? {
-											credit_limit: provider.usage_limits.credit_limit,
-											alert_threshold: provider.usage_limits.alert_threshold,
-											periodic_reset: provider.usage_limits.periodic_reset,
-										}
-									: null,
-								rate_limits:
-									provider.rate_limits?.map((limit) => ({
-										type: limit.type,
-										unit: limit.unit,
-										value: limit.value,
-									})) ?? null,
-								reset_usage: provider.reset_usage,
-								expires_at: provider.expires_at,
-								created_at: provider.created_at,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							name: provider.name,
+							slug: provider.slug,
+							integration_id: provider.integration_id,
+							status: provider.status,
+							note: provider.note,
+							usage_limits: provider.usage_limits
+								? {
+										credit_limit: provider.usage_limits.credit_limit,
+										alert_threshold: provider.usage_limits.alert_threshold,
+										periodic_reset: provider.usage_limits.periodic_reset,
+									}
+								: null,
+							rate_limits:
+								provider.rate_limits?.map((limit) => ({
+									type: limit.type,
+									unit: limit.unit,
+									value: limit.value,
+								})) ?? null,
+							reset_usage: provider.reset_usage,
+							expires_at: provider.expires_at,
+							created_at: provider.created_at,
+						}),
 					},
 				],
 			};
@@ -345,15 +333,11 @@ export function registerProvidersTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully updated provider "${params.slug}"`,
-								id: result.id,
-								slug: result.slug,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully updated provider "${params.slug}"`,
+							id: result.id,
+							slug: result.slug,
+						}),
 					},
 				],
 			};
@@ -372,14 +356,10 @@ export function registerProvidersTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully deleted provider "${params.slug}"`,
-								success: true,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully deleted provider "${params.slug}"`,
+							success: true,
+						}),
 					},
 				],
 			};

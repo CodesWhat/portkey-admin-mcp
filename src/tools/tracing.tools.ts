@@ -68,15 +68,11 @@ export function registerTracingTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully created feedback for trace "${params.trace_id}"`,
-								status: result.status,
-								feedback_ids: result.feedback_ids,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully created feedback for trace "${params.trace_id}"`,
+							status: result.status,
+							feedback_ids: result.feedback_ids,
+						}),
 					},
 				],
 			};
@@ -98,15 +94,11 @@ export function registerTracingTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully updated feedback "${params.id}"`,
-								status: result.status,
-								feedback_ids: result.feedback_ids,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully updated feedback "${params.id}"`,
+							status: result.status,
+							feedback_ids: result.feedback_ids,
+						}),
 					},
 				],
 			};

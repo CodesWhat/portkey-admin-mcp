@@ -60,21 +60,17 @@ export function registerCollectionsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								total: collections.total,
-								collections: collections.data.map((collection) => ({
-									id: collection.id,
-									name: collection.name,
-									slug: collection.slug,
-									workspace_id: collection.workspace_id,
-									created_at: collection.created_at,
-									last_updated_at: collection.last_updated_at,
-								})),
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							total: collections.total,
+							collections: collections.data.map((collection) => ({
+								id: collection.id,
+								name: collection.name,
+								slug: collection.slug,
+								workspace_id: collection.workspace_id,
+								created_at: collection.created_at,
+								last_updated_at: collection.last_updated_at,
+							})),
+						}),
 					},
 				],
 			};
@@ -92,15 +88,11 @@ export function registerCollectionsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully created collection "${params.name}"`,
-								id: result.id,
-								slug: result.slug,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully created collection "${params.name}"`,
+							id: result.id,
+							slug: result.slug,
+						}),
 					},
 				],
 			};
@@ -120,18 +112,14 @@ export function registerCollectionsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								id: collection.id,
-								name: collection.name,
-								slug: collection.slug,
-								workspace_id: collection.workspace_id,
-								created_at: collection.created_at,
-								last_updated_at: collection.last_updated_at,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							id: collection.id,
+							name: collection.name,
+							slug: collection.slug,
+							workspace_id: collection.workspace_id,
+							created_at: collection.created_at,
+							last_updated_at: collection.last_updated_at,
+						}),
 					},
 				],
 			};
@@ -152,14 +140,10 @@ export function registerCollectionsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully updated collection "${params.collection_id}"`,
-								success: true,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully updated collection "${params.collection_id}"`,
+							success: true,
+						}),
 					},
 				],
 			};
@@ -179,14 +163,10 @@ export function registerCollectionsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							{
-								message: `Successfully deleted collection "${params.collection_id}"`,
-								success: result.success,
-							},
-							null,
-							2,
-						),
+						text: JSON.stringify({
+							message: `Successfully deleted collection "${params.collection_id}"`,
+							success: result.success,
+						}),
 					},
 				],
 			};

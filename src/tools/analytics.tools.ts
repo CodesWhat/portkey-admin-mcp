@@ -373,8 +373,6 @@ export function registerAnalyticsTools(
 								},
 								dataPoints,
 							),
-							null,
-							2,
 						),
 					},
 				],
@@ -411,8 +409,6 @@ export function registerAnalyticsTools(
 								},
 								dataPoints,
 							),
-							null,
-							2,
 						),
 					},
 				],
@@ -447,8 +443,6 @@ export function registerAnalyticsTools(
 								},
 								dataPoints,
 							),
-							null,
-							2,
 						),
 					},
 				],
@@ -485,8 +479,6 @@ export function registerAnalyticsTools(
 								},
 								dataPoints,
 							),
-							null,
-							2,
 						),
 					},
 				],
@@ -517,8 +509,6 @@ export function registerAnalyticsTools(
 								},
 								dataPoints,
 							),
-							null,
-							2,
 						),
 					},
 				],
@@ -549,8 +539,6 @@ export function registerAnalyticsTools(
 								},
 								dataPoints,
 							),
-							null,
-							2,
 						),
 					},
 				],
@@ -585,8 +573,6 @@ export function registerAnalyticsTools(
 								},
 								dataPoints,
 							),
-							null,
-							2,
 						),
 					},
 				],
@@ -621,8 +607,6 @@ export function registerAnalyticsTools(
 								},
 								dataPoints,
 							),
-							null,
-							2,
 						),
 					},
 				],
@@ -657,8 +641,6 @@ export function registerAnalyticsTools(
 								},
 								dataPoints,
 							),
-							null,
-							2,
 						),
 					},
 				],
@@ -680,11 +662,7 @@ export function registerAnalyticsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							formatGenericGraphAnalytics(analytics),
-							null,
-							2,
-						),
+						text: JSON.stringify(formatGenericGraphAnalytics(analytics)),
 					},
 				],
 			};
@@ -703,11 +681,7 @@ export function registerAnalyticsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							formatGenericGraphAnalytics(analytics),
-							null,
-							2,
-						),
+						text: JSON.stringify(formatGenericGraphAnalytics(analytics)),
 					},
 				],
 			};
@@ -726,11 +700,7 @@ export function registerAnalyticsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							formatGenericGraphAnalytics(analytics),
-							null,
-							2,
-						),
+						text: JSON.stringify(formatGenericGraphAnalytics(analytics)),
 					},
 				],
 			};
@@ -749,11 +719,7 @@ export function registerAnalyticsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							formatGenericGraphAnalytics(analytics),
-							null,
-							2,
-						),
+						text: JSON.stringify(formatGenericGraphAnalytics(analytics)),
 					},
 				],
 			};
@@ -772,11 +738,7 @@ export function registerAnalyticsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							formatGenericGraphAnalytics(analytics),
-							null,
-							2,
-						),
+						text: JSON.stringify(formatGenericGraphAnalytics(analytics)),
 					},
 				],
 			};
@@ -795,11 +757,7 @@ export function registerAnalyticsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							formatGenericGraphAnalytics(analytics),
-							null,
-							2,
-						),
+						text: JSON.stringify(formatGenericGraphAnalytics(analytics)),
 					},
 				],
 			};
@@ -818,11 +776,7 @@ export function registerAnalyticsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							formatGenericGraphAnalytics(analytics),
-							null,
-							2,
-						),
+						text: JSON.stringify(formatGenericGraphAnalytics(analytics)),
 					},
 				],
 			};
@@ -841,11 +795,7 @@ export function registerAnalyticsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							formatGenericGraphAnalytics(analytics),
-							null,
-							2,
-						),
+						text: JSON.stringify(formatGenericGraphAnalytics(analytics)),
 					},
 				],
 			};
@@ -866,11 +816,7 @@ export function registerAnalyticsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							formatGroupedAnalytics(analytics, "users"),
-							null,
-							2,
-						),
+						text: JSON.stringify(formatGroupedAnalytics(analytics, "users")),
 					},
 				],
 			};
@@ -889,11 +835,7 @@ export function registerAnalyticsTools(
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(
-							formatGroupedAnalytics(analytics, "models"),
-							null,
-							2,
-						),
+						text: JSON.stringify(formatGroupedAnalytics(analytics, "models")),
 					},
 				],
 			};
@@ -916,8 +858,6 @@ export function registerAnalyticsTools(
 						type: "text",
 						text: JSON.stringify(
 							formatGroupedAnalytics(analytics, "metadata_groups"),
-							null,
-							2,
 						),
 					},
 				],
