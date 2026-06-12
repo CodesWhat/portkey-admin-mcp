@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- GitHub Releases now use the matching `CHANGELOG.md` version section as the release body (with the auto-generated PR list appended), instead of auto-generated notes alone.
+
 ## [0.3.7] - 2026-06-11
 
 Security hardening, pagination params, compact tool responses, and a major test-coverage expansion from a four-domain code review. Tool-param additions are additive; no breaking API surface changes.

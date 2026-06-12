@@ -25,7 +25,11 @@ Everything after the merge is automatic:
     final gate.
   - **`github-release`** publishes a non-prerelease GitHub Release for stable
     tags like `v0.4.0`. Tags containing a hyphen, such as `v0.4.0-beta.1`, are
-    published as prereleases and are not marked as the latest release.
+    published as prereleases and are not marked as the latest release. The
+    release body is the matching version section from `CHANGELOG.md` (read
+    from the tag itself), with the auto-generated PR list and compare link
+    appended; if no section matches, it falls back to the auto-generated
+    notes alone.
   - **`publish-registry`** publishes `server.json` to the
     [MCP Registry](https://registry.modelcontextprotocol.io). It authenticates
     via GitHub Actions OIDC, verifies `server.json` matches the tag, and waits

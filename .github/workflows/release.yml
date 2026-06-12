@@ -60,7 +60,24 @@ jobs:
             exit 0
           fi
 
+          # Use the tag's CHANGELOG.md section as the release body; gh prepends
+          # it to the auto-generated notes (PR list + compare link). Read the
+          # file from the tag, not the checkout, so dispatch backfills get the
+          # right version's notes.
+          notes_file="$(mktemp)"
+          git show "refs/tags/${tag}:CHANGELOG.md" 2>/dev/null \
+            | awk -v ver="${tag#v}" '
+                index($0, "## [" ver "]") == 1 { found=1; next }
+                found && (/^## / || /^\[[^]]*\]: /) { exit }
+                found { print }
+              ' >"$notes_file" || true
+
           args=(--verify-tag --generate-notes --title "Release $tag")
+          if grep -q '[^[:space:]]' "$notes_file"; then
+            args+=(--notes-file "$notes_file")
+          else
+            echo "No CHANGELOG.md section found for ${tag#v}; using generated notes only."
+          fi
           if [[ "$tag" == *-* ]]; then
             args+=(--prerelease --latest=false)
           else
