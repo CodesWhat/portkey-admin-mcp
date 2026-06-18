@@ -16,7 +16,7 @@ MCP server for the [Portkey](https://portkey.ai/) Admin API. Manage prompts, con
 <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg" alt="Node.js"></a>
 <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
 <a href="https://github.com/punkpeye/awesome-mcp-servers"><img src="https://awesome.re/mentioned-badge.svg" alt="Mentioned in Awesome MCP Servers"></a>
-<a href="https://lobehub.com/mcp/CodesWhat-portkey-admin-mcp"><img src="https://lobehub.com/badge/mcp/CodesWhat-portkey-admin-mcp?style=flat" alt="LobeHub MCP"></a>
+<a href="https://lobehub.com/mcp/codeswhat-portkey-admin-mcp"><img src="https://lobehub.com/badge/mcp/codeswhat-portkey-admin-mcp?style=flat" alt="MCP Badge"></a>
 
 <a href="https://glama.ai/mcp/servers/CodesWhat/portkey-admin-mcp"><img src="https://glama.ai/mcp/servers/CodesWhat/portkey-admin-mcp/badges/card.svg" alt="portkey-admin-mcp MCP server"></a>
 

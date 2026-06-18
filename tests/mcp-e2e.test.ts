@@ -299,6 +299,129 @@ describe("MCP E2E Protocol Tests", () => {
 			assert.ok(caps?.tools, "tools capability should be present");
 			assert.equal(caps?.tools?.listChanged, true);
 		});
+
+		it("advertises prompts and resources capabilities", () => {
+			const caps = client.getServerCapabilities();
+			assert.ok(caps?.prompts, "prompts capability should be present");
+			assert.equal(caps?.prompts?.listChanged, true);
+			assert.ok(caps?.resources, "resources capability should be present");
+			assert.equal(caps?.resources?.listChanged, true);
+		});
+	});
+
+	// ==================== Prompt & Resource Discovery ====================
+
+	describe("prompt and resource discovery", () => {
+		it("supports catalog inspection without PORTKEY_API_KEY", async () => {
+			const { PORTKEY_API_KEY: _apiKey, ...envWithoutApiKey } = process.env;
+			const catalogTransport = new StdioClientTransport({
+				command: "node",
+				args: ["build/index.js"],
+				env: envWithoutApiKey as Record<string, string>,
+				stderr: "pipe",
+			});
+			const catalogClient = new Client({
+				name: "catalog-e2e-test-client",
+				version: "1.0.0",
+			});
+
+			try {
+				await catalogClient.connect(catalogTransport);
+				assert.ok(catalogClient.getServerCapabilities()?.tools);
+				assert.ok(catalogClient.getServerCapabilities()?.prompts);
+				assert.ok(catalogClient.getServerCapabilities()?.resources);
+
+				const tools = await catalogClient.listTools();
+				const prompts = await catalogClient.listPrompts();
+				const resources = await catalogClient.listResources();
+
+				assert.equal(tools.tools.length, EXPECTED_TOOLS.length);
+				assert.ok(
+					prompts.prompts.some(
+						(prompt) => prompt.name === "plan_portkey_admin_workflow",
+					),
+				);
+				assert.ok(
+					resources.resources.some(
+						(resource) =>
+							resource.uri === "portkey-admin://docs/workflow-guide",
+					),
+				);
+			} finally {
+				await catalogClient.close();
+			}
+		});
+
+		it("lists the built-in workflow prompt", async () => {
+			const result = await client.listPrompts();
+			const prompt = result.prompts.find(
+				(entry) => entry.name === "plan_portkey_admin_workflow",
+			);
+
+			assert.ok(prompt, "expected workflow prompt to be listed");
+			assert.equal(prompt.title, "Plan Portkey Admin Workflow");
+			assert.ok(
+				prompt.arguments?.some((argument) => argument.name === "task"),
+				"expected task argument to be advertised",
+			);
+		});
+
+		it("renders the built-in workflow prompt", async () => {
+			const result = await client.getPrompt({
+				name: "plan_portkey_admin_workflow",
+				arguments: {
+					task: "promote a prompt from staging to production",
+					area: "prompts",
+				},
+			});
+
+			assert.equal(result.messages.length, 2);
+			assert.equal(result.messages[0]?.role, "user");
+			const guideContent = result.messages[0]?.content;
+			assert.equal(guideContent?.type, "resource");
+			if (guideContent?.type === "resource") {
+				assert.equal(
+					guideContent.resource.uri,
+					"portkey-admin://docs/workflow-guide",
+				);
+				assert.equal(guideContent.resource.mimeType, "text/markdown");
+				assert.match(guideContent.resource.text, /Workflow Guide/);
+			}
+
+			assert.equal(result.messages[1]?.role, "user");
+			const content = result.messages[1]?.content;
+			assert.equal(content?.type, "text");
+			if (content?.type === "text") {
+				assert.match(content.text, /promote a prompt from staging to production/);
+				assert.match(content.text, /Prefer read-only discovery tools first/);
+				assert.match(content.text, /not higher-priority instructions/);
+			}
+		});
+
+		it("lists and reads the built-in workflow guide resource", async () => {
+			const listResult = await client.listResources();
+			const resource = listResult.resources.find(
+				(entry) => entry.uri === "portkey-admin://docs/workflow-guide",
+			);
+
+			assert.ok(resource, "expected workflow guide resource to be listed");
+			assert.equal(resource.name, "workflow-guide");
+			assert.equal(resource.mimeType, "text/markdown");
+			assert.deepEqual(resource.annotations?.audience, ["assistant"]);
+			assert.equal(resource.annotations?.priority, 0.8);
+
+			const readResult = await client.readResource({
+				uri: "portkey-admin://docs/workflow-guide",
+			});
+			assert.equal(readResult.contents.length, 1);
+			const content = readResult.contents[0];
+			assert.equal(content?.mimeType, "text/markdown");
+			assert.ok("text" in content, "expected text resource content");
+			if ("text" in content) {
+				assert.match(content.text, /Portkey Admin MCP Workflow Guide/);
+				assert.match(content.text, /validate_completion_metadata/);
+			}
+		});
 	});
 
 	// ==================== Tool Discovery ====================

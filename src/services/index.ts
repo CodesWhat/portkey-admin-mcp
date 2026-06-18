@@ -62,6 +62,8 @@ import { TracingService } from "./tracing.service.js";
 import { UsersService } from "./users.service.js";
 import { WorkspacesService } from "./workspaces.service.js";
 
+const MISSING_API_KEY_PLACEHOLDER = "__PORTKEY_API_KEY_NOT_CONFIGURED__";
+
 function resolvePortkeyApiKey(apiKey?: string): string {
 	const resolvedApiKey = apiKey ?? process.env.PORTKEY_API_KEY;
 	if (!resolvedApiKey) {
@@ -73,10 +75,14 @@ function resolvePortkeyApiKey(apiKey?: string): string {
 	return resolvedApiKey;
 }
 
-function getSharedServiceCacheKey(apiKey?: string): string {
+function resolveSharedPortkeyApiKey(apiKey?: string): string {
+	return apiKey ?? process.env.PORTKEY_API_KEY ?? MISSING_API_KEY_PLACEHOLDER;
+}
+
+function getSharedServiceCacheKey(apiKey: string): string {
 	const keyDigest = crypto
 		.createHash("sha256")
-		.update(resolvePortkeyApiKey(apiKey))
+		.update(apiKey)
 		.digest("hex");
 	return JSON.stringify({
 		apiKey: keyDigest,
@@ -144,13 +150,14 @@ export class PortkeyService {
 }
 
 export function getSharedPortkeyService(apiKey?: string): PortkeyService {
-	const cacheKey = getSharedServiceCacheKey(apiKey);
+	const resolvedApiKey = resolveSharedPortkeyApiKey(apiKey);
+	const cacheKey = getSharedServiceCacheKey(resolvedApiKey);
 	const cached = sharedPortkeyServices.get(cacheKey);
 	if (cached) {
 		return cached;
 	}
 
-	const service = new PortkeyService(apiKey);
+	const service = new PortkeyService(resolvedApiKey);
 	sharedPortkeyServices.set(cacheKey, service);
 	return service;
 }

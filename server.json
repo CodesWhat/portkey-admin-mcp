@@ -6,12 +6,12 @@
 		"url": "https://github.com/CodesWhat/portkey-admin-mcp",
 		"source": "github"
 	},
-	"version": "0.3.7",
+	"version": "0.3.8",
 	"packages": [
 		{
 			"registryType": "npm",
 			"identifier": "portkey-admin-mcp",
-			"version": "0.3.7",
+			"version": "0.3.8",
 			"transport": {
 				"type": "stdio"
 			},

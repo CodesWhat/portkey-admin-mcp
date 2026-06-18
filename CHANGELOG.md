@@ -7,9 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.8] - 2026-06-18
+
+Marketplace validation release for LobeHub and other MCP catalogs. No Portkey Admin API surface changes.
+
+### Added
+
+- Register a built-in `plan_portkey_admin_workflow` MCP prompt so clients and catalogs can discover an invokable prompt; the prompt validates argument lengths, embeds the workflow guide as an MCP resource, and reminds clients to treat user task text as lower-priority context.
+- Register a static `portkey-admin://docs/workflow-guide` MCP resource with safe usage guidance and assistant-priority annotations for discovery-first Portkey Admin workflows.
+- Add MCP e2e coverage for prompt/resource capabilities, listing, prompt rendering, resource reading, and no-key catalog inspection.
+
 ### Changed
 
+- Allow the shared MCP service factory to initialize without `PORTKEY_API_KEY` so marketplaces can inspect server capabilities before users provide secrets. Direct `PortkeyService` construction and actual Admin API calls still require real credentials.
 - GitHub Releases now use the matching `CHANGELOG.md` version section as the release body (with the auto-generated PR list appended), instead of auto-generated notes alone.
+
+### Fixed
+
+- Use LobeHub's lowercase `codeswhat-portkey-admin-mcp` badge slug so owner-claim scans match the marketplace page exactly.
 
 ## [0.3.7] - 2026-06-11
 
@@ -266,7 +281,8 @@ First stable release. Graduates from beta with 151 tools covering ~98% of the Po
 - Vercel deployment support
 - Contract tests, E2E tests, security tests
 
-[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.3.7...HEAD
+[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.3.8...HEAD
+[0.3.8]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.3.7...v0.3.8
 [0.3.7]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.3.6...v0.3.7
 [0.3.6]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.3.5...v0.3.6
 [0.3.5]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.3.4...v0.3.5
