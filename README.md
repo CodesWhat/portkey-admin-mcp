@@ -249,9 +249,20 @@ npm test              # unit + contract tests
 npm run test:e2e      # MCP protocol tests
 npm run test:http     # HTTP endpoint smoke test
 npm run ci            # full pipeline (lint + typecheck + test + build + e2e + verify)
+npm run publish:lobehub # publish lhm.plugin.json to LobeHub Marketplace
 ```
 
 `npm run dev:http` now requires `MCP_AUTH_MODE=bearer` or `MCP_AUTH_MODE=clerk` by default. For deliberate local-only unauthenticated testing, set `MCP_ALLOW_UNAUTHENTICATED_HTTP=true`.
+
+### LobeHub Marketplace
+
+`lhm.plugin.json` is the source for the LobeHub Marketplace listing. After cutting a package release, keep its `version` in sync with `package.json`, then publish the marketplace version:
+
+```bash
+npm run publish:lobehub
+```
+
+The command requires a logged-in LobeHub account with the GitHub `CodesWhat` org listing claimed. If ownership is lost, reconnect GitHub in LobeHub and verify that `codeswhat-portkey-admin-mcp` appears in `npx -y @lobehub/market-cli plugin list --output json`.
 
 ---
 
