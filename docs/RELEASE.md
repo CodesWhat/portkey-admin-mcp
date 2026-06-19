@@ -36,6 +36,25 @@ Everything after the merge is automatic:
     for the matching npm version (already satisfied since it runs after
     `publish-npm`).
 
+## Publish to LobeHub Marketplace
+
+LobeHub is a manual post-release step. `lhm.plugin.json` is the source for the
+marketplace listing, so keep its `version` in sync with `package.json` when
+cutting a release. After the npm package and MCP Registry release are live,
+publish the LobeHub version:
+
+```bash
+npm run publish:lobehub
+```
+
+The command requires a logged-in LobeHub account with the GitHub `CodesWhat`
+org listing claimed. If ownership is lost, reconnect GitHub in LobeHub and
+verify that `codeswhat-portkey-admin-mcp` appears in:
+
+```bash
+npx -y @lobehub/market-cli plugin list --output json
+```
+
 ### One-time setup: npm Trusted Publisher
 
 `publish-npm` requires a Trusted Publisher configured on npmjs.com for the
