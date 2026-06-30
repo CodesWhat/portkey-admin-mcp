@@ -240,6 +240,37 @@ docker run \
 
 ---
 
+## Receipt Required for `delete_user` (opt-in)
+
+`delete_user` is permanent — it removes org and workspace memberships, revokes
+API keys, and ends active sessions. Optionally, you can require a verifiable
+**authorization receipt** before that deletion runs: proof that a named human
+approved deleting *this exact user*. It is fully offline (no API key, no
+account, no external server) and uses the Apache-2.0 reference verifier
+[`@emilia-protocol/require-receipt`](https://www.npmjs.com/package/@emilia-protocol/require-receipt).
+
+**Off by default and backward-compatible** — with no configuration the gate is a
+no-op and `delete_user` behaves exactly as before. Enable it with an env var:
+
+| Variable | Default | Description |
+|---|---|---|
+| `PORTKEY_RECEIPT_REQUIRED_DELETE_USER` | `false` | Set `true` to require a receipt for `delete_user` |
+| `PORTKEY_RECEIPT_TRUSTED_KEYS` | — | Comma-separated issuer SPKI keys to trust. **Recommended in production** — without it a self-signed receipt is accepted (proves integrity, not trust) |
+
+When enabled, pass the receipt as the optional `_receipt` argument to
+`delete_user`. The receipt is bound to the specific `user_id`, so an approval
+for one user can never authorize deleting another, and is consumed once (replays
+are refused).
+
+Behavior: missing receipt → refused; valid receipt → runs; replayed receipt →
+refused; forged receipt → refused. `tests/receipt-gate.test.ts` re-proves these
+four checks (level **RR-1**) on every push. Spec: IETF Internet-Draft
+`draft-schrock-ep-authorization-receipts`. This is portable accountability
+evidence, not authentication or permissions — a *necessary, not sufficient*
+condition.
+
+---
+
 ## Development
 
 ```bash

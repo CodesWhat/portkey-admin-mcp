@@ -1,5 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import { type EmiliaReceipt, getDeleteUserGate } from "../lib/receipt-gate.js";
 import type { PortkeyService } from "../services/index.js";
 import type {
 	AnalyticsGroup,
@@ -129,6 +130,12 @@ const USERS_TOOL_SCHEMAS = {
 	},
 	deleteUser: {
 		user_id: z.string().describe("The user ID to delete"),
+		_receipt: z
+			.unknown()
+			.optional()
+			.describe(
+				"Optional EMILIA authorization receipt (EP-RECEIPT-v1). Only required when the operator opts in via PORTKEY_RECEIPT_REQUIRED_DELETE_USER; ignored otherwise.",
+			),
 	},
 	listUserInvites: {
 		current_page: z.coerce
@@ -319,6 +326,49 @@ export function registerUsersTools(
 		"Delete a user from the org by id. This is permanent, removes org and workspace memberships, revokes API keys, and ends active sessions; use delete_user_invite for pending invites instead.",
 		USERS_TOOL_SCHEMAS.deleteUser,
 		async (params) => {
+			// Opt-in Receipt Required gate. Disabled by default: when
+			// getDeleteUserGate() returns null, behavior is unchanged. When the
+			// operator enables PORTKEY_RECEIPT_REQUIRED_DELETE_USER, the deletion
+			// only runs with a verifiable authorization receipt bound to this exact
+			// user_id; the receipt is consumed once, on success.
+			const gate = getDeleteUserGate();
+			if (gate) {
+				const gated = await gate.run<void>(
+					params._receipt as EmiliaReceipt | undefined,
+					{ target: params.user_id },
+					async () => {
+						await service.users.deleteUser(params.user_id);
+					},
+				);
+				if (!gated.ok) {
+					return {
+						isError: true,
+						content: [
+							{
+								type: "text",
+								text: JSON.stringify(gated.body),
+							},
+						],
+					};
+				}
+				return {
+					content: [
+						{
+							type: "text",
+							text: JSON.stringify({
+								message: `Successfully deleted user ${params.user_id}`,
+								success: true,
+								evidence: {
+									receipt_id: gated.receiptId,
+									outcome: gated.outcome,
+									signer: gated.signer,
+								},
+							}),
+						},
+					],
+				};
+			}
+
 			await service.users.deleteUser(params.user_id);
 			return {
 				content: [
