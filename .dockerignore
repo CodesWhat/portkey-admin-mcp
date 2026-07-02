@@ -1,0 +1,21 @@
+# Docker only needs package.json, package-lock.json, tsconfig.json, and src/
+.git/
+.github/
+node_modules/
+build/
+coverage/
+tests/
+docs/
+scripts/
+assets/
+api/
+*.md
+!README.md
+.env*
+*.log
+.DS_Store
+.mcpregistry*
+.renovate-tracker.md
+Dockerfile
+vercel.json
+lefthook.yml
