@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-07-02
+
+Maintenance release: dependency security patches, a Docker base-image CVE fix, and CI/repo hardening. Raises the minimum Node.js version to 24 — the only breaking change; no Portkey Admin API surface changes.
+
+### Security
+
+- Update transitive `hono` to 4.12.27, closing five published advisories including GHSA-88fw-hqm2-52qc (CORS credential-reflection, CVSS 7.1). Bump `tsx` to 4.22.5 so its nested `esbuild` clears GHSA-g7r4-m6w7-qqqr. `npm audit`: 0 vulnerabilities.
+- Bump the Docker base image from `node:24.12-alpine` to `node:24.18-alpine`, picking up the Node 24.17.0 LTS security release (CVE-2026-48618 TLS wildcard-hostname bypass, CVE-2026-48933 WebCrypto DoS).
+- Add `.dockerignore` so `.env`, `.git`, and local credentials never enter the Docker build context.
+- Harden CI: workflow-level least-privilege `permissions` block, the optional staging secret scoped to the single smoke step that uses it, and `actions/checkout`/`actions/setup-node` pinned to release commit SHAs (checkout moves v6 → v7).
+
+### Changed
+
+- **Minimum Node.js version is now 24** (`engines.node: ">=24"`). Node 20 reached end of life on 2026-04-30; the build target, CI, and the Docker image already ran Node 24.
+- Cap `page_size` at 100 on `list_workspaces` and `get_user_stats`, and align `list_guardrails` down from 1000 to 100, matching every other list tool.
+- Correct the `update_config` description — all routing/cache/retry fields are editable, not just name/status — and point `update_integration` at its `update_integration_models`/`update_integration_workspaces` siblings.
+- Adopt the shared CodesWhat Renovate preset for dependency automation; refresh all in-range dependencies (helmet 8.2.0, jose 6.2.3, zod 4.4.3, typescript 6.0.3, biome 2.5.2 with config migration, knip 6.24.0, esbuild 0.28.1).
+- README: animated 3D header icon; drop the typing-SVG banner.
+
+### Fixed
+
+- README's Docker HTTP example never set `MCP_TRANSPORT=http`, so as documented it silently started the stdio server instead of the HTTP server it was configuring.
+- Repair `npm run test:http` (`scripts/test-mcp-http.sh`): send the required `MCP-Protocol-Version` header after initialize, default to `localhost` (default host validation rejects `127.0.0.1`), and stop false-positiving on the `error` property inside tool `outputSchema`s.
+
 ## [0.3.8] - 2026-06-18
 
 Marketplace validation release for LobeHub and other MCP catalogs. No Portkey Admin API surface changes.
@@ -281,7 +305,8 @@ First stable release. Graduates from beta with 151 tools covering ~98% of the Po
 - Vercel deployment support
 - Contract tests, E2E tests, security tests
 
-[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.3.8...HEAD
+[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.3.8...v0.4.0
 [0.3.8]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.3.7...v0.3.8
 [0.3.7]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.3.6...v0.3.7
 [0.3.6]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.3.5...v0.3.6
