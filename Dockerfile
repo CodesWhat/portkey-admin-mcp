@@ -4,7 +4,7 @@
 # ============================================
 # Stage 1: Builder
 # ============================================
-FROM node:24.12-alpine AS builder
+FROM node:24.18-alpine AS builder
 
 WORKDIR /app
 
@@ -24,7 +24,7 @@ RUN npm run build
 # ============================================
 # Stage 2: Production
 # ============================================
-FROM node:24.12-alpine AS production
+FROM node:24.18-alpine AS production
 
 WORKDIR /app
 
