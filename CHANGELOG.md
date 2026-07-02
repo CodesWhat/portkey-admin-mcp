@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `glama.json` maintainers listed the GitHub org instead of a username, which Glama's claim flow can't match; restored `scttbnsn` so the org-hosted server page can be claimed.
+
 ## [0.4.0] - 2026-07-02
 
 Maintenance release: dependency security patches, a Docker base-image CVE fix, and CI/repo hardening. Two breaking changes: the minimum Node.js version rises to 24, and `page_size` caps tighten on three list tools (callers passing values above 100 are now rejected at input validation). No other Portkey Admin API surface changes.
