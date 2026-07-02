@@ -146,7 +146,7 @@
 	},
 	{
 		"name": "update_config",
-		"description": "Update a config by slug and create a new version. Only provided fields change; name and status are editable, while the slug stays fixed. Use list_config_versions if you need history first.",
+		"description": "Update a config by slug; every call creates a new config version rather than overwriting, so earlier versions stay recoverable via list_config_versions. Only provided fields change: name, status, and all routing/cache/retry settings (cache_mode, cache_max_age, retry_attempts, retry_on_status_codes, strategy_mode, targets) are editable, while the slug stays fixed. Changes apply immediately to every API key and prompt referencing the config; get the slug from list_configs and review current settings with get_config before editing. Returns the config id, slug, and updated config payload.",
 		"file": "src/tools/configs.tools.ts"
 	},
 	{
@@ -191,7 +191,7 @@
 	},
 	{
 		"name": "create_integration",
-		"description": "Create an org-level provider integration. Some backends need provider-specific fields, and the new integration becomes the source for downstream providers and workspace access. Returns the new integration id and slug.",
+		"description": "Create an org-level provider integration that stores an AI provider's API key and becomes the source workspace providers (create_provider) build on. ai_provider_id takes a provider identifier such as 'openai' or 'anthropic'; some backends (azure-openai, aws-bedrock, vertex-ai) need provider-specific fields, and the key is write-only afterwards (get_integration shows it masked). Provision models and workspace access afterwards with update_integration_models and update_integration_workspaces. Returns the new integration id and slug.",
 		"file": "src/tools/integrations.tools.ts"
 	},
 	{
@@ -201,7 +201,7 @@
 	},
 	{
 		"name": "update_integration",
-		"description": "Update an integration's name, key, or provider-specific config. Key and config changes take effect immediately and can disrupt dependent providers or live requests.",
+		"description": "Update an org-level integration's name, description, API key, or provider-specific config by slug. Only provided fields change and the update is in place (no version history); key and config changes take effect immediately and can disrupt dependent providers or live requests, so review current settings with get_integration first. Get the slug from list_integrations; model provisioning and workspace access are managed separately via update_integration_models and update_integration_workspaces. Returns a success flag.",
 		"file": "src/tools/integrations.tools.ts"
 	},
 	{
@@ -261,7 +261,7 @@
 	},
 	{
 		"name": "create_api_key",
-		"description": "Create a Portkey API key for auth. Org keys grant broader access; workspace keys are scoped. The secret is only returned once, and using the key grants access immediately according to its scopes, defaults, and limits. Workspace keys require workspace_id and user keys require user_id.",
+		"description": "Create a Portkey API key for auth. Org keys grant broader access; workspace keys are scoped. WARNING: The key secret is returned ONCE in the tool result and will be visible in MCP transcripts and LLM context — store it securely immediately. Using the key grants access immediately according to its scopes, defaults, and limits. Workspace keys require workspace_id and user keys require user_id.",
 		"file": "src/tools/keys.tools.ts"
 	},
 	{
@@ -446,7 +446,7 @@
 	},
 	{
 		"name": "update_mcp_integration_capabilities",
-		"description": "Bulk enable or disable capabilities on an MCP integration. Changes take effect immediately for connected users and hide or expose the selected tools, resources, and prompts; use list_mcp_integration_capabilities first if you need the current state.",
+		"description": "Bulk enable or disable capabilities (tools, prompts, resources) on an MCP integration. A reversible toggle, not a deletion: only the capabilities named in the array change state, the change hides or exposes them immediately for connected users, and re-running with enabled flipped restores them. Source the integration id from list_mcp_integrations and current capability names, types, and states from list_mcp_integration_capabilities. Returns a success confirmation message.",
 		"file": "src/tools/mcp-integrations.tools.ts"
 	},
 	{
@@ -456,7 +456,7 @@
 	},
 	{
 		"name": "update_mcp_integration_workspaces",
-		"description": "Grant or revoke workspace access to an MCP integration in bulk. Changes take effect immediately for all users in the selected workspaces; use list_mcp_integration_workspaces first to review the current access state.",
+		"description": "Grant or revoke workspace access to an MCP integration in bulk. Reversible: only the workspaces listed change, access applies or is removed immediately for all users in those workspaces, and re-running with enabled flipped undoes a change. Source the integration id from list_mcp_integrations, workspace ids from list_workspaces, and the current access state from list_mcp_integration_workspaces. Returns a success confirmation message.",
 		"file": "src/tools/mcp-integrations.tools.ts"
 	},
 	{
@@ -591,7 +591,7 @@
 	},
 	{
 		"name": "migrate_prompt",
-		"description": "Create or update a prompt in one idempotent step for CI/CD and prompt-as-code flows. Finds existing prompts by name within the collection, stores app/env in template_metadata, and supports dry_run for safe preflight checks.",
+		"description": "Create or update a prompt in one idempotent step for CI/CD and prompt-as-code flows, unlike create_prompt which always makes a new prompt. Looks up the prompt by name within collection_id: if found it adds a new version (nothing is overwritten), otherwise it creates the prompt; dry_run reports what would happen without changing anything. Stores app/env in template_metadata; get collection_id from list_collections. Returns the action taken (created or updated), dry_run flag, prompt id, slug, and version id.",
 		"file": "src/tools/prompts.tools.ts"
 	},
 	{

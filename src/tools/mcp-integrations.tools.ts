@@ -384,8 +384,14 @@ export function registerMcpIntegrationsTools(
 
 	server.tool(
 		"update_mcp_integration_capabilities",
-		"Bulk enable or disable capabilities on an MCP integration. Changes take effect immediately for connected users and hide or expose the selected tools, resources, and prompts; use list_mcp_integration_capabilities first if you need the current state.",
+		"Bulk enable or disable capabilities (tools, prompts, resources) on an MCP integration. A reversible toggle, not a deletion: only the capabilities named in the array change state, the change hides or exposes them immediately for connected users, and re-running with enabled flipped restores them. Source the integration id from list_mcp_integrations and current capability names, types, and states from list_mcp_integration_capabilities. Returns a success confirmation message.",
 		MCP_INTEGRATIONS_TOOL_SCHEMAS.updateMcpIntegrationCapabilities,
+		{
+			readOnlyHint: false,
+			destructiveHint: false,
+			idempotentHint: true,
+			openWorldHint: false,
+		},
 		async (params) => {
 			await service.mcpIntegrations.updateMcpIntegrationCapabilities(
 				params.id,
@@ -432,8 +438,14 @@ export function registerMcpIntegrationsTools(
 
 	server.tool(
 		"update_mcp_integration_workspaces",
-		"Grant or revoke workspace access to an MCP integration in bulk. Changes take effect immediately for all users in the selected workspaces; use list_mcp_integration_workspaces first to review the current access state.",
+		"Grant or revoke workspace access to an MCP integration in bulk. Reversible: only the workspaces listed change, access applies or is removed immediately for all users in those workspaces, and re-running with enabled flipped undoes a change. Source the integration id from list_mcp_integrations, workspace ids from list_workspaces, and the current access state from list_mcp_integration_workspaces. Returns a success confirmation message.",
 		MCP_INTEGRATIONS_TOOL_SCHEMAS.updateMcpIntegrationWorkspaces,
+		{
+			readOnlyHint: false,
+			destructiveHint: false,
+			idempotentHint: true,
+			openWorldHint: false,
+		},
 		async (params) => {
 			await service.mcpIntegrations.updateMcpIntegrationWorkspaces(params.id, {
 				workspaces: params.workspaces,

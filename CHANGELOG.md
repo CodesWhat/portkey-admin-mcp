@@ -7,8 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-07-02
+
+### Changed
+
+- Rewrite the six lowest-scoring tool descriptions (Glama TDQS): `update_config`, `update_integration`, `create_integration`, `update_mcp_integration_capabilities`, `update_mcp_integration_workspaces`, and `migrate_prompt` now disclose side effects and reversibility, name sibling tools and where to source parameter values, and enumerate return fields. These six are also the first tools in the server to carry MCP tool annotations (`readOnlyHint`/`destructiveHint`/`idempotentHint`/`openWorldHint`).
+
 ### Fixed
 
+- The LobeHub manifest (`lhm.plugin.json`) had drifted from the server: 34 stale tool descriptions and a `list_guardrails` schema still advertising a `page_size` maximum of 1000 that the server now rejects at 100. The tools array is regenerated from the live server over MCP `tools/list` (new `scripts/generate-lobehub-tools.mjs`, wired into `publish:lobehub` so it can't drift again), which also picks up the Enterprise-gating notes the server appends at registration.
 - `glama.json` maintainers listed the GitHub org instead of a username, which Glama's claim flow can't match; restored `scttbnsn` so the org-hosted server page can be claimed.
 
 ## [0.4.0] - 2026-07-02
@@ -315,7 +322,8 @@ First stable release. Graduates from beta with 151 tools covering ~98% of the Po
 - Vercel deployment support
 - Contract tests, E2E tests, security tests
 
-[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.3.8...v0.4.0
 [0.3.8]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.3.7...v0.3.8
 [0.3.7]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.3.6...v0.3.7

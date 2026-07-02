@@ -310,8 +310,14 @@ export function registerConfigsTools(
 	// Phase 1: Update configuration tool
 	server.tool(
 		"update_config",
-		"Update a config by slug and create a new version. Only provided fields change; name, status, and all routing/cache/retry settings (cache_mode, cache_max_age, retry_attempts, retry_on_status_codes, strategy_mode, targets) are editable, while the slug stays fixed. Use list_config_versions if you need history first.",
+		"Update a config by slug; every call creates a new config version rather than overwriting, so earlier versions stay recoverable via list_config_versions. Only provided fields change: name, status, and all routing/cache/retry settings (cache_mode, cache_max_age, retry_attempts, retry_on_status_codes, strategy_mode, targets) are editable, while the slug stays fixed. Changes apply immediately to every API key and prompt referencing the config; get the slug from list_configs and review current settings with get_config before editing. Returns the config id, slug, and updated config payload.",
 		CONFIGS_TOOL_SCHEMAS.updateConfig,
+		{
+			readOnlyHint: false,
+			destructiveHint: false,
+			idempotentHint: false,
+			openWorldHint: false,
+		},
 		async (params) => {
 			const config = buildConfigPayload(params);
 

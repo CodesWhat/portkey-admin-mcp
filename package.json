@@ -22,7 +22,8 @@
 		"knip": "knip",
 		"ci": "npm run lint && npm run knip && npm run typecheck && npm run test && npm run build && npm run test:e2e && npm run verify:readme-tools",
 		"start:http": "node build/server.js",
-		"publish:lobehub": "npx -y @lobehub/market-cli plugin publish --dir \"$PWD\"",
+		"generate:lobehub-tools": "npm run build && node scripts/generate-lobehub-tools.mjs",
+		"publish:lobehub": "npm run generate:lobehub-tools && npx -y @lobehub/market-cli plugin publish --dir \"$PWD\"",
 		"prepare": "[ -n \"$CI\" ] || [ -f /.dockerenv ] || [ ! -d .git ] || lefthook install",
 		"prepublishOnly": "npm run ci"
 	},
@@ -43,7 +44,7 @@
 	},
 	"name": "portkey-admin-mcp",
 	"mcpName": "io.github.CodesWhat/portkey-admin-mcp",
-	"version": "0.4.0",
+	"version": "0.4.1",
 	"main": "build/index.js",
 	"keywords": [
 		"mcp",

@@ -303,8 +303,14 @@ export function registerIntegrationsTools(
 	// Create integration tool
 	server.tool(
 		"create_integration",
-		"Create an org-level provider integration. Some backends need provider-specific fields, and the new integration becomes the source for downstream providers and workspace access. Returns the new integration id and slug.",
+		"Create an org-level provider integration that stores an AI provider's API key and becomes the source workspace providers (create_provider) build on. ai_provider_id takes a provider identifier such as 'openai' or 'anthropic'; some backends (azure-openai, aws-bedrock, vertex-ai) need provider-specific fields, and the key is write-only afterwards (get_integration shows it masked). Provision models and workspace access afterwards with update_integration_models and update_integration_workspaces. Returns the new integration id and slug.",
 		INTEGRATIONS_TOOL_SCHEMAS.createIntegration,
+		{
+			readOnlyHint: false,
+			destructiveHint: false,
+			idempotentHint: false,
+			openWorldHint: false,
+		},
 		async (params) => {
 			const result = await service.integrations.createIntegration({
 				name: params.name,
@@ -371,8 +377,14 @@ export function registerIntegrationsTools(
 	// Update integration tool
 	server.tool(
 		"update_integration",
-		"Update an integration's name, key, or provider-specific config. Key and config changes take effect immediately and can disrupt dependent providers or live requests. Model provisioning and workspace access are managed separately via update_integration_models and update_integration_workspaces.",
+		"Update an org-level integration's name, description, API key, or provider-specific config by slug. Only provided fields change and the update is in place (no version history); key and config changes take effect immediately and can disrupt dependent providers or live requests, so review current settings with get_integration first. Get the slug from list_integrations; model provisioning and workspace access are managed separately via update_integration_models and update_integration_workspaces. Returns a success flag.",
 		INTEGRATIONS_TOOL_SCHEMAS.updateIntegration,
+		{
+			readOnlyHint: false,
+			destructiveHint: true,
+			idempotentHint: true,
+			openWorldHint: false,
+		},
 		async (params) => {
 			const result = await service.integrations.updateIntegration(params.slug, {
 				name: params.name,

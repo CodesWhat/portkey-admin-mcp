@@ -1,7 +1,7 @@
 {
 	"identifier": "codeswhat-portkey-admin-mcp",
 	"name": "Portkey Admin MCP Server",
-	"version": "0.4.0",
+	"version": "0.4.1",
 	"description": "MCP server for the Portkey Admin API. Manage prompts, configs, analytics, API keys, providers, guardrails, limits, logs, users, workspaces, and MCP integrations from any MCP client.",
 	"author": "CodesWhat",
 	"authorUrl": "https://github.com/CodesWhat",
@@ -190,9 +190,10 @@
 						"type": "string"
 					},
 					"page_size": {
-						"description": "Number of results per page (for pagination)",
+						"description": "Number of results per page (max 100)",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"exclusiveMinimum": 0,
+						"maximum": 100
 					}
 				},
 				"required": ["time_of_generation_min", "time_of_generation_max"],
@@ -330,9 +331,10 @@
 				"type": "object",
 				"properties": {
 					"page_size": {
-						"description": "Number of workspaces to return per page (default varies by endpoint)",
+						"description": "Number of workspaces to return per page (max 100)",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"exclusiveMinimum": 0,
+						"maximum": 100
 					},
 					"current_page": {
 						"description": "Page number to retrieve when results are paginated",
@@ -654,7 +656,7 @@
 		},
 		{
 			"name": "update_config",
-			"description": "Update a config by slug and create a new version. Only provided fields change; name and status are editable, while the slug stays fixed. Use list_config_versions if you need history first.",
+			"description": "Update a config by slug; every call creates a new config version rather than overwriting, so earlier versions stay recoverable via list_config_versions. Only provided fields change: name, status, and all routing/cache/retry settings (cache_mode, cache_max_age, retry_attempts, retry_on_status_codes, strategy_mode, targets) are editable, while the slug stays fixed. Changes apply immediately to every API key and prompt referencing the config; get the slug from list_configs and review current settings with get_config before editing. Returns the config id, slug, and updated config payload.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
@@ -1876,7 +1878,7 @@
 		},
 		{
 			"name": "migrate_prompt",
-			"description": "Create or update a prompt in one idempotent step for CI/CD and prompt-as-code flows. Finds existing prompts by name within the collection, stores app/env in template_metadata, and supports dry_run for safe preflight checks.",
+			"description": "Create or update a prompt in one idempotent step for CI/CD and prompt-as-code flows, unlike create_prompt which always makes a new prompt. Looks up the prompt by name within collection_id: if found it adds a new version (nothing is overwritten), otherwise it creates the prompt; dry_run reports what would happen without changing anything. Stores app/env in template_metadata; get collection_id from list_collections. Returns the action taken (created or updated), dry_run flag, prompt id, slug, and version id.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
@@ -2333,11 +2335,7 @@
 						"type": "string"
 					}
 				},
-				"required": [
-					"time_of_generation_min",
-					"time_of_generation_max",
-					"api_key_ids"
-				],
+				"required": ["time_of_generation_min", "time_of_generation_max"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
 			}
 		},
@@ -2498,11 +2496,7 @@
 						"type": "string"
 					}
 				},
-				"required": [
-					"time_of_generation_min",
-					"time_of_generation_max",
-					"api_key_ids"
-				],
+				"required": ["time_of_generation_min", "time_of_generation_max"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
 			}
 		},
@@ -2663,11 +2657,7 @@
 						"type": "string"
 					}
 				},
-				"required": [
-					"time_of_generation_min",
-					"time_of_generation_max",
-					"api_key_ids"
-				],
+				"required": ["time_of_generation_min", "time_of_generation_max"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
 			}
 		},
@@ -2828,11 +2818,7 @@
 						"type": "string"
 					}
 				},
-				"required": [
-					"time_of_generation_min",
-					"time_of_generation_max",
-					"api_key_ids"
-				],
+				"required": ["time_of_generation_min", "time_of_generation_max"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
 			}
 		},
@@ -2993,11 +2979,7 @@
 						"type": "string"
 					}
 				},
-				"required": [
-					"time_of_generation_min",
-					"time_of_generation_max",
-					"api_key_ids"
-				],
+				"required": ["time_of_generation_min", "time_of_generation_max"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
 			}
 		},
@@ -3158,11 +3140,7 @@
 						"type": "string"
 					}
 				},
-				"required": [
-					"time_of_generation_min",
-					"time_of_generation_max",
-					"api_key_ids"
-				],
+				"required": ["time_of_generation_min", "time_of_generation_max"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
 			}
 		},
@@ -3323,11 +3301,7 @@
 						"type": "string"
 					}
 				},
-				"required": [
-					"time_of_generation_min",
-					"time_of_generation_max",
-					"api_key_ids"
-				],
+				"required": ["time_of_generation_min", "time_of_generation_max"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
 			}
 		},
@@ -3488,11 +3462,7 @@
 						"type": "string"
 					}
 				},
-				"required": [
-					"time_of_generation_min",
-					"time_of_generation_max",
-					"api_key_ids"
-				],
+				"required": ["time_of_generation_min", "time_of_generation_max"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
 			}
 		},
@@ -3653,11 +3623,7 @@
 						"type": "string"
 					}
 				},
-				"required": [
-					"time_of_generation_min",
-					"time_of_generation_max",
-					"api_key_ids"
-				],
+				"required": ["time_of_generation_min", "time_of_generation_max"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
 			}
 		},
@@ -3818,11 +3784,7 @@
 						"type": "string"
 					}
 				},
-				"required": [
-					"time_of_generation_min",
-					"time_of_generation_max",
-					"api_key_ids"
-				],
+				"required": ["time_of_generation_min", "time_of_generation_max"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
 			}
 		},
@@ -3983,11 +3945,7 @@
 						"type": "string"
 					}
 				},
-				"required": [
-					"time_of_generation_min",
-					"time_of_generation_max",
-					"api_key_ids"
-				],
+				"required": ["time_of_generation_min", "time_of_generation_max"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
 			}
 		},
@@ -4148,11 +4106,7 @@
 						"type": "string"
 					}
 				},
-				"required": [
-					"time_of_generation_min",
-					"time_of_generation_max",
-					"api_key_ids"
-				],
+				"required": ["time_of_generation_min", "time_of_generation_max"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
 			}
 		},
@@ -4313,11 +4267,7 @@
 						"type": "string"
 					}
 				},
-				"required": [
-					"time_of_generation_min",
-					"time_of_generation_max",
-					"api_key_ids"
-				],
+				"required": ["time_of_generation_min", "time_of_generation_max"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
 			}
 		},
@@ -4478,11 +4428,7 @@
 						"type": "string"
 					}
 				},
-				"required": [
-					"time_of_generation_min",
-					"time_of_generation_max",
-					"api_key_ids"
-				],
+				"required": ["time_of_generation_min", "time_of_generation_max"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
 			}
 		},
@@ -4643,11 +4589,7 @@
 						"type": "string"
 					}
 				},
-				"required": [
-					"time_of_generation_min",
-					"time_of_generation_max",
-					"api_key_ids"
-				],
+				"required": ["time_of_generation_min", "time_of_generation_max"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
 			}
 		},
@@ -4808,11 +4750,7 @@
 						"type": "string"
 					}
 				},
-				"required": [
-					"time_of_generation_min",
-					"time_of_generation_max",
-					"api_key_ids"
-				],
+				"required": ["time_of_generation_min", "time_of_generation_max"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
 			}
 		},
@@ -4973,11 +4911,7 @@
 						"type": "string"
 					}
 				},
-				"required": [
-					"time_of_generation_min",
-					"time_of_generation_max",
-					"api_key_ids"
-				],
+				"required": ["time_of_generation_min", "time_of_generation_max"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
 			}
 		},
@@ -5149,11 +5083,7 @@
 						"maximum": 100
 					}
 				},
-				"required": [
-					"time_of_generation_min",
-					"time_of_generation_max",
-					"api_key_ids"
-				],
+				"required": ["time_of_generation_min", "time_of_generation_max"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
 			}
 		},
@@ -5325,11 +5255,7 @@
 						"maximum": 100
 					}
 				},
-				"required": [
-					"time_of_generation_min",
-					"time_of_generation_max",
-					"api_key_ids"
-				],
+				"required": ["time_of_generation_min", "time_of_generation_max"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
 			}
 		},
@@ -5508,7 +5434,6 @@
 				"required": [
 					"time_of_generation_min",
 					"time_of_generation_max",
-					"api_key_ids",
 					"metadata_key"
 				],
 				"$schema": "http://json-schema.org/draft-07/schema#"
@@ -5529,10 +5454,10 @@
 						"type": "string"
 					},
 					"page_size": {
-						"description": "Number of items per page (1-1000, default: 100)",
+						"description": "Number of items per page (1-100, default: 100)",
 						"type": "number",
 						"minimum": 1,
-						"maximum": 1000
+						"maximum": 100
 					},
 					"current_page": {
 						"description": "Page number for pagination",
@@ -7055,7 +6980,7 @@
 		},
 		{
 			"name": "create_integration",
-			"description": "Create an org-level provider integration. Some backends need provider-specific fields, and the new integration becomes the source for downstream providers and workspace access. Returns the new integration id and slug.",
+			"description": "Create an org-level provider integration that stores an AI provider's API key and becomes the source workspace providers (create_provider) build on. ai_provider_id takes a provider identifier such as 'openai' or 'anthropic'; some backends (azure-openai, aws-bedrock, vertex-ai) need provider-specific fields, and the key is write-only afterwards (get_integration shows it masked). Provision models and workspace access afterwards with update_integration_models and update_integration_workspaces. Returns the new integration id and slug.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
@@ -7141,7 +7066,7 @@
 		},
 		{
 			"name": "update_integration",
-			"description": "Update an integration's name, key, or provider-specific config. Key and config changes take effect immediately and can disrupt dependent providers or live requests.",
+			"description": "Update an org-level integration's name, description, API key, or provider-specific config by slug. Only provided fields change and the update is in place (no version history); key and config changes take effect immediately and can disrupt dependent providers or live requests, so review current settings with get_integration first. Get the slug from list_integrations; model provisioning and workspace access are managed separately via update_integration_models and update_integration_workspaces. Returns a success flag.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
@@ -7563,7 +7488,7 @@
 		},
 		{
 			"name": "update_mcp_integration_capabilities",
-			"description": "Bulk enable or disable capabilities on an MCP integration. Changes take effect immediately for connected users and hide or expose the selected tools, resources, and prompts; use list_mcp_integration_capabilities first if you need the current state.",
+			"description": "Bulk enable or disable capabilities (tools, prompts, resources) on an MCP integration. A reversible toggle, not a deletion: only the capabilities named in the array change state, the change hides or exposes them immediately for connected users, and re-running with enabled flipped restores them. Source the integration id from list_mcp_integrations and current capability names, types, and states from list_mcp_integration_capabilities. Returns a success confirmation message.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
@@ -7617,7 +7542,7 @@
 		},
 		{
 			"name": "update_mcp_integration_workspaces",
-			"description": "Grant or revoke workspace access to an MCP integration in bulk. Changes take effect immediately for all users in the selected workspaces; use list_mcp_integration_workspaces first to review the current access state.",
+			"description": "Grant or revoke workspace access to an MCP integration in bulk. Reversible: only the workspaces listed change, access applies or is removed immediately for all users in those workspaces, and re-running with enabled flipped undoes a change. Source the integration id from list_mcp_integrations, workspace ids from list_workspaces, and the current access state from list_mcp_integration_workspaces. Returns a success confirmation message.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
