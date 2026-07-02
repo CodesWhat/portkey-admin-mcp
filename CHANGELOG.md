@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.4.0] - 2026-07-02
 
-Maintenance release: dependency security patches, a Docker base-image CVE fix, and CI/repo hardening. Raises the minimum Node.js version to 24 — the only breaking change; no Portkey Admin API surface changes.
+Maintenance release: dependency security patches, a Docker base-image CVE fix, and CI/repo hardening. Two breaking changes: the minimum Node.js version rises to 24, and `page_size` caps tighten on three list tools (callers passing values above 100 are now rejected at input validation). No other Portkey Admin API surface changes.
 
 ### Security
 
@@ -18,10 +18,15 @@ Maintenance release: dependency security patches, a Docker base-image CVE fix, a
 - Add `.dockerignore` so `.env`, `.git`, and local credentials never enter the Docker build context.
 - Harden CI: workflow-level least-privilege `permissions` block, the optional staging secret scoped to the single smoke step that uses it, and `actions/checkout`/`actions/setup-node` pinned to release commit SHAs (checkout moves v6 → v7).
 
+### Added
+
+- LobeHub marketplace support: `lhm.plugin.json` manifest, a `publish:lobehub` npm script, and a documented publish flow in `docs/RELEASE.md`; the README badge switched to the themed `mcp-full` LobeHub badge.
+- Prerelease versions (any `-` tag, e.g. `0.5.0-rc.1`) now publish to the `rc` npm dist-tag instead of `latest`.
+
 ### Changed
 
 - **Minimum Node.js version is now 24** (`engines.node: ">=24"`). Node 20 reached end of life on 2026-04-30; the build target, CI, and the Docker image already ran Node 24.
-- Cap `page_size` at 100 on `list_workspaces` and `get_user_stats`, and align `list_guardrails` down from 1000 to 100, matching every other list tool.
+- **Breaking:** cap `page_size` at 100 on `list_workspaces` and `get_user_stats`, and align `list_guardrails` down from 1000 to 100, matching every other list tool. Requests with larger values are rejected by input validation instead of forwarded.
 - Correct the `update_config` description — all routing/cache/retry fields are editable, not just name/status — and point `update_integration` at its `update_integration_models`/`update_integration_workspaces` siblings.
 - Adopt the shared CodesWhat Renovate preset for dependency automation; refresh all in-range dependencies (helmet 8.2.0, jose 6.2.3, zod 4.4.3, typescript 6.0.3, biome 2.5.2 with config migration, knip 6.24.0, esbuild 0.28.1).
 - README: animated 3D header icon; drop the typing-SVG banner.
