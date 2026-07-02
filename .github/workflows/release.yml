@@ -154,9 +154,17 @@ jobs:
             exit 0
           fi
 
+          # Prereleases (any version containing "-") publish to the "rc"
+          # dist-tag so `npm i portkey-admin-mcp` stays on the last stable.
+          dist_tag="latest"
+          if [[ "$VERSION" == *-* ]]; then
+            dist_tag="rc"
+          fi
+          echo "Publishing ${VERSION} to dist-tag: ${dist_tag}"
+
           # Authenticates via OIDC trusted publishing (configured on npmjs.com
           # for this repo + workflow). prepublishOnly re-runs the full CI suite.
-          npm publish --access public
+          npm publish --access public --tag "$dist_tag"
 
   publish-registry:
     needs: [ci, publish-npm]
