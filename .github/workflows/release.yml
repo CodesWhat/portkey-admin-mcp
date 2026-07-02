@@ -11,25 +11,40 @@ on:
         required: true
         type: string
 
-permissions:
-  contents: write
+permissions: {}
+
+# One release at a time; a queued release waits rather than cancelling an
+# in-flight publish.
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 jobs:
   ci:
     # Gate the release on the full CI suite for the tagged commit, so a broken
     # tag never produces a GitHub Release or an MCP Registry entry.
     uses: ./.github/workflows/ci.yml
-    secrets: inherit
+    permissions:
+      contents: read
+      # ci.yml's dependency-review job declares this; it skips on release runs
+      # but the grant keeps the workflow_call permission check satisfied.
+      pull-requests: read
+    secrets:
+      PORTKEY_API_KEY_STAGING: ${{ secrets.PORTKEY_API_KEY_STAGING }}
 
   github-release:
     needs: ci
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: write # gh release create
     steps:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: 0
+          # Public repo: the tag fetch below works anonymously; gh uses GH_TOKEN.
+          persist-credentials: false
 
       - name: Publish GitHub Release
         env:
@@ -100,13 +115,17 @@ jobs:
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           ref: ${{ github.event.inputs.tag || github.ref }}
+          # No credentials on disk while npm ci runs dependency postinstall
+          # scripts and npm publish runs the prepublishOnly suite.
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
-          cache: npm
+          # No shared cache in the job that builds the published tarball.
+          package-manager-cache: false
 
       - name: Resolve tag
         id: tag
@@ -176,11 +195,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: 24
+          package-manager-cache: false
 
       - name: Resolve tag
         id: tag

@@ -17,6 +17,7 @@ Maintenance release: dependency security patches, a Docker base-image CVE fix, a
 - Bump the Docker base image from `node:24.12-alpine` to `node:24.18-alpine`, picking up the Node 24.17.0 LTS security release (CVE-2026-48618 TLS wildcard-hostname bypass, CVE-2026-48933 WebCrypto DoS).
 - Add `.dockerignore` so `.env`, `.git`, and local credentials never enter the Docker build context.
 - Harden CI: workflow-level least-privilege `permissions` block, the optional staging secret scoped to the single smoke step that uses it, and `actions/checkout`/`actions/setup-node` pinned to release commit SHAs (checkout moves v6 → v7).
+- Harden the release pipeline to zizmor-clean: job-scoped permissions replace the workflow-level `contents: write`, checkouts stop persisting git credentials where jobs run dependency scripts, npm caching is off in the publish jobs, and the CI gate receives its one secret explicitly instead of `secrets: inherit`. CI gains an `actionlint` workflow-lint job, PR dependency review, and per-branch concurrency; CodeQL default setup is enabled on the repo.
 
 ### Added
 
