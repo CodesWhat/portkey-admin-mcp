@@ -216,6 +216,7 @@ Key points:
 docker build -t portkey-admin-mcp .
 docker run \
   -e PORTKEY_API_KEY=your_key \
+  -e MCP_TRANSPORT=http \
   -e MCP_HOST=0.0.0.0 \
   -e MCP_PORT=3000 \
   -e MCP_AUTH_MODE=bearer \
