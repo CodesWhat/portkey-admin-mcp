@@ -4,7 +4,8 @@ set -euo pipefail
 BASE_URL="${MCP_TEST_BASE_URL:-}"
 if [[ -z "$BASE_URL" ]]; then
   PORT_VALUE="${PORT:-${MCP_PORT:-3000}}"
-  BASE_URL="http://127.0.0.1:${PORT_VALUE}"
+  # Default host validation only allows the "localhost" hostname, not 127.0.0.1
+  BASE_URL="http://localhost:${PORT_VALUE}"
 fi
 BASE_URL="${BASE_URL%/}"
 MCP_URL="${MCP_TEST_MCP_URL:-${BASE_URL}/mcp}"
@@ -35,7 +36,9 @@ print_body_preview() {
 
 has_jsonrpc_error() {
   local file_path="$1"
-  grep -Eq '"error"[[:space:]]*:[[:space:]]*\{' "$file_path"
+  # Match a JSON-RPC error object (always has a "code" member) without
+  # false-positiving on the "error" property inside tool outputSchemas
+  grep -Eq '"error"[[:space:]]*:[[:space:]]*\{[[:space:]]*"code"' "$file_path"
 }
 
 AUTH_HEADER=""
@@ -58,7 +61,8 @@ echo "  /health: ok"
 curl -fsS "${BASE_URL}/ready" >/dev/null
 echo "  /ready:  ok"
 
-INIT_PAYLOAD='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"local-http-test","version":"0.1.0"}}}'
+MCP_PROTOCOL_VERSION="${MCP_TEST_PROTOCOL_VERSION:-2024-11-05}"
+INIT_PAYLOAD='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"'"${MCP_PROTOCOL_VERSION}"'","capabilities":{},"clientInfo":{"name":"local-http-test","version":"0.1.0"}}}'
 LIST_TOOLS_PAYLOAD='{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}'
 
 INIT_HEADERS="$(mktemp)"
@@ -103,6 +107,7 @@ if [[ -n "$AUTH_HEADER" && -n "$SESSION_HEADER" ]]; then
     -X POST "${MCP_URL}" \
     -H "$AUTH_HEADER" \
     -H "$SESSION_HEADER" \
+    -H "MCP-Protocol-Version: ${MCP_PROTOCOL_VERSION}" \
     -H "Content-Type: application/json" \
     -H "Accept: text/event-stream, application/json" \
     --data "${LIST_TOOLS_PAYLOAD}")"
@@ -110,6 +115,7 @@ elif [[ -n "$AUTH_HEADER" ]]; then
   TOOLS_STATUS="$(curl -sS -o "$TOOLS_BODY" -D "$TOOLS_HEADERS" -w "%{http_code}" \
     -X POST "${MCP_URL}" \
     -H "$AUTH_HEADER" \
+    -H "MCP-Protocol-Version: ${MCP_PROTOCOL_VERSION}" \
     -H "Content-Type: application/json" \
     -H "Accept: text/event-stream, application/json" \
     --data "${LIST_TOOLS_PAYLOAD}")"
@@ -117,12 +123,14 @@ elif [[ -n "$SESSION_HEADER" ]]; then
   TOOLS_STATUS="$(curl -sS -o "$TOOLS_BODY" -D "$TOOLS_HEADERS" -w "%{http_code}" \
     -X POST "${MCP_URL}" \
     -H "$SESSION_HEADER" \
+    -H "MCP-Protocol-Version: ${MCP_PROTOCOL_VERSION}" \
     -H "Content-Type: application/json" \
     -H "Accept: text/event-stream, application/json" \
     --data "${LIST_TOOLS_PAYLOAD}")"
 else
   TOOLS_STATUS="$(curl -sS -o "$TOOLS_BODY" -D "$TOOLS_HEADERS" -w "%{http_code}" \
     -X POST "${MCP_URL}" \
+    -H "MCP-Protocol-Version: ${MCP_PROTOCOL_VERSION}" \
     -H "Content-Type: application/json" \
     -H "Accept: text/event-stream, application/json" \
     --data "${LIST_TOOLS_PAYLOAD}")"
