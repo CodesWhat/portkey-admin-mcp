@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="./assets/portkey-balloon-spin-light.webp" alt="Portkey Admin MCP icon" width="180" height="180">
+
 # Portkey Admin MCP Server
 
 <picture>
