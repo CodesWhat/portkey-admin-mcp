@@ -14,10 +14,9 @@ const WORKSPACES_TOOL_SCHEMAS = {
 		page_size: z.coerce
 			.number()
 			.positive()
+			.max(100)
 			.optional()
-			.describe(
-				"Number of workspaces to return per page (default varies by endpoint)",
-			),
+			.describe("Number of workspaces to return per page (max 100)"),
 		current_page: z.coerce
 			.number()
 			.positive()

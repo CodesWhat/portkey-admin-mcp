@@ -112,8 +112,9 @@ const USERS_TOOL_SCHEMAS = {
 		page_size: z.coerce
 			.number()
 			.positive()
+			.max(100)
 			.optional()
-			.describe("Number of results per page (for pagination)"),
+			.describe("Number of results per page (max 100)"),
 	},
 	getUser: {
 		user_id: z.string().describe("The user ID to retrieve"),

@@ -62,9 +62,9 @@ const GUARDRAILS_TOOL_SCHEMAS = {
 		page_size: z.coerce
 			.number()
 			.min(1)
-			.max(1000)
+			.max(100)
 			.optional()
-			.describe("Number of items per page (1-1000, default: 100)"),
+			.describe("Number of items per page (1-100, default: 100)"),
 		current_page: z.coerce
 			.number()
 			.positive()

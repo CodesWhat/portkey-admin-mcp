@@ -371,7 +371,7 @@ export function registerIntegrationsTools(
 	// Update integration tool
 	server.tool(
 		"update_integration",
-		"Update an integration's name, key, or provider-specific config. Key and config changes take effect immediately and can disrupt dependent providers or live requests.",
+		"Update an integration's name, key, or provider-specific config. Key and config changes take effect immediately and can disrupt dependent providers or live requests. Model provisioning and workspace access are managed separately via update_integration_models and update_integration_workspaces.",
 		INTEGRATIONS_TOOL_SCHEMAS.updateIntegration,
 		async (params) => {
 			const result = await service.integrations.updateIntegration(params.slug, {

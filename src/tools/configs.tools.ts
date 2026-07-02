@@ -310,7 +310,7 @@ export function registerConfigsTools(
 	// Phase 1: Update configuration tool
 	server.tool(
 		"update_config",
-		"Update a config by slug and create a new version. Only provided fields change; name and status are editable, while the slug stays fixed. Use list_config_versions if you need history first.",
+		"Update a config by slug and create a new version. Only provided fields change; name, status, and all routing/cache/retry settings (cache_mode, cache_max_age, retry_attempts, retry_on_status_codes, strategy_mode, targets) are editable, while the slug stays fixed. Use list_config_versions if you need history first.",
 		CONFIGS_TOOL_SCHEMAS.updateConfig,
 		async (params) => {
 			const config = buildConfigPayload(params);
