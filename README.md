@@ -2,28 +2,44 @@
 
 <img src="./assets/portkey-balloon-spin-light.webp" alt="Portkey Admin MCP icon" width="180" height="180">
 
-# Portkey Admin MCP Server
+<h1>Portkey Admin MCP Server</h1>
 
-MCP server for the [Portkey](https://portkey.ai/) Admin API. Manage prompts, configs, analytics, API keys, and more from any MCP client.
-
-<a href="https://www.npmjs.com/package/portkey-admin-mcp"><img src="https://img.shields.io/npm/v/portkey-admin-mcp.svg" alt="npm version"></a>
-<a href="https://www.npmjs.com/package/portkey-admin-mcp"><img src="https://img.shields.io/npm/dm/portkey-admin-mcp.svg" alt="npm downloads"></a>
-<a href="https://github.com/CodesWhat/portkey-admin-mcp/actions/workflows/ci.yml"><img src="https://github.com/CodesWhat/portkey-admin-mcp/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-<a href="https://nodejs.org/"><img src="https://img.shields.io/badge/node-%3E%3D24-brightgreen.svg" alt="Node.js"></a>
-<a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
-<a href="https://github.com/punkpeye/awesome-mcp-servers"><img src="https://awesome.re/mentioned-badge.svg" alt="Mentioned in Awesome MCP Servers"></a>
-[![MCP Badge](https://lobehub.com/badge/mcp-full/codeswhat-portkey-admin-mcp?theme=light)](https://lobehub.com/mcp/codeswhat-portkey-admin-mcp)
-
-<a href="https://glama.ai/mcp/servers/CodesWhat/portkey-admin-mcp"><img src="https://glama.ai/mcp/servers/CodesWhat/portkey-admin-mcp/badges/card.svg" alt="portkey-admin-mcp MCP server"></a>
+**The full [Portkey](https://portkey.ai/) Admin API as an MCP server — 150 tools across prompts, configs, keys, analytics, and more.**
 
 </div>
 
----
+<p align="center">
+  <a href="https://www.npmjs.com/package/portkey-admin-mcp"><img src="https://img.shields.io/npm/v/portkey-admin-mcp.svg" alt="npm version"></a>
+  <a href="https://www.npmjs.com/package/portkey-admin-mcp"><img src="https://img.shields.io/npm/dm/portkey-admin-mcp.svg" alt="npm downloads"></a>
+  <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/node-%3E%3D24-brightgreen.svg" alt="Node.js"></a>
+  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
+  <br>
+  <a href="https://github.com/CodesWhat/portkey-admin-mcp/actions/workflows/ci.yml"><img src="https://github.com/CodesWhat/portkey-admin-mcp/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/punkpeye/awesome-mcp-servers"><img src="https://awesome.re/mentioned-badge.svg" alt="Mentioned in Awesome MCP Servers"></a>
+  <a href="https://lobehub.com/mcp/codeswhat-portkey-admin-mcp"><img src="https://lobehub.com/badge/mcp-full/codeswhat-portkey-admin-mcp?theme=light" alt="LobeHub MCP"></a>
+</p>
+
+<p align="center">
+  <a href="https://glama.ai/mcp/servers/CodesWhat/portkey-admin-mcp"><img src="https://glama.ai/mcp/servers/CodesWhat/portkey-admin-mcp/badges/card.svg" alt="portkey-admin-mcp MCP server"></a>
+</p>
+
+<hr>
 
 > [!IMPORTANT]
 > **Maintenance mode.** Portkey was acquired by **Palo Alto Networks** (completed 2026‑05‑29) and is being folded into the Prisma AIRS platform. The Portkey Admin API this server targets is **live and unchanged as of June 2026**, and this project still works end‑to‑end — but it is now in **maintenance mode**: security and dependency patches only, no new features, pending Palo Alto's post‑acquisition API roadmap. If the hosted Admin API is ever deprecated, point `PORTKEY_BASE_URL` at a self‑hosted [Portkey gateway](https://github.com/Portkey-AI/gateway). See [docs/audit-2026-06.md](./docs/audit-2026-06.md) for the full assessment.
 
-## Quick Start
+<h2 align="center">📑 Contents</h2>
+
+- [🚀 Quick Start](#quick-start)
+- [🧰 What You Can Do](#what-you-can-do)
+- [🔑 API Key Scopes](#api-key-scopes)
+- [🌐 HTTP Server (Experimental)](#http-server)
+- [🛠️ Development](#development)
+- [🧾 Full tool list — ENDPOINTS.md](./ENDPOINTS.md)
+
+<hr>
+
+<h2 align="center" id="quick-start">🚀 Quick Start</h2>
 
 You need a **Portkey API key** with appropriate scopes. Get one from your [Portkey dashboard](https://app.portkey.ai/) under API Keys.
 
@@ -91,9 +107,9 @@ Then use this config:
 
 </details>
 
----
+<hr>
 
-## What You Can Do
+<h2 align="center" id="what-you-can-do">🧰 What You Can Do</h2>
 
 | Category | Tools | Examples |
 |----------|-------|---------|
@@ -119,9 +135,9 @@ Then use this config:
 
 **150 tools total.** See [ENDPOINTS.md](./ENDPOINTS.md) for the full list with descriptions.
 
----
+<hr>
 
-## API Key Scopes
+<h2 align="center" id="api-key-scopes">🔑 API Key Scopes</h2>
 
 Most tools work with a **workspace-scoped service key** that has Select All permissions enabled. That covers prompts, configs, virtual/API keys, providers, guardrails, workspace integrations, MCP servers, rate/usage limits, logs, prompt completions, and workspace user management.
 
@@ -145,9 +161,9 @@ The following tools require an **organisation-level scope that is only available
 
 If a tool returns a `403` with Portkey error `AB03`, it means missing scopes — not a broken endpoint.
 
----
+<hr>
 
-## HTTP Server (Experimental)
+<h2 align="center" id="http-server">🌐 HTTP Server (Experimental)</h2>
 
 > **Status**: The HTTP transport works locally and is covered by the integration test suite, but it is a proof of concept — there is **no hosted version** of this server, and hosted deployment is not currently a goal. Use stdio (npx) as the supported transport.
 
@@ -235,9 +251,9 @@ docker run \
 | `GET /ready` | Readiness (includes optional Portkey connectivity check) |
 | `GET /auth/info` | Auth configuration metadata |
 
----
+<hr>
 
-## Development
+<h2 align="center" id="development">🛠️ Development</h2>
 
 ```bash
 npm run dev           # stdio with hot reload
@@ -254,8 +270,31 @@ npm run ci            # full pipeline (lint + typecheck + test + build + e2e + v
 
 <div align="center">
 
-**MIT License** · Inspired by [r-huijts/portkey-admin-mcp-server](https://github.com/r-huijts/portkey-admin-mcp-server)
+### Built With
 
-<a href="#portkey-admin-mcp-server">↑ Back to top</a>
+[![TypeScript](https://img.shields.io/badge/TypeScript_6.0-3178C6?logo=typescript&logoColor=fff)](https://www.typescriptlang.org/)
+[![MCP SDK](https://img.shields.io/badge/MCP_SDK_1.29-000?logo=modelcontextprotocol&logoColor=fff)](https://github.com/modelcontextprotocol/typescript-sdk)
+[![Zod 4](https://img.shields.io/badge/Zod_4-3E67B1?logo=zod&logoColor=fff)](https://zod.dev/)
+[![Biome](https://img.shields.io/badge/Biome_2.5-60a5fa?logo=biome&logoColor=fff)](https://biomejs.dev/)
+[![Node 24](https://img.shields.io/badge/Node_24-339933?logo=nodedotjs&logoColor=fff)](https://nodejs.org/)
+[![Anthropic](https://img.shields.io/badge/Anthropic-CC785C?style=flat&logo=anthropic&logoColor=white)](https://claude.ai/)
+
+[![SemVer](https://img.shields.io/badge/semver-2.0.0-blue)](https://semver.org/)
+[![Conventional Commits](https://img.shields.io/badge/commits-conventional-fe5196?logo=conventionalcommits&logoColor=fff)](https://www.conventionalcommits.org/)
+[![Keep a Changelog](https://img.shields.io/badge/changelog-Keep%20a%20Changelog-E05735)](https://keepachangelog.com/)
+
+**[MIT License](LICENSE)** · Inspired by [r-huijts/portkey-admin-mcp-server](https://github.com/r-huijts/portkey-admin-mcp-server)
+
+<a href="https://github.com/CodesWhat">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/codeswhat-logo-dark.svg" />
+    <source media="(prefers-color-scheme: light)" srcset="assets/codeswhat-logo-original.svg" />
+    <img src="assets/codeswhat-logo-original.svg" alt="CodesWhat" height="28">
+  </picture>
+</a>
+
+[![Sponsor](https://img.shields.io/badge/Sponsor-ea4aaa?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/CodesWhat)
+
+<a href="#portkey-admin-mcp-server">Back to top</a>
 
 </div>
