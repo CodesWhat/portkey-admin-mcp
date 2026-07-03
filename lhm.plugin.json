@@ -1,7 +1,7 @@
 {
 	"identifier": "codeswhat-portkey-admin-mcp",
 	"name": "Portkey Admin MCP Server",
-	"version": "0.4.1",
+	"version": "0.4.2",
 	"description": "MCP server for the Portkey Admin API. Manage prompts, configs, analytics, API keys, providers, guardrails, limits, logs, users, workspaces, and MCP integrations from any MCP client.",
 	"author": "CodesWhat",
 	"authorUrl": "https://github.com/CodesWhat",
@@ -64,6 +64,12 @@
 					}
 				},
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -145,6 +151,12 @@
 				},
 				"required": ["email", "role", "workspaces"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -198,6 +210,12 @@
 				},
 				"required": ["time_of_generation_min", "time_of_generation_max"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -213,6 +231,12 @@
 				},
 				"required": ["user_id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -241,6 +265,12 @@
 				},
 				"required": ["user_id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -256,6 +286,12 @@
 				},
 				"required": ["user_id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": true,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -277,6 +313,12 @@
 					}
 				},
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -292,6 +334,12 @@
 				},
 				"required": ["invite_id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -307,6 +355,12 @@
 				},
 				"required": ["invite_id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": true,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -322,6 +376,12 @@
 				},
 				"required": ["invite_id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -343,6 +403,12 @@
 					}
 				},
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -358,6 +424,12 @@
 				},
 				"required": ["workspace_id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -395,6 +467,12 @@
 				},
 				"required": ["name"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -436,6 +514,12 @@
 				},
 				"required": ["workspace_id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -451,6 +535,12 @@
 				},
 				"required": ["workspace_id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": true,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -477,6 +567,12 @@
 				},
 				"required": ["workspace_id", "user_id", "role"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -492,6 +588,12 @@
 				},
 				"required": ["workspace_id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -511,6 +613,12 @@
 				},
 				"required": ["workspace_id", "user_id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -535,6 +643,12 @@
 				},
 				"required": ["workspace_id", "user_id", "role"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -554,6 +668,12 @@
 				},
 				"required": ["workspace_id", "user_id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": true,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -575,6 +695,12 @@
 					}
 				},
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -590,6 +716,12 @@
 				},
 				"required": ["slug"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -652,6 +784,12 @@
 				},
 				"required": ["name"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -719,6 +857,12 @@
 				},
 				"required": ["slug"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": false
 			}
 		},
 		{
@@ -734,6 +878,12 @@
 				},
 				"required": ["slug"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": true,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -749,6 +899,12 @@
 				},
 				"required": ["slug"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -770,6 +926,12 @@
 					}
 				},
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -829,6 +991,12 @@
 				},
 				"required": ["name", "provider", "key"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -844,6 +1012,12 @@
 				},
 				"required": ["slug"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -887,6 +1061,12 @@
 				},
 				"required": ["slug"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -902,6 +1082,12 @@
 				},
 				"required": ["slug"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": true,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -987,6 +1173,12 @@
 				},
 				"required": ["type", "sub_type", "name", "scopes"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -1012,6 +1204,12 @@
 					}
 				},
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -1029,6 +1227,12 @@
 				},
 				"required": ["id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -1109,6 +1313,12 @@
 				},
 				"required": ["id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -1126,6 +1336,12 @@
 				},
 				"required": ["id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": true,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -1155,6 +1371,12 @@
 					}
 				},
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -1174,6 +1396,12 @@
 				},
 				"required": ["name"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -1189,6 +1417,12 @@
 				},
 				"required": ["collection_id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -1212,6 +1446,12 @@
 				},
 				"required": ["collection_id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -1227,6 +1467,12 @@
 				},
 				"required": ["collection_id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": true,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -1407,6 +1653,12 @@
 				},
 				"required": ["name", "collection_id", "parameters", "virtual_key"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -1440,6 +1692,12 @@
 					}
 				},
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -1455,6 +1713,12 @@
 				},
 				"required": ["prompt_id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -1631,6 +1895,12 @@
 				},
 				"required": ["prompt_id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -1646,6 +1916,12 @@
 				},
 				"required": ["prompt_id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": true,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -1666,6 +1942,12 @@
 				},
 				"required": ["prompt_id", "version"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -1681,6 +1963,12 @@
 				},
 				"required": ["prompt_id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -1763,6 +2051,12 @@
 				},
 				"required": ["prompt_id", "variables"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -1874,11 +2168,17 @@
 				},
 				"required": ["prompt_id", "variables", "metadata"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
 			"name": "migrate_prompt",
-			"description": "Create or update a prompt in one idempotent step for CI/CD and prompt-as-code flows, unlike create_prompt which always makes a new prompt. Looks up the prompt by name within collection_id: if found it adds a new version (nothing is overwritten), otherwise it creates the prompt; dry_run reports what would happen without changing anything. Stores app/env in template_metadata; get collection_id from list_collections. Returns the action taken (created or updated), dry_run flag, prompt id, slug, and version id.",
+			"description": "Create or update a prompt in one idempotent step for CI/CD and prompt-as-code flows, unlike create_prompt which always makes a new prompt. Looks up the prompt by name within collection_id: if missing it creates the prompt, if found with different content it adds a new version (nothing is overwritten), and if the content already matches it no-ops; dry_run reports what would happen without changing anything. Stores app/env in template_metadata; get collection_id from list_collections. Returns the action taken (created, updated, or unchanged), dry_run flag, message, prompt id, slug, and version id.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
@@ -2063,6 +2363,12 @@
 					"virtual_key"
 				],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": false
 			}
 		},
 		{
@@ -2095,6 +2401,12 @@
 				},
 				"required": ["source_prompt_id", "target_collection_id", "target_env"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -2127,6 +2439,12 @@
 					}
 				},
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -2146,6 +2464,12 @@
 				},
 				"required": ["prompt_id", "version_id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -2176,6 +2500,12 @@
 				},
 				"required": ["prompt_id", "version_id", "label_id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -2337,6 +2667,12 @@
 				},
 				"required": ["time_of_generation_min", "time_of_generation_max"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -2498,6 +2834,12 @@
 				},
 				"required": ["time_of_generation_min", "time_of_generation_max"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -2659,6 +3001,12 @@
 				},
 				"required": ["time_of_generation_min", "time_of_generation_max"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -2820,6 +3168,12 @@
 				},
 				"required": ["time_of_generation_min", "time_of_generation_max"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -2981,6 +3335,12 @@
 				},
 				"required": ["time_of_generation_min", "time_of_generation_max"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -3142,6 +3502,12 @@
 				},
 				"required": ["time_of_generation_min", "time_of_generation_max"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -3303,6 +3669,12 @@
 				},
 				"required": ["time_of_generation_min", "time_of_generation_max"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -3464,6 +3836,12 @@
 				},
 				"required": ["time_of_generation_min", "time_of_generation_max"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -3625,6 +4003,12 @@
 				},
 				"required": ["time_of_generation_min", "time_of_generation_max"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -3786,6 +4170,12 @@
 				},
 				"required": ["time_of_generation_min", "time_of_generation_max"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -3947,6 +4337,12 @@
 				},
 				"required": ["time_of_generation_min", "time_of_generation_max"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -4108,6 +4504,12 @@
 				},
 				"required": ["time_of_generation_min", "time_of_generation_max"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -4269,6 +4671,12 @@
 				},
 				"required": ["time_of_generation_min", "time_of_generation_max"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -4430,6 +4838,12 @@
 				},
 				"required": ["time_of_generation_min", "time_of_generation_max"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -4591,6 +5005,12 @@
 				},
 				"required": ["time_of_generation_min", "time_of_generation_max"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -4752,6 +5172,12 @@
 				},
 				"required": ["time_of_generation_min", "time_of_generation_max"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -4913,6 +5339,12 @@
 				},
 				"required": ["time_of_generation_min", "time_of_generation_max"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -5085,6 +5517,12 @@
 				},
 				"required": ["time_of_generation_min", "time_of_generation_max"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -5257,6 +5695,12 @@
 				},
 				"required": ["time_of_generation_min", "time_of_generation_max"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -5437,6 +5881,12 @@
 					"metadata_key"
 				],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -5466,6 +5916,12 @@
 					}
 				},
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -5481,6 +5937,12 @@
 				},
 				"required": ["guardrail_id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -5601,6 +6063,12 @@
 				},
 				"required": ["name", "checks", "actions"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -5717,6 +6185,12 @@
 				},
 				"required": ["guardrail_id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -5732,6 +6206,12 @@
 				},
 				"required": ["guardrail_id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": true,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -5746,6 +6226,12 @@
 					}
 				},
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -5761,6 +6247,12 @@
 				},
 				"required": ["id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -5828,6 +6320,12 @@
 				},
 				"required": ["conditions", "group_by", "type", "unit", "value"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -5857,6 +6355,12 @@
 				},
 				"required": ["id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -5872,6 +6376,12 @@
 				},
 				"required": ["id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": true,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -5886,6 +6396,12 @@
 					}
 				},
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -5901,6 +6417,12 @@
 				},
 				"required": ["id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -5972,6 +6494,12 @@
 				},
 				"required": ["conditions", "group_by", "type", "credit_limit"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -6009,6 +6537,12 @@
 				},
 				"required": ["id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -6024,6 +6558,12 @@
 				},
 				"required": ["id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": true,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -6039,6 +6579,12 @@
 				},
 				"required": ["limit_id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -6058,6 +6604,12 @@
 				},
 				"required": ["limit_id", "entity_id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": true,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -6107,6 +6659,12 @@
 					}
 				},
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -6139,6 +6697,12 @@
 				},
 				"required": ["name"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -6172,6 +6736,12 @@
 					}
 				},
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -6195,6 +6765,12 @@
 				},
 				"required": ["label_id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -6223,6 +6799,12 @@
 				},
 				"required": ["label_id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -6238,6 +6820,12 @@
 				},
 				"required": ["label_id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": true,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -6265,6 +6853,12 @@
 				},
 				"required": ["name", "string"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -6279,6 +6873,12 @@
 					}
 				},
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -6294,6 +6894,12 @@
 				},
 				"required": ["prompt_partial_id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -6326,6 +6932,12 @@
 				},
 				"required": ["prompt_partial_id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -6341,6 +6953,12 @@
 				},
 				"required": ["prompt_partial_id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": true,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -6356,6 +6974,12 @@
 				},
 				"required": ["prompt_partial_id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -6376,6 +7000,12 @@
 				},
 				"required": ["prompt_partial_id", "version"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -6408,6 +7038,12 @@
 				},
 				"required": ["trace_id", "value"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -6440,6 +7076,12 @@
 				},
 				"required": ["id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -6545,6 +7187,12 @@
 					}
 				},
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -6624,6 +7272,12 @@
 				},
 				"required": ["time_min", "time_max", "requested_fields"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -6639,6 +7293,12 @@
 				},
 				"required": ["workspace_id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -6654,6 +7314,12 @@
 				},
 				"required": ["export_id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -6669,6 +7335,12 @@
 				},
 				"required": ["export_id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -6684,6 +7356,12 @@
 				},
 				"required": ["export_id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": true,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -6699,6 +7377,12 @@
 				},
 				"required": ["export_id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -6751,6 +7435,12 @@
 				},
 				"required": ["export_id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -6776,6 +7466,12 @@
 					}
 				},
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -6842,6 +7538,12 @@
 				},
 				"required": ["name", "integration_id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -6861,6 +7563,12 @@
 				},
 				"required": ["slug"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -6927,6 +7635,12 @@
 				},
 				"required": ["slug"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -6946,6 +7660,12 @@
 				},
 				"required": ["slug"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": true,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -6976,6 +7696,12 @@
 					}
 				},
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -7047,6 +7773,12 @@
 				},
 				"required": ["name", "ai_provider_id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": false
 			}
 		},
 		{
@@ -7062,6 +7794,12 @@
 				},
 				"required": ["slug"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -7125,6 +7863,12 @@
 				},
 				"required": ["slug"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": true,
+				"idempotentHint": true,
+				"openWorldHint": false
 			}
 		},
 		{
@@ -7140,6 +7884,12 @@
 				},
 				"required": ["slug"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": true,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -7166,6 +7916,12 @@
 				},
 				"required": ["slug"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -7207,6 +7963,12 @@
 				},
 				"required": ["slug", "models"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -7226,6 +7988,12 @@
 				},
 				"required": ["slug", "model_slug"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": true,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -7252,6 +8020,12 @@
 				},
 				"required": ["slug"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -7301,6 +8075,12 @@
 				},
 				"required": ["slug", "workspaces"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -7326,6 +8106,12 @@
 					}
 				},
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -7377,6 +8163,12 @@
 				},
 				"required": ["name", "url", "auth_type", "transport"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -7392,6 +8184,12 @@
 				},
 				"required": ["id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -7439,6 +8237,12 @@
 				},
 				"required": ["id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -7454,6 +8258,12 @@
 				},
 				"required": ["id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": true,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -7469,6 +8279,12 @@
 				},
 				"required": ["id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -7484,6 +8300,12 @@
 				},
 				"required": ["id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -7523,6 +8345,12 @@
 				},
 				"required": ["id", "capabilities"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": false
 			}
 		},
 		{
@@ -7538,6 +8366,12 @@
 				},
 				"required": ["id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -7572,6 +8406,12 @@
 				},
 				"required": ["id", "workspaces"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": false
 			}
 		},
 		{
@@ -7597,6 +8437,12 @@
 					}
 				},
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -7624,6 +8470,12 @@
 				},
 				"required": ["name", "mcp_integration_id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -7639,6 +8491,12 @@
 				},
 				"required": ["id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -7662,6 +8520,12 @@
 				},
 				"required": ["id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -7677,6 +8541,12 @@
 				},
 				"required": ["id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": true,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -7692,6 +8562,12 @@
 				},
 				"required": ["id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -7718,6 +8594,12 @@
 				},
 				"required": ["id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -7757,6 +8639,12 @@
 				},
 				"required": ["id", "capabilities"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -7783,6 +8671,12 @@
 				},
 				"required": ["id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
 			}
 		},
 		{
@@ -7817,6 +8711,12 @@
 				},
 				"required": ["id", "users"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
 			}
 		}
 	]

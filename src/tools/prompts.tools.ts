@@ -872,7 +872,7 @@ export function registerPromptsTools(
 	// Migrate prompt tool
 	server.tool(
 		"migrate_prompt",
-		"Create or update a prompt in one idempotent step for CI/CD and prompt-as-code flows, unlike create_prompt which always makes a new prompt. Looks up the prompt by name within collection_id: if found it adds a new version (nothing is overwritten), otherwise it creates the prompt; dry_run reports what would happen without changing anything. Stores app/env in template_metadata; get collection_id from list_collections. Returns the action taken (created or updated), dry_run flag, prompt id, slug, and version id.",
+		"Create or update a prompt in one idempotent step for CI/CD and prompt-as-code flows, unlike create_prompt which always makes a new prompt. Looks up the prompt by name within collection_id: if missing it creates the prompt, if found with different content it adds a new version (nothing is overwritten), and if the content already matches it no-ops; dry_run reports what would happen without changing anything. Stores app/env in template_metadata; get collection_id from list_collections. Returns the action taken (created, updated, or unchanged), dry_run flag, message, prompt id, slug, and version id.",
 		PROMPTS_TOOL_SCHEMAS.migratePrompt,
 		{
 			readOnlyHint: false,

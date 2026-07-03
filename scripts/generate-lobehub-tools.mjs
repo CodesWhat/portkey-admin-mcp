@@ -16,11 +16,20 @@ import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const MANIFEST = resolve(ROOT, "lhm.plugin.json");
 
+// Strip the domain-filter knobs: a stray PORTKEY_TOOL_DOMAINS/MCP_TOOL_DOMAINS
+// exported in the caller's shell would make the server register a subset and
+// this script silently write a truncated manifest.
+const {
+	PORTKEY_TOOL_DOMAINS: _ptd,
+	MCP_TOOL_DOMAINS: _mtd,
+	...cleanEnv
+} = process.env;
+
 const transport = new StdioClientTransport({
 	command: "node",
 	args: [resolve(ROOT, "build/index.js")],
 	// tools/list never calls the Portkey API, so a dummy key is fine here.
-	env: { ...process.env, PORTKEY_API_KEY: "manifest-generation-dummy-key" },
+	env: { ...cleanEnv, PORTKEY_API_KEY: "manifest-generation-dummy-key" },
 	stderr: "pipe",
 });
 const client = new Client({
@@ -38,18 +47,24 @@ do {
 } while (cursor);
 await client.close();
 
-if (tools.length === 0) {
+const manifest = JSON.parse(readFileSync(MANIFEST, "utf8"));
+
+// A shrinking tool list means something filtered or broke upstream — never
+// silently publish fewer tools than the manifest already had.
+if (tools.length < manifest.tools.length) {
 	console.error(
-		"Server returned no tools; refusing to write an empty manifest.",
+		`Server returned ${tools.length} tools but the manifest has ${manifest.tools.length}; refusing to write a truncated manifest.`,
 	);
 	process.exit(1);
 }
 
-const manifest = JSON.parse(readFileSync(MANIFEST, "utf8"));
-manifest.tools = tools.map(({ name, description, inputSchema }) => ({
-	name,
-	description,
-	inputSchema,
-}));
+manifest.tools = tools.map(
+	({ name, description, inputSchema, annotations }) => ({
+		name,
+		description,
+		inputSchema,
+		...(annotations ? { annotations } : {}),
+	}),
+);
 writeFileSync(MANIFEST, `${JSON.stringify(manifest, null, "\t")}\n`);
 console.log(`Wrote ${tools.length} tools to lhm.plugin.json`);

@@ -7,15 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.4.1] - 2026-07-02
-
-### Changed
-
-- Rewrite the six lowest-scoring tool descriptions (Glama TDQS): `update_config`, `update_integration`, `create_integration`, `update_mcp_integration_capabilities`, `update_mcp_integration_workspaces`, and `migrate_prompt` now disclose side effects and reversibility, name sibling tools and where to source parameter values, and enumerate return fields. These six are also the first tools in the server to carry MCP tool annotations (`readOnlyHint`/`destructiveHint`/`idempotentHint`/`openWorldHint`).
+## [0.4.2] - 2026-07-02
 
 ### Fixed
 
-- The LobeHub manifest (`lhm.plugin.json`) had drifted from the server: 34 stale tool descriptions and a `list_guardrails` schema still advertising a `page_size` maximum of 1000 that the server now rejects at 100. The tools array is regenerated from the live server over MCP `tools/list` (new `scripts/generate-lobehub-tools.mjs`, wired into `publish:lobehub` so it can't drift again), which also picks up the Enterprise-gating notes the server appends at registration.
+- `migrate_prompt`'s 0.4.1 description enumerated only two of the three `action` return values; the common re-run case returns `unchanged` (prompt found, content identical, no new version created). The description now covers all three outcomes plus the `message` field.
+- The LobeHub manifest generator inherited the caller's environment, so a stray `PORTKEY_TOOL_DOMAINS`/`MCP_TOOL_DOMAINS` export made it silently write a truncated manifest (reproduced: 34 of 150 tools). It now strips both variables, refuses to write fewer tools than the manifest already has, and carries each tool's `annotations` through to the manifest (previously dropped).
+- Pin the actionlint bootstrap script in CI to a commit SHA — the tag-based raw URL was the one remaining mutable reference in the hardened workflows.
+- Correct two claims in the 0.4.1 changelog entry (mirrored to its GitHub Release): the six tools carry the first *hand-authored* annotations, not the first annotations, and the manifest drift was 29 tool entries, not 34.
+
+### Changed
+
+- Rewrite the six lowest-scoring tool descriptions (Glama TDQS): `update_config`, `update_integration`, `create_integration`, `update_mcp_integration_capabilities`, `update_mcp_integration_workspaces`, and `migrate_prompt` now disclose side effects and reversibility, name sibling tools and where to source parameter values, and enumerate return fields. These six are also the first tools to carry explicit hand-authored MCP annotations (`readOnlyHint`/`destructiveHint`/`idempotentHint`/`openWorldHint`), overriding the operation-type-inferred annotations every tool has carried since 0.2.0.
+
+### Fixed
+
+- The LobeHub manifest (`lhm.plugin.json`) had drifted from the server: 29 tool entries were out of date — the six rewritten descriptions plus 0.4.0's pagination schema changes, including a `list_guardrails` schema still advertising a `page_size` maximum of 1000 that the server rejects at 100. The tools array is regenerated from the live server over MCP `tools/list` (new `scripts/generate-lobehub-tools.mjs`, wired into `publish:lobehub` so it can't drift again), which also picks up the Enterprise-gating notes the server appends at registration.
 - `glama.json` maintainers listed the GitHub org instead of a username, which Glama's claim flow can't match; restored `scttbnsn` so the org-hosted server page can be claimed.
 
 ## [0.4.0] - 2026-07-02
@@ -322,7 +329,8 @@ First stable release. Graduates from beta with 151 tools covering ~98% of the Po
 - Vercel deployment support
 - Contract tests, E2E tests, security tests
 
-[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.4.2...HEAD
+[0.4.2]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.3.8...v0.4.0
 [0.3.8]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.3.7...v0.3.8
