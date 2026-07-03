@@ -16,7 +16,7 @@
   <br>
   <a href="https://github.com/CodesWhat/portkey-admin-mcp/actions/workflows/ci.yml"><img src="https://github.com/CodesWhat/portkey-admin-mcp/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://github.com/punkpeye/awesome-mcp-servers"><img src="https://awesome.re/mentioned-badge.svg" alt="Mentioned in Awesome MCP Servers"></a>
-  <a href="https://lobehub.com/mcp/codeswhat-portkey-admin-mcp"><img src="https://lobehub.com/badge/mcp-full/codeswhat-portkey-admin-mcp?theme=light" alt="LobeHub MCP"></a>
+  <a href="https://lobehub.com/mcp/codeswhat-portkey-admin-mcp"><img src="https://lobehub.com/badge/mcp/codeswhat-portkey-admin-mcp" alt="LobeHub MCP"></a>
 </p>
 
 <p align="center">
