@@ -1,79 +1,51 @@
-# CodeRabbit Configuration
-# Copy this to your project root and customize the path_instructions for your project.
-
+# CodeRabbit configuration — portkey-admin-mcp
 language: en-US
 
 reviews:
-  # "chill" = fewer comments, higher signal. "assertive" = more comments including nitpicks.
   profile: chill
-
-  # Enable automatic reviews on PRs
   auto_review:
     enabled: true
-
-  # High-level summary and walkthrough
   high_level_summary: true
   collapse_walkthrough: false
   review_status: true
   poem: false
-
-  # Don't request changes — just comment
   request_changes_workflow: false
 
-  # Files/patterns to ignore
   path_filters:
     - "!**/node_modules/**"
     - "!**/dist/**"
     - "!**/build/**"
-    - "!**/.next/**"
     - "!**/coverage/**"
-    - "!**/*.min.js"
-    - "!**/*.min.css"
     - "!**/package-lock.json"
-    - "!**/yarn.lock"
-    - "!**/pnpm-lock.yaml"
-    - "!**/*.generated.*"
-    - "!**/generated/**"
     - "!**/*.lock"
-    - "!**/migrations/**"
+    - "!docs/glama-score/**"
+    - "!CHANGELOG.md"
 
-  # Per-path review instructions — add entries to tell CR about intentional patterns.
-  # Uncomment and customize for your project:
-  # path_instructions:
-  #   - path: "src/api/**"
-  #     instructions: |
-  #       Error handling is done in middleware. Don't flag missing try/catch in handlers.
-  #   - path: "src/jobs/**"
-  #     instructions: |
-  #       Jobs use broad exception catches intentionally. Don't flag bare except clauses.
-  #   - path: "**/*.test.*"
-  #     instructions: |
-  #       Test files. Don't suggest error handling or null checks in test code.
+  path_instructions:
+    - path: "src/tools/**"
+      instructions: |
+        MCP tool definitions. Tool names, descriptions, and input schemas are the public API — flag unclear descriptions, missing parameter docs, and breaking schema changes.
+    - path: "src/services/**"
+      instructions: |
+        Portkey Admin API client wrappers. Flag endpoints that don't handle pagination or API errors consistently with the rest.
+    - path: "src/schemas/**"
+      instructions: |
+        Zod schemas shared across tools. Breaking changes here ripple — flag loosened validation.
+    - path: "tests/**"
+      instructions: |
+        Test files. Don't suggest error handling or null checks in test code.
 
 knowledge_base:
   opt_out: false
-
-  # Local only — don't let learnings from other repos bleed into this one.
-  # Each repo has its own patterns and conventions.
   learnings:
     scope: local
-
-  # Local only for issues too
   issues:
     scope: local
-
-  # Let CR read our CLAUDE.md and other agent instruction files
+  # Default filePatterns already cover CLAUDE.md / AGENTS.md / .cursorrules
   code_guidelines:
     enabled: true
-    filePatterns:
-      - "**/CLAUDE.md"
-      - "**/.cursorrules"
-
-  # Web search for additional context (library docs, etc.)
   web_search:
     enabled: true
-
-  # Pull request history for context
   pull_requests:
     scope: local
 
