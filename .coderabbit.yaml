@@ -1,81 +1,132 @@
-# CodeRabbit Configuration
-# Copy this to your project root and customize the path_instructions for your project.
-
+# CodeRabbit configuration: portkey-admin-mcp
 language: en-US
+early_access: true
+enable_free_tier: true
+
+tone_instructions: >-
+  Reviewing AI-agent TypeScript for an MCP server. Terse and direct. State
+  problem and fix with code. Skip praise and rhetoric. Flag unclear tool
+  descriptions, loosened Zod schemas, missed conventions, existing utilities.
+  Only actionable feedback.
 
 reviews:
-  # "chill" = fewer comments, higher signal. "assertive" = more comments including nitpicks.
   profile: chill
+  request_changes_workflow: false
+  high_level_summary: true
+  high_level_summary_instructions: >-
+    This summary will be read by an AI coding agent (Claude Code), not a human.
+    Be direct and structured. Use a changelog with emojis: ✨ Added, 🔧 Changed,
+    🐛 Fixed, 🗑️ Removed, ⚠️ Breaking, 🔒 Security. After the changelog, list
+    any concerns or issues the agent should address as a flat bullet list — no
+    prose, no praise, no context the agent already knows from the diff.
+  high_level_summary_placeholder: "@coderabbitai summary"
+  high_level_summary_in_walkthrough: false
+  collapse_walkthrough: true
+  changed_files_summary: false
+  sequence_diagrams: false
+  estimate_code_review_effort: false
+  review_details: false
+  review_status: true
+  commit_status: true
+  fail_commit_status: false
+  poem: false
+  in_progress_fortune: false
+  assess_linked_issues: true
+  related_issues: true
+  related_prs: true
+  suggested_labels: false
+  auto_apply_labels: false
+  suggested_reviewers: false
+  auto_assign_reviewers: false
+  enable_prompt_for_ai_agents: true
+  abort_on_close: true
 
-  # Enable automatic reviews on PRs
   auto_review:
     enabled: true
+    auto_incremental_review: true
+    drafts: false
+    ignore_title_keywords:
+      - "WIP"
+      - "DO NOT MERGE"
+      - "[skip review]"
 
-  # High-level summary and walkthrough
-  high_level_summary: true
-  collapse_walkthrough: false
-  review_status: true
-  poem: false
-
-  # Don't request changes — just comment
-  request_changes_workflow: false
-
-  # Files/patterns to ignore
   path_filters:
     - "!**/node_modules/**"
     - "!**/dist/**"
     - "!**/build/**"
-    - "!**/.next/**"
     - "!**/coverage/**"
-    - "!**/*.min.js"
-    - "!**/*.min.css"
     - "!**/package-lock.json"
-    - "!**/yarn.lock"
-    - "!**/pnpm-lock.yaml"
-    - "!**/*.generated.*"
-    - "!**/generated/**"
     - "!**/*.lock"
-    - "!**/migrations/**"
+    - "!docs/glama-score/**"
+    - "!CHANGELOG.md"
 
-  # Per-path review instructions — add entries to tell CR about intentional patterns.
-  # Uncomment and customize for your project:
-  # path_instructions:
-  #   - path: "src/api/**"
-  #     instructions: |
-  #       Error handling is done in middleware. Don't flag missing try/catch in handlers.
-  #   - path: "src/jobs/**"
-  #     instructions: |
-  #       Jobs use broad exception catches intentionally. Don't flag bare except clauses.
-  #   - path: "**/*.test.*"
-  #     instructions: |
-  #       Test files. Don't suggest error handling or null checks in test code.
+  path_instructions:
+    - path: "src/tools/**"
+      instructions: |
+        MCP tool definitions. Tool names, descriptions, and input schemas are the public API — flag unclear descriptions, missing parameter docs, and breaking schema changes.
+    - path: "src/services/**"
+      instructions: |
+        Portkey Admin API client wrappers. Flag endpoints that don't handle pagination or API errors consistently with the rest.
+    - path: "src/schemas/**"
+      instructions: |
+        Zod schemas shared across tools. Breaking changes here ripple — flag loosened validation.
+    - path: "tests/**"
+      instructions: |
+        Test files. Don't suggest error handling or null checks in test code.
+
+  finishing_touches:
+    docstrings:
+      enabled: true
+    unit_tests:
+      enabled: true
+
+  pre_merge_checks:
+    docstrings:
+      mode: "off"
+    title:
+      mode: "off"
+    description:
+      mode: "off"
+    issue_assessment:
+      mode: "warning"
+
+  tools:
+    biome:
+      enabled: true
+    shellcheck:
+      enabled: true
+    hadolint:
+      enabled: true
+    markdownlint:
+      enabled: true
+    yamllint:
+      enabled: true
+    gitleaks:
+      enabled: true
+    actionlint:
+      enabled: true
+    ast-grep:
+      essential_rules: true
+    github-checks:
+      enabled: true
+      timeout_ms: 90000
+    languagetool:
+      enabled: false
 
 knowledge_base:
   opt_out: false
-
-  # Local only — don't let learnings from other repos bleed into this one.
-  # Each repo has its own patterns and conventions.
   learnings:
     scope: local
-
-  # Local only for issues too
   issues:
     scope: local
-
-  # Let CR read our CLAUDE.md and other agent instruction files
+  # Default filePatterns already cover CLAUDE.md / AGENTS.md / .cursorrules
   code_guidelines:
     enabled: true
-    filePatterns:
-      - "**/CLAUDE.md"
-      - "**/.cursorrules"
-
-  # Web search for additional context (library docs, etc.)
   web_search:
     enabled: true
-
-  # Pull request history for context
   pull_requests:
     scope: local
 
 chat:
   auto_reply: true
+  art: false
