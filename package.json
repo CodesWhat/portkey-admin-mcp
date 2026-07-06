@@ -39,7 +39,7 @@
 		"express": "^5.2.1",
 		"helmet": "^8.1.0",
 		"jose": "^6.2.2",
-		"redis": "^5.11.0",
+		"redis": "^6.0.0",
 		"zod": "^4.3.6"
 	},
 	"name": "portkey-admin-mcp",
