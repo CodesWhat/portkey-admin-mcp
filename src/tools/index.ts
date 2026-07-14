@@ -22,6 +22,7 @@ import { registerMcpServersTools } from "./mcp-servers.tools.js";
 import { registerPartialsTools } from "./partials.tools.js";
 import { registerPromptsTools } from "./prompts.tools.js";
 import { registerProvidersTools } from "./providers.tools.js";
+import { registerSecretReferencesTools } from "./secret-references.tools.js";
 import { registerTracingTools } from "./tracing.tools.js";
 import { registerUsersTools } from "./users.tools.js";
 import { registerWorkspacesTools } from "./workspaces.tools.js";
@@ -44,6 +45,7 @@ const TOOL_DOMAIN_REGISTRARS = [
 	["tracing", registerTracingTools],
 	["logging", registerLoggingTools],
 	["providers", registerProvidersTools],
+	["secret-references", registerSecretReferencesTools],
 	["integrations", registerIntegrationsTools],
 	["mcp-integrations", registerMcpIntegrationsTools],
 	["mcp-servers", registerMcpServersTools],
@@ -253,6 +255,105 @@ const STANDARD_TOOL_OUTPUT_SCHEMA = {
 		.optional()
 		.describe("Structured error payload when ok is false"),
 } as const;
+
+const secretManagerTypeOutputSchema = z.enum([
+	"aws_sm",
+	"azure_kv",
+	"hashicorp_vault",
+]);
+
+const TOOL_SUCCESS_DATA_SCHEMAS: Partial<Record<string, z.ZodType>> = {
+	rotate_api_key: z.object({
+		message: z.string().describe("Rotation confirmation"),
+		warning: z
+			.string()
+			.describe("Required handling guidance for the one-time secret"),
+		id: z.string().uuid().describe("Rotated API key UUID"),
+		key: z.string().describe("New API key secret, returned only once"),
+		key_transition_expires_at: z.iso
+			.datetime()
+			.describe("Time when the previous key stops working"),
+	}),
+	create_secret_reference: z.object({
+		message: z.string().describe("Creation confirmation"),
+		id: z.string().uuid().describe("New Secret Reference UUID"),
+		slug: z.string().describe("New Secret Reference slug"),
+	}),
+	list_secret_references: z.object({
+		total: z.number().int().nonnegative().describe("Total matching references"),
+		secret_references: z
+			.array(
+				z.object({
+					id: z.string().uuid().describe("Secret Reference UUID"),
+					name: z.string().describe("Human-readable name"),
+					slug: z.string().describe("Stable Secret Reference slug"),
+					manager_type: secretManagerTypeOutputSchema.describe(
+						"External secret manager type",
+					),
+					status: z.literal("ACTIVE").describe("Current reference status"),
+					created_at: z.iso.datetime().describe("ISO 8601 creation timestamp"),
+					last_updated_at: z.iso
+						.datetime()
+						.describe("ISO 8601 last-update timestamp"),
+				}),
+			)
+			.describe(
+				"Current page of Secret References without authentication values",
+			),
+	}),
+	get_secret_reference: z.object({
+		id: z.string().uuid().describe("Secret Reference UUID"),
+		organisation_id: z.string().uuid().describe("Owning organisation UUID"),
+		name: z.string().describe("Human-readable name"),
+		slug: z.string().describe("Stable Secret Reference slug"),
+		description: z.string().nullable().describe("Reference description"),
+		manager_type: secretManagerTypeOutputSchema.describe(
+			"External secret manager type",
+		),
+		secret_path: z.string().describe("Path in the external secret manager"),
+		secret_key: z
+			.string()
+			.nullable()
+			.describe("Selected key within a structured secret"),
+		allow_all_workspaces: z
+			.boolean()
+			.describe("Whether all workspaces may use the reference"),
+		tags: z
+			.record(z.string(), z.string())
+			.nullable()
+			.describe("String metadata tags"),
+		status: z.literal("ACTIVE").describe("Current reference status"),
+		created_by: z.string().describe("Creator identifier"),
+		created_at: z.iso.datetime().describe("ISO 8601 creation timestamp"),
+		last_updated_at: z.iso
+			.datetime()
+			.describe("ISO 8601 last-update timestamp"),
+		auth_config: z
+			.record(z.string(), z.unknown())
+			.describe("Authentication configuration with sensitive values redacted"),
+		object: z.literal("secret-reference").describe("Portkey object type"),
+	}),
+	update_secret_reference: z.object({
+		message: z.string().describe("Update confirmation"),
+		success: z.literal(true).describe("Whether the update succeeded"),
+	}),
+	delete_secret_reference: z.object({
+		message: z.string().describe("Deletion confirmation"),
+		success: z.literal(true).describe("Whether the deletion succeeded"),
+	}),
+};
+
+function getToolOutputSchema(toolName: string) {
+	const dataSchema = TOOL_SUCCESS_DATA_SCHEMAS[toolName];
+	if (!dataSchema) return STANDARD_TOOL_OUTPUT_SCHEMA;
+
+	return {
+		...STANDARD_TOOL_OUTPUT_SCHEMA,
+		data: dataSchema
+			.optional()
+			.describe("Structured success payload when ok is true"),
+	};
+}
 
 function isStandardToolEnvelope(value: unknown): value is StandardToolEnvelope {
 	if (!isRecord(value) || typeof value.ok !== "boolean") {
@@ -492,7 +593,7 @@ function createSafeToolServer(server: McpServer): McpServer {
 					...(registration.inputSchema !== undefined
 						? { inputSchema: registration.inputSchema }
 						: {}),
-					outputSchema: STANDARD_TOOL_OUTPUT_SCHEMA,
+					outputSchema: getToolOutputSchema(name),
 					annotations: registration.annotations,
 				},
 				registration.callback,
@@ -566,6 +667,7 @@ export {
 	registerPartialsTools,
 	registerPromptsTools,
 	registerProvidersTools,
+	registerSecretReferencesTools,
 	registerTracingTools,
 	registerUsersTools,
 	registerWorkspacesTools,

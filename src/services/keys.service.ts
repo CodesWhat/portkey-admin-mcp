@@ -146,6 +146,16 @@ export interface UpdateApiKeyRequest {
 	expires_at?: string | null;
 }
 
+export interface RotateApiKeyRequest {
+	key_transition_period_ms?: number;
+}
+
+export interface RotateApiKeyResponse {
+	id: string;
+	key: string;
+	key_transition_expires_at: string;
+}
+
 export interface ListVirtualKeysParams {
 	page_size?: number;
 	current_page?: number;
@@ -220,6 +230,16 @@ export class KeysService extends BaseService {
 	): Promise<{ success: boolean }> {
 		await this.put(`/api-keys/${this.encodePathSegment(id)}`, data);
 		return { success: true };
+	}
+
+	async rotateApiKey(
+		id: string,
+		data: RotateApiKeyRequest = {},
+	): Promise<RotateApiKeyResponse> {
+		return this.post<RotateApiKeyResponse>(
+			`/api-keys/${this.encodePathSegment(id)}/rotate`,
+			data,
+		);
 	}
 
 	async deleteApiKey(id: string): Promise<{ success: boolean }> {

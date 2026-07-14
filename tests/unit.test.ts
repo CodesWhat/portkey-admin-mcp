@@ -102,7 +102,7 @@ type CapturedRequest = {
 async function captureServiceRequest(
 	invoke: () => Promise<unknown>,
 ): Promise<CapturedRequest> {
-	const basePrototype = BaseService.prototype as {
+	const basePrototype = BaseService.prototype as unknown as {
 		get: (path: string, params?: object) => Promise<unknown>;
 		post: (path: string, body?: unknown) => Promise<unknown>;
 		put: (path: string, body?: unknown) => Promise<unknown>;
@@ -287,7 +287,7 @@ describe("BaseService HTTP execution", () => {
 		}) as typeof Logger.error;
 
 		process.env.PORTKEY_API_KEY = "test-dummy-key";
-		process.env.PORTKEY_BASE_URL = "https://example.portkey.test/v1";
+		process.env.PORTKEY_BASE_URL = "https://example.portkey.test/v1/";
 
 		try {
 			const service = new TestBaseServiceClient();
@@ -434,7 +434,7 @@ describe("BaseService HTTP execution", () => {
 describe("ConfigsService response parsing", () => {
 	it("parses JSON-encoded config details in getConfig and updateConfig", async () => {
 		const service = new ConfigsService("test-dummy-key");
-		const basePrototype = BaseService.prototype as {
+		const basePrototype = BaseService.prototype as unknown as {
 			get: (path: string, params?: object) => Promise<unknown>;
 			put: (path: string, body?: unknown) => Promise<unknown>;
 		};
@@ -912,6 +912,96 @@ describe("SessionStore capacity limits", () => {
 // ---------------------------------------------------------------------------
 
 describe("InMemoryEventStore cleanup throttling", () => {
+	it("uses opaque event IDs while preserving replay order", async () => {
+		const managedStore = createManagedEventStore({
+			transport: "http",
+			sessionMode: "stateless",
+			eventStore: {
+				mode: "memory",
+				ttlSeconds: 60,
+				redisKeyPrefix: "test",
+			},
+			protocol: "http",
+			port: 3000,
+			host: "127.0.0.1",
+			maxSessions: 100,
+			sessionTimeout: 3_600_000,
+			shutdownTimeout: 10_000,
+			tls: { enabled: false },
+		});
+		const eventStore = managedStore.eventStore as NonNullable<
+			typeof managedStore.eventStore
+		>;
+
+		const firstEventId = await eventStore.storeEvent("stream-1", {
+			jsonrpc: "2.0",
+			method: "first",
+		});
+		const secondEventId = await eventStore.storeEvent("stream-1", {
+			jsonrpc: "2.0",
+			method: "second",
+		});
+		const replayed: string[] = [];
+
+		await eventStore.replayEventsAfter(firstEventId, {
+			send: async (eventId) => {
+				replayed.push(eventId);
+			},
+		});
+
+		assert.match(firstEventId, /^[0-9a-f]{8}-[0-9a-f-]{27}$/);
+		assert.match(secondEventId, /^[0-9a-f]{8}-[0-9a-f-]{27}$/);
+		assert.notEqual(firstEventId, secondEventId);
+		assert.deepEqual(replayed, [secondEventId]);
+	});
+
+	it("allows only one active replay lease per stream", async () => {
+		const managedStore = createManagedEventStore({
+			transport: "http",
+			sessionMode: "stateless",
+			eventStore: {
+				mode: "memory",
+				ttlSeconds: 60,
+				redisKeyPrefix: "test",
+			},
+			protocol: "http",
+			port: 3000,
+			host: "127.0.0.1",
+			maxSessions: 100,
+			sessionTimeout: 3_600_000,
+			shutdownTimeout: 10_000,
+			tls: { enabled: false },
+		}) as unknown as {
+			eventStore: NonNullable<
+				ReturnType<typeof createManagedEventStore>["eventStore"]
+			>;
+			acquireReplayLease: (eventId: string) => Promise<{
+				status: "acquired" | "conflict" | "missing";
+				release?: () => Promise<void>;
+			}>;
+		};
+		const eventId = await managedStore.eventStore.storeEvent("stream-1", {
+			jsonrpc: "2.0",
+			method: "first",
+		});
+
+		const first = await managedStore.acquireReplayLease(eventId);
+		assert.equal(first.status, "acquired");
+		assert.equal(
+			(await managedStore.acquireReplayLease(eventId)).status,
+			"conflict",
+		);
+		await first.release?.();
+		assert.equal(
+			(await managedStore.acquireReplayLease(eventId)).status,
+			"acquired",
+		);
+		assert.equal(
+			(await managedStore.acquireReplayLease("missing-event")).status,
+			"missing",
+		);
+	});
+
 	it("runs full cleanup at most once every 30 seconds during writes", async () => {
 		const managedStore = createManagedEventStore({
 			transport: "http",
@@ -926,9 +1016,10 @@ describe("InMemoryEventStore cleanup throttling", () => {
 			host: "127.0.0.1",
 			maxSessions: 100,
 			sessionTimeout: 3_600_000,
+			shutdownTimeout: 10_000,
 			tls: { enabled: false },
 		});
-		const eventStore = managedStore.eventStore as {
+		const eventStore = managedStore.eventStore as unknown as {
 			cleanupExpired: () => void;
 			storeEvent: (streamId: string, message: unknown) => Promise<string>;
 		};
@@ -991,9 +1082,10 @@ describe("RedisEventStore replay batching", () => {
 			host: "127.0.0.1",
 			maxSessions: 100,
 			sessionTimeout: 3_600_000,
+			shutdownTimeout: 10_000,
 			tls: { enabled: false },
 		});
-		const eventStore = managedStore.eventStore as {
+		const eventStore = managedStore.eventStore as unknown as {
 			client: {
 				isOpen: boolean;
 				hGetAll: (key: string) => Promise<Record<string, string>>;
@@ -1035,14 +1127,14 @@ describe("RedisEventStore replay batching", () => {
 		eventStore.client = {
 			isOpen: true,
 			async hGetAll(key: string) {
-				assert.equal(key, "test:event:1");
-				return { streamId: "stream-1" };
+				assert.equal(key, "test:event:event-1-opaque");
+				return { streamId: "stream-1", sequence: "1" };
 			},
 			async zRangeByScore(key: string, min: string, max: string) {
 				assert.equal(key, "test:stream:stream-1:events");
 				assert.equal(min, "(1");
 				assert.equal(max, "+inf");
-				return ["2", "3", "4"];
+				return ["event-2-opaque", "event-3-opaque", "event-4-opaque"];
 			},
 			async hGet() {
 				clientLevelHGetCalls += 1;
@@ -1053,7 +1145,7 @@ describe("RedisEventStore replay batching", () => {
 			},
 		};
 
-		const streamId = await eventStore.replayEventsAfter("1", {
+		const streamId = await eventStore.replayEventsAfter("event-1-opaque", {
 			send: async (eventId, message) => {
 				sentEvents.push({ eventId, message });
 			},
@@ -1062,21 +1154,21 @@ describe("RedisEventStore replay batching", () => {
 		assert.equal(streamId, "stream-1");
 		assert.equal(clientLevelHGetCalls, 0);
 		assert.deepEqual(batchedRequests, [
-			{ key: "test:event:2", field: "message" },
-			{ key: "test:event:3", field: "message" },
-			{ key: "test:event:4", field: "message" },
+			{ key: "test:event:event-2-opaque", field: "message" },
+			{ key: "test:event:event-3-opaque", field: "message" },
+			{ key: "test:event:event-4-opaque", field: "message" },
 		]);
 		assert.deepEqual(sentEvents, [
 			{
-				eventId: "2",
+				eventId: "event-2-opaque",
 				message: { jsonrpc: "2.0", method: "event-2" },
 			},
 			{
-				eventId: "3",
+				eventId: "event-3-opaque",
 				message: { jsonrpc: "2.0", method: "event-3" },
 			},
 			{
-				eventId: "4",
+				eventId: "event-4-opaque",
 				message: { jsonrpc: "2.0", method: "event-4" },
 			},
 		]);
@@ -1218,7 +1310,8 @@ describe("AnalyticsService query params", () => {
 
 		assert.equal(service.lastRequest?.path, "/analytics/graphs/requests");
 		assert.equal(
-			(service.lastRequest?.params as Record<string, unknown>).prompt_slug,
+			(service.lastRequest?.params as Record<string, unknown> | undefined)
+				?.prompt_slug,
 			"support-triage",
 		);
 	});
@@ -2751,6 +2844,48 @@ describe("Tool annotations", () => {
 			readOnlyHint: false,
 			destructiveHint: true,
 			idempotentHint: false,
+			openWorldHint: true,
+		});
+		assert.deepEqual(getAnnotations("rotate_api_key"), {
+			title: "Rotate API Key",
+			readOnlyHint: false,
+			destructiveHint: true,
+			idempotentHint: false,
+			openWorldHint: true,
+		});
+		assert.deepEqual(getAnnotations("create_secret_reference"), {
+			title: "Create Secret Reference",
+			readOnlyHint: false,
+			destructiveHint: false,
+			idempotentHint: false,
+			openWorldHint: true,
+		});
+		assert.deepEqual(getAnnotations("list_secret_references"), {
+			title: "List Secret References",
+			readOnlyHint: true,
+			destructiveHint: false,
+			idempotentHint: true,
+			openWorldHint: true,
+		});
+		assert.deepEqual(getAnnotations("get_secret_reference"), {
+			title: "Get Secret Reference",
+			readOnlyHint: true,
+			destructiveHint: false,
+			idempotentHint: true,
+			openWorldHint: true,
+		});
+		assert.deepEqual(getAnnotations("update_secret_reference"), {
+			title: "Update Secret Reference",
+			readOnlyHint: false,
+			destructiveHint: true,
+			idempotentHint: true,
+			openWorldHint: true,
+		});
+		assert.deepEqual(getAnnotations("delete_secret_reference"), {
+			title: "Delete Secret Reference",
+			readOnlyHint: false,
+			destructiveHint: true,
+			idempotentHint: true,
 			openWorldHint: true,
 		});
 		assert.deepEqual(getAnnotations("render_prompt"), {

@@ -38,7 +38,7 @@ type CapturedRequest = {
 async function captureServiceRequest(
 	invoke: () => Promise<unknown>,
 ): Promise<CapturedRequest> {
-	const basePrototype = BaseService.prototype as {
+	const basePrototype = BaseService.prototype as unknown as {
 		get: (path: string, params?: object) => Promise<unknown>;
 		post: (path: string, body?: unknown) => Promise<unknown>;
 		put: (path: string, body?: unknown) => Promise<unknown>;

@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import { type ChildProcess, spawn } from "node:child_process";
 import { once } from "node:events";
-import { request as httpRequest } from "node:http";
+import {
+	createServer as createHttpServer,
+	request as httpRequest,
+} from "node:http";
 import net from "node:net";
 import { resolve } from "node:path";
 import { afterEach, describe, it } from "node:test";
@@ -22,6 +25,54 @@ const INIT_PAYLOAD = {
 };
 
 const spawnedServers = new Set<ChildProcess>();
+
+interface SseEvent {
+	id?: string;
+	data: string;
+}
+
+function parseSseEvents(raw: string): SseEvent[] {
+	return raw
+		.split("\n\n")
+		.map((block) => {
+			const lines = block.split("\n");
+			const id = lines.find((line) => line.startsWith("id: "))?.slice(4);
+			const data = lines
+				.filter((line) => line.startsWith("data: "))
+				.map((line) => line.slice(6))
+				.join("\n");
+			return { id, data };
+		})
+		.filter((event) => event.id !== undefined || event.data.length > 0);
+}
+
+async function readSseEvents(
+	response: Response,
+	minimumEvents: number,
+): Promise<SseEvent[]> {
+	assert.ok(response.body, "expected SSE response body");
+	const reader = response.body.getReader();
+	const decoder = new TextDecoder();
+	let raw = "";
+
+	try {
+		while (true) {
+			const { done, value } = await reader.read();
+			if (done) {
+				break;
+			}
+			raw += decoder.decode(value, { stream: true });
+			const events = parseSseEvents(raw);
+			if (events.length >= minimumEvents) {
+				return events;
+			}
+		}
+	} finally {
+		await reader.cancel();
+	}
+
+	return parseSseEvents(raw);
+}
 
 async function getFreePort(): Promise<number> {
 	return new Promise((resolvePort, reject) => {
@@ -296,6 +347,29 @@ describe("HTTP server integration", () => {
 		});
 	});
 
+	it("returns a controlled JSON error for malformed request JSON", async () => {
+		await withHttpServer({}, async ({ baseUrl }) => {
+			const response = await fetch(`${baseUrl}/mcp`, {
+				method: "POST",
+				headers: {
+					authorization: `Bearer ${AUTH_TOKEN}`,
+					"content-type": "application/json",
+					accept: "application/json",
+				},
+				body: '{"jsonrpc":',
+			});
+
+			assert.equal(response.status, 400);
+			assert.match(
+				response.headers.get("content-type") ?? "",
+				/application\/json/,
+			);
+			assert.deepEqual(await response.json(), {
+				error: "Malformed JSON request body",
+			});
+		});
+	});
+
 	it("rejects new initialize requests after hitting MCP_MAX_SESSIONS", async () => {
 		await withHttpServer(
 			{
@@ -365,7 +439,7 @@ describe("HTTP server integration", () => {
 		});
 	});
 
-	it("requires MCP-Protocol-Version on requests after initialization", async () => {
+	it("uses the negotiated protocol when a post-initialize header is missing", async () => {
 		await withHttpServer({}, async ({ baseUrl }) => {
 			const initHeaders = {
 				authorization: `Bearer ${AUTH_TOKEN}`,
@@ -399,16 +473,8 @@ describe("HTTP server integration", () => {
 					params: {},
 				}),
 			});
-			assert.equal(missingHeader.status, 400);
-			assert.deepEqual(await missingHeader.json(), {
-				jsonrpc: "2.0",
-				error: {
-					code: -32000,
-					message:
-						"Bad Request: MCP-Protocol-Version header is required for requests after initialization",
-				},
-				id: null,
-			});
+			assert.equal(missingHeader.status, 200);
+			assert.match(await missingHeader.text(), /"tools"/);
 
 			const mismatchedHeader = await fetch(`${baseUrl}/mcp`, {
 				method: "POST",
@@ -637,25 +703,223 @@ describe("HTTP server integration", () => {
 		});
 	});
 
-	it("GET /mcp in stateless session mode returns 405", async () => {
+	it("GET /mcp replays stateless SSE events after Last-Event-ID without a session id", async () => {
 		await withHttpServer(
-			{ MCP_SESSION_MODE: "stateless" },
+			{
+				MCP_SESSION_MODE: "stateless",
+				MCP_EVENT_STORE: "memory",
+			},
 			async ({ baseUrl }) => {
+				const postResponse = await fetch(`${baseUrl}/mcp`, {
+					method: "POST",
+					headers: {
+						authorization: `Bearer ${AUTH_TOKEN}`,
+						accept: "text/event-stream, application/json",
+						"content-type": "application/json",
+					},
+					body: JSON.stringify({
+						...INIT_PAYLOAD,
+						params: {
+							...INIT_PAYLOAD.params,
+							protocolVersion: "2025-11-25",
+						},
+					}),
+				});
+
+				assert.equal(postResponse.status, 200);
+				assert.equal(postResponse.headers.get("mcp-session-id"), null);
+				const originalEvents = parseSseEvents(await postResponse.text());
+				assert.equal(originalEvents.length, 2);
+				assert.ok(originalEvents[0]?.id);
+				assert.ok(originalEvents[1]?.id);
+				assert.equal(originalEvents[0]?.data, "");
+				assert.match(originalEvents[1]?.data ?? "", /"protocolVersion"/);
+
 				const getResponse = await fetch(`${baseUrl}/mcp`, {
 					method: "GET",
 					headers: {
 						authorization: `Bearer ${AUTH_TOKEN}`,
 						accept: "text/event-stream",
-						"mcp-session-id": "00000000-0000-0000-0000-000000000000",
+						"last-event-id": originalEvents[0].id as string,
+						"mcp-protocol-version": "2025-11-25",
 					},
 				});
 
-				assert.equal(getResponse.status, 405);
-				assert.deepEqual(await getResponse.json(), {
+				assert.equal(getResponse.status, 200);
+				assert.equal(
+					getResponse.headers.get("content-type"),
+					"text/event-stream",
+				);
+				assert.equal(getResponse.headers.get("mcp-session-id"), null);
+				const replayedEvents = parseSseEvents(await getResponse.text());
+				assert.deepEqual(replayedEvents, [originalEvents[1]]);
+			},
+		);
+	});
+
+	it("finishes and replays a stateless request after the POST stream disconnects", async () => {
+		const upstreamPort = await getFreePort();
+		const upstream = createHttpServer((_request, response) => {
+			setTimeout(() => {
+				response.writeHead(200, { "content-type": "application/json" });
+				response.end(JSON.stringify({ object: "list", total: 0, data: [] }));
+			}, 250);
+		});
+		await new Promise<void>((resolveListen) => {
+			upstream.listen(upstreamPort, "127.0.0.1", resolveListen);
+		});
+
+		try {
+			await withHttpServer(
+				{
+					MCP_SESSION_MODE: "stateless",
+					MCP_EVENT_STORE: "memory",
+					PORTKEY_BASE_URL: `http://127.0.0.1:${upstreamPort}`,
+					PORTKEY_ALLOW_PRIVATE_BASE_URL: "true",
+				},
+				async ({ baseUrl }) => {
+					const postResponse = await fetch(`${baseUrl}/mcp`, {
+						method: "POST",
+						headers: {
+							authorization: `Bearer ${AUTH_TOKEN}`,
+							accept: "text/event-stream, application/json",
+							"content-type": "application/json",
+							"mcp-protocol-version": "2025-11-25",
+						},
+						body: JSON.stringify({
+							jsonrpc: "2.0",
+							id: 77,
+							method: "tools/call",
+							params: { name: "list_configs", arguments: {} },
+						}),
+					});
+					const [primingEvent] = await readSseEvents(postResponse, 1);
+					assert.ok(primingEvent?.id);
+					assert.equal(primingEvent?.data, "");
+
+					const replayResponse = await fetch(`${baseUrl}/mcp`, {
+						method: "GET",
+						headers: {
+							authorization: `Bearer ${AUTH_TOKEN}`,
+							accept: "text/event-stream",
+							"last-event-id": primingEvent.id as string,
+							"mcp-protocol-version": "2025-11-25",
+						},
+					});
+					const replayed = parseSseEvents(await replayResponse.text());
+					assert.equal(replayed.length, 1);
+					assert.match(replayed[0]?.data ?? "", /"id":77/);
+				},
+			);
+		} finally {
+			await new Promise<void>((resolveClose, reject) => {
+				upstream.close((error) => (error ? reject(error) : resolveClose()));
+			});
+		}
+	});
+
+	it("GET /mcp rejects stateless replay when the event store is disabled", async () => {
+		await withHttpServer(
+			{
+				MCP_SESSION_MODE: "stateless",
+				MCP_EVENT_STORE: "off",
+			},
+			async ({ baseUrl }) => {
+				const response = await fetch(`${baseUrl}/mcp`, {
+					method: "GET",
+					headers: {
+						authorization: `Bearer ${AUTH_TOKEN}`,
+						accept: "text/event-stream",
+						"last-event-id": "1",
+					},
+				});
+
+				assert.equal(response.status, 405);
+				assert.deepEqual(await response.json(), {
 					jsonrpc: "2.0",
 					error: {
 						code: -32000,
-						message: "GET /mcp is not used in stateless session mode",
+						message:
+							"Stateless GET /mcp replay requires MCP_EVENT_STORE=memory or redis",
+					},
+					id: null,
+				});
+			},
+		);
+	});
+
+	it("GET /mcp rejects a standalone stateless SSE stream without Last-Event-ID", async () => {
+		await withHttpServer(
+			{
+				MCP_SESSION_MODE: "stateless",
+				MCP_EVENT_STORE: "memory",
+			},
+			async ({ baseUrl }) => {
+				const response = await fetch(`${baseUrl}/mcp`, {
+					method: "GET",
+					headers: {
+						authorization: `Bearer ${AUTH_TOKEN}`,
+						accept: "text/event-stream",
+					},
+				});
+
+				assert.equal(response.status, 405);
+				assert.equal(response.headers.get("allow"), "POST");
+				assert.deepEqual(await response.json(), {
+					jsonrpc: "2.0",
+					error: {
+						code: -32000,
+						message:
+							"Stateless GET /mcp only supports replay with Last-Event-ID",
+					},
+					id: null,
+				});
+			},
+		);
+	});
+
+	it("GET /mcp validates stateless replay headers and cursor", async () => {
+		await withHttpServer(
+			{
+				MCP_SESSION_MODE: "stateless",
+				MCP_EVENT_STORE: "memory",
+			},
+			async ({ baseUrl }) => {
+				const missingAccept = await fetch(`${baseUrl}/mcp`, {
+					method: "GET",
+					headers: {
+						authorization: `Bearer ${AUTH_TOKEN}`,
+						"last-event-id": "not-an-event",
+					},
+				});
+				assert.equal(missingAccept.status, 406);
+
+				const unsupportedProtocol = await fetch(`${baseUrl}/mcp`, {
+					method: "GET",
+					headers: {
+						authorization: `Bearer ${AUTH_TOKEN}`,
+						accept: "text/event-stream",
+						"last-event-id": "not-an-event",
+						"mcp-protocol-version": "2099-01-01",
+					},
+				});
+				assert.equal(unsupportedProtocol.status, 400);
+
+				const invalidCursor = await fetch(`${baseUrl}/mcp`, {
+					method: "GET",
+					headers: {
+						authorization: `Bearer ${AUTH_TOKEN}`,
+						accept: "text/event-stream",
+						"last-event-id": "not-an-event",
+						"mcp-protocol-version": "2025-11-25",
+					},
+				});
+				assert.equal(invalidCursor.status, 400);
+				assert.deepEqual(await invalidCursor.json(), {
+					jsonrpc: "2.0",
+					error: {
+						code: -32000,
+						message: "Invalid event ID format",
 					},
 					id: null,
 				});

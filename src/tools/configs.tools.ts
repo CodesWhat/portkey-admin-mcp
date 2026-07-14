@@ -6,11 +6,13 @@ const CONFIGS_TOOL_SCHEMAS = {
 	listConfigs: {
 		current_page: z.coerce
 			.number()
+			.int()
 			.positive()
 			.optional()
 			.describe("Page number for pagination"),
 		page_size: z.coerce
 			.number()
+			.int()
 			.positive()
 			.max(100)
 			.optional()

@@ -10,7 +10,7 @@
  */
 
 import assert from "node:assert/strict";
-import { readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
@@ -29,6 +29,7 @@ import {
 	CreateVirtualKeyResponseSchema,
 	ListApiKeysResponseSchema,
 	ListVirtualKeysResponseSchema,
+	RotateApiKeyResponseSchema,
 	VirtualKeySchema,
 } from "../src/schemas/contracts/keys.contract.js";
 import {
@@ -40,6 +41,11 @@ import {
 	RawGetPromptResponseSchema,
 	UpdatePromptResponseSchema,
 } from "../src/schemas/contracts/prompts.contract.js";
+import {
+	CreateSecretReferenceResponseSchema,
+	ListSecretReferencesResponseSchema,
+	SecretReferenceDetailSchema,
+} from "../src/schemas/contracts/secret-references.contract.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = join(__dirname, "fixtures", "responses");
@@ -362,6 +368,45 @@ describe("Contract: Keys API", () => {
 	});
 });
 
+describe("Contract: newly documented control-plane fixtures", () => {
+	it("includes API-key rotation and Secret Reference response fixtures", async () => {
+		for (const fixtureName of [
+			"api-keys-rotate",
+			"secret-references-list",
+			"secret-references-get",
+		]) {
+			assert.ok(
+				existsSync(join(FIXTURES_DIR, `${fixtureName}.json`)),
+				`missing fixture ${fixtureName}`,
+			);
+		}
+
+		assert.equal(
+			ListSecretReferencesResponseSchema.safeParse(
+				loadFixture("secret-references-list"),
+			).success,
+			true,
+		);
+		assert.equal(
+			SecretReferenceDetailSchema.safeParse(
+				loadFixture("secret-references-get"),
+			).success,
+			true,
+		);
+		assert.equal(
+			CreateSecretReferenceResponseSchema.safeParse(
+				loadFixture("secret-references-create"),
+			).success,
+			true,
+		);
+		assert.equal(
+			RotateApiKeyResponseSchema.safeParse(loadFixture("api-keys-rotate"))
+				.success,
+			true,
+		);
+	});
+});
+
 // ==================== Fixture provenance ====================
 
 describe("Contract: fixtures manifest", () => {
@@ -374,6 +419,33 @@ describe("Contract: fixtures manifest", () => {
 				/^\d{4}-\d{2}-\d{2}/.test(manifest.recordedAt),
 			"manifest.recordedAt must be an ISO date documenting fixture recency",
 		);
+	});
+
+	it("records documentation-derived fixture provenance until live capture succeeds", () => {
+		const manifest = JSON.parse(
+			readFileSync(join(__dirname, "fixtures", "manifest.json"), "utf-8"),
+		) as {
+			documentationDerivedFixtures?: string[];
+			liveCaptureStatus?: string;
+		};
+		const newFixtureNames = [
+			"api-keys-rotate",
+			"secret-references-create",
+			"secret-references-get",
+			"secret-references-list",
+		];
+		for (const fixtureName of manifest.documentationDerivedFixtures ?? []) {
+			assert.ok(
+				newFixtureNames.includes(fixtureName),
+				`unexpected documentation-derived fixture: ${fixtureName}`,
+			);
+		}
+		if ((manifest.documentationDerivedFixtures?.length ?? 0) > 0) {
+			assert.ok(
+				manifest.liveCaptureStatus?.includes("403"),
+				"blocked documentation-derived fixtures must record the live-capture status",
+			);
+		}
 	});
 
 	it("stays in sync with the fixtures on disk", () => {

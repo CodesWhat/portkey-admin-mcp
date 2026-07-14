@@ -13,12 +13,14 @@ const WORKSPACES_TOOL_SCHEMAS = {
 	listWorkspaces: {
 		page_size: z.coerce
 			.number()
+			.int()
 			.positive()
 			.max(100)
 			.optional()
 			.describe("Number of workspaces to return per page (max 100)"),
 		current_page: z.coerce
 			.number()
+			.int()
 			.positive()
 			.optional()
 			.describe("Page number to retrieve when results are paginated"),

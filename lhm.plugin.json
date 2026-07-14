@@ -1,7 +1,7 @@
 {
 	"identifier": "codeswhat-portkey-admin-mcp",
 	"name": "Portkey Admin MCP Server",
-	"version": "0.4.2",
+	"version": "0.5.0",
 	"description": "MCP server for the Portkey Admin API. Manage prompts, configs, analytics, API keys, providers, guardrails, limits, logs, users, workspaces, and MCP integrations from any MCP client.",
 	"author": "CodesWhat",
 	"authorUrl": "https://github.com/CodesWhat",
@@ -53,12 +53,13 @@
 				"properties": {
 					"current_page": {
 						"description": "Page number for pagination",
-						"type": "number",
-						"exclusiveMinimum": 0
+						"type": "integer",
+						"exclusiveMinimum": 0,
+						"maximum": 9007199254740991
 					},
 					"page_size": {
 						"description": "Number of results per page (max 100)",
-						"type": "number",
+						"type": "integer",
 						"exclusiveMinimum": 0,
 						"maximum": 100
 					}
@@ -203,7 +204,7 @@
 					},
 					"page_size": {
 						"description": "Number of results per page (max 100)",
-						"type": "number",
+						"type": "integer",
 						"exclusiveMinimum": 0,
 						"maximum": 100
 					}
@@ -302,12 +303,13 @@
 				"properties": {
 					"current_page": {
 						"description": "Page number for pagination",
-						"type": "number",
-						"exclusiveMinimum": 0
+						"type": "integer",
+						"exclusiveMinimum": 0,
+						"maximum": 9007199254740991
 					},
 					"page_size": {
 						"description": "Number of results per page (max 100)",
-						"type": "number",
+						"type": "integer",
 						"exclusiveMinimum": 0,
 						"maximum": 100
 					}
@@ -392,14 +394,15 @@
 				"properties": {
 					"page_size": {
 						"description": "Number of workspaces to return per page (max 100)",
-						"type": "number",
+						"type": "integer",
 						"exclusiveMinimum": 0,
 						"maximum": 100
 					},
 					"current_page": {
 						"description": "Page number to retrieve when results are paginated",
-						"type": "number",
-						"exclusiveMinimum": 0
+						"type": "integer",
+						"exclusiveMinimum": 0,
+						"maximum": 9007199254740991
 					}
 				},
 				"$schema": "http://json-schema.org/draft-07/schema#"
@@ -684,12 +687,13 @@
 				"properties": {
 					"current_page": {
 						"description": "Page number for pagination",
-						"type": "number",
-						"exclusiveMinimum": 0
+						"type": "integer",
+						"exclusiveMinimum": 0,
+						"maximum": 9007199254740991
 					},
 					"page_size": {
 						"description": "Number of results per page (max 100)",
-						"type": "number",
+						"type": "integer",
 						"exclusiveMinimum": 0,
 						"maximum": 100
 					}
@@ -915,12 +919,13 @@
 				"properties": {
 					"current_page": {
 						"description": "Page number for pagination",
-						"type": "number",
-						"exclusiveMinimum": 0
+						"type": "integer",
+						"exclusiveMinimum": 0,
+						"maximum": 9007199254740991
 					},
 					"page_size": {
 						"description": "Number of results per page (max 100)",
-						"type": "number",
+						"type": "integer",
 						"exclusiveMinimum": 0,
 						"maximum": 100
 					}
@@ -1189,14 +1194,15 @@
 				"properties": {
 					"page_size": {
 						"description": "Number of results per page (max 100)",
-						"type": "number",
+						"type": "integer",
 						"exclusiveMinimum": 0,
 						"maximum": 100
 					},
 					"current_page": {
 						"description": "Page number for pagination",
-						"type": "number",
-						"exclusiveMinimum": 0
+						"type": "integer",
+						"exclusiveMinimum": 0,
+						"maximum": 9007199254740991
 					},
 					"workspace_id": {
 						"description": "Filter by workspace ID",
@@ -1345,6 +1351,36 @@
 			}
 		},
 		{
+			"name": "rotate_api_key",
+			"description": "Rotate an API key without changing its identity or scopes. The new secret is returned once and exposed to this MCP transcript, while the previous secret remains valid until key_transition_expires_at. Store the new key securely, update callers during the transition window, and never log either secret.",
+			"inputSchema": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string",
+						"format": "uuid",
+						"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+						"description": "API key UUID obtained from list_api_keys"
+					},
+					"key_transition_period_ms": {
+						"description": "Overlap in milliseconds while the previous key remains valid; minimum 1,800,000 (30 minutes), for example 3,600,000 for 1 hour",
+						"type": "integer",
+						"minimum": 1800000,
+						"maximum": 9007199254740991
+					}
+				},
+				"required": ["id"],
+				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"title": "Rotate API Key",
+				"readOnlyHint": false,
+				"destructiveHint": true,
+				"idempotentHint": false,
+				"openWorldHint": true
+			}
+		},
+		{
 			"name": "list_collections",
 			"description": "List prompt collections in the workspace, optionally filtering by name or workspace. Returns ids, names, slugs, and timestamps so you can choose a collection_id before create_prompt, get_collection, or list_prompts.",
 			"inputSchema": {
@@ -1360,12 +1396,13 @@
 					},
 					"current_page": {
 						"description": "Page number for pagination",
-						"type": "number",
-						"exclusiveMinimum": 0
+						"type": "integer",
+						"exclusiveMinimum": 0,
+						"maximum": 9007199254740991
 					},
 					"page_size": {
 						"description": "Results per page (max 100)",
-						"type": "number",
+						"type": "integer",
 						"exclusiveMinimum": 0,
 						"maximum": 100
 					}
@@ -1681,12 +1718,13 @@
 					},
 					"current_page": {
 						"description": "Page number for pagination",
-						"type": "number",
-						"exclusiveMinimum": 0
+						"type": "integer",
+						"exclusiveMinimum": 0,
+						"maximum": 9007199254740991
 					},
 					"page_size": {
 						"description": "Results per page (max 100)",
-						"type": "number",
+						"type": "integer",
 						"exclusiveMinimum": 0,
 						"maximum": 100
 					}
@@ -5505,8 +5543,9 @@
 					},
 					"current_page": {
 						"description": "Page number for pagination",
-						"type": "number",
-						"exclusiveMinimum": 0
+						"type": "integer",
+						"exclusiveMinimum": 0,
+						"maximum": 9007199254740991
 					},
 					"page_size": {
 						"description": "Results per page (max 100)",
@@ -5683,8 +5722,9 @@
 					},
 					"current_page": {
 						"description": "Page number for pagination",
-						"type": "number",
-						"exclusiveMinimum": 0
+						"type": "integer",
+						"exclusiveMinimum": 0,
+						"maximum": 9007199254740991
 					},
 					"page_size": {
 						"description": "Results per page (max 100)",
@@ -5861,8 +5901,9 @@
 					},
 					"current_page": {
 						"description": "Page number for pagination",
-						"type": "number",
-						"exclusiveMinimum": 0
+						"type": "integer",
+						"exclusiveMinimum": 0,
+						"maximum": 9007199254740991
 					},
 					"page_size": {
 						"description": "Results per page (max 100)",
@@ -5905,14 +5946,15 @@
 					},
 					"page_size": {
 						"description": "Number of items per page (1-100, default: 100)",
-						"type": "number",
+						"type": "integer",
 						"minimum": 1,
 						"maximum": 100
 					},
 					"current_page": {
 						"description": "Page number for pagination",
-						"type": "number",
-						"exclusiveMinimum": 0
+						"type": "integer",
+						"exclusiveMinimum": 0,
+						"maximum": 9007199254740991
 					}
 				},
 				"$schema": "http://json-schema.org/draft-07/schema#"
@@ -6648,12 +6690,13 @@
 					},
 					"current_page": {
 						"description": "Page number for pagination (starts at 1)",
-						"type": "number",
-						"exclusiveMinimum": 0
+						"type": "integer",
+						"exclusiveMinimum": 0,
+						"maximum": 9007199254740991
 					},
 					"page_size": {
 						"description": "Number of results per page (max 100)",
-						"type": "number",
+						"type": "integer",
 						"exclusiveMinimum": 0,
 						"maximum": 100
 					}
@@ -6725,12 +6768,13 @@
 					},
 					"current_page": {
 						"description": "Page number for pagination",
-						"type": "number",
-						"exclusiveMinimum": 0
+						"type": "integer",
+						"exclusiveMinimum": 0,
+						"maximum": 9007199254740991
 					},
 					"page_size": {
 						"description": "Results per page (max 100)",
-						"type": "number",
+						"type": "integer",
 						"exclusiveMinimum": 0,
 						"maximum": 100
 					}
@@ -7451,8 +7495,9 @@
 				"properties": {
 					"current_page": {
 						"description": "Page number for pagination",
-						"type": "number",
-						"exclusiveMinimum": 0
+						"type": "integer",
+						"exclusiveMinimum": 0,
+						"maximum": 9007199254740991
 					},
 					"page_size": {
 						"description": "Number of results per page (max 100, default 50)",
@@ -7669,6 +7714,656 @@
 			}
 		},
 		{
+			"name": "create_secret_reference",
+			"description": "Create a reference to a secret stored in AWS Secrets Manager, Azure Key Vault, or HashiCorp Vault. Authentication credentials are sent to Portkey and exposed to this MCP transcript; use short-lived or workload identity modes when possible. Returns the new UUID and slug, never the resolved external secret.",
+			"inputSchema": {
+				"type": "object",
+				"properties": {
+					"name": {
+						"type": "string",
+						"minLength": 1,
+						"maxLength": 255,
+						"description": "Human-readable name"
+					},
+					"manager_type": {
+						"type": "string",
+						"enum": ["aws_sm", "azure_kv", "hashicorp_vault"],
+						"description": "External secret manager: aws_sm for AWS Secrets Manager, azure_kv for Azure Key Vault, or hashicorp_vault for HashiCorp Vault; must match the auth_config field family"
+					},
+					"auth_config": {
+						"anyOf": [
+							{
+								"type": "object",
+								"properties": {
+									"aws_auth_type": {
+										"type": "string",
+										"const": "accessKey",
+										"description": "Use an AWS access key ID and secret access key"
+									},
+									"aws_access_key_id": {
+										"type": "string",
+										"minLength": 1,
+										"description": "AWS access key ID; required when aws_auth_type is accessKey"
+									},
+									"aws_secret_access_key": {
+										"type": "string",
+										"minLength": 1,
+										"description": "AWS secret access key; required when aws_auth_type is accessKey and exposed to the MCP transcript"
+									},
+									"aws_region": {
+										"type": "string",
+										"minLength": 1,
+										"description": "AWS region containing the secret, for example us-east-1"
+									}
+								},
+								"required": [
+									"aws_auth_type",
+									"aws_access_key_id",
+									"aws_secret_access_key",
+									"aws_region"
+								]
+							},
+							{
+								"type": "object",
+								"properties": {
+									"aws_auth_type": {
+										"type": "string",
+										"const": "assumedRole",
+										"description": "Assume the specified AWS IAM role"
+									},
+									"aws_role_arn": {
+										"type": "string",
+										"minLength": 1,
+										"description": "IAM role ARN to assume; required when aws_auth_type is assumedRole"
+									},
+									"aws_external_id": {
+										"anyOf": [
+											{
+												"type": "string"
+											},
+											{
+												"type": "null"
+											}
+										],
+										"description": "Optional external ID required by the target IAM role"
+									},
+									"aws_region": {
+										"type": "string",
+										"minLength": 1,
+										"description": "AWS region containing the secret, for example us-east-1"
+									}
+								},
+								"required": ["aws_auth_type", "aws_role_arn", "aws_region"]
+							},
+							{
+								"type": "object",
+								"properties": {
+									"aws_auth_type": {
+										"type": "string",
+										"const": "serviceRole",
+										"description": "Use the AWS workload or service role available at runtime"
+									},
+									"aws_region": {
+										"description": "Optional AWS region containing the secret, for example us-east-1",
+										"type": "string"
+									}
+								},
+								"required": ["aws_auth_type"]
+							},
+							{
+								"type": "object",
+								"properties": {
+									"azure_auth_mode": {
+										"type": "string",
+										"const": "entra",
+										"description": "Authenticate with a Microsoft Entra application client secret"
+									},
+									"azure_entra_tenant_id": {
+										"type": "string",
+										"minLength": 1,
+										"description": "Microsoft Entra tenant ID; required for entra authentication"
+									},
+									"azure_entra_client_id": {
+										"type": "string",
+										"minLength": 1,
+										"description": "Microsoft Entra application client ID; required for entra authentication"
+									},
+									"azure_entra_client_secret": {
+										"type": "string",
+										"minLength": 1,
+										"description": "Microsoft Entra client secret; required for entra authentication and exposed to the MCP transcript"
+									},
+									"azure_vault_url": {
+										"type": "string",
+										"format": "uri",
+										"description": "Azure Key Vault URL, for example https://example.vault.azure.net"
+									}
+								},
+								"required": [
+									"azure_auth_mode",
+									"azure_entra_tenant_id",
+									"azure_entra_client_id",
+									"azure_entra_client_secret",
+									"azure_vault_url"
+								]
+							},
+							{
+								"type": "object",
+								"properties": {
+									"azure_auth_mode": {
+										"type": "string",
+										"const": "managed",
+										"description": "Authenticate with an Azure managed identity"
+									},
+									"azure_managed_client_id": {
+										"type": "string",
+										"minLength": 1,
+										"description": "Optional client ID of a user-assigned managed identity; omit for the system-assigned identity"
+									},
+									"azure_vault_url": {
+										"type": "string",
+										"format": "uri",
+										"description": "Azure Key Vault URL, for example https://example.vault.azure.net"
+									}
+								},
+								"required": ["azure_auth_mode", "azure_vault_url"]
+							},
+							{
+								"type": "object",
+								"properties": {
+									"azure_auth_mode": {
+										"type": "string",
+										"const": "default",
+										"description": "Use Azure's default runtime credential chain"
+									},
+									"azure_vault_url": {
+										"type": "string",
+										"format": "uri",
+										"description": "Azure Key Vault URL, for example https://example.vault.azure.net"
+									}
+								},
+								"required": ["azure_auth_mode", "azure_vault_url"]
+							},
+							{
+								"type": "object",
+								"properties": {
+									"vault_auth_type": {
+										"type": "string",
+										"const": "token",
+										"description": "Authenticate to HashiCorp Vault with a token"
+									},
+									"vault_addr": {
+										"type": "string",
+										"format": "uri",
+										"description": "Base URL of the HashiCorp Vault server"
+									},
+									"vault_token": {
+										"type": "string",
+										"minLength": 1,
+										"description": "HashiCorp Vault token; required for token authentication and exposed to the MCP transcript"
+									},
+									"vault_namespace": {
+										"type": "string",
+										"minLength": 1,
+										"description": "Optional HashiCorp Vault Enterprise namespace"
+									}
+								},
+								"required": ["vault_auth_type", "vault_addr", "vault_token"]
+							},
+							{
+								"type": "object",
+								"properties": {
+									"vault_auth_type": {
+										"type": "string",
+										"const": "approle",
+										"description": "Authenticate to HashiCorp Vault with AppRole credentials"
+									},
+									"vault_addr": {
+										"type": "string",
+										"format": "uri",
+										"description": "Base URL of the HashiCorp Vault server"
+									},
+									"vault_role_id": {
+										"type": "string",
+										"minLength": 1,
+										"description": "HashiCorp Vault AppRole role ID; required for approle authentication"
+									},
+									"vault_secret_id": {
+										"type": "string",
+										"minLength": 1,
+										"description": "HashiCorp Vault AppRole secret ID; required for approle authentication and exposed to the MCP transcript"
+									},
+									"vault_namespace": {
+										"type": "string",
+										"minLength": 1,
+										"description": "Optional HashiCorp Vault Enterprise namespace"
+									}
+								},
+								"required": [
+									"vault_auth_type",
+									"vault_addr",
+									"vault_role_id",
+									"vault_secret_id"
+								]
+							},
+							{
+								"type": "object",
+								"properties": {
+									"vault_auth_type": {
+										"type": "string",
+										"const": "kubernetes",
+										"description": "Authenticate to HashiCorp Vault with a Kubernetes service account"
+									},
+									"vault_addr": {
+										"type": "string",
+										"format": "uri",
+										"description": "Base URL of the HashiCorp Vault server"
+									},
+									"vault_role": {
+										"type": "string",
+										"minLength": 1,
+										"description": "HashiCorp Vault Kubernetes auth role name"
+									},
+									"vault_namespace": {
+										"type": "string",
+										"minLength": 1,
+										"description": "Optional HashiCorp Vault Enterprise namespace"
+									}
+								},
+								"required": ["vault_auth_type", "vault_addr", "vault_role"]
+							}
+						],
+						"description": "Choose exactly one documented authentication shape matching manager_type. Credentials are sent to Portkey and visible in the MCP transcript; prefer workload identity or short-lived credentials when available."
+					},
+					"secret_path": {
+						"type": "string",
+						"maxLength": 1024,
+						"description": "Path of the secret in the external secret manager"
+					},
+					"organisation_id": {
+						"description": "Organisation UUID; required when the MCP server is not authenticated with a Portkey API key",
+						"type": "string",
+						"format": "uuid",
+						"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+					},
+					"slug": {
+						"description": "Optional stable slug containing only letters, numbers, underscores, or hyphens; Portkey generates one when omitted",
+						"type": "string",
+						"maxLength": 255,
+						"pattern": "^[a-zA-Z0-9_-]+$"
+					},
+					"description": {
+						"description": "Optional description; use null to leave it empty",
+						"anyOf": [
+							{
+								"type": "string",
+								"maxLength": 1024
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"secret_key": {
+						"description": "Optional key within a structured external secret; null uses the whole secret value",
+						"anyOf": [
+							{
+								"type": "string",
+								"maxLength": 255
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"allow_all_workspaces": {
+						"description": "Whether every workspace may use this reference; defaults to true and cannot be true with allowed_workspaces",
+						"type": "boolean"
+					},
+					"allowed_workspaces": {
+						"description": "Workspace UUIDs or slugs allowed to use this reference; omit when allow_all_workspaces is true",
+						"minItems": 1,
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"tags": {
+						"description": "Optional string key-value tags for filtering and organization",
+						"anyOf": [
+							{
+								"type": "object",
+								"propertyNames": {
+									"type": "string"
+								},
+								"additionalProperties": {
+									"type": "string"
+								},
+								"description": "Tag filters or metadata as string key-value pairs"
+							},
+							{
+								"type": "null"
+							}
+						]
+					}
+				},
+				"required": ["name", "manager_type", "auth_config", "secret_path"],
+				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"title": "Create Secret Reference",
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
+			}
+		},
+		{
+			"name": "list_secret_references",
+			"description": "List Secret References without returning authentication configuration or resolved secret values. Filter by manager type, tags, or name and use a returned UUID or slug with get_secret_reference.",
+			"inputSchema": {
+				"type": "object",
+				"properties": {
+					"manager_type": {
+						"description": "Filter by external secret manager: aws_sm, azure_kv, or hashicorp_vault",
+						"type": "string",
+						"enum": ["aws_sm", "azure_kv", "hashicorp_vault"]
+					},
+					"tags": {
+						"description": "Return references matching these tags",
+						"type": "object",
+						"propertyNames": {
+							"type": "string"
+						},
+						"additionalProperties": {
+							"type": "string"
+						}
+					},
+					"search": {
+						"description": "Search references by name",
+						"type": "string",
+						"minLength": 1,
+						"maxLength": 255
+					},
+					"current_page": {
+						"description": "Zero-based page number; defaults to 0",
+						"type": "integer",
+						"minimum": 0,
+						"maximum": 9007199254740991
+					},
+					"page_size": {
+						"description": "References per page, from 1 to 100; defaults to 20",
+						"type": "integer",
+						"minimum": 1,
+						"maximum": 100
+					}
+				},
+				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"title": "List Secret References",
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
+			}
+		},
+		{
+			"name": "get_secret_reference",
+			"description": "Retrieve one Secret Reference by UUID or slug. Portkey masks sensitive authentication fields for non-system users; the tool returns metadata and the masked auth configuration, not the resolved external secret value.",
+			"inputSchema": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string",
+						"minLength": 1,
+						"description": "Secret Reference UUID or slug"
+					}
+				},
+				"required": ["id"],
+				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"title": "Get Secret Reference",
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
+			}
+		},
+		{
+			"name": "update_secret_reference",
+			"description": "Update at least one selected field on a Secret Reference. auth_config is merged into the existing manager-specific configuration. allowed_workspaces replaces all workspace mappings and sets allow_all_workspaces=false; allow_all_workspaces=true removes workspace-specific mappings. Credential values are sent to Portkey and exposed to the MCP transcript.",
+			"inputSchema": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string",
+						"minLength": 1,
+						"description": "Secret Reference UUID or slug"
+					},
+					"name": {
+						"description": "New human-readable name",
+						"type": "string",
+						"minLength": 1,
+						"maxLength": 255
+					},
+					"description": {
+						"description": "New description, or null to clear it",
+						"anyOf": [
+							{
+								"type": "string",
+								"maxLength": 1024
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"auth_config": {
+						"description": "Provide at least one changed authentication field to merge into the existing configuration; choose one AWS, Azure, or HashiCorp field family and do not mix families",
+						"anyOf": [
+							{
+								"type": "object",
+								"properties": {
+									"aws_auth_type": {
+										"type": "string",
+										"enum": ["accessKey", "assumedRole", "serviceRole"],
+										"description": "AWS authentication mode: accessKey uses a key pair, assumedRole uses an IAM role, and serviceRole uses the runtime workload identity"
+									},
+									"aws_access_key_id": {
+										"type": "string",
+										"minLength": 1,
+										"description": "AWS access key ID; required when aws_auth_type is accessKey"
+									},
+									"aws_secret_access_key": {
+										"type": "string",
+										"minLength": 1,
+										"description": "AWS secret access key; required when aws_auth_type is accessKey and exposed to the MCP transcript"
+									},
+									"aws_region": {
+										"description": "AWS region containing the secret, for example us-east-1",
+										"type": "string"
+									},
+									"aws_role_arn": {
+										"type": "string",
+										"minLength": 1,
+										"description": "IAM role ARN to assume; required when aws_auth_type is assumedRole"
+									},
+									"aws_external_id": {
+										"anyOf": [
+											{
+												"type": "string"
+											},
+											{
+												"type": "null"
+											}
+										],
+										"description": "Optional external ID required by the target IAM role"
+									}
+								},
+								"additionalProperties": false
+							},
+							{
+								"type": "object",
+								"properties": {
+									"azure_auth_mode": {
+										"type": "string",
+										"enum": ["entra", "managed", "default"],
+										"description": "Azure authentication mode: entra uses a client secret, managed uses managed identity, and default uses the runtime credential chain"
+									},
+									"azure_entra_tenant_id": {
+										"type": "string",
+										"minLength": 1,
+										"description": "Microsoft Entra tenant ID; required for entra authentication"
+									},
+									"azure_entra_client_id": {
+										"type": "string",
+										"minLength": 1,
+										"description": "Microsoft Entra application client ID; required for entra authentication"
+									},
+									"azure_entra_client_secret": {
+										"type": "string",
+										"minLength": 1,
+										"description": "Microsoft Entra client secret; required for entra authentication and exposed to the MCP transcript"
+									},
+									"azure_managed_client_id": {
+										"description": "Optional client ID of a user-assigned managed identity; omit for the system-assigned identity",
+										"type": "string"
+									},
+									"azure_vault_url": {
+										"type": "string",
+										"format": "uri",
+										"description": "Azure Key Vault URL, for example https://example.vault.azure.net"
+									}
+								},
+								"additionalProperties": false
+							},
+							{
+								"type": "object",
+								"properties": {
+									"vault_auth_type": {
+										"type": "string",
+										"enum": ["token", "approle", "kubernetes"],
+										"description": "HashiCorp Vault authentication mode: token, AppRole, or Kubernetes"
+									},
+									"vault_addr": {
+										"type": "string",
+										"format": "uri",
+										"description": "Base URL of the HashiCorp Vault server"
+									},
+									"vault_token": {
+										"type": "string",
+										"minLength": 1,
+										"description": "HashiCorp Vault token; required for token authentication and exposed to the MCP transcript"
+									},
+									"vault_namespace": {
+										"description": "Optional HashiCorp Vault Enterprise namespace",
+										"type": "string"
+									},
+									"vault_role_id": {
+										"type": "string",
+										"minLength": 1,
+										"description": "HashiCorp Vault AppRole role ID; required for approle authentication"
+									},
+									"vault_secret_id": {
+										"type": "string",
+										"minLength": 1,
+										"description": "HashiCorp Vault AppRole secret ID; required for approle authentication and exposed to the MCP transcript"
+									},
+									"vault_role": {
+										"type": "string",
+										"minLength": 1,
+										"description": "HashiCorp Vault Kubernetes auth role name"
+									}
+								},
+								"additionalProperties": false
+							}
+						]
+					},
+					"secret_path": {
+						"description": "New path of the secret in the external secret manager",
+						"type": "string",
+						"maxLength": 1024
+					},
+					"secret_key": {
+						"description": "New key within a structured secret, or null to use the whole value",
+						"anyOf": [
+							{
+								"type": "string",
+								"maxLength": 255
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"allow_all_workspaces": {
+						"description": "Whether every workspace may use this reference; cannot be true with allowed_workspaces",
+						"type": "boolean"
+					},
+					"allowed_workspaces": {
+						"description": "Replacement list of workspace UUIDs or slugs allowed to use this reference; supplying it sets allow_all_workspaces=false",
+						"minItems": 1,
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"tags": {
+						"description": "Replacement string key-value tags, or null to clear them",
+						"anyOf": [
+							{
+								"type": "object",
+								"propertyNames": {
+									"type": "string"
+								},
+								"additionalProperties": {
+									"type": "string"
+								},
+								"description": "Tag filters or metadata as string key-value pairs"
+							},
+							{
+								"type": "null"
+							}
+						]
+					}
+				},
+				"required": ["id"],
+				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"title": "Update Secret Reference",
+				"readOnlyHint": false,
+				"destructiveHint": true,
+				"idempotentHint": true,
+				"openWorldHint": true
+			}
+		},
+		{
+			"name": "delete_secret_reference",
+			"description": "Permanently delete a Secret Reference. This is irreversible and integrations or virtual keys using it can fail to resolve credentials immediately; confirm dependencies before deletion.",
+			"inputSchema": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string",
+						"minLength": 1,
+						"description": "Secret Reference UUID or slug"
+					}
+				},
+				"required": ["id"],
+				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"title": "Delete Secret Reference",
+				"readOnlyHint": false,
+				"destructiveHint": true,
+				"idempotentHint": true,
+				"openWorldHint": true
+			}
+		},
+		{
 			"name": "list_integrations",
 			"description": "List org-level AI provider connections with optional workspace or type filters. Use this to find integration slugs before model or workspace updates. Returns total plus id, name, slug, provider, status, description, workspace counts, and config summary.",
 			"inputSchema": {
@@ -7676,8 +8371,9 @@
 				"properties": {
 					"current_page": {
 						"description": "Page number for pagination",
-						"type": "number",
-						"exclusiveMinimum": 0
+						"type": "integer",
+						"exclusiveMinimum": 0,
+						"maximum": 9007199254740991
 					},
 					"page_size": {
 						"description": "Number of results per page (default 100, max 100)",
@@ -7904,8 +8600,9 @@
 					},
 					"current_page": {
 						"description": "Page number for pagination",
-						"type": "number",
-						"exclusiveMinimum": 0
+						"type": "integer",
+						"exclusiveMinimum": 0,
+						"maximum": 9007199254740991
 					},
 					"page_size": {
 						"description": "Number of results per page",
@@ -8008,8 +8705,9 @@
 					},
 					"current_page": {
 						"description": "Page number for pagination",
-						"type": "number",
-						"exclusiveMinimum": 0
+						"type": "integer",
+						"exclusiveMinimum": 0,
+						"maximum": 9007199254740991
 					},
 					"page_size": {
 						"description": "Number of results per page",
@@ -8091,8 +8789,9 @@
 				"properties": {
 					"current_page": {
 						"description": "Page number for pagination",
-						"type": "number",
-						"exclusiveMinimum": 0
+						"type": "integer",
+						"exclusiveMinimum": 0,
+						"maximum": 9007199254740991
 					},
 					"page_size": {
 						"description": "Number of results per page (max 100)",
@@ -8422,8 +9121,9 @@
 				"properties": {
 					"current_page": {
 						"description": "Page number for pagination",
-						"type": "number",
-						"exclusiveMinimum": 0
+						"type": "integer",
+						"exclusiveMinimum": 0,
+						"maximum": 9007199254740991
 					},
 					"page_size": {
 						"description": "Number of results per page (max 100)",
@@ -8582,12 +9282,13 @@
 					},
 					"current_page": {
 						"description": "Page number for pagination",
-						"type": "number",
-						"exclusiveMinimum": 0
+						"type": "integer",
+						"exclusiveMinimum": 0,
+						"maximum": 9007199254740991
 					},
 					"page_size": {
 						"description": "Number of results per page (max 100)",
-						"type": "number",
+						"type": "integer",
 						"exclusiveMinimum": 0,
 						"maximum": 100
 					}
@@ -8659,12 +9360,13 @@
 					},
 					"current_page": {
 						"description": "Page number for pagination",
-						"type": "number",
-						"exclusiveMinimum": 0
+						"type": "integer",
+						"exclusiveMinimum": 0,
+						"maximum": 9007199254740991
 					},
 					"page_size": {
 						"description": "Number of results per page (max 100)",
-						"type": "number",
+						"type": "integer",
 						"exclusiveMinimum": 0,
 						"maximum": 100
 					}

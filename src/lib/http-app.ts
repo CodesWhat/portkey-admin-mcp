@@ -8,9 +8,14 @@ import {
 	createServer as createHttpsServer,
 	type Server as HttpsServer,
 } from "node:https";
-import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import {
+	type EventStore,
+	StreamableHTTPServerTransport,
+	type StreamId,
+} from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import {
 	isInitializeRequest,
+	type JSONRPCMessage,
 	LATEST_PROTOCOL_VERSION,
 	SUPPORTED_PROTOCOL_VERSIONS,
 } from "@modelcontextprotocol/sdk/types.js";
@@ -290,7 +295,7 @@ function validateRequiredProtocolVersion(
 	expectedProtocolVersion?: string,
 ): string | undefined {
 	if (!protocolVersion) {
-		return "Bad Request: MCP-Protocol-Version header is required for requests after initialization";
+		return undefined;
 	}
 
 	if (!SUPPORTED_PROTOCOL_VERSIONS.includes(protocolVersion)) {
@@ -334,6 +339,8 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 	const isStatefulSessionMode = config.sessionMode === "stateful";
 	const publicBaseUrl = buildConfiguredPublicBaseUrl(config);
 	const sessionStore = new SessionStore(config.maxSessions);
+	const activeStatelessConnections = new Set<() => Promise<void>>();
+	const activeReplayOperations = new Set<Promise<void>>();
 	const app = express();
 
 	let isReady = false;
@@ -350,33 +357,130 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 		parsedBody?: unknown,
 		toolDomains?: readonly ToolDomain[],
 	): Promise<void> {
+		// The SDK removes its response-stream mapping as soon as the client drops
+		// the POST SSE connection. Track the primed stream separately so an in-flight
+		// stateless handler can still persist progress/final messages for GET replay.
+		let replayStreamId: string | undefined;
+		let responseDisconnected = false;
+		const storedMessages = new WeakSet<object>();
+		const sharedEventStore = managedEventStore.eventStore;
+		const requestEventStore: EventStore | undefined = sharedEventStore
+			? {
+					storeEvent: async (streamId: StreamId, message: JSONRPCMessage) => {
+						replayStreamId ??= streamId;
+						storedMessages.add(message);
+						return sharedEventStore.storeEvent(streamId, message);
+					},
+					getStreamIdForEventId: async (eventId: string) =>
+						sharedEventStore.getStreamIdForEventId?.(eventId),
+					replayEventsAfter: (
+						lastEventId: string,
+						options: {
+							send: (eventId: string, message: JSONRPCMessage) => Promise<void>;
+						},
+					) => sharedEventStore.replayEventsAfter(lastEventId, options),
+				}
+			: undefined;
 		const transport = new StreamableHTTPServerTransport({
 			sessionIdGenerator: undefined,
-			eventStore: managedEventStore.eventStore,
+			eventStore: requestEventStore,
 		});
 		const { server: mcpServer } = createMcpServer({ toolDomains });
+		const requestMessages = Array.isArray(parsedBody)
+			? parsedBody
+			: [parsedBody];
+		const pendingRequestIds = new Set<unknown>();
+		for (const message of requestMessages) {
+			if (
+				isRecord(message) &&
+				typeof message.method === "string" &&
+				(typeof message.id === "string" || typeof message.id === "number")
+			) {
+				pendingRequestIds.add(message.id);
+			}
+		}
 		let closePromise: Promise<void> | undefined;
 		const closeConnection = () => {
 			if (!closePromise) {
-				closePromise = mcpServer.close().catch((error) => {
-					Logger.error("Failed to close stateless MCP connection", {
-						metadata: {
-							context,
-							error: error instanceof Error ? error.message : String(error),
-						},
+				closePromise = mcpServer
+					.close()
+					.catch((error) => {
+						Logger.error("Failed to close stateless MCP connection", {
+							metadata: {
+								context,
+								error: error instanceof Error ? error.message : String(error),
+							},
+						});
+					})
+					.finally(() => {
+						activeStatelessConnections.delete(closeConnection);
 					});
-				});
 			}
 			return closePromise;
 		};
+		activeStatelessConnections.add(closeConnection);
+
+		const originalSend = transport.send.bind(transport);
+		transport.send = async (message, options) => {
+			if (
+				(responseDisconnected || res.destroyed) &&
+				replayStreamId &&
+				sharedEventStore
+			) {
+				await sharedEventStore.storeEvent(replayStreamId, message);
+				storedMessages.add(message);
+			} else {
+				try {
+					await originalSend(message, options);
+				} catch (error) {
+					const disconnected =
+						error instanceof Error &&
+						error.message.startsWith(
+							"No connection established for request ID:",
+						);
+					if (!disconnected || !replayStreamId || !sharedEventStore) {
+						throw error;
+					}
+					if (!storedMessages.has(message)) {
+						await sharedEventStore.storeEvent(replayStreamId, message);
+						storedMessages.add(message);
+					}
+				}
+				if (
+					(responseDisconnected || res.destroyed) &&
+					replayStreamId &&
+					sharedEventStore &&
+					!storedMessages.has(message)
+				) {
+					await sharedEventStore.storeEvent(replayStreamId, message);
+					storedMessages.add(message);
+				}
+			}
+
+			if ("id" in message && ("result" in message || "error" in message)) {
+				pendingRequestIds.delete(message.id);
+				if (pendingRequestIds.size === 0) {
+					queueMicrotask(() => {
+						void closeConnection();
+					});
+				}
+			}
+		};
 
 		res.once("close", () => {
-			void closeConnection();
+			if (pendingRequestIds.size > 0 && replayStreamId) {
+				responseDisconnected = true;
+			} else {
+				void closeConnection();
+			}
 		});
 
 		try {
 			await mcpServer.connect(transport);
 			await transport.handleRequest(req, res, parsedBody);
+			if (pendingRequestIds.size === 0) {
+				await closeConnection();
+			}
 		} catch (error) {
 			await closeConnection();
 			throw error;
@@ -419,13 +523,14 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 			res: express.Response,
 			next: express.NextFunction,
 		) => {
-			if (
-				err &&
-				typeof err === "object" &&
-				"type" in err &&
-				err.type === "entity.too.large"
-			) {
+			const errorType =
+				err && typeof err === "object" && "type" in err ? err.type : undefined;
+			if (errorType === "entity.too.large") {
 				res.status(413).json({ error: "Payload too large" });
+				return;
+			}
+			if (errorType === "entity.parse.failed") {
+				res.status(400).json({ error: "Malformed JSON request body" });
 				return;
 			}
 			next(err);
@@ -614,6 +719,15 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 		}
 
 		if (!isStatefulSessionMode) {
+			if (activeStatelessConnections.size >= config.maxSessions) {
+				respondJsonRpcClientError(
+					res,
+					503,
+					`Maximum active stateless request limit reached (${config.maxSessions})`,
+					-32000,
+				);
+				return;
+			}
 			if (!isInitializeRequest(req.body)) {
 				const protocolError = validateRequiredProtocolVersion(
 					protocolVersionHeader,
@@ -774,20 +888,6 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 	 * MCP GET endpoint - handles SSE streams for server-to-client notifications
 	 */
 	app.get("/mcp", async (req, res) => {
-		if (!isStatefulSessionMode) {
-			res.status(405).json({
-				jsonrpc: "2.0",
-				error: {
-					code: -32000,
-					message: "GET /mcp is not used in stateless session mode",
-				},
-				id: null,
-			});
-			return;
-		}
-
-		const sessionId = req.headers["mcp-session-id"] as string | undefined;
-		const protocolVersionHeader = getMcpProtocolVersion(req);
 		let requestedToolDomains: ToolDomain[] | undefined;
 		try {
 			requestedToolDomains = parseRequestedToolDomains(req.query.tools);
@@ -799,6 +899,171 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 			);
 			return;
 		}
+
+		if (!isStatefulSessionMode) {
+			if (activeReplayOperations.size >= config.maxSessions) {
+				respondJsonRpcClientError(
+					res,
+					503,
+					`Maximum active stateless replay limit reached (${config.maxSessions})`,
+					-32000,
+				);
+				return;
+			}
+			if (
+				!managedEventStore.eventStore ||
+				!managedEventStore.acquireReplayLease
+			) {
+				res.setHeader("Allow", "POST");
+				respondJsonRpcClientError(
+					res,
+					405,
+					"Stateless GET /mcp replay requires MCP_EVENT_STORE=memory or redis",
+					-32000,
+				);
+				return;
+			}
+
+			const lastEventId = req.headers["last-event-id"];
+			if (typeof lastEventId !== "string" || lastEventId.length === 0) {
+				res.setHeader("Allow", "POST");
+				respondJsonRpcClientError(
+					res,
+					405,
+					"Stateless GET /mcp only supports replay with Last-Event-ID",
+					-32000,
+				);
+				return;
+			}
+			if (!req.headers.accept?.includes("text/event-stream")) {
+				respondJsonRpcClientError(
+					res,
+					406,
+					"Not Acceptable: Client must accept text/event-stream",
+					-32000,
+				);
+				return;
+			}
+
+			const protocolError = validateRequiredProtocolVersion(
+				getMcpProtocolVersion(req),
+			);
+			if (protocolError) {
+				respondJsonRpcClientError(res, 400, protocolError, -32000);
+				return;
+			}
+			const replayEventStore = managedEventStore.eventStore;
+			if (!replayEventStore) {
+				return;
+			}
+
+			try {
+				const lease = await managedEventStore.acquireReplayLease(lastEventId);
+				if (lease.status !== "acquired") {
+					if (lease.status === "missing") {
+						respondJsonRpcClientError(
+							res,
+							400,
+							"Invalid event ID format",
+							-32000,
+						);
+						return;
+					}
+					respondJsonRpcClientError(
+						res,
+						409,
+						"Conflict: Stream already has an active replay connection",
+						-32000,
+					);
+					return;
+				}
+
+				const replayOperation = (async () => {
+					try {
+						res.status(200);
+						res.setHeader("Content-Type", "text/event-stream");
+						res.setHeader("Cache-Control", "no-cache, no-transform");
+						res.flushHeaders();
+
+						let cursor = lastEventId;
+						let finalResponseSeen = false;
+						const deadline = Date.now() + 25_000;
+						while (isReady && !res.destroyed && !finalResponseSeen) {
+							await replayEventStore.replayEventsAfter(cursor, {
+								send: async (eventId, message) => {
+									cursor = eventId;
+									finalResponseSeen =
+										"id" in message &&
+										("result" in message || "error" in message);
+									if (
+										!res.write(
+											`event: message\nid: ${eventId}\ndata: ${JSON.stringify(message)}\n\n`,
+										)
+									) {
+										await new Promise<void>((resolveWritable) => {
+											const done = () => resolveWritable();
+											res.once("drain", done);
+											res.once("close", done);
+										});
+									}
+								},
+							});
+							if (finalResponseSeen || res.destroyed) {
+								break;
+							}
+							if (Date.now() >= deadline) {
+								// Preserve the cursor across a quiet long-poll reconnect.
+								res.write(`id: ${cursor}\ndata: \n\n`);
+								break;
+							}
+							await new Promise((resolvePoll) => setTimeout(resolvePoll, 100));
+						}
+
+						if (!res.writableEnded && !res.destroyed) {
+							await new Promise<void>((resolveResponse) => {
+								const done = () => resolveResponse();
+								res.once("finish", done);
+								res.once("close", done);
+								res.end();
+							});
+						}
+					} finally {
+						try {
+							await lease.release();
+						} catch (error) {
+							Logger.error("Failed to release stateless replay lease", {
+								metadata: {
+									error: error instanceof Error ? error.message : String(error),
+								},
+							});
+						}
+					}
+				})();
+				activeReplayOperations.add(replayOperation);
+				try {
+					await replayOperation;
+				} finally {
+					activeReplayOperations.delete(replayOperation);
+				}
+			} catch (error) {
+				if (res.headersSent) {
+					Logger.error("GET /mcp stateless replay failed", {
+						metadata: {
+							error: error instanceof Error ? error.message : String(error),
+						},
+					});
+					if (!res.writableEnded) {
+						res.end();
+					}
+				} else {
+					respondJsonRpcInternalError(res, "GET /mcp stateless", error);
+				}
+			}
+			return;
+		}
+
+		const sessionId = req.headers["mcp-session-id"] as string | undefined;
+		const protocolVersionHeader = getMcpProtocolVersion(req);
 
 		if (!sessionId) {
 			res.status(400).json({
@@ -962,6 +1227,12 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 					if (isStatefulSessionMode) {
 						await sessionStore.closeAll();
 					}
+					await Promise.allSettled(
+						Array.from(activeStatelessConnections, (closeConnection) =>
+							closeConnection(),
+						),
+					);
+					await Promise.allSettled(activeReplayOperations);
 				} finally {
 					await managedEventStore.close();
 				}
@@ -1014,7 +1285,7 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 		console.log("  GET  /ready  - Readiness check");
 		console.log("  POST /mcp    - MCP requests");
 		console.log(
-			`  GET  /mcp    - ${isStatefulSessionMode ? "SSE notifications" : "Not used in stateless mode"}`,
+			`  GET  /mcp    - ${isStatefulSessionMode ? "SSE notifications and replay" : managedEventStore.eventStore ? "SSE replay (requires Last-Event-ID)" : "Unavailable (event store off)"}`,
 		);
 		console.log(
 			`  DELETE /mcp  - ${isStatefulSessionMode ? "Close session" : "Not used in stateless mode"}`,
@@ -1029,14 +1300,7 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 
 	async function shutdown(signal: string): Promise<void> {
 		console.log(`\n[MCP] Received ${signal}, shutting down gracefully...`);
-		const rawShutdownTimeout = process.env.MCP_SHUTDOWN_TIMEOUT_MS?.trim();
-		const parsedShutdownTimeout = rawShutdownTimeout
-			? Number.parseInt(rawShutdownTimeout, 10)
-			: 10_000;
-		const shutdownTimeoutMs =
-			Number.isFinite(parsedShutdownTimeout) && parsedShutdownTimeout > 0
-				? parsedShutdownTimeout
-				: 10_000;
+		const shutdownTimeoutMs = config.shutdownTimeout;
 
 		const forceExitTimer = setTimeout(() => {
 			console.error(

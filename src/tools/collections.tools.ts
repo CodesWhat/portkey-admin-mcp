@@ -8,11 +8,13 @@ const COLLECTIONS_TOOL_SCHEMAS = {
 		search: z.string().optional().describe("Search collections by name"),
 		current_page: z.coerce
 			.number()
+			.int()
 			.positive()
 			.optional()
 			.describe("Page number for pagination"),
 		page_size: z.coerce
 			.number()
+			.int()
 			.positive()
 			.max(100)
 			.optional()

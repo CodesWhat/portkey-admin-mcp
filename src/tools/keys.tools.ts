@@ -7,11 +7,13 @@ const KEYS_TOOL_SCHEMAS = {
 	listVirtualKeys: {
 		current_page: z.coerce
 			.number()
+			.int()
 			.positive()
 			.optional()
 			.describe("Page number for pagination"),
 		page_size: z.coerce
 			.number()
+			.int()
 			.positive()
 			.max(100)
 			.optional()
@@ -159,12 +161,14 @@ const KEYS_TOOL_SCHEMAS = {
 	listApiKeys: {
 		page_size: z.coerce
 			.number()
+			.int()
 			.positive()
 			.max(100)
 			.optional()
 			.describe("Number of results per page (max 100)"),
 		current_page: z.coerce
 			.number()
+			.int()
 			.positive()
 			.optional()
 			.describe("Page number for pagination"),
@@ -215,6 +219,17 @@ const KEYS_TOOL_SCHEMAS = {
 			.optional()
 			.describe(
 				"New expiration date in ISO 8601 format, or null to remove expiration",
+			),
+	},
+	rotateApiKey: {
+		id: z.string().uuid().describe("API key UUID obtained from list_api_keys"),
+		key_transition_period_ms: z.coerce
+			.number()
+			.int()
+			.min(1_800_000)
+			.optional()
+			.describe(
+				"Overlap in milliseconds while the previous key remains valid; minimum 1,800,000 (30 minutes), for example 3,600,000 for 1 hour",
 			),
 	},
 	deleteApiKey: {
@@ -629,6 +644,39 @@ export function registerKeysTools(
 						text: JSON.stringify({
 							message: `Successfully deleted API key "${params.id}"`,
 							success: result.success,
+						}),
+					},
+				],
+			};
+		},
+	);
+
+	server.tool(
+		"rotate_api_key",
+		"Rotate an API key without changing its identity or scopes. The new secret is returned once and exposed to this MCP transcript, while the previous secret remains valid until key_transition_expires_at. Store the new key securely, update callers during the transition window, and never log either secret.",
+		KEYS_TOOL_SCHEMAS.rotateApiKey,
+		{
+			title: "Rotate API Key",
+			readOnlyHint: false,
+			destructiveHint: true,
+			idempotentHint: false,
+			openWorldHint: true,
+		},
+		async (params) => {
+			const result = await service.keys.rotateApiKey(params.id, {
+				key_transition_period_ms: params.key_transition_period_ms,
+			});
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify({
+							message: `Successfully rotated API key "${result.id}"`,
+							warning:
+								"Copy this new key now; it is returned only once. Replace callers before key_transition_expires_at and never log either key.",
+							id: result.id,
+							key: result.key,
+							key_transition_expires_at: result.key_transition_expires_at,
 						}),
 					},
 				],

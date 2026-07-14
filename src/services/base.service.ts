@@ -120,11 +120,11 @@ export class BaseService {
 
 		// Configurable base URL with validation — caller may pre-validate and pass it in
 		if (baseUrlOverride !== undefined) {
-			this.baseUrl = baseUrlOverride;
+			this.baseUrl = baseUrlOverride.replace(/\/+$/, "");
 		} else {
 			const baseUrl = process.env.PORTKEY_BASE_URL ?? DEFAULT_BASE_URL;
 			validateUrl(baseUrl);
-			this.baseUrl = baseUrl;
+			this.baseUrl = baseUrl.replace(/\/+$/, "");
 		}
 	}
 

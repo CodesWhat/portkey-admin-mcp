@@ -33,6 +33,8 @@ export type * from "./prompts.service.js";
 export { PromptsService } from "./prompts.service.js";
 export type * from "./providers.service.js";
 export { ProvidersService } from "./providers.service.js";
+export type * from "./secret-references.service.js";
+export { SecretReferencesService } from "./secret-references.service.js";
 export type * from "./tracing.service.js";
 export { TracingService } from "./tracing.service.js";
 export type * from "./users.service.js";
@@ -58,6 +60,7 @@ import { McpServersService } from "./mcp-servers.service.js";
 import { PartialsService } from "./partials.service.js";
 import { PromptsService } from "./prompts.service.js";
 import { ProvidersService } from "./providers.service.js";
+import { SecretReferencesService } from "./secret-references.service.js";
 import { TracingService } from "./tracing.service.js";
 import { UsersService } from "./users.service.js";
 import { WorkspacesService } from "./workspaces.service.js";
@@ -80,10 +83,7 @@ function resolveSharedPortkeyApiKey(apiKey?: string): string {
 }
 
 function getSharedServiceCacheKey(apiKey: string): string {
-	const keyDigest = crypto
-		.createHash("sha256")
-		.update(apiKey)
-		.digest("hex");
+	const keyDigest = crypto.createHash("sha256").update(apiKey).digest("hex");
 	return JSON.stringify({
 		apiKey: keyDigest,
 		baseUrl: process.env.PORTKEY_BASE_URL?.trim() || "",
@@ -112,6 +112,7 @@ export class PortkeyService {
 	public readonly tracing: TracingService;
 	public readonly logging: LoggingService;
 	public readonly providers: ProvidersService;
+	public readonly secretReferences: SecretReferencesService;
 	public readonly mcpIntegrations: McpIntegrationsService;
 	public readonly mcpServers: McpServersService;
 	public readonly health: HealthService;
@@ -140,6 +141,10 @@ export class PortkeyService {
 		this.tracing = new TracingService(resolvedApiKey, resolvedBaseUrl);
 		this.logging = new LoggingService(resolvedApiKey, resolvedBaseUrl);
 		this.providers = new ProvidersService(resolvedApiKey, resolvedBaseUrl);
+		this.secretReferences = new SecretReferencesService(
+			resolvedApiKey,
+			resolvedBaseUrl,
+		);
 		this.mcpIntegrations = new McpIntegrationsService(
 			resolvedApiKey,
 			resolvedBaseUrl,

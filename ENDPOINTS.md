@@ -6,7 +6,7 @@ This document lists all API endpoints used by the Portkey Admin MCP Server, veri
 
 - **Base URL**: `https://api.portkey.ai/v1`
 - **Authentication**: `x-portkey-api-key` header
-- **Total Endpoints**: 150
+- **Total Endpoints**: 156
 
 ## Verification Legend
 
@@ -147,8 +147,24 @@ This document lists all API endpoints used by the Portkey Admin MCP Server, veri
 | [x] | GET | `/api-keys/{id}` | `/api-keys/{id}` | Get API key |
 | [x] | PUT | `/api-keys/{id}` | `/api-keys/{id}` | Update API key |
 | [x] | DELETE | `/api-keys/{id}` | `/api-keys/{id}` | Delete API key |
+| [x] | POST | `/api-keys/{id}/rotate` | `/api-keys/{id}/rotate` | Rotate API key with an optional transition window |
 
 **Note**: Create endpoint uses `/{type}/{subType}` for key type specification.
+
+## Secret References
+
+**Service**: `src/services/secret-references.service.ts`
+**Docs**: [Admin API - Secret References](https://portkey.ai/docs/api-reference/admin-api/control-plane/secret-references/create-secret-reference)
+
+| Status | Method | Codebase Path | Docs Path | Description |
+|--------|--------|---------------|-----------|-------------|
+| [x] | POST | `/secret-references` | `/secret-references` | Create a Secret Reference |
+| [x] | GET | `/secret-references` | `/secret-references` | List Secret References |
+| [x] | GET | `/secret-references/{id}` | `/secret-references/{id}` | Retrieve by UUID or slug |
+| [x] | PUT | `/secret-references/{id}` | `/secret-references/{id}` | Update a Secret Reference |
+| [x] | DELETE | `/secret-references/{id}` | `/secret-references/{id}` | Delete a Secret Reference |
+
+The configured live-test credential returned 403 for this surface on 2026-07-14. Contract fixtures currently use the official documented response examples; `tests/fixtures/record.ts` can replace them using disposable resources when run with sufficient permissions and `PORTKEY_RECORD_MUTATIONS=true`.
 
 ---
 

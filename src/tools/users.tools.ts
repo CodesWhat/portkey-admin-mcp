@@ -12,11 +12,13 @@ const USERS_TOOL_SCHEMAS = {
 	listAllUsers: {
 		current_page: z.coerce
 			.number()
+			.int()
 			.positive()
 			.optional()
 			.describe("Page number for pagination"),
 		page_size: z.coerce
 			.number()
+			.int()
 			.positive()
 			.max(100)
 			.optional()
@@ -111,6 +113,7 @@ const USERS_TOOL_SCHEMAS = {
 			.describe("Filter by specific virtual key slugs (comma-separated)"),
 		page_size: z.coerce
 			.number()
+			.int()
 			.positive()
 			.max(100)
 			.optional()
@@ -134,11 +137,13 @@ const USERS_TOOL_SCHEMAS = {
 	listUserInvites: {
 		current_page: z.coerce
 			.number()
+			.int()
 			.positive()
 			.optional()
 			.describe("Page number for pagination"),
 		page_size: z.coerce
 			.number()
+			.int()
 			.positive()
 			.max(100)
 			.optional()

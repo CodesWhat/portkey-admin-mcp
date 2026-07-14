@@ -27,6 +27,8 @@ export interface ServerConfig {
 	maxSessions: number;
 	/** Session timeout in milliseconds (default: 3600000 = 1 hour) */
 	sessionTimeout: number;
+	/** Graceful shutdown timeout in milliseconds (default: 10000) */
+	shutdownTimeout: number;
 	/** Optional native TLS config for HTTPS mode */
 	tls: {
 		enabled: boolean;
@@ -34,6 +36,15 @@ export interface ServerConfig {
 		certPath?: string;
 		caPath?: string;
 	};
+}
+
+function parseStrictInteger(value: string): number {
+	if (!/^\d+$/.test(value)) {
+		return Number.NaN;
+	}
+
+	const parsed = Number(value);
+	return Number.isSafeInteger(parsed) ? parsed : Number.NaN;
 }
 
 /**
@@ -47,10 +58,7 @@ export function getServerConfig(): ServerConfig {
 	const sessionMode = (process.env.MCP_SESSION_MODE?.trim().toLowerCase() ||
 		"stateful") as "stateful" | "stateless";
 	const eventStoreMode = (process.env.MCP_EVENT_STORE?.trim().toLowerCase() ||
-		(sessionMode === "stateless" ? "memory" : "off")) as
-		| "off"
-		| "memory"
-		| "redis";
+		"off") as "off" | "memory" | "redis";
 
 	// Validate transport value
 	if (transport !== "stdio" && transport !== "http") {
@@ -70,13 +78,13 @@ export function getServerConfig(): ServerConfig {
 	}
 
 	// PORT for HTTP transport, MCP_PORT for manual config
-	const port = Number.parseInt(
-		process.env.PORT?.trim() || process.env.MCP_PORT?.trim() || "3000",
-		10,
-	);
+	const portVariable = process.env.PORT?.trim() ? "PORT" : "MCP_PORT";
+	const portValue =
+		process.env.PORT?.trim() || process.env.MCP_PORT?.trim() || "3000";
+	const port = parseStrictInteger(portValue);
 	if (Number.isNaN(port) || port < 1 || port > 65535) {
 		throw new Error(
-			`Invalid MCP_PORT value: ${process.env.MCP_PORT}. Must be a valid port number (1-65535)`,
+			`Invalid ${portVariable} value: ${portValue}. Must be a valid port number (1-65535)`,
 		);
 	}
 
@@ -94,15 +102,25 @@ export function getServerConfig(): ServerConfig {
 	const sessionTimeoutStr = (
 		process.env.MCP_SESSION_TIMEOUT || "3600000"
 	).trim();
-	const sessionTimeout = Number.parseInt(sessionTimeoutStr, 10);
+	const sessionTimeout = parseStrictInteger(sessionTimeoutStr);
 	if (Number.isNaN(sessionTimeout) || sessionTimeout < 0) {
 		throw new Error(
 			`Invalid MCP_SESSION_TIMEOUT value: ${sessionTimeoutStr}. Must be a non-negative number`,
 		);
 	}
 
+	const shutdownTimeoutStr = (
+		process.env.MCP_SHUTDOWN_TIMEOUT_MS || "10000"
+	).trim();
+	const shutdownTimeout = parseStrictInteger(shutdownTimeoutStr);
+	if (Number.isNaN(shutdownTimeout) || shutdownTimeout <= 0) {
+		throw new Error(
+			`Invalid MCP_SHUTDOWN_TIMEOUT_MS value: ${shutdownTimeoutStr}. Must be a positive integer`,
+		);
+	}
+
 	const maxSessionsStr = (process.env.MCP_MAX_SESSIONS || "100").trim();
-	const maxSessions = Number.parseInt(maxSessionsStr, 10);
+	const maxSessions = parseStrictInteger(maxSessionsStr);
 	if (!Number.isInteger(maxSessions) || maxSessions <= 0) {
 		throw new Error(
 			`Invalid MCP_MAX_SESSIONS value: ${maxSessionsStr}. Must be a positive integer`,
@@ -110,7 +128,7 @@ export function getServerConfig(): ServerConfig {
 	}
 
 	const eventStoreTtlStr = (process.env.MCP_EVENT_TTL_SECONDS || "3600").trim();
-	const eventStoreTtlSeconds = Number.parseInt(eventStoreTtlStr, 10);
+	const eventStoreTtlSeconds = parseStrictInteger(eventStoreTtlStr);
 	if (Number.isNaN(eventStoreTtlSeconds) || eventStoreTtlSeconds <= 0) {
 		throw new Error(
 			`Invalid MCP_EVENT_TTL_SECONDS value: ${eventStoreTtlStr}. Must be a positive integer`,
@@ -157,6 +175,7 @@ export function getServerConfig(): ServerConfig {
 		host,
 		maxSessions,
 		sessionTimeout,
+		shutdownTimeout,
 		tls: {
 			enabled: tlsEnabled,
 			keyPath,

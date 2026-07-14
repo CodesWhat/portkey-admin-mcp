@@ -183,6 +183,7 @@ const paginatedAnalyticsSchema = {
 	...baseAnalyticsSchema,
 	current_page: z.coerce
 		.number()
+		.int()
 		.positive()
 		.optional()
 		.describe("Page number for pagination"),

@@ -13,11 +13,16 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { BaseService } from "../src/services/base.service.js";
+import { KeysService } from "../src/services/keys.service.js";
 import { McpIntegrationsService } from "../src/services/mcp-integrations.service.js";
 import { McpServersService } from "../src/services/mcp-servers.service.js";
+import { SecretReferencesService } from "../src/services/secret-references.service.js";
 import { WorkspacesService } from "../src/services/workspaces.service.js";
+import { TOOL_DOMAIN_NAMES } from "../src/tools/index.js";
+import { registerKeysTools } from "../src/tools/keys.tools.js";
 import { registerMcpIntegrationsTools } from "../src/tools/mcp-integrations.tools.js";
 import { registerMcpServersTools } from "../src/tools/mcp-servers.tools.js";
+import { registerSecretReferencesTools } from "../src/tools/secret-references.tools.js";
 import { registerWorkspacesTools } from "../src/tools/workspaces.tools.js";
 
 // ---------------------------------------------------------------------------
@@ -34,7 +39,7 @@ type CapturedRequest = {
 async function captureServiceRequest(
 	invoke: () => Promise<unknown>,
 ): Promise<CapturedRequest> {
-	const basePrototype = BaseService.prototype as {
+	const basePrototype = BaseService.prototype as unknown as {
 		get: (path: string, params?: object) => Promise<unknown>;
 		post: (path: string, body?: unknown) => Promise<unknown>;
 		put: (path: string, body?: unknown) => Promise<unknown>;
@@ -94,6 +99,371 @@ function registerToolCallbacks(
 
 	return callbacks;
 }
+
+function registerToolSchemas(
+	register: (server: { tool(name: string, ...rest: unknown[]): never }) => void,
+): Map<
+	string,
+	Record<string, { safeParse(value: unknown): { success: boolean } }>
+> {
+	const schemas = new Map<
+		string,
+		Record<string, { safeParse(value: unknown): { success: boolean } }>
+	>();
+	register({
+		tool(name: string, ...rest: unknown[]) {
+			schemas.set(name, rest[1] as never);
+			return {} as never;
+		},
+	});
+	return schemas;
+}
+
+// ---------------------------------------------------------------------------
+// Newly documented control-plane surfaces
+// ---------------------------------------------------------------------------
+
+describe("API key rotation", () => {
+	it("POSTs the documented transition period to the encoded rotate endpoint", async () => {
+		const service = new KeysService("test-dummy-key") as KeysService & {
+			rotateApiKey: (
+				id: string,
+				data: { key_transition_period_ms?: number },
+			) => Promise<unknown>;
+		};
+		assert.equal(
+			typeof service.rotateApiKey,
+			"function",
+			"KeysService should expose rotateApiKey",
+		);
+
+		const request = await captureServiceRequest(() =>
+			service.rotateApiKey("key/id with space", {
+				key_transition_period_ms: 3_600_000,
+			}),
+		);
+
+		assert.equal(request.method, "POST");
+		assert.equal(request.path, "/api-keys/key%2Fid%20with%20space/rotate");
+		assert.deepEqual(request.body, { key_transition_period_ms: 3_600_000 });
+	});
+
+	it("registers rotate_api_key in the keys tool domain", () => {
+		const callbacks = registerToolCallbacks((server) => {
+			registerKeysTools(server as never, { keys: {} } as never);
+		});
+
+		assert.ok(callbacks.has("rotate_api_key"));
+	});
+
+	it("returns one-time-secret handling guidance with a rotated API key", async () => {
+		const callbacks = registerToolCallbacks((server) => {
+			registerKeysTools(
+				server as never,
+				{
+					keys: {
+						rotateApiKey: async () => ({
+							id: "550e8400-e29b-41d4-a716-446655440000",
+							key: "new-secret",
+							key_transition_expires_at: "2026-07-14T12:00:00.000Z",
+						}),
+					},
+				} as never,
+			);
+		});
+		const result = (await callbacks.get("rotate_api_key")?.({
+			id: "550e8400-e29b-41d4-a716-446655440000",
+		})) as { content: Array<{ text: string }> };
+		const payload = JSON.parse(result.content[0]?.text ?? "{}") as {
+			warning?: string;
+		};
+		assert.match(payload.warning ?? "", /returned only once/i);
+	});
+});
+
+describe("secret references domain", () => {
+	it("is available as a selectively configurable tool domain", () => {
+		assert.ok(
+			(TOOL_DOMAIN_NAMES as readonly string[]).includes("secret-references"),
+		);
+	});
+
+	it("implements the documented CRUD request paths and query parameters", async () => {
+		const service = new SecretReferencesService("test-dummy-key");
+
+		const createBody = {
+			name: "prod-openai",
+			manager_type: "aws_sm" as const,
+			auth_config: {
+				aws_auth_type: "serviceRole",
+				aws_region: "us-east-1",
+			},
+			secret_path: "prod/openai",
+		};
+		assert.deepEqual(
+			await captureServiceRequest(() =>
+				service.createSecretReference(createBody),
+			),
+			{ method: "POST", path: "/secret-references", body: createBody },
+		);
+
+		const listParams = {
+			manager_type: "aws_sm" as const,
+			tags: JSON.stringify({ team: "platform" }),
+			search: "prod",
+			current_page: 0,
+			page_size: 20,
+		};
+		assert.deepEqual(
+			await captureServiceRequest(() =>
+				service.listSecretReferences(listParams),
+			),
+			{
+				method: "GET",
+				path: "/secret-references",
+				params: listParams,
+			},
+		);
+		assert.equal(
+			(
+				await captureServiceRequest(() =>
+					service.getSecretReference("secret/slug one"),
+				)
+			).path,
+			"/secret-references/secret%2Fslug%20one",
+		);
+		assert.deepEqual(
+			await captureServiceRequest(() =>
+				service.updateSecretReference("secret/slug one", {
+					secret_path: "prod/openai-v2",
+				}),
+			),
+			{
+				method: "PUT",
+				path: "/secret-references/secret%2Fslug%20one",
+				body: { secret_path: "prod/openai-v2" },
+			},
+		);
+		assert.equal(
+			(
+				await captureServiceRequest(() =>
+					service.deleteSecretReference("secret/slug one"),
+				)
+			).path,
+			"/secret-references/secret%2Fslug%20one",
+		);
+	});
+
+	it("accepts all nine documented Secret Reference authentication variants", () => {
+		const schemas = registerToolSchemas((server) => {
+			registerSecretReferencesTools(
+				server as never,
+				{
+					secretReferences: {},
+				} as never,
+			);
+		});
+		const authSchema = schemas.get("create_secret_reference")?.auth_config;
+		assert.ok(authSchema);
+
+		const variants = [
+			{
+				aws_auth_type: "accessKey",
+				aws_access_key_id: "AKIA-test",
+				aws_secret_access_key: "secret",
+				aws_region: "us-east-1",
+			},
+			{
+				aws_auth_type: "assumedRole",
+				aws_role_arn: "arn:aws:iam::123456789012:role/test",
+				aws_region: "us-east-1",
+			},
+			{ aws_auth_type: "serviceRole", aws_region: "us-east-1" },
+			{
+				azure_auth_mode: "entra",
+				azure_entra_tenant_id: "tenant",
+				azure_entra_client_id: "client",
+				azure_entra_client_secret: "secret",
+				azure_vault_url: "https://example.vault.azure.net",
+			},
+			{
+				azure_auth_mode: "managed",
+				azure_managed_client_id: "client",
+				azure_vault_url: "https://example.vault.azure.net",
+			},
+			{
+				azure_auth_mode: "default",
+				azure_vault_url: "https://example.vault.azure.net",
+			},
+			{
+				vault_auth_type: "token",
+				vault_addr: "https://vault.example.com",
+				vault_token: "secret",
+			},
+			{
+				vault_auth_type: "approle",
+				vault_addr: "https://vault.example.com",
+				vault_role_id: "role",
+				vault_secret_id: "secret",
+			},
+			{
+				vault_auth_type: "kubernetes",
+				vault_addr: "https://vault.example.com",
+				vault_role: "role",
+			},
+		];
+		for (const variant of variants) {
+			assert.equal(
+				authSchema.safeParse(variant).success,
+				true,
+				`expected documented auth variant to parse: ${JSON.stringify(variant)}`,
+			);
+		}
+	});
+
+	it("rejects an authentication variant that does not match manager_type", async () => {
+		const callbacks = registerToolCallbacks((server) => {
+			registerSecretReferencesTools(
+				server as never,
+				{
+					secretReferences: {
+						createSecretReference: async () => ({}),
+					},
+				} as never,
+			);
+		});
+		const createSecretReference = callbacks.get("create_secret_reference");
+		assert.ok(createSecretReference);
+		await assert.rejects(
+			() =>
+				createSecretReference({
+					name: "mismatch",
+					manager_type: "aws_sm",
+					auth_config: {
+						vault_auth_type: "token",
+						vault_addr: "https://vault.example.com",
+						vault_token: "secret",
+					},
+					secret_path: "prod/key",
+				}),
+			/auth_config does not match manager_type aws_sm/,
+		);
+	});
+
+	it("rejects no-op updates and mixed secret-manager auth families", async () => {
+		const callbacks = registerToolCallbacks((server) => {
+			registerSecretReferencesTools(
+				server as never,
+				{
+					secretReferences: {
+						updateSecretReference: async () => ({}),
+					},
+				} as never,
+			);
+		});
+		const updateSecretReference = callbacks.get("update_secret_reference");
+		assert.ok(updateSecretReference);
+
+		await assert.rejects(
+			() => updateSecretReference({ id: "prod-secret" }),
+			/at least one field to update/,
+		);
+		await assert.rejects(
+			() =>
+				updateSecretReference({
+					id: "prod-secret",
+					auth_config: {},
+				}),
+			/auth_config update must contain at least one field/,
+		);
+		await assert.rejects(
+			() =>
+				updateSecretReference({
+					id: "prod-secret",
+					auth_config: {
+						aws_region: "us-east-1",
+						vault_namespace: "platform",
+					},
+				}),
+			/exactly one secret-manager family/,
+		);
+	});
+
+	it("registers all five tools and keeps sensitive auth config out of list output", async () => {
+		const callbacks = registerToolCallbacks((server) => {
+			registerSecretReferencesTools(
+				server as never,
+				{
+					secretReferences: {
+						listSecretReferences: async () => ({
+							object: "list",
+							total: 1,
+							data: [
+								{
+									id: "3c90c3cc-0d44-4b50-8888-8dd25736052a",
+									name: "prod-openai",
+									slug: "prod-openai",
+									manager_type: "aws_sm",
+									status: "ACTIVE",
+									created_at: "2026-07-14T00:00:00.000Z",
+									last_updated_at: "2026-07-14T00:00:00.000Z",
+									auth_config: { vault_token: "must-not-leak" },
+									object: "secret-reference",
+								},
+							],
+						}),
+						getSecretReference: async () => ({
+							id: "3c90c3cc-0d44-4b50-8888-8dd25736052a",
+							organisation_id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+							name: "prod-vault",
+							slug: "prod-vault",
+							description: null,
+							manager_type: "hashicorp_vault",
+							secret_path: "prod/openai",
+							secret_key: null,
+							allow_all_workspaces: true,
+							tags: null,
+							status: "ACTIVE",
+							created_by: "system",
+							created_at: "2026-07-14T00:00:00.000Z",
+							last_updated_at: "2026-07-14T00:00:00.000Z",
+							auth_config: {
+								vault_auth_type: "token",
+								vault_addr: "https://vault.example.com",
+								vault_token: "raw-system-token-must-not-leak",
+							},
+							object: "secret-reference",
+						}),
+					},
+				} as never,
+			);
+		});
+
+		assert.deepEqual([...callbacks.keys()].sort(), [
+			"create_secret_reference",
+			"delete_secret_reference",
+			"get_secret_reference",
+			"list_secret_references",
+			"update_secret_reference",
+		]);
+		const result = (await callbacks.get("list_secret_references")?.({})) as {
+			content: Array<{ text: string }>;
+		};
+		const payload = JSON.parse(result.content[0]?.text ?? "{}") as Record<
+			string,
+			unknown
+		>;
+		assert.doesNotMatch(JSON.stringify(payload), /must-not-leak/);
+
+		const getResult = (await callbacks.get("get_secret_reference")?.({
+			id: "prod-vault",
+		})) as { content: Array<{ text: string }> };
+		assert.doesNotMatch(
+			getResult.content[0]?.text ?? "",
+			/raw-system-token-must-not-leak/,
+		);
+	});
+});
 
 // ---------------------------------------------------------------------------
 // MCP Integrations — service path encoding
