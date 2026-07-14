@@ -215,6 +215,7 @@ Apply the same audit methodology from this session to all new services:
 8. Audit create vs update field names
 
 **Actual scope (updated 2026-07-14):**
+
 | Phase | New tools | Status |
 |-------|-----------|--------|
 | 1A (Secret References) | 5 | Done |

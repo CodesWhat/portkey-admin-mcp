@@ -319,6 +319,14 @@ describe("secret references domain", () => {
 				`expected documented auth variant to parse: ${JSON.stringify(variant)}`,
 			);
 		}
+		assert.equal(
+			authSchema.safeParse({
+				...variants[0],
+				vault_token: "cross-manager-field",
+			}).success,
+			false,
+			"create auth config should reject fields from another manager family",
+		);
 	});
 
 	it("rejects an authentication variant that does not match manager_type", async () => {

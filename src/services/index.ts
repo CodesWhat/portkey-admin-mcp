@@ -85,8 +85,8 @@ function resolveSharedPortkeyApiKey(apiKey?: string): string {
 
 function getSharedServiceCacheKey(apiKey: string): string {
 	// A per-process HMAC makes cache identifiers deterministic only within this
-	// process and prevents API-key correlation or offline verification if an
-	// identifier is ever exposed in a diagnostic snapshot.
+	// process and prevents cross-process correlation or offline verification if
+	// an identifier is ever exposed in a diagnostic snapshot.
 	const keyDigest = createHmac("sha256", SERVICE_CACHE_HMAC_KEY)
 		.update(apiKey)
 		.digest("hex");

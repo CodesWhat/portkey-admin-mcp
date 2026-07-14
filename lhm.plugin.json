@@ -7761,7 +7761,8 @@
 									"aws_access_key_id",
 									"aws_secret_access_key",
 									"aws_region"
-								]
+								],
+								"additionalProperties": false
 							},
 							{
 								"type": "object",
@@ -7793,7 +7794,8 @@
 										"description": "AWS region containing the secret, for example us-east-1"
 									}
 								},
-								"required": ["aws_auth_type", "aws_role_arn", "aws_region"]
+								"required": ["aws_auth_type", "aws_role_arn", "aws_region"],
+								"additionalProperties": false
 							},
 							{
 								"type": "object",
@@ -7808,7 +7810,8 @@
 										"type": "string"
 									}
 								},
-								"required": ["aws_auth_type"]
+								"required": ["aws_auth_type"],
+								"additionalProperties": false
 							},
 							{
 								"type": "object",
@@ -7845,7 +7848,8 @@
 									"azure_entra_client_id",
 									"azure_entra_client_secret",
 									"azure_vault_url"
-								]
+								],
+								"additionalProperties": false
 							},
 							{
 								"type": "object",
@@ -7866,7 +7870,8 @@
 										"description": "Azure Key Vault URL, for example https://example.vault.azure.net"
 									}
 								},
-								"required": ["azure_auth_mode", "azure_vault_url"]
+								"required": ["azure_auth_mode", "azure_vault_url"],
+								"additionalProperties": false
 							},
 							{
 								"type": "object",
@@ -7882,7 +7887,8 @@
 										"description": "Azure Key Vault URL, for example https://example.vault.azure.net"
 									}
 								},
-								"required": ["azure_auth_mode", "azure_vault_url"]
+								"required": ["azure_auth_mode", "azure_vault_url"],
+								"additionalProperties": false
 							},
 							{
 								"type": "object",
@@ -7908,7 +7914,8 @@
 										"description": "Optional HashiCorp Vault Enterprise namespace"
 									}
 								},
-								"required": ["vault_auth_type", "vault_addr", "vault_token"]
+								"required": ["vault_auth_type", "vault_addr", "vault_token"],
+								"additionalProperties": false
 							},
 							{
 								"type": "object",
@@ -7944,7 +7951,8 @@
 									"vault_addr",
 									"vault_role_id",
 									"vault_secret_id"
-								]
+								],
+								"additionalProperties": false
 							},
 							{
 								"type": "object",
@@ -7970,7 +7978,8 @@
 										"description": "Optional HashiCorp Vault Enterprise namespace"
 									}
 								},
-								"required": ["vault_auth_type", "vault_addr", "vault_role"]
+								"required": ["vault_auth_type", "vault_addr", "vault_role"],
+								"additionalProperties": false
 							}
 						],
 						"description": "Choose exactly one documented authentication shape matching manager_type. Credentials are sent to Portkey and visible in the MCP transcript; prefer workload identity or short-lived credentials when available."

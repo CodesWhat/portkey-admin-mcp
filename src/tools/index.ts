@@ -6,6 +6,7 @@ import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import { Logger } from "../lib/logger.js";
 import { isRecord } from "../lib/type-guards.js";
+import { SecretManagerTypeSchema } from "../schemas/contracts/secret-references.contract.js";
 import type { PortkeyService } from "../services/index.js";
 import { registerAnalyticsTools } from "./analytics.tools.js";
 import { registerAuditTools } from "./audit.tools.js";
@@ -256,12 +257,6 @@ const STANDARD_TOOL_OUTPUT_SCHEMA = {
 		.describe("Structured error payload when ok is false"),
 } as const;
 
-const secretManagerTypeOutputSchema = z.enum([
-	"aws_sm",
-	"azure_kv",
-	"hashicorp_vault",
-]);
-
 const TOOL_SUCCESS_DATA_SCHEMAS: Partial<Record<string, z.ZodType>> = {
 	rotate_api_key: z.object({
 		message: z.string().describe("Rotation confirmation"),
@@ -287,7 +282,7 @@ const TOOL_SUCCESS_DATA_SCHEMAS: Partial<Record<string, z.ZodType>> = {
 					id: z.string().uuid().describe("Secret Reference UUID"),
 					name: z.string().describe("Human-readable name"),
 					slug: z.string().describe("Stable Secret Reference slug"),
-					manager_type: secretManagerTypeOutputSchema.describe(
+					manager_type: SecretManagerTypeSchema.describe(
 						"External secret manager type",
 					),
 					status: z.literal("ACTIVE").describe("Current reference status"),
@@ -307,7 +302,7 @@ const TOOL_SUCCESS_DATA_SCHEMAS: Partial<Record<string, z.ZodType>> = {
 		name: z.string().describe("Human-readable name"),
 		slug: z.string().describe("Stable Secret Reference slug"),
 		description: z.string().nullable().describe("Reference description"),
-		manager_type: secretManagerTypeOutputSchema.describe(
+		manager_type: SecretManagerTypeSchema.describe(
 			"External secret manager type",
 		),
 		secret_path: z.string().describe("Path in the external secret manager"),

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { type ChildProcess, spawn } from "node:child_process";
-import { once } from "node:events";
+import { EventEmitter, once } from "node:events";
 import {
 	createServer as createHttpServer,
 	request as httpRequest,
@@ -978,5 +978,29 @@ describe("HTTP server integration", () => {
 				`expected error message to mention "nonexistent-domain", got: ${error.message}`,
 			);
 		});
+	});
+
+	it("removes both backpressure listeners after drain or close", async () => {
+		const httpApp = (await import("../src/lib/http-app.js")) as unknown as {
+			waitForResponseWritable?: (response: EventEmitter) => Promise<void>;
+		};
+		const waitForResponseWritable = httpApp.waitForResponseWritable;
+		assert.ok(
+			waitForResponseWritable,
+			"expected a testable backpressure wait helper",
+		);
+
+		for (const event of ["drain", "close"] as const) {
+			const response = new EventEmitter();
+			const pending = waitForResponseWritable(response);
+			assert.equal(response.listenerCount("drain"), 1);
+			assert.equal(response.listenerCount("close"), 1);
+
+			response.emit(event);
+			await pending;
+
+			assert.equal(response.listenerCount("drain"), 0);
+			assert.equal(response.listenerCount("close"), 0);
+		}
 	});
 });

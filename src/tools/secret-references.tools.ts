@@ -100,84 +100,102 @@ const authFields = {
 } as const;
 
 const authConfigSchema = z.union([
-	z.object({
-		aws_auth_type: z
-			.literal("accessKey")
-			.describe("Use an AWS access key ID and secret access key"),
-		aws_access_key_id: authFields.aws_access_key_id,
-		aws_secret_access_key: authFields.aws_secret_access_key,
-		aws_region: authFields.aws_region,
-	}),
-	z.object({
-		aws_auth_type: z
-			.literal("assumedRole")
-			.describe("Assume the specified AWS IAM role"),
-		aws_role_arn: authFields.aws_role_arn,
-		aws_external_id: authFields.aws_external_id.optional(),
-		aws_region: authFields.aws_region,
-	}),
-	z.object({
-		aws_auth_type: z
-			.literal("serviceRole")
-			.describe("Use the AWS workload or service role available at runtime"),
-		aws_region: z
-			.string()
-			.optional()
-			.describe(
-				"Optional AWS region containing the secret, for example us-east-1",
-			),
-	}),
-	z.object({
-		azure_auth_mode: z
-			.literal("entra")
-			.describe(
-				"Authenticate with a Microsoft Entra application client secret",
-			),
-		azure_entra_tenant_id: authFields.azure_entra_tenant_id,
-		azure_entra_client_id: authFields.azure_entra_client_id,
-		azure_entra_client_secret: authFields.azure_entra_client_secret,
-		azure_vault_url: authFields.azure_vault_url,
-	}),
-	z.object({
-		azure_auth_mode: z
-			.literal("managed")
-			.describe("Authenticate with an Azure managed identity"),
-		azure_managed_client_id: authFields.azure_managed_client_id.optional(),
-		azure_vault_url: authFields.azure_vault_url,
-	}),
-	z.object({
-		azure_auth_mode: z
-			.literal("default")
-			.describe("Use Azure's default runtime credential chain"),
-		azure_vault_url: authFields.azure_vault_url,
-	}),
-	z.object({
-		vault_auth_type: z
-			.literal("token")
-			.describe("Authenticate to HashiCorp Vault with a token"),
-		vault_addr: authFields.vault_addr,
-		vault_token: authFields.vault_token,
-		vault_namespace: authFields.vault_namespace.optional(),
-	}),
-	z.object({
-		vault_auth_type: z
-			.literal("approle")
-			.describe("Authenticate to HashiCorp Vault with AppRole credentials"),
-		vault_addr: authFields.vault_addr,
-		vault_role_id: authFields.vault_role_id,
-		vault_secret_id: authFields.vault_secret_id,
-		vault_namespace: authFields.vault_namespace.optional(),
-	}),
-	z.object({
-		vault_auth_type: z
-			.literal("kubernetes")
-			.describe(
-				"Authenticate to HashiCorp Vault with a Kubernetes service account",
-			),
-		vault_addr: authFields.vault_addr,
-		vault_role: authFields.vault_role,
-		vault_namespace: authFields.vault_namespace.optional(),
-	}),
+	z
+		.object({
+			aws_auth_type: z
+				.literal("accessKey")
+				.describe("Use an AWS access key ID and secret access key"),
+			aws_access_key_id: authFields.aws_access_key_id,
+			aws_secret_access_key: authFields.aws_secret_access_key,
+			aws_region: authFields.aws_region,
+		})
+		.strict(),
+	z
+		.object({
+			aws_auth_type: z
+				.literal("assumedRole")
+				.describe("Assume the specified AWS IAM role"),
+			aws_role_arn: authFields.aws_role_arn,
+			aws_external_id: authFields.aws_external_id.optional(),
+			aws_region: authFields.aws_region,
+		})
+		.strict(),
+	z
+		.object({
+			aws_auth_type: z
+				.literal("serviceRole")
+				.describe("Use the AWS workload or service role available at runtime"),
+			aws_region: z
+				.string()
+				.optional()
+				.describe(
+					"Optional AWS region containing the secret, for example us-east-1",
+				),
+		})
+		.strict(),
+	z
+		.object({
+			azure_auth_mode: z
+				.literal("entra")
+				.describe(
+					"Authenticate with a Microsoft Entra application client secret",
+				),
+			azure_entra_tenant_id: authFields.azure_entra_tenant_id,
+			azure_entra_client_id: authFields.azure_entra_client_id,
+			azure_entra_client_secret: authFields.azure_entra_client_secret,
+			azure_vault_url: authFields.azure_vault_url,
+		})
+		.strict(),
+	z
+		.object({
+			azure_auth_mode: z
+				.literal("managed")
+				.describe("Authenticate with an Azure managed identity"),
+			azure_managed_client_id: authFields.azure_managed_client_id.optional(),
+			azure_vault_url: authFields.azure_vault_url,
+		})
+		.strict(),
+	z
+		.object({
+			azure_auth_mode: z
+				.literal("default")
+				.describe("Use Azure's default runtime credential chain"),
+			azure_vault_url: authFields.azure_vault_url,
+		})
+		.strict(),
+	z
+		.object({
+			vault_auth_type: z
+				.literal("token")
+				.describe("Authenticate to HashiCorp Vault with a token"),
+			vault_addr: authFields.vault_addr,
+			vault_token: authFields.vault_token,
+			vault_namespace: authFields.vault_namespace.optional(),
+		})
+		.strict(),
+	z
+		.object({
+			vault_auth_type: z
+				.literal("approle")
+				.describe("Authenticate to HashiCorp Vault with AppRole credentials"),
+			vault_addr: authFields.vault_addr,
+			vault_role_id: authFields.vault_role_id,
+			vault_secret_id: authFields.vault_secret_id,
+			vault_namespace: authFields.vault_namespace.optional(),
+		})
+		.strict(),
+	z
+		.object({
+			vault_auth_type: z
+				.literal("kubernetes")
+				.describe(
+					"Authenticate to HashiCorp Vault with a Kubernetes service account",
+				),
+			vault_addr: authFields.vault_addr,
+			vault_role: authFields.vault_role,
+			vault_namespace: authFields.vault_namespace.optional(),
+		})
+		.strict(),
 ]);
 
 const updateAuthConfigSchema = z.union([

@@ -56,6 +56,25 @@ export interface HttpAppRuntime {
 	startHttpServer(): HttpServer | HttpsServer;
 }
 
+interface BackpressureResponse {
+	once(event: "drain" | "close", listener: () => void): unknown;
+	off(event: "drain" | "close", listener: () => void): unknown;
+}
+
+export function waitForResponseWritable(
+	response: BackpressureResponse,
+): Promise<void> {
+	return new Promise((resolve) => {
+		const done = () => {
+			response.off("drain", done);
+			response.off("close", done);
+			resolve();
+		};
+		response.once("drain", done);
+		response.once("close", done);
+	});
+}
+
 function getReadyCheckMode(): "local" | "portkey" {
 	const readyCheckMode =
 		(process.env.MCP_READY_CHECK_MODE?.trim().toLowerCase() || "local") as
@@ -1000,11 +1019,7 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 											`event: message\nid: ${eventId}\ndata: ${JSON.stringify(message)}\n\n`,
 										)
 									) {
-										await new Promise<void>((resolveWritable) => {
-											const done = () => resolveWritable();
-											res.once("drain", done);
-											res.once("close", done);
-										});
+										await waitForResponseWritable(res);
 									}
 								},
 							});
