@@ -7,6 +7,7 @@ const PROVIDERS_TOOL_SCHEMAS = {
 	listProviders: {
 		current_page: z.coerce
 			.number()
+			.int()
 			.positive()
 			.optional()
 			.describe("Page number for pagination"),

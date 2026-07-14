@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-07-14
+
+### Added
+
+- Type-check the test suite in local and hosted CI, align Node type definitions with the Node 24 runtime, and pin the expected npm version through `packageManager`.
+- Add stateless `GET /mcp` redelivery from `Last-Event-ID`, including detached completion when a client disconnects before an in-flight POST result is ready.
+- Add `rotate_api_key` and five Secret Reference CRUD tools, plus documented-response fixtures, contracts, and a safe disposable live-fixture recorder.
+
+### Changed
+
+- Upgrade to node-redis 6.1 and TypeScript 7.0 while preserving the Redis event store's RESP2, timeout, and keepalive behavior.
+- Keep the stateless event store opt-in (`off` by default); `memory` enables single-instance replay and `redis` enables cross-instance replay.
+- Require integer `current_page` and `page_size` values across all paginated tools.
+
+### Security
+
+- Pin the MCP Registry publisher to v1.7.9 and verify its official SHA-256 checksum before executing it in the OIDC-enabled release job.
+- Harden unauthenticated loopback Host validation for IPv4 and bracketed IPv6, including rejection of malformed IPv6 authority suffixes.
+- Use opaque replay cursors and per-stream memory/Redis leases so cursors cannot be guessed and concurrent replay connections cannot duplicate delivery.
+
+### Fixed
+
+- Run release CI and registry publishing against the requested tag during manual/automatic dispatches instead of implicitly checking out `main`.
+- Normalize trailing slashes in `PORTKEY_BASE_URL`, strictly validate integer environment settings, and apply the configured graceful-shutdown timeout consistently.
+- Accept post-initialization MCP requests without a protocol header by using negotiated/backwards-compatible behavior, while continuing to reject unsupported or mismatched versions.
+- Return controlled JSON for malformed request bodies instead of Express's default HTML error response.
+- Restore the missing 0.4.1 changelog boundary and clearly label the June audit and completed roadmap as historical snapshots.
+
 ## [0.4.2] - 2026-07-02
 
 ### Fixed
@@ -15,6 +43,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The LobeHub manifest generator inherited the caller's environment, so a stray `PORTKEY_TOOL_DOMAINS`/`MCP_TOOL_DOMAINS` export made it silently write a truncated manifest (reproduced: 34 of 150 tools). It now strips both variables, refuses to write fewer tools than the manifest already has, and carries each tool's `annotations` through to the manifest (previously dropped).
 - Pin the actionlint bootstrap script in CI to a commit SHA — the tag-based raw URL was the one remaining mutable reference in the hardened workflows.
 - Correct two claims in the 0.4.1 changelog entry (mirrored to its GitHub Release): the six tools carry the first *hand-authored* annotations, not the first annotations, and the manifest drift was 29 tool entries, not 34.
+
+## [0.4.1] - 2026-07-02
 
 ### Changed
 
@@ -329,7 +359,8 @@ First stable release. Graduates from beta with 151 tools covering ~98% of the Po
 - Vercel deployment support
 - Contract tests, E2E tests, security tests
 
-[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.4.2...HEAD
+[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.4.2...v0.5.0
 [0.4.2]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.3.8...v0.4.0

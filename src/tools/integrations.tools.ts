@@ -7,6 +7,7 @@ const INTEGRATIONS_TOOL_SCHEMAS = {
 	listIntegrations: {
 		current_page: z.coerce
 			.number()
+			.int()
 			.positive()
 			.optional()
 			.describe("Page number for pagination"),
@@ -144,6 +145,7 @@ const INTEGRATIONS_TOOL_SCHEMAS = {
 		slug: z.string().describe("The slug of the integration"),
 		current_page: z.coerce
 			.number()
+			.int()
 			.positive()
 			.optional()
 			.describe("Page number for pagination"),
@@ -184,6 +186,7 @@ const INTEGRATIONS_TOOL_SCHEMAS = {
 		slug: z.string().describe("The slug of the integration"),
 		current_page: z.coerce
 			.number()
+			.int()
 			.positive()
 			.optional()
 			.describe("Page number for pagination"),

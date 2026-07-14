@@ -61,8 +61,7 @@ function createMockResponse() {
 		statusCode?: number;
 		body?: unknown;
 		headers: Record<string, string>;
-	} = {};
-	state.headers = {};
+	} = { headers: {} };
 
 	return {
 		state,
@@ -135,6 +134,18 @@ describe("origin security configuration", () => {
 		assert.equal(validateOrigin("http://localhost:3000"), true);
 		assert.equal(validateOrigin("http://localhost:9999"), true);
 		assert.equal(validateOrigin("https://localhost:3000"), false);
+	});
+
+	it("allows default IPv4 and IPv6 loopback hosts", async () => {
+		delete process.env.ALLOWED_ORIGINS;
+		delete process.env.CORS_ORIGIN;
+		const { isAllowedHost, validateOrigin } = await loadOriginHelpers();
+
+		assert.equal(validateOrigin("http://127.0.0.1:3000"), true);
+		assert.equal(isAllowedHost("127.0.0.1:3000"), true);
+		assert.equal(isAllowedHost("[::1]:3000"), true);
+		assert.equal(isAllowedHost("[::1].evil.example:3000"), false);
+		assert.equal(isAllowedHost("[::1]junk"), false);
 	});
 
 	it("uses strict host comparison for non-URL allow-list entries", async () => {
@@ -307,6 +318,29 @@ describe("origin security configuration", () => {
 		assert.equal(second.state.statusCode, 429);
 		assert.deepEqual(second.state.body, { error: "Too Many Requests" });
 		assert.equal(second.state.headers["Retry-After"], "60");
+	});
+
+	it("falls back when a rate-limit integer contains trailing characters", async () => {
+		process.env.RATE_LIMIT_MAX = "1oops";
+		process.env.RATE_LIMIT_REFILL = "60";
+		process.env.RATE_LIMIT_WINDOW_MS = "60000";
+
+		const { rateLimitMiddleware } = await loadSecurityModule();
+		let nextCalls = 0;
+
+		for (let attempt = 0; attempt < 2; attempt += 1) {
+			const mock = createMockResponse();
+			rateLimitMiddleware(
+				createMockRequest({ ip: "203.0.113.20" }) as never,
+				mock.response as never,
+				() => {
+					nextCalls += 1;
+				},
+			);
+			assert.equal(mock.state.statusCode, undefined);
+		}
+
+		assert.equal(nextCalls, 2);
 	});
 
 	it("caps unique rate-limit buckets and shares overflow capacity", async () => {

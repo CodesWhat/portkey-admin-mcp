@@ -33,6 +33,8 @@ export type * from "./prompts.service.js";
 export { PromptsService } from "./prompts.service.js";
 export type * from "./providers.service.js";
 export { ProvidersService } from "./providers.service.js";
+export type * from "./secret-references.service.js";
+export { SecretReferencesService } from "./secret-references.service.js";
 export type * from "./tracing.service.js";
 export { TracingService } from "./tracing.service.js";
 export type * from "./users.service.js";
@@ -40,7 +42,7 @@ export { UsersService } from "./users.service.js";
 export type * from "./workspaces.service.js";
 export { WorkspacesService } from "./workspaces.service.js";
 
-import crypto from "node:crypto";
+import { createHmac, randomBytes } from "node:crypto";
 import { AnalyticsService } from "./analytics.service.js";
 import { AuditService } from "./audit.service.js";
 import { validateUrl } from "./base.service.js";
@@ -58,11 +60,13 @@ import { McpServersService } from "./mcp-servers.service.js";
 import { PartialsService } from "./partials.service.js";
 import { PromptsService } from "./prompts.service.js";
 import { ProvidersService } from "./providers.service.js";
+import { SecretReferencesService } from "./secret-references.service.js";
 import { TracingService } from "./tracing.service.js";
 import { UsersService } from "./users.service.js";
 import { WorkspacesService } from "./workspaces.service.js";
 
 const MISSING_API_KEY_PLACEHOLDER = "__PORTKEY_API_KEY_NOT_CONFIGURED__";
+const SERVICE_CACHE_HMAC_KEY = randomBytes(32);
 
 function resolvePortkeyApiKey(apiKey?: string): string {
 	const resolvedApiKey = apiKey ?? process.env.PORTKEY_API_KEY;
@@ -80,8 +84,10 @@ function resolveSharedPortkeyApiKey(apiKey?: string): string {
 }
 
 function getSharedServiceCacheKey(apiKey: string): string {
-	const keyDigest = crypto
-		.createHash("sha256")
+	// A per-process HMAC makes cache identifiers deterministic only within this
+	// process and prevents cross-process correlation or offline verification if
+	// an identifier is ever exposed in a diagnostic snapshot.
+	const keyDigest = createHmac("sha256", SERVICE_CACHE_HMAC_KEY)
 		.update(apiKey)
 		.digest("hex");
 	return JSON.stringify({
@@ -112,6 +118,7 @@ export class PortkeyService {
 	public readonly tracing: TracingService;
 	public readonly logging: LoggingService;
 	public readonly providers: ProvidersService;
+	public readonly secretReferences: SecretReferencesService;
 	public readonly mcpIntegrations: McpIntegrationsService;
 	public readonly mcpServers: McpServersService;
 	public readonly health: HealthService;
@@ -140,6 +147,10 @@ export class PortkeyService {
 		this.tracing = new TracingService(resolvedApiKey, resolvedBaseUrl);
 		this.logging = new LoggingService(resolvedApiKey, resolvedBaseUrl);
 		this.providers = new ProvidersService(resolvedApiKey, resolvedBaseUrl);
+		this.secretReferences = new SecretReferencesService(
+			resolvedApiKey,
+			resolvedBaseUrl,
+		);
 		this.mcpIntegrations = new McpIntegrationsService(
 			resolvedApiKey,
 			resolvedBaseUrl,

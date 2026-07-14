@@ -12,6 +12,7 @@ const MCP_SERVERS_TOOL_SCHEMAS = {
 	listMcpServers: {
 		current_page: z.coerce
 			.number()
+			.int()
 			.positive()
 			.optional()
 			.describe("Page number for pagination"),
@@ -56,11 +57,13 @@ const MCP_SERVERS_TOOL_SCHEMAS = {
 		id: z.string().describe("The MCP server ID or slug"),
 		current_page: z.coerce
 			.number()
+			.int()
 			.positive()
 			.optional()
 			.describe("Page number for pagination"),
 		page_size: z.coerce
 			.number()
+			.int()
 			.positive()
 			.max(100)
 			.optional()
@@ -85,11 +88,13 @@ const MCP_SERVERS_TOOL_SCHEMAS = {
 		id: z.string().describe("The MCP server ID or slug"),
 		current_page: z.coerce
 			.number()
+			.int()
 			.positive()
 			.optional()
 			.describe("Page number for pagination"),
 		page_size: z.coerce
 			.number()
+			.int()
 			.positive()
 			.max(100)
 			.optional()

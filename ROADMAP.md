@@ -1,10 +1,11 @@
 # Portkey Admin MCP — API Coverage Roadmap
 
-> Last updated: 2026-03-23
-> **Status: COMPLETE** — 150 tools covering ~98% of Portkey admin API surface
-> **Maintenance mode (2026-06):** No further API-coverage work is planned following the Palo Alto Networks acquisition of Portkey. Security and dependency patches only. See [README](./README.md) and [docs/audit-2026-06.md](./docs/audit-2026-06.md).
+> Last reviewed: 2026-07-14
+> **Status: COMPLETE** — 156 tools including API-key rotation and the now-documented Secret References surface
+> **Maintenance decision recorded 2026-06:** No further API-coverage work was planned following the Palo Alto Networks acquisition of Portkey; security and dependency patches remained in scope. See [README](./README.md) and [docs/audit-2026-06.md](./docs/audit-2026-06.md).
 > Completed: MCP Integrations (10), MCP Servers (10), Analytics (11), Prompt Versions (2), Usage Limit Entities (2)
-> Skipped: Secret References (not a standard admin CRUD endpoint — requires config/provider headers)
+> Added 2026-07-14: Secret References became an officially documented Admin API CRUD surface.
+> The unchecked tasks below preserve the original implementation plan; they are not an active backlog. The completion table at the end records the delivered scope.
 
 ---
 
@@ -23,13 +24,13 @@ Full CRUD for secret reference management.
 | `/secret-references/{id}` | DELETE | `delete_secret_reference` |
 
 **Files to create:**
-- `src/services/secrets.service.ts` — service + types
-- `src/tools/secrets.tools.ts` — tool registrations
+- `src/services/secret-references.service.ts` — service + types
+- `src/tools/secret-references.tools.ts` — tool registrations
 
 **Tests:**
-- [ ] Contract test with recorded fixture
+- [x] Contract tests with documented fixtures and a safe live recorder (live replacement currently blocked by credential permissions)
 - [ ] E2E: create → get → update → list → delete round-trip
-- [ ] Add tool names to `mcp-e2e.test.ts` tool registry check
+- [x] Add tool names to `mcp-e2e.test.ts` tool registry check
 
 ---
 
@@ -195,9 +196,9 @@ Apply the same audit methodology from this session to all new services:
 
 ### 4C — Full E2E Suite Run
 
-- [ ] Run full `mcp-e2e.test.ts` with all new tools registered
-- [ ] Run `contract.test.ts` with all new fixtures
-- [ ] Run `unit.test.ts` for any new remap logic
+- [x] Run full `mcp-e2e.test.ts` with all new tools registered
+- [x] Run `contract.test.ts` with all new fixtures
+- [x] Run unit coverage for service paths, payloads, and redaction logic
 
 ---
 
@@ -213,16 +214,17 @@ Apply the same audit methodology from this session to all new services:
 7. Add to E2E tool registry
 8. Audit create vs update field names
 
-**Actual scope (completed 2026-03-23):**
+**Actual scope (updated 2026-07-14):**
+
 | Phase | New tools | Status |
 |-------|-----------|--------|
-| 1A (Secret References) | 0 | Skipped — not a standard admin CRUD endpoint |
+| 1A (Secret References) | 5 | Done |
 | 1B (MCP Integrations) | 10 | Done |
 | 1C (MCP Servers) | 10 | Done |
 | 2A (Analytics Graphs) | 8 | Done |
 | 2B (Analytics Groups) | 3 | Done |
 | 3A (Prompt Versions) | 2 | Done |
 | 3B (Usage Limit Entities) | 2 | Done |
-| **Total** | **35** | |
+| **Total** | **40** | |
 
-Final tool count: **150 tools** (115 baseline + 35 new)
+Final tool count: **156 tools** (115 baseline + 40 roadmap tools + API-key rotation)

@@ -7,6 +7,11 @@ on:
       - "codex/**"
   pull_request:
   workflow_call:
+    inputs:
+      ref:
+        description: Git ref to check out (used by the release workflow for tag backfills)
+        required: false
+        type: string
     secrets:
       PORTKEY_API_KEY_STAGING:
         description: Optional Portkey staging key for the smoke test
@@ -33,6 +38,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
+          ref: ${{ inputs.ref || github.ref }}
           persist-credentials: false
 
       - name: Run actionlint
@@ -56,6 +62,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
+          ref: ${{ inputs.ref || github.ref }}
           persist-credentials: false
 
       - name: Dependency review
@@ -64,10 +71,21 @@ jobs:
   checks:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    services:
+      redis:
+        image: redis:8.4-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
     steps:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
+          ref: ${{ inputs.ref || github.ref }}
           persist-credentials: false
 
       - name: Setup Node.js
@@ -88,8 +106,16 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Typecheck tests
+        run: npm run typecheck:tests
+
       - name: Unit tests
         run: npm test
+
+      - name: Redis event-store integration
+        env:
+          MCP_REDIS_TEST_URL: redis://127.0.0.1:6379
+        run: npm run test:redis
 
       - name: Build
         run: npm run build

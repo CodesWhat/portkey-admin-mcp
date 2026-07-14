@@ -12,12 +12,12 @@ This guide describes how to self-deploy this MCP server on Vercel.
 - Event store: `redis`
 - Auth: `clerk` (preferred for teams) or `bearer` (internal-only)
 
-Why: serverless instances scale and restart; stateless + Redis keeps resumability reliable across instances.
+Why: serverless instances scale and restart, so each POST and replay GET is handled independently. Redis maps the client's `Last-Event-ID` cursor back to the interrupted SSE stream across instances without introducing MCP session affinity.
 
 ## 1. Prerequisites
 
 - Portkey Admin API key with required scopes
-- Redis instance URL (for example Upstash Redis or any managed Redis)
+- Redis instance URL (for example Upstash Redis or another managed Redis service)
 - Vercel project connected to this repository
 - Optional but recommended: Clerk app for JWT auth
 
@@ -46,7 +46,6 @@ Required:
 - `MCP_SESSION_MODE=stateless`
 - `MCP_EVENT_STORE=redis`
 - `MCP_REDIS_URL=redis://...`
-- `MCP_MAX_SESSIONS=100` (adjust for your expected concurrency and memory budget)
 - `ALLOWED_ORIGINS=https://your-app-domain`
 - `MCP_TRUST_PROXY=true`
 

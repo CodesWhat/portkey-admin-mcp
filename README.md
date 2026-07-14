@@ -4,7 +4,7 @@
 
 <h1>Portkey Admin MCP Server</h1>
 
-**The full [Portkey](https://portkey.ai/) Admin API as an MCP server — 150 tools across prompts, configs, keys, analytics, and more.**
+**The full [Portkey](https://portkey.ai/) Admin API as an MCP server — 156 tools across prompts, configs, keys, analytics, and more.**
 
 </div>
 
@@ -117,7 +117,8 @@ Then use this config:
 | **Prompt Partials** | 7 | Reusable prompt fragments with versioning |
 | **Prompt Labels** | 5 | Organize prompt versions (production, staging, dev) |
 | **Configs** | 6 | Gateway routing, caching, retry, loadbalancing |
-| **API Keys** | 5 | Create and manage scoped API keys |
+| **API Keys** | 6 | Create, rotate, and manage scoped API keys |
+| **Secret References** | 5 | Manage AWS, Azure, and HashiCorp external-secret references |
 | **Virtual Keys** | 5 | Manage provider access keys |
 | **Collections** | 5 | Group prompts by app or project |
 | **Providers** | 5 | Manage AI provider configurations |
@@ -133,7 +134,7 @@ Then use this config:
 | **Users & Workspaces** | 20 | User management, invites, workspace members |
 | **Audit** | 1 | Audit log access |
 
-**150 tools total.** See [ENDPOINTS.md](./ENDPOINTS.md) for the full list with descriptions.
+**156 tools total.** See [ENDPOINTS.md](./ENDPOINTS.md) for the full list with descriptions.
 
 <hr>
 
@@ -202,8 +203,8 @@ For local-only HTTP use, leave `MCP_HOST` at its default `127.0.0.1`. Set `MCP_H
 | `MCP_AUTH_TOKEN` | — | Secret for bearer auth |
 | `MCP_ALLOW_UNAUTHENTICATED_HTTP` | — | Set to `true` only for intentional local unauthenticated HTTP debugging |
 | `MCP_SESSION_MODE` | `stateful` | `stateful` or `stateless` |
-| `MCP_MAX_SESSIONS` | `100` | Maximum concurrent stateful MCP sessions before new initialize requests are rejected |
-| `MCP_EVENT_STORE` | `off` | `off`, `memory`, or `redis` |
+| `MCP_MAX_SESSIONS` | `100` | Maximum concurrent stateful sessions or active stateless request handlers |
+| `MCP_EVENT_STORE` | `off` | `off`, `memory`, or `redis`; stateless `GET /mcp` replay requires `memory` or `redis` |
 | `MCP_REDIS_URL` | — | Redis URL for shared event store |
 | `MCP_TLS_KEY_PATH` | — | TLS key for native HTTPS |
 | `MCP_TLS_CERT_PATH` | — | TLS cert for native HTTPS |
@@ -217,7 +218,7 @@ For local-only HTTP use, leave `MCP_HOST` at its default `127.0.0.1`. Set `MCP_H
 Vercel support is kept as a reference proof of concept — we do not run a hosted deployment. See [docs/VERCEL_DEPLOYMENT.md](./docs/VERCEL_DEPLOYMENT.md) if you want to self-deploy.
 
 Key points:
-- Uses stateless mode with Redis event store
+- Uses stateless request handling with a shared Redis event store so `GET /mcp` can replay an interrupted SSE stream from `Last-Event-ID` without a session ID
 - Requires Clerk or bearer auth
 - Leave `MCP_TLS_*` unset (Vercel terminates HTTPS)
 - Set `MCP_PUBLIC_BASE_URL` to your deployment URL so advertised MCP endpoints never depend on request headers
@@ -272,7 +273,7 @@ npm run ci            # full pipeline (lint + typecheck + test + build + e2e + v
 
 ### Built With
 
-[![TypeScript](https://img.shields.io/badge/TypeScript_6.0-3178C6?logo=typescript&logoColor=fff)](https://www.typescriptlang.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript_7.0-3178C6?logo=typescript&logoColor=fff)](https://www.typescriptlang.org/)
 [![MCP SDK](https://img.shields.io/badge/MCP_SDK_1.29-000?logo=modelcontextprotocol&logoColor=fff)](https://github.com/modelcontextprotocol/typescript-sdk)
 [![Zod 4](https://img.shields.io/badge/Zod_4-3E67B1?logo=zod&logoColor=fff)](https://zod.dev/)
 [![Biome](https://img.shields.io/badge/Biome_2.5-60a5fa?logo=biome&logoColor=fff)](https://biomejs.dev/)

@@ -34,6 +34,7 @@ describe("getServerConfig", () => {
 		assert.equal(config.host, "127.0.0.1");
 		assert.equal(config.maxSessions, 100);
 		assert.equal(config.sessionTimeout, 3_600_000);
+		assert.equal(config.shutdownTimeout, 10_000);
 		assert.equal(config.tls.enabled, false);
 	});
 
@@ -63,11 +64,11 @@ describe("getServerConfig", () => {
 		assert.throws(() => getServerConfig(), /Invalid MCP_SESSION_MODE value/);
 	});
 
-	it("uses memory event store by default in stateless mode", () => {
+	it("disables the event store by default in stateless mode", () => {
 		process.env.MCP_SESSION_MODE = "stateless";
 		const config = getServerConfig();
 		assert.equal(config.sessionMode, "stateless");
-		assert.equal(config.eventStore.mode, "memory");
+		assert.equal(config.eventStore.mode, "off");
 	});
 
 	it("requires Redis URL when MCP_EVENT_STORE=redis", () => {
@@ -116,5 +117,33 @@ describe("getServerConfig", () => {
 		process.env.MCP_MAX_SESSIONS = "0";
 
 		assert.throws(() => getServerConfig(), /Invalid MCP_MAX_SESSIONS value/);
+	});
+
+	it("rejects numeric environment values with trailing characters", () => {
+		const invalidValues = [
+			["PORT", "3000oops", /Invalid PORT value/],
+			["MCP_SESSION_TIMEOUT", "1000ms", /Invalid MCP_SESSION_TIMEOUT value/],
+			["MCP_MAX_SESSIONS", "2.5", /Invalid MCP_MAX_SESSIONS value/],
+			[
+				"MCP_EVENT_TTL_SECONDS",
+				"60seconds",
+				/Invalid MCP_EVENT_TTL_SECONDS value/,
+			],
+		] as const;
+
+		for (const [name, value, expectedError] of invalidValues) {
+			resetEnv();
+			process.env[name] = value;
+			assert.throws(() => getServerConfig(), expectedError);
+		}
+	});
+
+	it("rejects a malformed shutdown timeout", () => {
+		process.env.MCP_SHUTDOWN_TIMEOUT_MS = "5000ms";
+
+		assert.throws(
+			() => getServerConfig(),
+			/Invalid MCP_SHUTDOWN_TIMEOUT_MS value/,
+		);
 	});
 });

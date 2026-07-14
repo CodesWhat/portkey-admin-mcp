@@ -42,11 +42,13 @@ const AUDIT_TOOL_SCHEMAS = {
 			),
 		current_page: z.coerce
 			.number()
+			.int()
 			.positive()
 			.optional()
 			.describe("Page number for pagination (starts at 1)"),
 		page_size: z.coerce
 			.number()
+			.int()
 			.positive()
 			.max(100)
 			.optional()

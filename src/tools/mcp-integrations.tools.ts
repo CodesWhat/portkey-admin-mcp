@@ -11,6 +11,7 @@ const MCP_INTEGRATIONS_TOOL_SCHEMAS = {
 	listMcpIntegrations: {
 		current_page: z.coerce
 			.number()
+			.int()
 			.positive()
 			.optional()
 			.describe("Page number for pagination"),

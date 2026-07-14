@@ -118,3 +118,10 @@ export const CreateApiKeyResponseSchema = z.object({
 	key: z.string(),
 	object: z.literal("api-key"),
 });
+
+// POST /api-keys/:id/rotate
+export const RotateApiKeyResponseSchema = z.object({
+	id: z.string().uuid(),
+	key: z.string().min(1),
+	key_transition_expires_at: z.iso.datetime(),
+});

@@ -1,18 +1,32 @@
+import { randomUUID } from "node:crypto";
 import type {
 	EventId,
 	EventStore,
 	StreamId,
 } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import type { JSONRPCMessage } from "@modelcontextprotocol/sdk/types.js";
-import type { RedisClientType } from "redis";
+import type { RedisClientType, RedisModules } from "redis";
 import type { ServerConfig } from "./config.js";
 import { Logger } from "./logger.js";
+
+type NoRedisExtensions = Record<never, never>;
+type RedisResp2Client = RedisClientType<
+	RedisModules,
+	NoRedisExtensions,
+	NoRedisExtensions,
+	2
+>;
 
 interface ManagedEventStore {
 	mode: "off" | "memory" | "redis";
 	eventStore?: EventStore;
+	acquireReplayLease?: (eventId: EventId) => Promise<ReplayLeaseResult>;
 	close: () => Promise<void>;
 }
+
+type ReplayLeaseResult =
+	| { status: "acquired"; release: () => Promise<void> }
+	| { status: "conflict" | "missing" };
 
 interface MemoryEventRecord {
 	streamId: StreamId;
@@ -37,10 +51,10 @@ function assertSafeRedisId(id: string, kind: "streamId" | "eventId"): string {
 }
 
 class InMemoryEventStore implements EventStore {
-	private sequence = 0;
 	private readonly ttlMs: number;
 	private readonly events = new Map<EventId, MemoryEventRecord>();
 	private readonly streamEvents = new Map<StreamId, EventId[]>();
+	private readonly activeReplayStreams = new Set<StreamId>();
 	private lastCleanupAt = 0;
 
 	constructor(ttlSeconds: number) {
@@ -118,8 +132,7 @@ class InMemoryEventStore implements EventStore {
 	): Promise<EventId> {
 		this.maybeCleanupExpired();
 
-		this.sequence += 1;
-		const eventId = String(this.sequence);
+		const eventId = randomUUID();
 		this.events.set(eventId, {
 			streamId,
 			message,
@@ -137,6 +150,28 @@ class InMemoryEventStore implements EventStore {
 		const now = Date.now();
 		this.maybeCleanupExpired(now);
 		return this.getEventIfUnexpired(eventId, now)?.streamId;
+	}
+
+	async acquireReplayLease(eventId: EventId): Promise<ReplayLeaseResult> {
+		const streamId = await this.getStreamIdForEventId(eventId);
+		if (!streamId) {
+			return { status: "missing" };
+		}
+		if (this.activeReplayStreams.has(streamId)) {
+			return { status: "conflict" };
+		}
+
+		this.activeReplayStreams.add(streamId);
+		let released = false;
+		return {
+			status: "acquired",
+			release: async () => {
+				if (!released) {
+					released = true;
+					this.activeReplayStreams.delete(streamId);
+				}
+			},
+		};
 	}
 
 	async replayEventsAfter(
@@ -174,7 +209,7 @@ class InMemoryEventStore implements EventStore {
 }
 
 class RedisEventStore implements EventStore {
-	client: RedisClientType | undefined;
+	client: RedisResp2Client | undefined;
 	private readonly redisUrl: string;
 	private readonly ttlSeconds: number;
 	private readonly keyPrefix: string;
@@ -198,10 +233,22 @@ class RedisEventStore implements EventStore {
 		return `${this.keyPrefix}:stream:${assertSafeRedisId(streamId, "streamId")}:events`;
 	}
 
+	private replayLeaseKey(streamId: StreamId): string {
+		return `${this.keyPrefix}:stream:${assertSafeRedisId(streamId, "streamId")}:replay-lease`;
+	}
+
 	private async ensureConnected(): Promise<void> {
 		if (!this.client) {
 			const { createClient } = await import("redis");
-			this.client = createClient({ url: this.redisUrl });
+			this.client = createClient({
+				url: this.redisUrl,
+				// node-redis v6 defaults to RESP3, a 5-second command timeout, and a
+				// 30-second keepalive delay. Keep the event store's v5 behavior stable
+				// while taking the v6 fixes and supported runtime baseline.
+				RESP: 2,
+				socket: { keepAliveInitialDelay: 5_000 },
+				commandOptions: { timeout: undefined },
+			});
 			this.client.on("error", (error) => {
 				Logger.error("Redis event store error", {
 					metadata: {
@@ -225,7 +272,7 @@ class RedisEventStore implements EventStore {
 		await this.connectPromise;
 	}
 
-	private getConnectedClient(): RedisClientType {
+	private getConnectedClient(): RedisResp2Client {
 		if (!this.client) {
 			throw new Error("Redis client not initialized");
 		}
@@ -239,18 +286,20 @@ class RedisEventStore implements EventStore {
 		await this.ensureConnected();
 		const client = this.getConnectedClient();
 
-		const eventId = String(await client.incr(this.counterKey()));
+		const sequence = await client.incr(this.counterKey());
+		const eventId = randomUUID();
 		const eventKey = this.eventKey(eventId);
 		const streamKey = this.streamEventsKey(streamId);
 
 		const tx = client.multi();
 		tx.hSet(eventKey, {
 			streamId,
+			sequence: String(sequence),
 			message: JSON.stringify(message),
 		});
 		tx.expire(eventKey, this.ttlSeconds);
 		tx.zAdd(streamKey, {
-			score: Number(eventId),
+			score: sequence,
 			value: eventId,
 		});
 		tx.expire(streamKey, this.ttlSeconds);
@@ -271,6 +320,39 @@ class RedisEventStore implements EventStore {
 		return streamId || undefined;
 	}
 
+	async acquireReplayLease(eventId: EventId): Promise<ReplayLeaseResult> {
+		const streamId = await this.getStreamIdForEventId(eventId);
+		if (!streamId) {
+			return { status: "missing" };
+		}
+
+		const client = this.getConnectedClient();
+		const leaseKey = this.replayLeaseKey(streamId);
+		const ownerToken = randomUUID();
+		const acquired = await client.set(leaseKey, ownerToken, {
+			NX: true,
+			PX: 60_000,
+		});
+		if (acquired !== "OK") {
+			return { status: "conflict" };
+		}
+
+		let released = false;
+		return {
+			status: "acquired",
+			release: async () => {
+				if (released) {
+					return;
+				}
+				released = true;
+				await client.eval(
+					"if redis.call('GET', KEYS[1]) == ARGV[1] then return redis.call('DEL', KEYS[1]) else return 0 end",
+					{ keys: [leaseKey], arguments: [ownerToken] },
+				);
+			},
+		};
+	}
+
 	async replayEventsAfter(
 		lastEventId: EventId,
 		{
@@ -286,9 +368,9 @@ class RedisEventStore implements EventStore {
 			throw new Error(`Event not found for replay: ${lastEventId}`);
 		}
 
-		const baseScore = Number(lastEventId);
+		const baseScore = Number(baseEvent.sequence);
 		if (!Number.isFinite(baseScore)) {
-			throw new Error(`Invalid replay event ID: ${lastEventId}`);
+			throw new Error(`Invalid replay sequence for event: ${lastEventId}`);
 		}
 
 		const eventIds = await client.zRangeByScore(
@@ -336,7 +418,7 @@ class RedisEventStore implements EventStore {
 			}
 		}
 		if (this.client.isOpen) {
-			await this.client.quit();
+			await this.client.close();
 		}
 	}
 }
@@ -352,9 +434,11 @@ export function createManagedEventStore(
 	}
 
 	if (config.eventStore.mode === "memory") {
+		const memoryStore = new InMemoryEventStore(config.eventStore.ttlSeconds);
 		return {
 			mode: "memory",
-			eventStore: new InMemoryEventStore(config.eventStore.ttlSeconds),
+			eventStore: memoryStore,
+			acquireReplayLease: (eventId) => memoryStore.acquireReplayLease(eventId),
 			close: async () => {},
 		};
 	}
@@ -368,6 +452,7 @@ export function createManagedEventStore(
 	return {
 		mode: "redis",
 		eventStore: redisStore,
+		acquireReplayLease: (eventId) => redisStore.acquireReplayLease(eventId),
 		close: async () => {
 			await redisStore.close();
 		},

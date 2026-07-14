@@ -61,12 +61,14 @@ const GUARDRAILS_TOOL_SCHEMAS = {
 			.describe("Filter guardrails by organization ID"),
 		page_size: z.coerce
 			.number()
+			.int()
 			.min(1)
 			.max(100)
 			.optional()
 			.describe("Number of items per page (1-100, default: 100)"),
 		current_page: z.coerce
 			.number()
+			.int()
 			.positive()
 			.optional()
 			.describe("Page number for pagination"),

@@ -67,7 +67,7 @@ const PKG = JSON.parse(
 	readFileSync(new URL("../package.json", import.meta.url), "utf-8"),
 );
 
-// All 150 expected tool names across 18 domains
+// All 156 expected tool names across 19 domains
 const EXPECTED_TOOLS = [
 	// users (10)
 	"list_all_users",
@@ -98,7 +98,7 @@ const EXPECTED_TOOLS = [
 	"update_config",
 	"delete_config",
 	"list_config_versions",
-	// keys (10)
+	// keys (11)
 	"list_virtual_keys",
 	"create_virtual_key",
 	"get_virtual_key",
@@ -109,6 +109,13 @@ const EXPECTED_TOOLS = [
 	"get_api_key",
 	"update_api_key",
 	"delete_api_key",
+	"rotate_api_key",
+	// secret references (5)
+	"create_secret_reference",
+	"list_secret_references",
+	"get_secret_reference",
+	"update_secret_reference",
+	"delete_secret_reference",
 	// collections (5)
 	"list_collections",
 	"create_collection",
@@ -385,14 +392,23 @@ describe("MCP E2E Protocol Tests", () => {
 					"portkey-admin://docs/workflow-guide",
 				);
 				assert.equal(guideContent.resource.mimeType, "text/markdown");
-				assert.match(guideContent.resource.text, /Workflow Guide/);
+				assert.ok(
+					"text" in guideContent.resource,
+					"expected an embedded text resource",
+				);
+				if ("text" in guideContent.resource) {
+					assert.match(guideContent.resource.text, /Workflow Guide/);
+				}
 			}
 
 			assert.equal(result.messages[1]?.role, "user");
 			const content = result.messages[1]?.content;
 			assert.equal(content?.type, "text");
 			if (content?.type === "text") {
-				assert.match(content.text, /promote a prompt from staging to production/);
+				assert.match(
+					content.text,
+					/promote a prompt from staging to production/,
+				);
 				assert.match(content.text, /Prefer read-only discovery tools first/);
 				assert.match(content.text, /not higher-priority instructions/);
 			}
@@ -467,6 +483,24 @@ describe("MCP E2E Protocol Tests", () => {
 			}
 		});
 
+		it("all pagination inputs require integers", async () => {
+			const result = await client.listTools();
+			for (const tool of result.tools) {
+				const properties = tool.inputSchema.properties as
+					| Record<string, { type?: string }>
+					| undefined;
+				for (const field of ["current_page", "page_size"] as const) {
+					if (properties?.[field]) {
+						assert.equal(
+							properties[field].type,
+							"integer",
+							`Tool "${tool.name}" ${field} should require an integer`,
+						);
+					}
+				}
+			}
+		});
+
 		it("all tools advertise an outputSchema", async () => {
 			const result = await client.listTools();
 			for (const tool of result.tools) {
@@ -489,6 +523,100 @@ describe("MCP E2E Protocol Tests", () => {
 					tool.description && tool.description.length > 0,
 					`Tool "${tool.name}" missing description`,
 				);
+			}
+		});
+
+		it("new control-plane tools describe every input field", async () => {
+			const result = await client.listTools();
+			const names = new Set([
+				"rotate_api_key",
+				"create_secret_reference",
+				"list_secret_references",
+				"get_secret_reference",
+				"update_secret_reference",
+				"delete_secret_reference",
+			]);
+
+			const assertPropertiesDescribed = (
+				properties: Record<string, unknown>,
+				path: string,
+			) => {
+				for (const [field, rawSchema] of Object.entries(properties)) {
+					const schema = rawSchema as {
+						description?: string;
+						properties?: Record<string, unknown>;
+						anyOf?: Array<{ properties?: Record<string, unknown> }>;
+					};
+					assert.ok(
+						schema.description?.trim(),
+						`${path}.${field} missing description`,
+					);
+					if (schema.properties) {
+						assertPropertiesDescribed(schema.properties, `${path}.${field}`);
+					}
+					for (const [index, variant] of (schema.anyOf ?? []).entries()) {
+						if (variant.properties) {
+							assertPropertiesDescribed(
+								variant.properties,
+								`${path}.${field}.anyOf[${index}]`,
+							);
+						}
+					}
+				}
+			};
+
+			for (const tool of result.tools.filter((tool) => names.has(tool.name))) {
+				assertPropertiesDescribed(
+					(tool.inputSchema.properties ?? {}) as Record<string, unknown>,
+					tool.name,
+				);
+			}
+		});
+
+		it("new control-plane tools expose exact auth variants and result shapes", async () => {
+			const result = await client.listTools();
+			const tools = new Map(result.tools.map((tool) => [tool.name, tool]));
+			const create = tools.get("create_secret_reference");
+			const authConfig = (
+				create?.inputSchema.properties as
+					| Record<string, { anyOf?: unknown[] }>
+					| undefined
+			)?.auth_config;
+			assert.equal(
+				authConfig?.anyOf?.length,
+				9,
+				"create_secret_reference should advertise all nine auth variants",
+			);
+			const update = tools.get("update_secret_reference");
+			const updateAuthConfig = (
+				update?.inputSchema.properties as
+					| Record<string, { anyOf?: unknown[] }>
+					| undefined
+			)?.auth_config;
+			assert.equal(
+				updateAuthConfig?.anyOf?.length,
+				3,
+				"update_secret_reference should separate AWS, Azure, and HashiCorp auth fields",
+			);
+
+			for (const [name, expectedFields] of [
+				[
+					"rotate_api_key",
+					["warning", "id", "key", "key_transition_expires_at"],
+				],
+				["create_secret_reference", ["id", "slug"]],
+				["list_secret_references", ["total", "secret_references"]],
+				["get_secret_reference", ["id", "auth_config"]],
+				["update_secret_reference", ["success"]],
+				["delete_secret_reference", ["success"]],
+			] as const) {
+				const outputProperties = tools.get(name)?.outputSchema?.properties as
+					| Record<string, { properties?: Record<string, unknown> }>
+					| undefined;
+				const dataProperties = outputProperties?.data?.properties ?? {};
+				for (const field of expectedFields) {
+					assert.ok(field in dataProperties, `${name} output missing ${field}`);
+				}
 			}
 		});
 

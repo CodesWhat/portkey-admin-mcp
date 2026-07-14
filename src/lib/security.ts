@@ -37,7 +37,18 @@ function parseOriginParts(value: string): OriginParts | null {
 }
 
 function normalizeHostWithoutPort(value: string): string {
-	return value.trim().toLowerCase().split(":")[0];
+	const normalized = value.trim().toLowerCase();
+	if (normalized.startsWith("[")) {
+		const bracketEnd = normalized.indexOf("]");
+		if (bracketEnd < 0) {
+			return normalized;
+		}
+		const remainder = normalized.slice(bracketEnd + 1);
+		return remainder === "" || /^:\d+$/.test(remainder)
+			? normalized.slice(0, bracketEnd + 1)
+			: normalized;
+	}
+	return normalized.split(":", 1)[0];
 }
 
 function isOriginMatch(origin: string, allowedOrigin: string): boolean {
@@ -70,7 +81,14 @@ function resolveAllowedOrigins(): string[] {
 			return parsed;
 		}
 	}
-	return ["http://localhost", "https://localhost"];
+	return [
+		"http://localhost",
+		"https://localhost",
+		"http://127.0.0.1",
+		"https://127.0.0.1",
+		"http://[::1]",
+		"https://[::1]",
+	];
 }
 
 const ALLOWED_ORIGINS = resolveAllowedOrigins();
@@ -196,7 +214,8 @@ function parsePositiveIntegerEnv(name: string, fallback: number): number {
 		return fallback;
 	}
 
-	const parsed = Number.parseInt(raw.trim(), 10);
+	const normalized = raw.trim();
+	const parsed = /^\d+$/.test(normalized) ? Number(normalized) : Number.NaN;
 	if (Number.isFinite(parsed) && Number.isInteger(parsed) && parsed > 0) {
 		return parsed;
 	}
