@@ -42,7 +42,7 @@ export { UsersService } from "./users.service.js";
 export type * from "./workspaces.service.js";
 export { WorkspacesService } from "./workspaces.service.js";
 
-import crypto from "node:crypto";
+import { createHmac, randomBytes } from "node:crypto";
 import { AnalyticsService } from "./analytics.service.js";
 import { AuditService } from "./audit.service.js";
 import { validateUrl } from "./base.service.js";
@@ -66,6 +66,7 @@ import { UsersService } from "./users.service.js";
 import { WorkspacesService } from "./workspaces.service.js";
 
 const MISSING_API_KEY_PLACEHOLDER = "__PORTKEY_API_KEY_NOT_CONFIGURED__";
+const SERVICE_CACHE_HMAC_KEY = randomBytes(32);
 
 function resolvePortkeyApiKey(apiKey?: string): string {
 	const resolvedApiKey = apiKey ?? process.env.PORTKEY_API_KEY;
@@ -83,7 +84,12 @@ function resolveSharedPortkeyApiKey(apiKey?: string): string {
 }
 
 function getSharedServiceCacheKey(apiKey: string): string {
-	const keyDigest = crypto.createHash("sha256").update(apiKey).digest("hex");
+	// A per-process HMAC makes cache identifiers deterministic only within this
+	// process and prevents API-key correlation or offline verification if an
+	// identifier is ever exposed in a diagnostic snapshot.
+	const keyDigest = createHmac("sha256", SERVICE_CACHE_HMAC_KEY)
+		.update(apiKey)
+		.digest("hex");
 	return JSON.stringify({
 		apiKey: keyDigest,
 		baseUrl: process.env.PORTKEY_BASE_URL?.trim() || "",
