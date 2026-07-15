@@ -1,4 +1,17 @@
 {
-  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["local>CodesWhat/.github:renovate-config"]
+	"$schema": "https://docs.renovatebot.com/renovate-schema.json",
+	"extends": ["local>CodesWhat/.github:renovate-config"],
+	"lockFileMaintenance": {
+		"enabled": true,
+		"automerge": true,
+		"minimumReleaseAge": null
+	},
+	"packageRules": [
+		{
+			"description": "Automerge non-major devDependency updates once CI passes",
+			"matchDepTypes": ["devDependencies"],
+			"matchUpdateTypes": ["minor", "patch"],
+			"automerge": true
+		}
+	]
 }
