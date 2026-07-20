@@ -414,13 +414,30 @@ describe("origin security configuration", () => {
 			new URL("../src/lib/http-app.ts", import.meta.url),
 			"utf8",
 		);
+		const packageJson = JSON.parse(
+			readFileSync(new URL("../package.json", import.meta.url), "utf8"),
+		) as { dependencies?: Record<string, string> };
+		const modeledLimiterIndex = httpApp.indexOf("expressRateLimit({");
 		const preAuthIndex = httpApp.indexOf("app.use(rateLimitMiddleware);");
 		const authIndex = httpApp.indexOf("app.use(mcpAuthMiddleware);");
 		const principalIndex = httpApp.indexOf(
 			"app.use(principalRateLimitMiddleware);",
 		);
 
+		assert.equal(
+			typeof packageJson.dependencies?.["express-rate-limit"],
+			"string",
+			"expected express-rate-limit to be a direct runtime dependency",
+		);
+		assert.ok(
+			modeledLimiterIndex >= 0,
+			"expected a CodeQL-modeled Express limiter",
+		);
 		assert.ok(preAuthIndex >= 0, "expected a pre-authentication limiter");
+		assert.ok(
+			modeledLimiterIndex < preAuthIndex,
+			"modeled IP limiter must run before the distributed limiter",
+		);
 		assert.ok(
 			preAuthIndex < authIndex,
 			"pre-auth limiter must run before auth",
