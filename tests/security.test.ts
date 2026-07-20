@@ -543,6 +543,38 @@ describe("origin security configuration", () => {
 		assert.equal(second.state.headers["Retry-After"], "60");
 	});
 
+	it("shares a pre-authentication bucket across an IPv6 subnet", async () => {
+		process.env.RATE_LIMIT_MAX = "1";
+		process.env.RATE_LIMIT_REFILL = "1";
+		process.env.RATE_LIMIT_WINDOW_MS = "60000";
+
+		const { rateLimitMiddleware } = await loadSecurityModule();
+		const first = createMockResponse();
+		const second = createMockResponse();
+		let firstNextCalled = false;
+		let secondNextCalled = false;
+
+		rateLimitMiddleware(
+			createMockRequest({ ip: "2001:db8:abcd:1200::1" }) as never,
+			first.response as never,
+			() => {
+				firstNextCalled = true;
+			},
+		);
+		rateLimitMiddleware(
+			createMockRequest({ ip: "2001:db8:abcd:12ff::2" }) as never,
+			second.response as never,
+			() => {
+				secondNextCalled = true;
+			},
+		);
+
+		assert.equal(firstNextCalled, true);
+		assert.equal(secondNextCalled, false);
+		assert.equal(second.state.statusCode, 429);
+		assert.deepEqual(second.state.body, { error: "Too Many Requests" });
+	});
+
 	it("separates rate-limit buckets by authenticated principal and IP", async () => {
 		process.env.RATE_LIMIT_MAX = "1";
 		process.env.RATE_LIMIT_REFILL = "1";
