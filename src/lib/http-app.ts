@@ -21,6 +21,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import cors from "cors";
 import express from "express";
+import { rateLimit as expressRateLimit } from "express-rate-limit";
 import helmet from "helmet";
 import { getSharedPortkeyService } from "../services/index.js";
 import {
@@ -43,6 +44,7 @@ import { createMcpServer, resolveToolDomains } from "./mcp-server.js";
 import {
 	closeRateLimitStore,
 	getAllowedOrigins,
+	getRateLimitConfig,
 	hostValidationMiddleware,
 	originValidationMiddleware,
 	principalRateLimitMiddleware,
@@ -548,9 +550,20 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 		app.use(hostValidationMiddleware);
 	}
 	app.use(originValidationMiddleware);
+	const rateLimitConfig = getRateLimitConfig();
+	app.use(
+		expressRateLimit({
+			windowMs: rateLimitConfig.windowMs,
+			limit: rateLimitConfig.maxTokens,
+			standardHeaders: false,
+			legacyHeaders: false,
+			validate: false,
+			skip: (req) => !rateLimitConfig.enabled || req.path !== "/mcp",
+			message: { error: "Too Many Requests" },
+		}),
+	);
 	app.use(rateLimitMiddleware);
-	// The custom IP limiter above is not one of CodeQL's modeled npm packages.
-	app.use(mcpAuthMiddleware); // codeql[js/missing-rate-limiting]
+	app.use(mcpAuthMiddleware);
 	app.use(principalRateLimitMiddleware);
 
 	// Parse/body-size errors need a controlled JSON response in HTTP mode.

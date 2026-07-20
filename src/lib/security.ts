@@ -392,7 +392,7 @@ const RATE_LIMIT_CONFIG: RateLimitConfig = {
 		process.env.RATE_LIMIT_REDIS_KEY_PREFIX?.trim() || "mcp:rate-limit",
 };
 
-function getRateLimitConfig(): RateLimitConfig {
+export function getRateLimitConfig(): RateLimitConfig {
 	return RATE_LIMIT_CONFIG;
 }
 
