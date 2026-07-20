@@ -53,7 +53,8 @@ ENV NODE_ENV=production
 ENV MCP_TRANSPORT=stdio
 ENV MCP_PORT=3000
 ENV MCP_HOST=0.0.0.0
-ENV RATE_LIMIT_SINGLE_PROCESS=true
+# HTTP production deployments must explicitly choose RATE_LIMIT_STORE=redis or
+# opt into single-process memory limits with RATE_LIMIT_SINGLE_PROCESS=true.
 
 # Expose HTTP port (used when MCP_TRANSPORT=http)
 EXPOSE 3000

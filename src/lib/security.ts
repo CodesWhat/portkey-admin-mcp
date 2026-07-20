@@ -226,7 +226,10 @@ interface RedisRateLimitOptions {
 	windowMs: number;
 	refillRate: number;
 	now: number;
+	timeoutMs?: number;
 }
+
+const RATE_LIMIT_REDIS_COMMAND_TIMEOUT_MS = 5_000;
 
 const REDIS_TOKEN_BUCKET_SCRIPT = `
 local values = redis.call('HMGET', KEYS[1], 'tokens', 'lastRefill')
@@ -264,14 +267,26 @@ export async function consumeRedisRateLimitToken(
 	client: RedisEvalClient,
 	options: RedisRateLimitOptions,
 ): Promise<{ allowed: boolean }> {
-	const result = await client.eval(REDIS_TOKEN_BUCKET_SCRIPT, {
-		keys: [options.key],
-		arguments: [
-			String(options.maxTokens),
-			String(options.windowMs),
-			String(options.refillRate),
-			String(options.now),
-		],
+	let timeout: NodeJS.Timeout | undefined;
+	const result = await Promise.race([
+		client.eval(REDIS_TOKEN_BUCKET_SCRIPT, {
+			keys: [options.key],
+			arguments: [
+				String(options.maxTokens),
+				String(options.windowMs),
+				String(options.refillRate),
+				String(options.now),
+			],
+		}),
+		new Promise<never>((_resolve, reject) => {
+			timeout = setTimeout(() => {
+				reject(new Error("Redis rate-limit command timed out"));
+			}, options.timeoutMs ?? RATE_LIMIT_REDIS_COMMAND_TIMEOUT_MS);
+		}),
+	]).finally(() => {
+		if (timeout) {
+			clearTimeout(timeout);
+		}
 	});
 	if (!Array.isArray(result) || result.length < 1) {
 		throw new Error("Invalid response from Redis rate-limit script");
@@ -491,7 +506,28 @@ interface RateLimitRedisClient extends RedisEvalClient {
 }
 
 let rateLimitRedisClient: RateLimitRedisClient | undefined;
+let rateLimitRedisCreatePromise: Promise<RateLimitRedisClient> | undefined;
 let rateLimitRedisConnectPromise: Promise<unknown> | undefined;
+
+async function createRateLimitRedisClient(
+	config: RateLimitConfig,
+): Promise<RateLimitRedisClient> {
+	const { createClient } = await import("redis");
+	const client = createClient({
+		url: config.redisUrl,
+		RESP: 2,
+		socket: { keepAliveInitialDelay: 5_000 },
+		commandOptions: { timeout: RATE_LIMIT_REDIS_COMMAND_TIMEOUT_MS },
+	}) as unknown as RateLimitRedisClient;
+	client.on("error", (error) => {
+		Logger.error("Redis rate-limit store error", {
+			metadata: {
+				error: error instanceof Error ? error.message : String(error),
+			},
+		});
+	});
+	return client;
+}
 
 async function getRateLimitRedisClient(
 	config: RateLimitConfig,
@@ -500,20 +536,13 @@ async function getRateLimitRedisClient(
 		throw new Error("Rate-limit Redis URL is not configured");
 	}
 	if (!rateLimitRedisClient) {
-		const { createClient } = await import("redis");
-		rateLimitRedisClient = createClient({
-			url: config.redisUrl,
-			RESP: 2,
-			socket: { keepAliveInitialDelay: 5_000 },
-			commandOptions: { timeout: undefined },
-		}) as unknown as RateLimitRedisClient;
-		rateLimitRedisClient.on("error", (error) => {
-			Logger.error("Redis rate-limit store error", {
-				metadata: {
-					error: error instanceof Error ? error.message : String(error),
-				},
-			});
-		});
+		rateLimitRedisCreatePromise ??= createRateLimitRedisClient(config).catch(
+			(error) => {
+				rateLimitRedisCreatePromise = undefined;
+				throw error;
+			},
+		);
+		rateLimitRedisClient = await rateLimitRedisCreatePromise;
 	}
 
 	if (!rateLimitRedisClient.isOpen) {
@@ -633,6 +662,14 @@ export function principalRateLimitMiddleware(
 }
 
 export async function closeRateLimitStore(): Promise<void> {
+	if (!rateLimitRedisClient && rateLimitRedisCreatePromise) {
+		try {
+			rateLimitRedisClient = await rateLimitRedisCreatePromise;
+		} catch {
+			rateLimitRedisCreatePromise = undefined;
+			return;
+		}
+	}
 	if (!rateLimitRedisClient) {
 		return;
 	}
@@ -647,6 +684,7 @@ export async function closeRateLimitStore(): Promise<void> {
 		await rateLimitRedisClient.close();
 	}
 	rateLimitRedisClient = undefined;
+	rateLimitRedisCreatePromise = undefined;
 	rateLimitRedisConnectPromise = undefined;
 }
 

@@ -164,7 +164,7 @@ The remaining issues concerned cross-user session/replay isolation, Portkey cred
 | Zizmor | No findings (1 ignored result and 16 explicit suppressions) |
 | Actionlint | 0 findings |
 | Lint, dead-code analysis, source/test typecheck, and build | Passed |
-| Repository tests | 293 passed, 0 failed |
+| Repository tests | 296 passed, 0 failed |
 | MCP end-to-end tests | 24 passed, 0 failed |
 | Live Redis integration tests | 2 passed: encrypted replay and atomic shared rate limiting |
 | README tool inventory | 156 tools across 19 files verified |

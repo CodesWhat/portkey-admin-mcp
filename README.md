@@ -223,6 +223,10 @@ For local-only HTTP use, leave `MCP_HOST` at its default `127.0.0.1`. Set `MCP_H
 | `RATE_LIMIT_REDIS_KEY_PREFIX` | `mcp:rate-limit` | Redis namespace for atomic pre-authentication IP and principal-plus-IP token buckets |
 | `RATE_LIMIT_MAX_BUCKETS` | `10000` | Maximum local buckets in explicit memory mode before new clients share overflow capacity |
 
+Production containers must choose their rate-limit topology explicitly: set
+`RATE_LIMIT_STORE=redis` for multi-instance deployments, or set
+`RATE_LIMIT_SINGLE_PROCESS=true` only for a single long-lived process.
+
 <details>
 <summary><strong>Vercel deployment</strong></summary>
 
