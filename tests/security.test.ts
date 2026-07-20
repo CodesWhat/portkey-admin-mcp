@@ -72,6 +72,15 @@ describe("supply-chain configuration", () => {
 		assert.match(productionStage, /\/usr\/local\/bin\/npm/);
 		assert.match(productionStage, /\/usr\/local\/bin\/npx/);
 	});
+
+	it("requires deployments to choose their production rate-limit topology", () => {
+		const dockerfile = readFileSync(
+			new URL("../Dockerfile", import.meta.url),
+			"utf8",
+		);
+
+		assert.doesNotMatch(dockerfile, /ENV RATE_LIMIT_SINGLE_PROCESS=/);
+	});
 });
 
 function resetEnv(): void {
@@ -359,6 +368,45 @@ describe("origin security configuration", () => {
 			() => loadSecurityModule(),
 			/RATE_LIMIT_SINGLE_PROCESS=true/,
 		);
+	});
+
+	it("serializes Redis client creation and keeps command timeouts finite", () => {
+		const securitySource = readFileSync(
+			new URL("../src/lib/security.ts", import.meta.url),
+			"utf8",
+		);
+
+		assert.match(securitySource, /rateLimitRedisCreatePromise\s*\?\?=/);
+		assert.doesNotMatch(
+			securitySource,
+			/commandOptions:\s*\{\s*timeout:\s*undefined\s*\}/,
+		);
+	});
+
+	it("fails closed when a Redis rate-limit command stalls", async () => {
+		const { consumeRedisRateLimitToken } = await loadSecurityModule();
+		const stalledClient = {
+			eval: () => new Promise<never>(() => undefined),
+		};
+		const decision = consumeRedisRateLimitToken(stalledClient, {
+			key: "test:stalled",
+			maxTokens: 1,
+			windowMs: 60_000,
+			refillRate: 1,
+			now: Date.now(),
+			timeoutMs: 5,
+		} as never).then(
+			() => "resolved",
+			() => "rejected",
+		);
+		const outcome = await Promise.race([
+			decision,
+			new Promise<"hung">((resolve) => {
+				setTimeout(() => resolve("hung"), 50);
+			}),
+		]);
+
+		assert.equal(outcome, "rejected");
 	});
 
 	it("rate-limits authentication before applying the principal-aware limit", () => {
