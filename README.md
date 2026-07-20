@@ -26,7 +26,7 @@
 <hr>
 
 > [!IMPORTANT]
-> **Maintenance mode.** Portkey was acquired by **Palo Alto Networks** (completed 2026‑05‑29) and is being folded into the Prisma AIRS platform. The Portkey Admin API this server targets is **live and unchanged as of June 2026**, and this project still works end‑to‑end — but it is now in **maintenance mode**: security and dependency patches only, no new features, pending Palo Alto's post‑acquisition API roadmap. If the hosted Admin API is ever deprecated, point `PORTKEY_BASE_URL` at a self‑hosted [Portkey gateway](https://github.com/Portkey-AI/gateway). See [docs/audit-2026-06.md](./docs/audit-2026-06.md) for the full assessment.
+> **Maintenance mode.** Portkey was acquired by **Palo Alto Networks** (completed 2026‑05‑29) and is being folded into the Prisma AIRS platform. The Portkey Admin API this server targets is **live and unchanged as of June 2026**, and this project still works end‑to‑end — but it is now in **maintenance mode**: security and dependency patches only, no new features, pending Palo Alto's post‑acquisition API roadmap. If the hosted Admin API is ever deprecated, point `PORTKEY_BASE_URL` at a self‑hosted [Portkey gateway](https://github.com/Portkey-AI/gateway). See [docs/audit-2026-06.md](./docs/audit-2026-06.md) for the full assessment and [security_best_practices_report.md](./security_best_practices_report.md) for the 0.6.0 security-hardening review.
 
 <h2 align="center">📑 Contents</h2>
 
