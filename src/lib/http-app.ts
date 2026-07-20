@@ -45,6 +45,7 @@ import {
 	getAllowedOrigins,
 	hostValidationMiddleware,
 	originValidationMiddleware,
+	preAuthRateLimitMiddleware,
 	rateLimitMiddleware,
 } from "./security.js";
 import { SessionStore } from "./session-store.js";
@@ -547,6 +548,7 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 		app.use(hostValidationMiddleware);
 	}
 	app.use(originValidationMiddleware);
+	app.use(preAuthRateLimitMiddleware);
 	app.use(mcpAuthMiddleware);
 	app.use(rateLimitMiddleware);
 

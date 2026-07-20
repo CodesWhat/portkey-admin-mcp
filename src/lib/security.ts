@@ -385,13 +385,22 @@ function getRateLimitConfig(): RateLimitConfig {
 const buckets = new Map<string, TokenBucket>();
 let overflowBucket: TokenBucket | undefined;
 
-function getClientIdentifier(req: Request, res: Response): string {
+type RateLimitScope = "authentication" | "principal";
+
+function getClientIdentifier(
+	req: Request,
+	res: Response,
+	scope: RateLimitScope,
+): string {
 	const principal = res.locals?.authPrincipal as AuthPrincipal | undefined;
-	const principalKey = principal
-		? getPrincipalOwnerKey(principal)
-		: "unauthenticated";
+	const principalKey =
+		scope === "principal" && principal
+			? getPrincipalOwnerKey(principal)
+			: scope;
 	const trustedIp = req.ip || "unknown";
 	return createHash("sha256")
+		.update(scope, "utf8")
+		.update("\0", "utf8")
 		.update(principalKey, "utf8")
 		.update("\0", "utf8")
 		.update(trustedIp, "utf8")
@@ -543,10 +552,8 @@ function applyRateLimitDecision(
 	res.status(429).json({ error: "Too Many Requests" });
 }
 
-/**
- * Express middleware for rate limiting using token bucket algorithm
- */
-export function rateLimitMiddleware(
+function applyRateLimit(
+	scope: RateLimitScope,
 	req: Request,
 	res: Response,
 	next: NextFunction,
@@ -564,8 +571,12 @@ export function rateLimitMiddleware(
 		next();
 		return;
 	}
+	if (scope === "authentication" && req.path !== "/mcp") {
+		next();
+		return;
+	}
 
-	const clientId = getClientIdentifier(req, res);
+	const clientId = getClientIdentifier(req, res, scope);
 
 	if (config.store === "memory") {
 		const { allowed } = consumeToken(clientId, config);
@@ -595,6 +606,30 @@ export function rateLimitMiddleware(
 			res.status(503).json({ error: "Rate limit service unavailable" });
 		}
 	})();
+}
+
+/**
+ * Limits authentication attempts by trusted client IP before credentials are
+ * evaluated. This prevents invalid or missing credentials from bypassing the
+ * principal-aware limiter.
+ */
+export function preAuthRateLimitMiddleware(
+	req: Request,
+	res: Response,
+	next: NextFunction,
+): void | Promise<void> {
+	return applyRateLimit("authentication", req, res, next);
+}
+
+/**
+ * Limits authenticated work by principal and trusted client IP.
+ */
+export function rateLimitMiddleware(
+	req: Request,
+	res: Response,
+	next: NextFunction,
+): void | Promise<void> {
+	return applyRateLimit("principal", req, res, next);
 }
 
 export async function closeRateLimitStore(): Promise<void> {

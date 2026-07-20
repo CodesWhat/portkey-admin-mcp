@@ -57,6 +57,9 @@ Recommended:
 - `RATE_LIMIT_ENABLED=true`
 - `RATE_LIMIT_REDIS_URL=rediss://...` (optional; falls back to `MCP_REDIS_URL`)
 
+The shared limiter applies an IP bucket before authentication and a separate
+principal-plus-IP bucket after authentication.
+
 Generate the replay encryption key locally with `openssl rand -base64 32`. Store
 it only as a Vercel secret. Rotating it makes unexpired replay events unreadable;
 the default replay TTL is five minutes.

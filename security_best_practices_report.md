@@ -26,7 +26,7 @@ The remaining issues concerned cross-user session/replay isolation, Portkey cred
 | SEC-004 | Fixed | Credentialed Portkey calls use manual redirects; plaintext and private upstreams require separate explicit opt-ins |
 | SEC-005 | Fixed | Production Redis requires TLS, replay payloads use AES-256-GCM, owners are enforced, and default retention is 300 seconds |
 | SEC-006 | Fixed | Renovate waits seven days with no automerge; packaging occurs without OIDC and publishing consumes only the verified tarball artifact |
-| SEC-007 | Fixed | Production requires explicit single-process memory mode or an atomic shared Redis limiter keyed by principal plus trusted IP |
+| SEC-007 | Fixed | Production requires explicit single-process memory mode or atomic shared Redis buckets for pre-authentication IP attempts and authenticated principal-plus-IP work |
 | SEC-008 | Fixed | The runtime image removes npm/npx and npm's global module tree after installing production dependencies |
 
 ## High severity
@@ -122,7 +122,7 @@ The remaining issues concerned cross-user session/replay isolation, Portkey cred
 - **Location:** `src/lib/security.ts:233-253`, `src/lib/security.ts:286-371`, `docs/VERCEL_DEPLOYMENT.md:52-56`
 - **Evidence:** Token buckets are stored in a process-local `Map`. The Vercel/serverless guide recommends enabling this limiter even though cold starts and horizontal instances create independent buckets.
 - **Impact:** A caller can receive a fresh allowance on new instances, and aggregate traffic can exceed the configured limit. This weakens brute-force/abuse and resource-exhaustion protection for a privileged API.
-- **Fix:** Enforce the primary limit at the edge/API gateway or use a Redis-backed atomic limiter keyed by authenticated principal plus source IP. Retain the local limiter only as defense in depth.
+- **Fix:** Enforce the primary limit at the edge/API gateway or use Redis-backed atomic buckets: one keyed by trusted source IP before authentication and another keyed by authenticated principal plus trusted IP afterward. Retain the local limiter only as defense in depth.
 - **Mitigation:** Use Vercel/WAF limits and Portkey-side quotas, and keep `MCP_MAX_SESSIONS` conservative.
 - **False-positive notes:** The current implementation is adequate for a single long-lived process when `trust proxy` matches the actual proxy topology.
 
@@ -164,7 +164,7 @@ The remaining issues concerned cross-user session/replay isolation, Portkey cred
 | Zizmor | No findings (1 ignored result and 16 explicit suppressions) |
 | Actionlint | 0 findings |
 | Lint, dead-code analysis, source/test typecheck, and build | Passed |
-| Repository tests | 291 passed, 0 failed |
+| Repository tests | 293 passed, 0 failed |
 | MCP end-to-end tests | 24 passed, 0 failed |
 | Live Redis integration tests | 2 passed: encrypted replay and atomic shared rate limiting |
 | README tool inventory | 156 tools across 19 files verified |

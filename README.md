@@ -220,7 +220,7 @@ For local-only HTTP use, leave `MCP_HOST` at its default `127.0.0.1`. Set `MCP_H
 | `MCP_TRUST_PROXY` | `false` | Trust proxy headers (for reverse proxies) |
 | `RATE_LIMIT_STORE` | `memory` | `redis` for multi-instance/serverless deployments; production memory mode requires `RATE_LIMIT_SINGLE_PROCESS=true` |
 | `RATE_LIMIT_REDIS_URL` | — | Shared limiter Redis URL, falling back to `MCP_REDIS_URL`/`REDIS_URL`; production requires `rediss://` |
-| `RATE_LIMIT_REDIS_KEY_PREFIX` | `mcp:rate-limit` | Redis namespace for atomic principal-plus-IP token buckets |
+| `RATE_LIMIT_REDIS_KEY_PREFIX` | `mcp:rate-limit` | Redis namespace for atomic pre-authentication IP and principal-plus-IP token buckets |
 | `RATE_LIMIT_MAX_BUCKETS` | `10000` | Maximum local buckets in explicit memory mode before new clients share overflow capacity |
 
 <details>
