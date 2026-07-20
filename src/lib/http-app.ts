@@ -550,8 +550,7 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 	app.use(originValidationMiddleware);
 	app.use(rateLimitMiddleware);
 	// The custom IP limiter above is not one of CodeQL's modeled npm packages.
-	// codeql[js/missing-rate-limiting]
-	app.use(mcpAuthMiddleware);
+	app.use(mcpAuthMiddleware); // codeql[js/missing-rate-limiting]
 	app.use(principalRateLimitMiddleware);
 
 	// Parse/body-size errors need a controlled JSON response in HTTP mode.
