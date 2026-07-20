@@ -1,4 +1,9 @@
-import { randomUUID } from "node:crypto";
+import {
+	createCipheriv,
+	createDecipheriv,
+	randomBytes,
+	randomUUID,
+} from "node:crypto";
 import type {
 	EventId,
 	EventStore,
@@ -17,10 +22,13 @@ type RedisResp2Client = RedisClientType<
 	2
 >;
 
-interface ManagedEventStore {
+export interface ManagedEventStore {
 	mode: "off" | "memory" | "redis";
-	eventStore?: EventStore;
-	acquireReplayLease?: (eventId: EventId) => Promise<ReplayLeaseResult>;
+	eventStoreForOwner: (ownerKey: string) => EventStore | undefined;
+	acquireReplayLease?: (
+		eventId: EventId,
+		ownerKey: string,
+	) => Promise<ReplayLeaseResult>;
 	close: () => Promise<void>;
 }
 
@@ -30,11 +38,92 @@ type ReplayLeaseResult =
 
 interface MemoryEventRecord {
 	streamId: StreamId;
+	ownerKey: string;
 	message: JSONRPCMessage;
 	expiresAt: number;
 }
 
+interface MemoryEventStoreState {
+	events: Map<EventId, MemoryEventRecord>;
+	streamEvents: Map<StreamId, EventId[]>;
+	activeReplayStreams: Set<StreamId>;
+	lastCleanupAt: number;
+}
+
 const EVENT_STORE_CLEANUP_INTERVAL_MS = 30_000;
+const EVENT_PAYLOAD_ENCRYPTION_VERSION = "v1";
+const EVENT_PAYLOAD_AAD = Buffer.from(
+	"portkey-admin-mcp:event-payload:v1",
+	"utf8",
+);
+
+function assertEncryptionKey(key: Buffer): void {
+	if (key.length !== 32) {
+		throw new Error("Event payload encryption requires a 32-byte key");
+	}
+}
+
+export function encryptEventPayload(
+	message: JSONRPCMessage,
+	key: Buffer,
+): string {
+	assertEncryptionKey(key);
+	const iv = randomBytes(12);
+	const cipher = createCipheriv("aes-256-gcm", key, iv, {
+		authTagLength: 16,
+	});
+	cipher.setAAD(EVENT_PAYLOAD_AAD);
+	const ciphertext = Buffer.concat([
+		cipher.update(JSON.stringify(message), "utf8"),
+		cipher.final(),
+	]);
+	const authenticationTag = cipher.getAuthTag();
+	return [
+		EVENT_PAYLOAD_ENCRYPTION_VERSION,
+		iv.toString("base64url"),
+		authenticationTag.toString("base64url"),
+		ciphertext.toString("base64url"),
+	].join(".");
+}
+
+export function decryptEventPayload(
+	encoded: string,
+	key: Buffer,
+): JSONRPCMessage {
+	assertEncryptionKey(key);
+	const [version, encodedIv, encodedTag, encodedCiphertext, ...rest] =
+		encoded.split(".");
+	if (
+		version !== EVENT_PAYLOAD_ENCRYPTION_VERSION ||
+		!encodedIv ||
+		!encodedTag ||
+		!encodedCiphertext ||
+		rest.length > 0
+	) {
+		throw new Error("Invalid encrypted event payload envelope");
+	}
+
+	const iv = Buffer.from(encodedIv, "base64url");
+	const authenticationTag = Buffer.from(encodedTag, "base64url");
+	if (iv.length !== 12) {
+		throw new Error("Encrypted event payload must use a 12-byte nonce");
+	}
+	if (authenticationTag.length !== 16) {
+		throw new Error(
+			"Encrypted event payload must use a 16-byte authentication tag",
+		);
+	}
+	const decipher = createDecipheriv("aes-256-gcm", key, iv, {
+		authTagLength: 16,
+	});
+	decipher.setAAD(EVENT_PAYLOAD_AAD);
+	decipher.setAuthTag(authenticationTag);
+	const plaintext = Buffer.concat([
+		decipher.update(Buffer.from(encodedCiphertext, "base64url")),
+		decipher.final(),
+	]);
+	return JSON.parse(plaintext.toString("utf8")) as JSONRPCMessage;
+}
 
 // Stream and event identifiers are embedded directly in Redis keys. Constrain
 // them to a safe character set so a malformed Last-Event-ID header (client-
@@ -52,35 +141,48 @@ function assertSafeRedisId(id: string, kind: "streamId" | "eventId"): string {
 
 class InMemoryEventStore implements EventStore {
 	private readonly ttlMs: number;
-	private readonly events = new Map<EventId, MemoryEventRecord>();
-	private readonly streamEvents = new Map<StreamId, EventId[]>();
-	private readonly activeReplayStreams = new Set<StreamId>();
-	private lastCleanupAt = 0;
+	private readonly ownerKey: string;
+	private readonly state: MemoryEventStoreState;
 
-	constructor(ttlSeconds: number) {
+	constructor(
+		ttlSeconds: number,
+		ownerKey: string,
+		state: MemoryEventStoreState = {
+			events: new Map(),
+			streamEvents: new Map(),
+			activeReplayStreams: new Set(),
+			lastCleanupAt: 0,
+		},
+	) {
 		this.ttlMs = ttlSeconds * 1000;
+		this.ownerKey = ownerKey;
+		this.state = state;
+	}
+
+	forOwner(ownerKey: string): InMemoryEventStore {
+		return new InMemoryEventStore(this.ttlMs / 1000, ownerKey, this.state);
 	}
 
 	private removeEvent(
 		eventId: EventId,
-		event: MemoryEventRecord | undefined = this.events.get(eventId),
+		event: MemoryEventRecord | undefined = this.state.events.get(eventId),
 	): void {
 		if (!event) {
 			return;
 		}
 
-		this.events.delete(eventId);
+		this.state.events.delete(eventId);
 
-		const eventIds = this.streamEvents.get(event.streamId);
+		const eventIds = this.state.streamEvents.get(event.streamId);
 		if (!eventIds) {
 			return;
 		}
 
 		const filtered = eventIds.filter((candidate) => candidate !== eventId);
 		if (filtered.length === 0) {
-			this.streamEvents.delete(event.streamId);
+			this.state.streamEvents.delete(event.streamId);
 		} else if (filtered.length !== eventIds.length) {
-			this.streamEvents.set(event.streamId, filtered);
+			this.state.streamEvents.set(event.streamId, filtered);
 		}
 	}
 
@@ -88,8 +190,11 @@ class InMemoryEventStore implements EventStore {
 		eventId: EventId,
 		now = Date.now(),
 	): MemoryEventRecord | undefined {
-		const event = this.events.get(eventId);
+		const event = this.state.events.get(eventId);
 		if (!event) {
+			return undefined;
+		}
+		if (event.ownerKey !== this.ownerKey) {
 			return undefined;
 		}
 		if (event.expiresAt > now) {
@@ -101,29 +206,31 @@ class InMemoryEventStore implements EventStore {
 	}
 
 	private cleanupExpired(now = Date.now()): void {
-		for (const [eventId, event] of this.events.entries()) {
+		for (const [eventId, event] of this.state.events.entries()) {
 			if (event.expiresAt <= now) {
-				this.events.delete(eventId);
+				this.state.events.delete(eventId);
 			}
 		}
 
-		for (const [streamId, eventIds] of this.streamEvents.entries()) {
-			const filtered = eventIds.filter((eventId) => this.events.has(eventId));
+		for (const [streamId, eventIds] of this.state.streamEvents.entries()) {
+			const filtered = eventIds.filter((eventId) =>
+				this.state.events.has(eventId),
+			);
 			if (filtered.length === 0) {
-				this.streamEvents.delete(streamId);
+				this.state.streamEvents.delete(streamId);
 			} else if (filtered.length !== eventIds.length) {
-				this.streamEvents.set(streamId, filtered);
+				this.state.streamEvents.set(streamId, filtered);
 			}
 		}
 	}
 
 	private maybeCleanupExpired(now = Date.now()): void {
-		if (now - this.lastCleanupAt < EVENT_STORE_CLEANUP_INTERVAL_MS) {
+		if (now - this.state.lastCleanupAt < EVENT_STORE_CLEANUP_INTERVAL_MS) {
 			return;
 		}
 
 		this.cleanupExpired(now);
-		this.lastCleanupAt = now;
+		this.state.lastCleanupAt = now;
 	}
 
 	async storeEvent(
@@ -133,15 +240,16 @@ class InMemoryEventStore implements EventStore {
 		this.maybeCleanupExpired();
 
 		const eventId = randomUUID();
-		this.events.set(eventId, {
+		this.state.events.set(eventId, {
 			streamId,
+			ownerKey: this.ownerKey,
 			message,
 			expiresAt: Date.now() + this.ttlMs,
 		});
 
-		const streamIds = this.streamEvents.get(streamId) || [];
+		const streamIds = this.state.streamEvents.get(streamId) || [];
 		streamIds.push(eventId);
-		this.streamEvents.set(streamId, streamIds);
+		this.state.streamEvents.set(streamId, streamIds);
 
 		return eventId;
 	}
@@ -157,18 +265,18 @@ class InMemoryEventStore implements EventStore {
 		if (!streamId) {
 			return { status: "missing" };
 		}
-		if (this.activeReplayStreams.has(streamId)) {
+		if (this.state.activeReplayStreams.has(streamId)) {
 			return { status: "conflict" };
 		}
 
-		this.activeReplayStreams.add(streamId);
+		this.state.activeReplayStreams.add(streamId);
 		let released = false;
 		return {
 			status: "acquired",
 			release: async () => {
 				if (!released) {
 					released = true;
-					this.activeReplayStreams.delete(streamId);
+					this.state.activeReplayStreams.delete(streamId);
 				}
 			},
 		};
@@ -188,7 +296,7 @@ class InMemoryEventStore implements EventStore {
 			throw new Error(`Event not found for replay: ${lastEventId}`);
 		}
 
-		const eventIds = this.streamEvents.get(lastEvent.streamId) || [];
+		const eventIds = this.state.streamEvents.get(lastEvent.streamId) || [];
 		const index = eventIds.indexOf(lastEventId);
 		if (index < 0) {
 			throw new Error(
@@ -209,16 +317,52 @@ class InMemoryEventStore implements EventStore {
 }
 
 class RedisEventStore implements EventStore {
-	client: RedisResp2Client | undefined;
 	private readonly redisUrl: string;
 	private readonly ttlSeconds: number;
 	private readonly keyPrefix: string;
-	private connectPromise: Promise<unknown> | undefined;
+	private readonly ownerKey: string;
+	private readonly encryptionKey: Buffer;
+	private readonly connection: {
+		client?: RedisResp2Client;
+		connectPromise?: Promise<unknown>;
+	};
 
-	constructor(redisUrl: string, keyPrefix: string, ttlSeconds: number) {
+	constructor(
+		redisUrl: string,
+		keyPrefix: string,
+		ttlSeconds: number,
+		ownerKey: string,
+		encryptionKey: Buffer,
+		connection: {
+			client?: RedisResp2Client;
+			connectPromise?: Promise<unknown>;
+		} = {},
+	) {
 		this.redisUrl = redisUrl;
 		this.ttlSeconds = ttlSeconds;
 		this.keyPrefix = keyPrefix;
+		this.ownerKey = ownerKey;
+		this.encryptionKey = encryptionKey;
+		this.connection = connection;
+	}
+
+	get client(): RedisResp2Client | undefined {
+		return this.connection.client;
+	}
+
+	set client(client: RedisResp2Client | undefined) {
+		this.connection.client = client;
+	}
+
+	forOwner(ownerKey: string): RedisEventStore {
+		return new RedisEventStore(
+			this.redisUrl,
+			this.keyPrefix,
+			this.ttlSeconds,
+			ownerKey,
+			this.encryptionKey,
+			this.connection,
+		);
 	}
 
 	private counterKey(): string {
@@ -238,9 +382,9 @@ class RedisEventStore implements EventStore {
 	}
 
 	private async ensureConnected(): Promise<void> {
-		if (!this.client) {
+		if (!this.connection.client) {
 			const { createClient } = await import("redis");
-			this.client = createClient({
+			this.connection.client = createClient({
 				url: this.redisUrl,
 				// node-redis v6 defaults to RESP3, a 5-second command timeout, and a
 				// 30-second keepalive delay. Keep the event store's v5 behavior stable
@@ -249,7 +393,7 @@ class RedisEventStore implements EventStore {
 				socket: { keepAliveInitialDelay: 5_000 },
 				commandOptions: { timeout: undefined },
 			});
-			this.client.on("error", (error) => {
+			this.connection.client.on("error", (error) => {
 				Logger.error("Redis event store error", {
 					metadata: {
 						error: error instanceof Error ? error.message : String(error),
@@ -258,25 +402,27 @@ class RedisEventStore implements EventStore {
 			});
 		}
 
-		if (this.client.isOpen) {
+		if (this.connection.client.isOpen) {
 			return;
 		}
 
-		if (!this.connectPromise) {
-			this.connectPromise = this.client.connect().catch((error) => {
-				this.connectPromise = undefined;
-				throw error;
-			});
+		if (!this.connection.connectPromise) {
+			this.connection.connectPromise = this.connection.client
+				.connect()
+				.catch((error) => {
+					this.connection.connectPromise = undefined;
+					throw error;
+				});
 		}
 
-		await this.connectPromise;
+		await this.connection.connectPromise;
 	}
 
 	private getConnectedClient(): RedisResp2Client {
-		if (!this.client) {
+		if (!this.connection.client) {
 			throw new Error("Redis client not initialized");
 		}
-		return this.client;
+		return this.connection.client;
 	}
 
 	async storeEvent(
@@ -294,8 +440,9 @@ class RedisEventStore implements EventStore {
 		const tx = client.multi();
 		tx.hSet(eventKey, {
 			streamId,
+			ownerKey: this.ownerKey,
 			sequence: String(sequence),
-			message: JSON.stringify(message),
+			message: encryptEventPayload(message, this.encryptionKey),
 		});
 		tx.expire(eventKey, this.ttlSeconds);
 		tx.zAdd(streamKey, {
@@ -313,11 +460,12 @@ class RedisEventStore implements EventStore {
 			return undefined;
 		}
 		await this.ensureConnected();
-		const streamId = await this.getConnectedClient().hGet(
+		const event = await this.getConnectedClient().hGetAll(
 			this.eventKey(eventId),
-			"streamId",
 		);
-		return streamId || undefined;
+		return event.ownerKey === this.ownerKey
+			? event.streamId || undefined
+			: undefined;
 	}
 
 	async acquireReplayLease(eventId: EventId): Promise<ReplayLeaseResult> {
@@ -364,7 +512,7 @@ class RedisEventStore implements EventStore {
 
 		const baseEvent = await client.hGetAll(this.eventKey(lastEventId));
 		const streamId = baseEvent.streamId;
-		if (!streamId) {
+		if (!streamId || baseEvent.ownerKey !== this.ownerKey) {
 			throw new Error(`Event not found for replay: ${lastEventId}`);
 		}
 
@@ -385,18 +533,25 @@ class RedisEventStore implements EventStore {
 
 		const tx = client.multi();
 		for (const eventId of eventIds) {
-			tx.hGet(this.eventKey(eventId), "message");
+			tx.hGetAll(this.eventKey(eventId));
 		}
-		const encodedMessages = await tx.exec();
+		const encodedEvents = await tx.exec();
 
 		for (const [index, eventId] of eventIds.entries()) {
-			const encoded = encodedMessages[index];
-			if (typeof encoded !== "string") {
+			const event = encodedEvents[index];
+			if (
+				typeof event !== "object" ||
+				event === null ||
+				!("message" in event) ||
+				!("ownerKey" in event) ||
+				event.ownerKey !== this.ownerKey ||
+				typeof event.message !== "string"
+			) {
 				continue;
 			}
 			let message: JSONRPCMessage;
 			try {
-				message = JSON.parse(encoded) as JSONRPCMessage;
+				message = decryptEventPayload(event.message, this.encryptionKey);
 			} catch {
 				continue;
 			}
@@ -407,18 +562,18 @@ class RedisEventStore implements EventStore {
 	}
 
 	async close(): Promise<void> {
-		if (!this.client) {
+		if (!this.connection.client) {
 			return;
 		}
-		if (!this.client.isOpen && this.connectPromise) {
+		if (!this.connection.client.isOpen && this.connection.connectPromise) {
 			try {
-				await this.connectPromise;
+				await this.connection.connectPromise;
 			} catch {
 				// Ignore connect failures during shutdown.
 			}
 		}
-		if (this.client.isOpen) {
-			await this.client.close();
+		if (this.connection.client.isOpen) {
+			await this.connection.client.close();
 		}
 	}
 }
@@ -429,30 +584,45 @@ export function createManagedEventStore(
 	if (config.eventStore.mode === "off") {
 		return {
 			mode: "off",
+			eventStoreForOwner: () => undefined,
 			close: async () => {},
 		};
 	}
 
 	if (config.eventStore.mode === "memory") {
-		const memoryStore = new InMemoryEventStore(config.eventStore.ttlSeconds);
+		const memoryStore = new InMemoryEventStore(
+			config.eventStore.ttlSeconds,
+			"internal",
+		);
 		return {
 			mode: "memory",
-			eventStore: memoryStore,
-			acquireReplayLease: (eventId) => memoryStore.acquireReplayLease(eventId),
+			eventStoreForOwner: (ownerKey) => memoryStore.forOwner(ownerKey),
+			acquireReplayLease: (eventId, ownerKey) =>
+				memoryStore.forOwner(ownerKey).acquireReplayLease(eventId),
 			close: async () => {},
 		};
+	}
+
+	const encryptionKey = config.eventStore.encryptionKey;
+	if (!encryptionKey) {
+		throw new Error(
+			"Redis event store requires MCP_EVENT_ENCRYPTION_KEY configuration",
+		);
 	}
 
 	const redisStore = new RedisEventStore(
 		config.eventStore.redisUrl as string,
 		config.eventStore.redisKeyPrefix,
 		config.eventStore.ttlSeconds,
+		"internal",
+		encryptionKey,
 	);
 
 	return {
 		mode: "redis",
-		eventStore: redisStore,
-		acquireReplayLease: (eventId) => redisStore.acquireReplayLease(eventId),
+		eventStoreForOwner: (ownerKey) => redisStore.forOwner(ownerKey),
+		acquireReplayLease: (eventId, ownerKey) =>
+			redisStore.forOwner(ownerKey).acquireReplayLease(eventId),
 		close: async () => {
 			await redisStore.close();
 		},

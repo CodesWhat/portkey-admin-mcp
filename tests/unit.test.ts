@@ -14,7 +14,11 @@ import { before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { toJsonSchemaCompat } from "@modelcontextprotocol/sdk/server/zod-json-schema-compat.js";
 import { z } from "zod";
-import { createManagedEventStore } from "../src/lib/event-store.js";
+import {
+	createManagedEventStore,
+	decryptEventPayload,
+	encryptEventPayload,
+} from "../src/lib/event-store.js";
 import {
 	buildQueryString,
 	FetchError,
@@ -317,6 +321,7 @@ describe("BaseService HTTP execution", () => {
 				fetchCalls.map(({ url, options }) => ({
 					url,
 					method: options.method,
+					redirect: options.redirect,
 					headers: options.headers,
 					body: options.body,
 				})),
@@ -324,6 +329,7 @@ describe("BaseService HTTP execution", () => {
 					{
 						url: "https://example.portkey.test/v1/resource?filter=alpha+beta&page=2",
 						method: "GET",
+						redirect: "manual",
 						headers: {
 							"x-portkey-api-key": "test-dummy-key",
 							Accept: "application/json",
@@ -333,6 +339,7 @@ describe("BaseService HTTP execution", () => {
 					{
 						url: "https://example.portkey.test/v1/resource",
 						method: "POST",
+						redirect: "manual",
 						headers: {
 							"x-portkey-api-key": "test-dummy-key",
 							"Content-Type": "application/json",
@@ -343,6 +350,7 @@ describe("BaseService HTTP execution", () => {
 					{
 						url: "https://example.portkey.test/v1/resource/123",
 						method: "PUT",
+						redirect: "manual",
 						headers: {
 							"x-portkey-api-key": "test-dummy-key",
 							"Content-Type": "application/json",
@@ -353,6 +361,7 @@ describe("BaseService HTTP execution", () => {
 					{
 						url: "https://example.portkey.test/v1/resource/123",
 						method: "DELETE",
+						redirect: "manual",
 						headers: {
 							"x-portkey-api-key": "test-dummy-key",
 							Accept: "application/json",
@@ -882,6 +891,7 @@ describe("SessionStore capacity limits", () => {
 
 		store.set("session-1", {
 			transport: createFakeTransport(),
+			ownerKey: "principal-a",
 			createdAt: 1,
 			lastActivity: 1,
 		});
@@ -890,6 +900,7 @@ describe("SessionStore capacity limits", () => {
 			() =>
 				store.set("session-2", {
 					transport: createFakeTransport(),
+					ownerKey: "principal-a",
 					createdAt: 2,
 					lastActivity: 2,
 				}),
@@ -905,6 +916,20 @@ describe("SessionStore capacity limits", () => {
 		store.releaseReservation();
 		assert.equal(store.tryReserve(), true);
 	});
+
+	it("returns a session only to the principal that owns it", () => {
+		const store = new SessionStore();
+		const entry = {
+			transport: createFakeTransport(),
+			ownerKey: "principal-a",
+			createdAt: 1,
+			lastActivity: 1,
+		};
+		store.set("session-1", entry);
+
+		assert.equal(store.getOwned("session-1", "principal-a"), entry);
+		assert.equal(store.getOwned("session-1", "principal-b"), undefined);
+	});
 });
 
 // ---------------------------------------------------------------------------
@@ -912,6 +937,74 @@ describe("SessionStore capacity limits", () => {
 // ---------------------------------------------------------------------------
 
 describe("InMemoryEventStore cleanup throttling", () => {
+	it("encrypts persisted event payloads with authenticated encryption", () => {
+		const key = Buffer.alloc(32, 7);
+		const message = {
+			jsonrpc: "2.0" as const,
+			id: 1,
+			result: { api_key: "one-time-secret" },
+		};
+
+		const encrypted = encryptEventPayload(message, key);
+		assert.ok(!encrypted.includes("one-time-secret"));
+		assert.deepEqual(decryptEventPayload(encrypted, key), message);
+		const shortTagEnvelope = encrypted.split(".");
+		shortTagEnvelope[2] = Buffer.from(
+			shortTagEnvelope[2] as string,
+			"base64url",
+		)
+			.subarray(0, 8)
+			.toString("base64url");
+		assert.throws(
+			() => decryptEventPayload(shortTagEnvelope.join("."), key),
+			/16-byte authentication tag/,
+		);
+
+		const tampered = `${encrypted.slice(0, -1)}${encrypted.endsWith("A") ? "B" : "A"}`;
+		assert.throws(() => decryptEventPayload(tampered, key));
+	});
+
+	it("does not expose replay events across principals", async () => {
+		const managedStore = createManagedEventStore({
+			transport: "http",
+			sessionMode: "stateless",
+			eventStore: {
+				mode: "memory",
+				ttlSeconds: 60,
+				redisKeyPrefix: "test",
+			},
+			protocol: "http",
+			port: 3000,
+			host: "127.0.0.1",
+			maxSessions: 100,
+			sessionTimeout: 3_600_000,
+			shutdownTimeout: 10_000,
+			tls: { enabled: false },
+		});
+		const principalA = managedStore.eventStoreForOwner("principal-a");
+		const principalB = managedStore.eventStoreForOwner("principal-b");
+		assert.ok(principalA);
+		assert.ok(principalB);
+
+		const eventId = await principalA.storeEvent("stream-1", {
+			jsonrpc: "2.0",
+			method: "first",
+		});
+
+		assert.equal(await principalB.getStreamIdForEventId?.(eventId), undefined);
+		await assert.rejects(
+			() =>
+				principalB.replayEventsAfter(eventId, {
+					send: async () => {},
+				}),
+			/event not found/i,
+		);
+		assert.equal(
+			(await managedStore.acquireReplayLease?.(eventId, "principal-b"))?.status,
+			"missing",
+		);
+	});
+
 	it("uses opaque event IDs while preserving replay order", async () => {
 		const managedStore = createManagedEventStore({
 			transport: "http",
@@ -929,9 +1022,8 @@ describe("InMemoryEventStore cleanup throttling", () => {
 			shutdownTimeout: 10_000,
 			tls: { enabled: false },
 		});
-		const eventStore = managedStore.eventStore as NonNullable<
-			typeof managedStore.eventStore
-		>;
+		const eventStore = managedStore.eventStoreForOwner("principal-a");
+		assert.ok(eventStore);
 
 		const firstEventId = await eventStore.storeEvent("stream-1", {
 			jsonrpc: "2.0",
@@ -971,33 +1063,34 @@ describe("InMemoryEventStore cleanup throttling", () => {
 			sessionTimeout: 3_600_000,
 			shutdownTimeout: 10_000,
 			tls: { enabled: false },
-		}) as unknown as {
-			eventStore: NonNullable<
-				ReturnType<typeof createManagedEventStore>["eventStore"]
-			>;
-			acquireReplayLease: (eventId: string) => Promise<{
-				status: "acquired" | "conflict" | "missing";
-				release?: () => Promise<void>;
-			}>;
-		};
-		const eventId = await managedStore.eventStore.storeEvent("stream-1", {
+		});
+		const eventStore = managedStore.eventStoreForOwner("principal-a");
+		assert.ok(eventStore);
+		const eventId = await eventStore.storeEvent("stream-1", {
 			jsonrpc: "2.0",
 			method: "first",
 		});
 
-		const first = await managedStore.acquireReplayLease(eventId);
+		const first = await managedStore.acquireReplayLease?.(
+			eventId,
+			"principal-a",
+		);
+		assert.ok(first);
 		assert.equal(first.status, "acquired");
 		assert.equal(
-			(await managedStore.acquireReplayLease(eventId)).status,
+			(await managedStore.acquireReplayLease?.(eventId, "principal-a"))?.status,
 			"conflict",
 		);
-		await first.release?.();
+		if (first.status === "acquired") {
+			await first.release();
+		}
 		assert.equal(
-			(await managedStore.acquireReplayLease(eventId)).status,
+			(await managedStore.acquireReplayLease?.(eventId, "principal-a"))?.status,
 			"acquired",
 		);
 		assert.equal(
-			(await managedStore.acquireReplayLease("missing-event")).status,
+			(await managedStore.acquireReplayLease?.("missing-event", "principal-a"))
+				?.status,
 			"missing",
 		);
 	});
@@ -1019,7 +1112,9 @@ describe("InMemoryEventStore cleanup throttling", () => {
 			shutdownTimeout: 10_000,
 			tls: { enabled: false },
 		});
-		const eventStore = managedStore.eventStore as unknown as {
+		const eventStore = managedStore.eventStoreForOwner(
+			"principal-a",
+		) as unknown as {
 			cleanupExpired: () => void;
 			storeEvent: (streamId: string, message: unknown) => Promise<string>;
 		};
@@ -1068,6 +1163,7 @@ describe("InMemoryEventStore cleanup throttling", () => {
 
 describe("RedisEventStore replay batching", () => {
 	it("replays queued events with one batched Redis fetch instead of per-event hGet calls", async () => {
+		const encryptionKey = Buffer.alloc(32, 7);
 		const managedStore = createManagedEventStore({
 			transport: "http",
 			sessionMode: "stateless",
@@ -1076,6 +1172,7 @@ describe("RedisEventStore replay batching", () => {
 				ttlSeconds: 60,
 				redisUrl: "redis://127.0.0.1:6379",
 				redisKeyPrefix: "test",
+				encryptionKey,
 			},
 			protocol: "http",
 			port: 3000,
@@ -1085,7 +1182,9 @@ describe("RedisEventStore replay batching", () => {
 			shutdownTimeout: 10_000,
 			tls: { enabled: false },
 		});
-		const eventStore = managedStore.eventStore as unknown as {
+		const eventStore = managedStore.eventStoreForOwner(
+			"principal-a",
+		) as unknown as {
 			client: {
 				isOpen: boolean;
 				hGetAll: (key: string) => Promise<Record<string, string>>;
@@ -1096,8 +1195,8 @@ describe("RedisEventStore replay batching", () => {
 				) => Promise<string[]>;
 				hGet: (key: string, field: string) => Promise<string | null>;
 				multi: () => {
-					hGet: (key: string, field: string) => unknown;
-					exec: () => Promise<Array<string | null>>;
+					hGetAll: (key: string) => unknown;
+					exec: () => Promise<Array<Record<string, string>>>;
 				};
 			};
 			replayEventsAfter: (
@@ -1107,19 +1206,37 @@ describe("RedisEventStore replay batching", () => {
 				},
 			) => Promise<string>;
 		};
-		const batchedRequests: Array<{ key: string; field: string }> = [];
+		const batchedRequests: string[] = [];
 		let clientLevelHGetCalls = 0;
 		const sentEvents: Array<{ eventId: string; message: unknown }> = [];
 		const fakeMulti = {
-			hGet(key: string, field: string) {
-				batchedRequests.push({ key, field });
+			hGetAll(key: string) {
+				batchedRequests.push(key);
 				return fakeMulti;
 			},
 			async exec() {
 				return [
-					JSON.stringify({ jsonrpc: "2.0", method: "event-2" }),
-					JSON.stringify({ jsonrpc: "2.0", method: "event-3" }),
-					JSON.stringify({ jsonrpc: "2.0", method: "event-4" }),
+					{
+						ownerKey: "principal-a",
+						message: encryptEventPayload(
+							{ jsonrpc: "2.0", method: "event-2" },
+							encryptionKey,
+						),
+					},
+					{
+						ownerKey: "principal-a",
+						message: encryptEventPayload(
+							{ jsonrpc: "2.0", method: "event-3" },
+							encryptionKey,
+						),
+					},
+					{
+						ownerKey: "principal-a",
+						message: encryptEventPayload(
+							{ jsonrpc: "2.0", method: "event-4" },
+							encryptionKey,
+						),
+					},
 				];
 			},
 		};
@@ -1128,7 +1245,11 @@ describe("RedisEventStore replay batching", () => {
 			isOpen: true,
 			async hGetAll(key: string) {
 				assert.equal(key, "test:event:event-1-opaque");
-				return { streamId: "stream-1", sequence: "1" };
+				return {
+					streamId: "stream-1",
+					sequence: "1",
+					ownerKey: "principal-a",
+				};
 			},
 			async zRangeByScore(key: string, min: string, max: string) {
 				assert.equal(key, "test:stream:stream-1:events");
@@ -1154,9 +1275,9 @@ describe("RedisEventStore replay batching", () => {
 		assert.equal(streamId, "stream-1");
 		assert.equal(clientLevelHGetCalls, 0);
 		assert.deepEqual(batchedRequests, [
-			{ key: "test:event:event-2-opaque", field: "message" },
-			{ key: "test:event:event-3-opaque", field: "message" },
-			{ key: "test:event:event-4-opaque", field: "message" },
+			"test:event:event-2-opaque",
+			"test:event:event-3-opaque",
+			"test:event:event-4-opaque",
 		]);
 		assert.deepEqual(sentEvents, [
 			{

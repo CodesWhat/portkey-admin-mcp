@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import {
 	createServer as createHttpServer,
@@ -30,15 +30,18 @@ import {
 	type ToolDomain,
 } from "../tools/index.js";
 import {
+	type AuthPrincipal,
 	assertSafeHttpAuthConfig,
 	getHttpAuthConfig,
+	getPrincipalOwnerKey,
 	mcpAuthMiddleware,
 } from "./auth.js";
 import { getServerConfig, type ServerConfig } from "./config.js";
 import { createManagedEventStore } from "./event-store.js";
 import { Logger } from "./logger.js";
-import { createMcpServer } from "./mcp-server.js";
+import { createMcpServer, resolveToolDomains } from "./mcp-server.js";
 import {
+	closeRateLimitStore,
 	getAllowedOrigins,
 	hostValidationMiddleware,
 	originValidationMiddleware,
@@ -229,6 +232,18 @@ function respondJsonRpcClientError(
 	});
 }
 
+function getRequestOwnerKey(res: express.Response): string {
+	const principal = res.locals.authPrincipal as AuthPrincipal | undefined;
+	if (!principal) {
+		throw new Error("Authenticated MCP request is missing its principal");
+	}
+	return getPrincipalOwnerKey(principal);
+}
+
+function fingerprintCapabilityId(id: string): string {
+	return createHash("sha256").update(id, "utf8").digest("hex").slice(0, 16);
+}
+
 function parseRequestedToolDomains(
 	rawQuery: unknown,
 ): ToolDomain[] | undefined {
@@ -266,7 +281,7 @@ function parseRequestedToolDomains(
 		);
 	}
 
-	return normalizeToolDomains(normalizedDomains as ToolDomain[]);
+	return resolveToolDomains(normalizedDomains as ToolDomain[]);
 }
 
 function areToolDomainsEqual(
@@ -373,6 +388,7 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 		req: express.Request,
 		res: express.Response,
 		context: string,
+		ownerKey: string,
 		parsedBody?: unknown,
 		toolDomains?: readonly ToolDomain[],
 	): Promise<void> {
@@ -382,7 +398,7 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 		let replayStreamId: string | undefined;
 		let responseDisconnected = false;
 		const storedMessages = new WeakSet<object>();
-		const sharedEventStore = managedEventStore.eventStore;
+		const sharedEventStore = managedEventStore.eventStoreForOwner(ownerKey);
 		const requestEventStore: EventStore | undefined = sharedEventStore
 			? {
 					storeEvent: async (streamId: StreamId, message: JSONRPCMessage) => {
@@ -531,8 +547,8 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 		app.use(hostValidationMiddleware);
 	}
 	app.use(originValidationMiddleware);
-	app.use(rateLimitMiddleware);
 	app.use(mcpAuthMiddleware);
+	app.use(rateLimitMiddleware);
 
 	// Parse/body-size errors need a controlled JSON response in HTTP mode.
 	app.use(
@@ -724,6 +740,7 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 	 * Creates new sessions on initialize requests, reuses existing sessions otherwise
 	 */
 	app.post("/mcp", async (req, res) => {
+		const ownerKey = getRequestOwnerKey(res);
 		let requestedToolDomains: ToolDomain[] | undefined;
 		const protocolVersionHeader = getMcpProtocolVersion(req);
 		try {
@@ -762,6 +779,7 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 					req,
 					res,
 					"POST /mcp stateless",
+					ownerKey,
 					req.body,
 					requestedToolDomains,
 				);
@@ -774,7 +792,9 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 		const sessionId = req.headers["mcp-session-id"] as string | undefined;
 		let transport: StreamableHTTPServerTransport | undefined;
 		let hasReservedSessionSlot = false;
-		const sessionEntry = sessionId ? sessionStore.get(sessionId) : undefined;
+		const sessionEntry = sessionId
+			? sessionStore.getOwned(sessionId, ownerKey)
+			: undefined;
 
 		if (sessionId && sessionEntry) {
 			transport = sessionEntry.transport as StreamableHTTPServerTransport;
@@ -825,10 +845,11 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 
 			const newTransport = new StreamableHTTPServerTransport({
 				sessionIdGenerator: () => randomUUID(),
-				eventStore: managedEventStore.eventStore,
+				eventStore: managedEventStore.eventStoreForOwner(ownerKey),
 				onsessioninitialized: (id) => {
 					sessionStore.set(id, {
 						transport: newTransport,
+						ownerKey,
 						toolDomains: requestedToolDomains,
 						protocolVersion: getNegotiatedProtocolVersion(req.body),
 						createdAt: Date.now(),
@@ -836,13 +857,13 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 					});
 					hasReservedSessionSlot = false;
 					Logger.info("MCP session initialized", {
-						metadata: { sessionId: id },
+						metadata: { sessionFingerprint: fingerprintCapabilityId(id) },
 					});
 				},
 				onsessionclosed: (id) => {
 					sessionStore.delete(id);
 					Logger.info("MCP session closed", {
-						metadata: { sessionId: id },
+						metadata: { sessionFingerprint: fingerprintCapabilityId(id) },
 					});
 				},
 			});
@@ -907,6 +928,7 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 	 * MCP GET endpoint - handles SSE streams for server-to-client notifications
 	 */
 	app.get("/mcp", async (req, res) => {
+		const ownerKey = getRequestOwnerKey(res);
 		let requestedToolDomains: ToolDomain[] | undefined;
 		try {
 			requestedToolDomains = parseRequestedToolDomains(req.query.tools);
@@ -929,10 +951,8 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 				);
 				return;
 			}
-			if (
-				!managedEventStore.eventStore ||
-				!managedEventStore.acquireReplayLease
-			) {
+			const replayEventStore = managedEventStore.eventStoreForOwner(ownerKey);
+			if (!replayEventStore || !managedEventStore.acquireReplayLease) {
 				res.setHeader("Allow", "POST");
 				respondJsonRpcClientError(
 					res,
@@ -971,13 +991,11 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 				respondJsonRpcClientError(res, 400, protocolError, -32000);
 				return;
 			}
-			const replayEventStore = managedEventStore.eventStore;
-			if (!replayEventStore) {
-				return;
-			}
-
 			try {
-				const lease = await managedEventStore.acquireReplayLease(lastEventId);
+				const lease = await managedEventStore.acquireReplayLease(
+					lastEventId,
+					ownerKey,
+				);
 				if (lease.status !== "acquired") {
 					if (lease.status === "missing") {
 						respondJsonRpcClientError(
@@ -1092,7 +1110,7 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 			return;
 		}
 
-		const sessionEntry = sessionStore.get(sessionId);
+		const sessionEntry = sessionStore.getOwned(sessionId, ownerKey);
 		const transport = sessionEntry?.transport as
 			| StreamableHTTPServerTransport
 			| undefined;
@@ -1136,6 +1154,7 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 	 * MCP DELETE endpoint - closes sessions
 	 */
 	app.delete("/mcp", async (req, res) => {
+		const ownerKey = getRequestOwnerKey(res);
 		if (!isStatefulSessionMode) {
 			res.status(405).json({
 				jsonrpc: "2.0",
@@ -1163,7 +1182,7 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 			return;
 		}
 
-		const sessionEntry = sessionStore.get(sessionId);
+		const sessionEntry = sessionStore.getOwned(sessionId, ownerKey);
 		const transport = sessionEntry?.transport as
 			| StreamableHTTPServerTransport
 			| undefined;
@@ -1197,7 +1216,9 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 					const expiredIds = await sessionStore.cleanup(config.sessionTimeout);
 					for (const id of expiredIds) {
 						Logger.info("MCP session expired and cleaned up", {
-							metadata: { sessionId: id },
+							metadata: {
+								sessionFingerprint: fingerprintCapabilityId(id),
+							},
 						});
 					}
 				} catch (error) {
@@ -1249,7 +1270,7 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 					);
 					await Promise.allSettled(activeReplayOperations);
 				} finally {
-					await managedEventStore.close();
+					await Promise.all([managedEventStore.close(), closeRateLimitStore()]);
 				}
 			})();
 		}
@@ -1300,7 +1321,7 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 		console.log("  GET  /ready  - Readiness check");
 		console.log("  POST /mcp    - MCP requests");
 		console.log(
-			`  GET  /mcp    - ${isStatefulSessionMode ? "SSE notifications and replay" : managedEventStore.eventStore ? "SSE replay (requires Last-Event-ID)" : "Unavailable (event store off)"}`,
+			`  GET  /mcp    - ${isStatefulSessionMode ? "SSE notifications and replay" : managedEventStore.mode !== "off" ? "SSE replay (requires Last-Event-ID)" : "Unavailable (event store off)"}`,
 		);
 		console.log(
 			`  DELETE /mcp  - ${isStatefulSessionMode ? "Close session" : "Not used in stateless mode"}`,

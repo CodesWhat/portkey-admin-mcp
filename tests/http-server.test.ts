@@ -538,35 +538,67 @@ describe("HTTP server integration", () => {
 	});
 
 	it("registers only the selected tool domains for an HTTP session", async () => {
-		await withHttpServer({}, async ({ baseUrl }) => {
-			const transport = new StreamableHTTPClientTransport(
-				new URL(`${baseUrl}/mcp?tools=prompts,analytics`),
-				{
-					requestInit: {
-						headers: {
-							authorization: `Bearer ${AUTH_TOKEN}`,
+		await withHttpServer(
+			{ PORTKEY_TOOL_DOMAINS: "prompts,analytics,keys" },
+			async ({ baseUrl }) => {
+				const transport = new StreamableHTTPClientTransport(
+					new URL(`${baseUrl}/mcp?tools=prompts,analytics`),
+					{
+						requestInit: {
+							headers: {
+								authorization: `Bearer ${AUTH_TOKEN}`,
+							},
 						},
 					},
+				);
+				const client = new Client({
+					name: "http-tools-filter-test",
+					version: "1.0.0",
+				});
+
+				try {
+					await client.connect(transport);
+					const result = await client.listTools();
+					const toolNames = result.tools.map((tool) => tool.name);
+
+					assert.ok(toolNames.includes("create_prompt"));
+					assert.ok(toolNames.includes("get_request_analytics"));
+					assert.ok(!toolNames.includes("create_api_key"));
+					assert.ok(!toolNames.includes("list_all_users"));
+					assert.ok(!toolNames.includes("list_workspaces"));
+				} finally {
+					await client.close();
+				}
+			},
+		);
+	});
+
+	it("rejects tool domains outside the server-configured allowlist", async () => {
+		for (const sessionMode of ["stateful", "stateless"] as const) {
+			await withHttpServer(
+				{
+					PORTKEY_TOOL_DOMAINS: "prompts",
+					MCP_SESSION_MODE: sessionMode,
+				},
+				async ({ baseUrl }) => {
+					const response = await fetch(`${baseUrl}/mcp?tools=keys`, {
+						method: "POST",
+						headers: {
+							authorization: `Bearer ${AUTH_TOKEN}`,
+							"content-type": "application/json",
+							accept: "text/event-stream, application/json",
+						},
+						body: JSON.stringify(INIT_PAYLOAD),
+					});
+					const body = (await response.json()) as {
+						error?: { message?: string };
+					};
+
+					assert.equal(response.status, 400);
+					assert.match(body.error?.message ?? "", /not allowed/i);
 				},
 			);
-			const client = new Client({
-				name: "http-tools-filter-test",
-				version: "1.0.0",
-			});
-
-			try {
-				await client.connect(transport);
-				const result = await client.listTools();
-				const toolNames = result.tools.map((tool) => tool.name);
-
-				assert.ok(toolNames.includes("create_prompt"));
-				assert.ok(toolNames.includes("get_request_analytics"));
-				assert.ok(!toolNames.includes("list_all_users"));
-				assert.ok(!toolNames.includes("list_workspaces"));
-			} finally {
-				await client.close();
-			}
-		});
+		}
 	});
 
 	// ---------------------------------------------------------------------------
@@ -776,6 +808,7 @@ describe("HTTP server integration", () => {
 					MCP_EVENT_STORE: "memory",
 					PORTKEY_BASE_URL: `http://127.0.0.1:${upstreamPort}`,
 					PORTKEY_ALLOW_PRIVATE_BASE_URL: "true",
+					PORTKEY_ALLOW_INSECURE_HTTP: "true",
 				},
 				async ({ baseUrl }) => {
 					const postResponse = await fetch(`${baseUrl}/mcp`, {

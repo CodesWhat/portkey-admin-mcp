@@ -3,7 +3,9 @@
  * Origin validation and rate limiting middleware
  */
 
+import { createHash } from "node:crypto";
 import type { NextFunction, Request, Response } from "express";
+import { type AuthPrincipal, getPrincipalOwnerKey } from "./auth.js";
 import { Logger } from "./logger.js";
 
 // ============================================================================
@@ -197,15 +199,84 @@ export function hostValidationMiddleware(
 
 interface RateLimitConfig {
 	enabled: boolean;
+	store: "memory" | "redis";
 	maxTokens: number;
 	windowMs: number;
 	refillRate: number;
 	maxBuckets: number;
+	redisUrl?: string;
+	redisKeyPrefix: string;
 }
 
 interface TokenBucket {
 	tokens: number;
 	lastRefill: number;
+}
+
+interface RedisEvalClient {
+	eval(
+		script: string,
+		options: { keys: string[]; arguments: string[] },
+	): Promise<unknown>;
+}
+
+interface RedisRateLimitOptions {
+	key: string;
+	maxTokens: number;
+	windowMs: number;
+	refillRate: number;
+	now: number;
+}
+
+const REDIS_TOKEN_BUCKET_SCRIPT = `
+local values = redis.call('HMGET', KEYS[1], 'tokens', 'lastRefill')
+local tokens = tonumber(values[1])
+local lastRefill = tonumber(values[2])
+local maxTokens = tonumber(ARGV[1])
+local windowMs = tonumber(ARGV[2])
+local refillRate = tonumber(ARGV[3])
+local now = tonumber(ARGV[4])
+
+if not tokens or not lastRefill then
+  tokens = maxTokens
+  lastRefill = now
+end
+
+local elapsedMs = math.max(0, now - lastRefill)
+local tokensToAdd = math.floor((elapsedMs / windowMs) * refillRate)
+if tokensToAdd > 0 then
+  tokens = math.min(maxTokens, tokens + tokensToAdd)
+  lastRefill = now
+end
+
+local allowed = 0
+if tokens > 0 then
+  tokens = tokens - 1
+  allowed = 1
+end
+
+redis.call('HSET', KEYS[1], 'tokens', tokens, 'lastRefill', lastRefill)
+redis.call('PEXPIRE', KEYS[1], math.max(windowMs * 2, 1000))
+return { allowed, tokens }
+`;
+
+export async function consumeRedisRateLimitToken(
+	client: RedisEvalClient,
+	options: RedisRateLimitOptions,
+): Promise<{ allowed: boolean }> {
+	const result = await client.eval(REDIS_TOKEN_BUCKET_SCRIPT, {
+		keys: [options.key],
+		arguments: [
+			String(options.maxTokens),
+			String(options.windowMs),
+			String(options.refillRate),
+			String(options.now),
+		],
+	});
+	if (!Array.isArray(result) || result.length < 1) {
+		throw new Error("Invalid response from Redis rate-limit script");
+	}
+	return { allowed: Number(result[0]) === 1 };
 }
 
 function parsePositiveIntegerEnv(name: string, fallback: number): number {
@@ -230,13 +301,80 @@ function parsePositiveIntegerEnv(name: string, fallback: number): number {
 	return fallback;
 }
 
+function isExplicitlyEnabled(value: string | undefined): boolean {
+	return /^(1|true|yes)$/i.test(value?.trim() ?? "");
+}
+
+function resolveRateLimitStore(): "memory" | "redis" {
+	const store = process.env.RATE_LIMIT_STORE?.trim().toLowerCase() || "memory";
+	if (store !== "memory" && store !== "redis") {
+		throw new Error(
+			`Invalid RATE_LIMIT_STORE value: ${store}. Must be 'memory' or 'redis'`,
+		);
+	}
+	return store;
+}
+
+function resolveRateLimitRedisUrl(
+	store: "memory" | "redis",
+): string | undefined {
+	if (store !== "redis") {
+		return undefined;
+	}
+	const redisUrl =
+		process.env.RATE_LIMIT_REDIS_URL?.trim() ||
+		process.env.MCP_REDIS_URL?.trim() ||
+		process.env.REDIS_URL?.trim();
+	if (!redisUrl) {
+		throw new Error(
+			"RATE_LIMIT_STORE=redis requires RATE_LIMIT_REDIS_URL, MCP_REDIS_URL, or REDIS_URL",
+		);
+	}
+
+	let parsedUrl: URL;
+	try {
+		parsedUrl = new URL(redisUrl);
+	} catch {
+		throw new Error(
+			"Rate-limit Redis URL must be a valid redis:// or rediss:// URL",
+		);
+	}
+	if (!["redis:", "rediss:"].includes(parsedUrl.protocol)) {
+		throw new Error("Rate-limit Redis URL must use redis:// or rediss://");
+	}
+	if (
+		process.env.NODE_ENV?.trim().toLowerCase() === "production" &&
+		parsedUrl.protocol !== "rediss:"
+	) {
+		throw new Error("Rate-limit Redis URL must use rediss:// in production");
+	}
+	return redisUrl;
+}
+
 // Cache rate limit config at module load
+const rateLimitEnabled =
+	process.env.RATE_LIMIT_ENABLED?.trim().toLowerCase() !== "false";
+const rateLimitStore = resolveRateLimitStore();
+if (
+	rateLimitEnabled &&
+	rateLimitStore === "memory" &&
+	process.env.NODE_ENV?.trim().toLowerCase() === "production" &&
+	!isExplicitlyEnabled(process.env.RATE_LIMIT_SINGLE_PROCESS)
+) {
+	throw new Error(
+		"Production in-memory rate limiting requires RATE_LIMIT_SINGLE_PROCESS=true. Use RATE_LIMIT_STORE=redis for multi-instance deployments.",
+	);
+}
 const RATE_LIMIT_CONFIG: RateLimitConfig = {
-	enabled: process.env.RATE_LIMIT_ENABLED?.trim().toLowerCase() !== "false",
+	enabled: rateLimitEnabled,
+	store: rateLimitStore,
 	maxTokens: parsePositiveIntegerEnv("RATE_LIMIT_MAX", 60),
 	windowMs: parsePositiveIntegerEnv("RATE_LIMIT_WINDOW_MS", 60000),
 	refillRate: parsePositiveIntegerEnv("RATE_LIMIT_REFILL", 60),
 	maxBuckets: parsePositiveIntegerEnv("RATE_LIMIT_MAX_BUCKETS", 10000),
+	redisUrl: resolveRateLimitRedisUrl(rateLimitStore),
+	redisKeyPrefix:
+		process.env.RATE_LIMIT_REDIS_KEY_PREFIX?.trim() || "mcp:rate-limit",
 };
 
 function getRateLimitConfig(): RateLimitConfig {
@@ -247,9 +385,17 @@ function getRateLimitConfig(): RateLimitConfig {
 const buckets = new Map<string, TokenBucket>();
 let overflowBucket: TokenBucket | undefined;
 
-function getClientIdentifier(req: Request): string {
-	// Use Express's resolved client IP so raw forwarding headers cannot spoof identity.
-	return req.ip || "unknown";
+function getClientIdentifier(req: Request, res: Response): string {
+	const principal = res.locals?.authPrincipal as AuthPrincipal | undefined;
+	const principalKey = principal
+		? getPrincipalOwnerKey(principal)
+		: "unauthenticated";
+	const trustedIp = req.ip || "unknown";
+	return createHash("sha256")
+		.update(principalKey, "utf8")
+		.update("\0", "utf8")
+		.update(trustedIp, "utf8")
+		.digest("hex");
 }
 
 function refillBucket(bucket: TokenBucket, config: RateLimitConfig): void {
@@ -328,6 +474,75 @@ function consumeToken(
 	return { allowed: false };
 }
 
+interface RateLimitRedisClient extends RedisEvalClient {
+	isOpen: boolean;
+	connect(): Promise<unknown>;
+	close(): Promise<unknown>;
+	on(event: "error", listener: (error: unknown) => void): unknown;
+}
+
+let rateLimitRedisClient: RateLimitRedisClient | undefined;
+let rateLimitRedisConnectPromise: Promise<unknown> | undefined;
+
+async function getRateLimitRedisClient(
+	config: RateLimitConfig,
+): Promise<RateLimitRedisClient> {
+	if (!config.redisUrl) {
+		throw new Error("Rate-limit Redis URL is not configured");
+	}
+	if (!rateLimitRedisClient) {
+		const { createClient } = await import("redis");
+		rateLimitRedisClient = createClient({
+			url: config.redisUrl,
+			RESP: 2,
+			socket: { keepAliveInitialDelay: 5_000 },
+			commandOptions: { timeout: undefined },
+		}) as unknown as RateLimitRedisClient;
+		rateLimitRedisClient.on("error", (error) => {
+			Logger.error("Redis rate-limit store error", {
+				metadata: {
+					error: error instanceof Error ? error.message : String(error),
+				},
+			});
+		});
+	}
+
+	if (!rateLimitRedisClient.isOpen) {
+		rateLimitRedisConnectPromise ??= rateLimitRedisClient
+			.connect()
+			.catch((error) => {
+				rateLimitRedisConnectPromise = undefined;
+				throw error;
+			});
+		await rateLimitRedisConnectPromise;
+	}
+
+	return rateLimitRedisClient;
+}
+
+function applyRateLimitDecision(
+	allowed: boolean,
+	config: RateLimitConfig,
+	req: Request,
+	res: Response,
+	next: NextFunction,
+	clientId: string,
+): void {
+	if (allowed) {
+		next();
+		return;
+	}
+
+	const retryAfterMs = Math.ceil(config.windowMs / config.refillRate);
+	Logger.warn("Rate limit exceeded", {
+		path: req.path,
+		method: req.method,
+		metadata: { clientFingerprint: clientId.slice(0, 16), retryAfterMs },
+	});
+	res.setHeader("Retry-After", Math.ceil(retryAfterMs / 1000).toString());
+	res.status(429).json({ error: "Too Many Requests" });
+}
+
 /**
  * Express middleware for rate limiting using token bucket algorithm
  */
@@ -335,7 +550,7 @@ export function rateLimitMiddleware(
 	req: Request,
 	res: Response,
 	next: NextFunction,
-): void {
+): void | Promise<void> {
 	const config = getRateLimitConfig();
 
 	// Skip if rate limiting is disabled
@@ -350,25 +565,54 @@ export function rateLimitMiddleware(
 		return;
 	}
 
-	const clientId = getClientIdentifier(req);
+	const clientId = getClientIdentifier(req, res);
 
-	const { allowed } = consumeToken(clientId, config);
-
-	if (!allowed) {
-		const retryAfterMs = Math.ceil(config.windowMs / config.refillRate);
-
-		Logger.warn("Rate limit exceeded", {
-			path: req.path,
-			method: req.method,
-			metadata: { clientId, retryAfterMs },
-		});
-
-		res.setHeader("Retry-After", Math.ceil(retryAfterMs / 1000).toString());
-		res.status(429).json({ error: "Too Many Requests" });
+	if (config.store === "memory") {
+		const { allowed } = consumeToken(clientId, config);
+		applyRateLimitDecision(allowed, config, req, res, next, clientId);
 		return;
 	}
 
-	next();
+	return (async () => {
+		try {
+			const client = await getRateLimitRedisClient(config);
+			const { allowed } = await consumeRedisRateLimitToken(client, {
+				key: `${config.redisKeyPrefix}:${clientId}`,
+				maxTokens: config.maxTokens,
+				windowMs: config.windowMs,
+				refillRate: config.refillRate,
+				now: Date.now(),
+			});
+			applyRateLimitDecision(allowed, config, req, res, next, clientId);
+		} catch (error) {
+			Logger.error("Rate-limit store unavailable", {
+				path: req.path,
+				method: req.method,
+				metadata: {
+					error: error instanceof Error ? error.message : String(error),
+				},
+			});
+			res.status(503).json({ error: "Rate limit service unavailable" });
+		}
+	})();
+}
+
+export async function closeRateLimitStore(): Promise<void> {
+	if (!rateLimitRedisClient) {
+		return;
+	}
+	if (!rateLimitRedisClient.isOpen && rateLimitRedisConnectPromise) {
+		try {
+			await rateLimitRedisConnectPromise;
+		} catch {
+			// Ignore connection failures while shutting down.
+		}
+	}
+	if (rateLimitRedisClient.isOpen) {
+		await rateLimitRedisClient.close();
+	}
+	rateLimitRedisClient = undefined;
+	rateLimitRedisConnectPromise = undefined;
 }
 
 /** @public — consumed by tests via dynamic import */

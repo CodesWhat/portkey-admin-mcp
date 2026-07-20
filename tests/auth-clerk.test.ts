@@ -26,6 +26,10 @@ function resetEnv(): void {
 		"CLERK_ISSUER",
 		"CLERK_AUDIENCE",
 		"CLERK_JWKS_URL",
+		"CLERK_ALLOWED_SUBJECTS",
+		"CLERK_ALLOWED_ORGANIZATION_IDS",
+		"CLERK_ALLOWED_ROLES",
+		"CLERK_REQUIRED_PERMISSIONS",
 	]) {
 		if (key in ORIGINAL_ENV) {
 			process.env[key] = ORIGINAL_ENV[key];
@@ -38,6 +42,10 @@ function resetEnv(): void {
 /** Fresh module import — bypasses the module-level HTTP_AUTH_CONFIG constant. */
 async function loadAuthModule() {
 	return import(`../src/lib/auth.js?test=${Date.now()}-${Math.random()}`);
+}
+
+function allowTestClerkSubject(): void {
+	process.env.CLERK_ALLOWED_SUBJECTS = "user_test";
 }
 
 function createMockRequest(options?: {
@@ -95,6 +103,7 @@ describe("getHttpAuthConfig under clerk mode", () => {
 
 	it("accepts a valid clerk configuration with explicit JWKS URL", async () => {
 		process.env.MCP_AUTH_MODE = "clerk";
+		allowTestClerkSubject();
 		process.env.CLERK_ISSUER = "https://clerk.example.com";
 		process.env.CLERK_AUDIENCE = "my-audience";
 		process.env.CLERK_JWKS_URL =
@@ -112,8 +121,71 @@ describe("getHttpAuthConfig under clerk mode", () => {
 		);
 	});
 
+	it("rejects clerk mode without an explicit authorization policy", async () => {
+		process.env.MCP_AUTH_MODE = "clerk";
+		process.env.CLERK_ISSUER = "https://clerk.example.com";
+		process.env.CLERK_AUDIENCE = "my-audience";
+		process.env.CLERK_JWKS_URL =
+			"https://clerk.example.com/.well-known/jwks.json";
+
+		await assert.rejects(
+			() => loadAuthModule(),
+			/MCP_AUTH_MODE=clerk requires an explicit authorization policy/,
+		);
+	});
+
+	it("denies verified claims whose subject is outside the allowlist", async () => {
+		process.env.MCP_AUTH_MODE = "clerk";
+		process.env.CLERK_ISSUER = "https://clerk.example.com";
+		process.env.CLERK_AUDIENCE = "my-audience";
+		process.env.CLERK_JWKS_URL =
+			"https://clerk.example.com/.well-known/jwks.json";
+		process.env.CLERK_ALLOWED_SUBJECTS = "user_admin";
+
+		const { authorizeClerkClaims, getHttpAuthConfig } = await loadAuthModule();
+
+		assert.throws(
+			() => authorizeClerkClaims({ sub: "user_member" }, getHttpAuthConfig()),
+			/subject is not authorized/i,
+		);
+	});
+
+	it("authorizes claims that satisfy every configured constraint", async () => {
+		process.env.MCP_AUTH_MODE = "clerk";
+		process.env.CLERK_ISSUER = "https://clerk.example.com";
+		process.env.CLERK_AUDIENCE = "my-audience";
+		process.env.CLERK_ALLOWED_SUBJECTS = "user_admin,user_service";
+		process.env.CLERK_ALLOWED_ORGANIZATION_IDS = "org_primary";
+		process.env.CLERK_ALLOWED_ROLES = "org:admin";
+		process.env.CLERK_REQUIRED_PERMISSIONS =
+			"org:sys_memberships:manage,org:sys_domains:manage";
+
+		const { authorizeClerkClaims, getHttpAuthConfig } = await loadAuthModule();
+		const principal = authorizeClerkClaims(
+			{
+				sub: "user_admin",
+				o: {
+					id: "org_primary",
+					rol: "org:admin",
+					per: ["org:sys_memberships:manage", "org:sys_domains:manage"],
+				},
+			},
+			getHttpAuthConfig(),
+		);
+
+		assert.deepEqual(principal, {
+			id: "clerk:https://clerk.example.com:user_admin",
+			mode: "clerk",
+			subject: "user_admin",
+			organizationId: "org_primary",
+			roles: ["org:admin"],
+			permissions: ["org:sys_memberships:manage", "org:sys_domains:manage"],
+		});
+	});
+
 	it("throws a descriptive error when CLERK_ISSUER is missing", async () => {
 		process.env.MCP_AUTH_MODE = "clerk";
+		allowTestClerkSubject();
 		delete process.env.CLERK_ISSUER;
 		process.env.CLERK_AUDIENCE = "my-audience";
 		process.env.CLERK_JWKS_URL =
@@ -132,6 +204,7 @@ describe("getHttpAuthConfig under clerk mode", () => {
 
 	it("throws a descriptive error when CLERK_AUDIENCE is missing", async () => {
 		process.env.MCP_AUTH_MODE = "clerk";
+		allowTestClerkSubject();
 		process.env.CLERK_ISSUER = "https://clerk.example.com";
 		delete process.env.CLERK_AUDIENCE;
 		process.env.CLERK_JWKS_URL =
@@ -150,6 +223,7 @@ describe("getHttpAuthConfig under clerk mode", () => {
 
 	it("auto-derives JWKS URL from CLERK_ISSUER when CLERK_JWKS_URL is absent", async () => {
 		process.env.MCP_AUTH_MODE = "clerk";
+		allowTestClerkSubject();
 		process.env.CLERK_ISSUER = "https://clerk.example.com";
 		process.env.CLERK_AUDIENCE = "my-audience";
 		delete process.env.CLERK_JWKS_URL;
@@ -165,6 +239,7 @@ describe("getHttpAuthConfig under clerk mode", () => {
 
 	it("strips trailing slash from CLERK_ISSUER when auto-deriving JWKS URL", async () => {
 		process.env.MCP_AUTH_MODE = "clerk";
+		allowTestClerkSubject();
 		process.env.CLERK_ISSUER = "https://clerk.example.com/";
 		process.env.CLERK_AUDIENCE = "my-audience";
 		delete process.env.CLERK_JWKS_URL;
@@ -180,6 +255,7 @@ describe("getHttpAuthConfig under clerk mode", () => {
 
 	it("parses a comma-separated CLERK_AUDIENCE into an array", async () => {
 		process.env.MCP_AUTH_MODE = "clerk";
+		allowTestClerkSubject();
 		process.env.CLERK_ISSUER = "https://clerk.example.com";
 		process.env.CLERK_AUDIENCE = "audience-one, audience-two, audience-three";
 		delete process.env.CLERK_JWKS_URL;
@@ -196,6 +272,7 @@ describe("getHttpAuthConfig under clerk mode", () => {
 
 	it("throws when CLERK_ISSUER is not a valid https URL", async () => {
 		process.env.MCP_AUTH_MODE = "clerk";
+		allowTestClerkSubject();
 		process.env.CLERK_ISSUER = "http://insecure.example.com";
 		process.env.CLERK_AUDIENCE = "my-audience";
 		process.env.CLERK_JWKS_URL =
@@ -242,6 +319,7 @@ describe("mcpAuthMiddleware clerk JWT verification", () => {
 
 	it("returns 401 when Authorization header is missing in clerk mode", async () => {
 		process.env.MCP_AUTH_MODE = "clerk";
+		allowTestClerkSubject();
 		process.env.CLERK_ISSUER = "https://clerk.example.com";
 		process.env.CLERK_AUDIENCE = "test-audience";
 		delete process.env.CLERK_JWKS_URL;
@@ -267,6 +345,7 @@ describe("mcpAuthMiddleware clerk JWT verification", () => {
 
 	it("skips auth for non-/mcp paths in clerk mode", async () => {
 		process.env.MCP_AUTH_MODE = "clerk";
+		allowTestClerkSubject();
 		process.env.CLERK_ISSUER = "https://clerk.example.com";
 		process.env.CLERK_AUDIENCE = "test-audience";
 		delete process.env.CLERK_JWKS_URL;
@@ -293,6 +372,7 @@ describe("mcpAuthMiddleware clerk JWT verification", () => {
 		// This exercises the catch → 401 branch in mcpAuthMiddleware without
 		// needing a live JWKS endpoint or any ESM stub.
 		process.env.MCP_AUTH_MODE = "clerk";
+		allowTestClerkSubject();
 		process.env.CLERK_ISSUER = "https://clerk.example.com";
 		process.env.CLERK_AUDIENCE = "test-audience";
 		delete process.env.CLERK_JWKS_URL;
@@ -328,6 +408,7 @@ describe("mcpAuthMiddleware clerk JWT verification", () => {
 		// URL that will not resolve → createRemoteJWKSet defers the fetch until
 		// jwtVerify calls it, which then rejects → 401.
 		process.env.MCP_AUTH_MODE = "clerk";
+		allowTestClerkSubject();
 		process.env.CLERK_ISSUER = "https://clerk.example.test";
 		process.env.CLERK_AUDIENCE = "test-audience";
 		process.env.CLERK_JWKS_URL =

@@ -1,9 +1,78 @@
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
+import { readFileSync } from "node:fs";
 import { afterEach, describe, it } from "node:test";
 
 const ORIGINAL_ENV = { ...process.env };
 const ORIGINAL_TIMING_SAFE_EQUAL = crypto.timingSafeEqual;
+
+describe("supply-chain configuration", () => {
+	it("holds dependency updates for review after a seven-day release age", () => {
+		const renovate = JSON.parse(
+			readFileSync(new URL("../renovate.json", import.meta.url), "utf8"),
+		) as {
+			minimumReleaseAge?: string;
+			lockFileMaintenance?: { automerge?: boolean };
+			packageRules?: Array<{
+				automerge?: boolean;
+				minimumReleaseAge?: string;
+			}>;
+		};
+
+		assert.equal(renovate.minimumReleaseAge, "7 days");
+		assert.equal(renovate.lockFileMaintenance?.automerge, false);
+		assert.ok(
+			renovate.packageRules?.every((rule) => rule.automerge !== true) ?? true,
+		);
+		assert.ok(
+			renovate.packageRules?.every(
+				(rule) => rule.minimumReleaseAge === "7 days",
+			) ?? true,
+		);
+	});
+
+	it("keeps dependency execution out of the OIDC npm publishing job", () => {
+		const workflow = readFileSync(
+			new URL("../.github/workflows/release.yml", import.meta.url),
+			"utf8",
+		);
+		const packageJob = workflow.match(
+			/\n {2}package-npm:[\s\S]*?\n {2}publish-npm:/,
+		)?.[0];
+		const publishJob = workflow.match(
+			/\n {2}publish-npm:[\s\S]*?\n {2}publish-registry:/,
+		)?.[0];
+
+		assert.ok(packageJob, "expected an isolated package-npm job");
+		assert.doesNotMatch(packageJob, /id-token:\s*write/);
+		assert.match(
+			packageJob,
+			/actions\/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a/,
+		);
+
+		assert.ok(publishJob, "expected a publish-npm job");
+		assert.match(publishJob, /id-token:\s*write/);
+		assert.doesNotMatch(publishJob, /npm ci|npm run/);
+		assert.match(
+			publishJob,
+			/actions\/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c/,
+		);
+		assert.match(publishJob, /npm publish "\$TARBALL"[\s\S]*--ignore-scripts/);
+	});
+
+	it("removes npm tooling from the production container", () => {
+		const dockerfile = readFileSync(
+			new URL("../Dockerfile", import.meta.url),
+			"utf8",
+		);
+		const productionStage = dockerfile.split(" AS production")[1];
+
+		assert.ok(productionStage, "expected a production container stage");
+		assert.match(productionStage, /\/usr\/local\/lib\/node_modules\/npm/);
+		assert.match(productionStage, /\/usr\/local\/bin\/npm/);
+		assert.match(productionStage, /\/usr\/local\/bin\/npx/);
+	});
+});
 
 function resetEnv(): void {
 	process.env = { ...ORIGINAL_ENV };
@@ -66,6 +135,7 @@ function createMockResponse() {
 	return {
 		state,
 		response: {
+			locals: {} as Record<string, unknown>,
 			setHeader(name: string, value: string) {
 				state.headers[name] = value;
 				return this;
@@ -279,6 +349,18 @@ describe("origin security configuration", () => {
 		assert.doesNotThrow(() => assertSafeHttpAuthConfig());
 	});
 
+	it("requires an explicit rate-limit store policy in production", async () => {
+		process.env.NODE_ENV = "production";
+		process.env.RATE_LIMIT_ENABLED = "true";
+		process.env.RATE_LIMIT_STORE = "memory";
+		delete process.env.RATE_LIMIT_SINGLE_PROCESS;
+
+		await assert.rejects(
+			() => loadSecurityModule(),
+			/RATE_LIMIT_SINGLE_PROCESS=true/,
+		);
+	});
+
 	it("uses req.ip for rate limiting even when X-Forwarded-For is spoofed", async () => {
 		process.env.RATE_LIMIT_MAX = "1";
 		process.env.RATE_LIMIT_REFILL = "1";
@@ -318,6 +400,48 @@ describe("origin security configuration", () => {
 		assert.equal(second.state.statusCode, 429);
 		assert.deepEqual(second.state.body, { error: "Too Many Requests" });
 		assert.equal(second.state.headers["Retry-After"], "60");
+	});
+
+	it("separates rate-limit buckets by authenticated principal and IP", async () => {
+		process.env.RATE_LIMIT_MAX = "1";
+		process.env.RATE_LIMIT_REFILL = "1";
+		process.env.RATE_LIMIT_WINDOW_MS = "60000";
+
+		const { rateLimitMiddleware } = await loadSecurityModule();
+		const first = createMockResponse();
+		const second = createMockResponse();
+		first.response.locals.authPrincipal = {
+			id: "clerk:issuer:user-a",
+			mode: "clerk",
+			roles: [],
+			permissions: [],
+		};
+		second.response.locals.authPrincipal = {
+			id: "clerk:issuer:user-b",
+			mode: "clerk",
+			roles: [],
+			permissions: [],
+		};
+		let allowed = 0;
+
+		rateLimitMiddleware(
+			createMockRequest({ ip: "203.0.113.30" }) as never,
+			first.response as never,
+			() => {
+				allowed += 1;
+			},
+		);
+		rateLimitMiddleware(
+			createMockRequest({ ip: "203.0.113.30" }) as never,
+			second.response as never,
+			() => {
+				allowed += 1;
+			},
+		);
+
+		assert.equal(allowed, 2);
+		assert.equal(first.state.statusCode, undefined);
+		assert.equal(second.state.statusCode, undefined);
 	});
 
 	it("falls back when a rate-limit integer contains trailing characters", async () => {
@@ -462,8 +586,19 @@ describe("base URL SSRF validation", () => {
 		);
 	});
 
+	it("rejects insecure HTTP base URLs without an explicit opt-in", async () => {
+		delete process.env.PORTKEY_ALLOW_INSECURE_HTTP;
+		const { validateUrl } = await loadBaseService();
+
+		assert.throws(
+			() => validateUrl("http://api.example.com/v1"),
+			/PORTKEY_ALLOW_INSECURE_HTTP=true/,
+		);
+	});
+
 	it("allows a private PORTKEY_BASE_URL when explicitly opted in", async () => {
 		process.env.PORTKEY_ALLOW_PRIVATE_BASE_URL = "true";
+		process.env.PORTKEY_ALLOW_INSECURE_HTTP = "true";
 		const { validateUrl } = await loadBaseService();
 
 		assert.doesNotThrow(() => validateUrl("http://localhost:8787/v1"));

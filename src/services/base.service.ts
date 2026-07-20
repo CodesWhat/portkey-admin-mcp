@@ -11,6 +11,8 @@ const DEFAULT_BASE_URL = "https://api.portkey.ai/v1";
 
 const PRIVATE_BASE_URL_OVERRIDE_HINT =
 	"Set PORTKEY_ALLOW_PRIVATE_BASE_URL=true to allow self-hosted gateways on loopback or private networks.";
+const INSECURE_HTTP_OVERRIDE_HINT =
+	"Set PORTKEY_ALLOW_INSECURE_HTTP=true only for a trusted self-hosted gateway when TLS is unavailable.";
 
 /**
  * Detect literal loopback / private / link-local hosts so a malicious or
@@ -95,6 +97,15 @@ export function validateUrl(url: string): void {
 			`Refusing to use a loopback or private-network PORTKEY_BASE_URL host: ${parsed.hostname}. ${PRIVATE_BASE_URL_OVERRIDE_HINT}`,
 		);
 	}
+
+	const allowInsecureHttp = /^(1|true|yes)$/i.test(
+		process.env.PORTKEY_ALLOW_INSECURE_HTTP?.trim() ?? "",
+	);
+	if (parsed.protocol === "http:" && !allowInsecureHttp) {
+		throw new Error(
+			`Refusing insecure HTTP PORTKEY_BASE_URL: ${parsed.origin}. ${INSECURE_HTTP_OVERRIDE_HINT}`,
+		);
+	}
 }
 
 type HttpMethod = "GET" | "POST" | "PUT" | "DELETE";
@@ -118,14 +129,10 @@ export class BaseService {
 		}
 		this.apiKey = apiKey;
 
-		// Configurable base URL with validation — caller may pre-validate and pass it in
-		if (baseUrlOverride !== undefined) {
-			this.baseUrl = baseUrlOverride.replace(/\/+$/, "");
-		} else {
-			const baseUrl = process.env.PORTKEY_BASE_URL ?? DEFAULT_BASE_URL;
-			validateUrl(baseUrl);
-			this.baseUrl = baseUrl.replace(/\/+$/, "");
-		}
+		const baseUrl =
+			baseUrlOverride ?? process.env.PORTKEY_BASE_URL ?? DEFAULT_BASE_URL;
+		validateUrl(baseUrl);
+		this.baseUrl = baseUrl.replace(/\/+$/, "");
 	}
 
 	protected encodePathSegment(value: string): string {
@@ -176,6 +183,7 @@ export class BaseService {
 		try {
 			const response = await fetchWithTimeout(url, {
 				method,
+				redirect: "manual",
 				headers: this.buildHeaders(method),
 				body: this.serializeBody(options.body),
 				timeout: this.timeout,
