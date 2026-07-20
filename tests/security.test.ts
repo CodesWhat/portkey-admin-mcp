@@ -366,11 +366,11 @@ describe("origin security configuration", () => {
 			new URL("../src/lib/http-app.ts", import.meta.url),
 			"utf8",
 		);
-		const preAuthIndex = httpApp.indexOf(
-			"app.use(preAuthRateLimitMiddleware);",
-		);
+		const preAuthIndex = httpApp.indexOf("app.use(rateLimitMiddleware);");
 		const authIndex = httpApp.indexOf("app.use(mcpAuthMiddleware);");
-		const principalIndex = httpApp.indexOf("app.use(rateLimitMiddleware);");
+		const principalIndex = httpApp.indexOf(
+			"app.use(principalRateLimitMiddleware);",
+		);
 
 		assert.ok(preAuthIndex >= 0, "expected a pre-authentication limiter");
 		assert.ok(
@@ -389,19 +389,27 @@ describe("origin security configuration", () => {
 		process.env.RATE_LIMIT_WINDOW_MS = "60000";
 
 		const securityModule = (await loadSecurityModule()) as {
-			preAuthRateLimitMiddleware?: typeof import("../src/lib/security.js").rateLimitMiddleware;
+			rateLimitMiddleware: typeof import("../src/lib/security.js").rateLimitMiddleware;
 		};
-		const { preAuthRateLimitMiddleware } = securityModule;
-		assert.ok(
-			preAuthRateLimitMiddleware,
-			"expected preAuthRateLimitMiddleware to be exported",
-		);
+		const { rateLimitMiddleware } = securityModule;
 		const first = createMockResponse();
 		const second = createMockResponse();
+		first.response.locals.authPrincipal = {
+			id: "clerk:issuer:user-a",
+			mode: "clerk",
+			roles: [],
+			permissions: [],
+		};
+		second.response.locals.authPrincipal = {
+			id: "clerk:issuer:user-b",
+			mode: "clerk",
+			roles: [],
+			permissions: [],
+		};
 		let firstNextCalled = false;
 		let secondNextCalled = false;
 
-		preAuthRateLimitMiddleware(
+		rateLimitMiddleware(
 			createMockRequest({
 				authorization: "Bearer invalid-token-a",
 				ip: "203.0.113.40",
@@ -411,7 +419,7 @@ describe("origin security configuration", () => {
 				firstNextCalled = true;
 			},
 		);
-		preAuthRateLimitMiddleware(
+		rateLimitMiddleware(
 			createMockRequest({
 				authorization: "Bearer invalid-token-b",
 				ip: "203.0.113.40",
@@ -475,7 +483,14 @@ describe("origin security configuration", () => {
 		process.env.RATE_LIMIT_REFILL = "1";
 		process.env.RATE_LIMIT_WINDOW_MS = "60000";
 
-		const { rateLimitMiddleware } = await loadSecurityModule();
+		const securityModule = (await loadSecurityModule()) as {
+			principalRateLimitMiddleware?: typeof import("../src/lib/security.js").rateLimitMiddleware;
+		};
+		const { principalRateLimitMiddleware } = securityModule;
+		assert.ok(
+			principalRateLimitMiddleware,
+			"expected principalRateLimitMiddleware to be exported",
+		);
 		const first = createMockResponse();
 		const second = createMockResponse();
 		first.response.locals.authPrincipal = {
@@ -492,14 +507,14 @@ describe("origin security configuration", () => {
 		};
 		let allowed = 0;
 
-		rateLimitMiddleware(
+		principalRateLimitMiddleware(
 			createMockRequest({ ip: "203.0.113.30" }) as never,
 			first.response as never,
 			() => {
 				allowed += 1;
 			},
 		);
-		rateLimitMiddleware(
+		principalRateLimitMiddleware(
 			createMockRequest({ ip: "203.0.113.30" }) as never,
 			second.response as never,
 			() => {
