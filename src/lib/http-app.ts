@@ -45,7 +45,7 @@ import {
 	getAllowedOrigins,
 	hostValidationMiddleware,
 	originValidationMiddleware,
-	preAuthRateLimitMiddleware,
+	principalRateLimitMiddleware,
 	rateLimitMiddleware,
 } from "./security.js";
 import { SessionStore } from "./session-store.js";
@@ -548,9 +548,9 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 		app.use(hostValidationMiddleware);
 	}
 	app.use(originValidationMiddleware);
-	app.use(preAuthRateLimitMiddleware);
-	app.use(mcpAuthMiddleware);
 	app.use(rateLimitMiddleware);
+	app.use(mcpAuthMiddleware);
+	app.use(principalRateLimitMiddleware);
 
 	// Parse/body-size errors need a controlled JSON response in HTTP mode.
 	app.use(

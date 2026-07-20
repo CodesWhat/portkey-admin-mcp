@@ -613,7 +613,7 @@ function applyRateLimit(
  * evaluated. This prevents invalid or missing credentials from bypassing the
  * principal-aware limiter.
  */
-export function preAuthRateLimitMiddleware(
+export function rateLimitMiddleware(
 	req: Request,
 	res: Response,
 	next: NextFunction,
@@ -624,7 +624,7 @@ export function preAuthRateLimitMiddleware(
 /**
  * Limits authenticated work by principal and trusted client IP.
  */
-export function rateLimitMiddleware(
+export function principalRateLimitMiddleware(
 	req: Request,
 	res: Response,
 	next: NextFunction,
