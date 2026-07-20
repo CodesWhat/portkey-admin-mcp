@@ -28,7 +28,7 @@ describe("getServerConfig", () => {
 		assert.equal(config.transport, "stdio");
 		assert.equal(config.sessionMode, "stateful");
 		assert.equal(config.eventStore.mode, "off");
-		assert.equal(config.eventStore.ttlSeconds, 3600);
+		assert.equal(config.eventStore.ttlSeconds, 300);
 		assert.equal(config.protocol, "http");
 		assert.equal(config.port, 3000);
 		assert.equal(config.host, "127.0.0.1");
@@ -85,10 +85,44 @@ describe("getServerConfig", () => {
 		process.env.MCP_EVENT_STORE = "redis";
 		process.env.MCP_REDIS_URL = "redis://localhost:6380";
 		process.env.REDIS_URL = "redis://localhost:6379";
+		process.env.MCP_EVENT_ENCRYPTION_KEY = Buffer.alloc(32, 7).toString(
+			"base64",
+		);
 
 		const config = getServerConfig();
 		assert.equal(config.eventStore.mode, "redis");
 		assert.equal(config.eventStore.redisUrl, "redis://localhost:6380");
+	});
+
+	it("requires rediss transport for Redis in production", () => {
+		process.env.NODE_ENV = "production";
+		process.env.MCP_EVENT_STORE = "redis";
+		process.env.MCP_REDIS_URL = "redis://cache.example.com:6379";
+		process.env.MCP_EVENT_ENCRYPTION_KEY = Buffer.alloc(32, 7).toString(
+			"base64",
+		);
+
+		assert.throws(
+			() => getServerConfig(),
+			/MCP_REDIS_URL must use rediss:\/\/ in production/,
+		);
+	});
+
+	it("requires a 32-byte encryption key for Redis event payloads", () => {
+		process.env.MCP_EVENT_STORE = "redis";
+		process.env.MCP_REDIS_URL = "redis://localhost:6379";
+		delete process.env.MCP_EVENT_ENCRYPTION_KEY;
+
+		assert.throws(
+			() => getServerConfig(),
+			/MCP_EVENT_ENCRYPTION_KEY must be base64-encoded 32-byte key/,
+		);
+
+		process.env.MCP_EVENT_ENCRYPTION_KEY = Buffer.alloc(31).toString("base64");
+		assert.throws(
+			() => getServerConfig(),
+			/MCP_EVENT_ENCRYPTION_KEY must be base64-encoded 32-byte key/,
+		);
 	});
 
 	it("throws on invalid event store mode", () => {

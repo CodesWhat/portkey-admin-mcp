@@ -26,7 +26,7 @@
 <hr>
 
 > [!IMPORTANT]
-> **Maintenance mode.** Portkey was acquired by **Palo Alto Networks** (completed 2026‑05‑29) and is being folded into the Prisma AIRS platform. The Portkey Admin API this server targets is **live and unchanged as of June 2026**, and this project still works end‑to‑end — but it is now in **maintenance mode**: security and dependency patches only, no new features, pending Palo Alto's post‑acquisition API roadmap. If the hosted Admin API is ever deprecated, point `PORTKEY_BASE_URL` at a self‑hosted [Portkey gateway](https://github.com/Portkey-AI/gateway). See [docs/audit-2026-06.md](./docs/audit-2026-06.md) for the full assessment.
+> **Maintenance mode.** Portkey was acquired by **Palo Alto Networks** (completed 2026‑05‑29) and is being folded into the Prisma AIRS platform. The Portkey Admin API this server targets is **live and unchanged as of June 2026**, and this project still works end‑to‑end — but it is now in **maintenance mode**: security and dependency patches only, no new features, pending Palo Alto's post‑acquisition API roadmap. If the hosted Admin API is ever deprecated, point `PORTKEY_BASE_URL` at a self‑hosted [Portkey gateway](https://github.com/Portkey-AI/gateway). See [docs/audit-2026-06.md](./docs/audit-2026-06.md) for the full assessment and [security_best_practices_report.md](./security_best_practices_report.md) for the 0.6.0 security-hardening review.
 
 <h2 align="center">📑 Contents</h2>
 
@@ -193,24 +193,39 @@ For local-only HTTP use, leave `MCP_HOST` at its default `127.0.0.1`. Set `MCP_H
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `PORTKEY_API_KEY` | (required) | Your Portkey API key |
-| `PORTKEY_BASE_URL` | `https://api.portkey.ai/v1` | Portkey Admin API base URL. Point at a self-hosted Portkey gateway if needed. Loopback/private-network hosts are rejected unless `PORTKEY_ALLOW_PRIVATE_BASE_URL=true` |
-| `PORTKEY_ALLOW_PRIVATE_BASE_URL` | — | Set to `true` to allow a `PORTKEY_BASE_URL` on loopback or a private network (e.g. a self-hosted gateway at `http://localhost:8787`) |
-| `PORTKEY_TOOL_DOMAINS` | — | Optional comma-separated stdio/HTTP default tool subset, e.g. `prompts,analytics` |
+| `PORTKEY_BASE_URL` | `https://api.portkey.ai/v1` | Portkey Admin API base URL. Credentialed requests never auto-follow redirects |
+| `PORTKEY_ALLOW_PRIVATE_BASE_URL` | — | Set to `true` to allow a literal loopback/private `PORTKEY_BASE_URL` |
+| `PORTKEY_ALLOW_INSECURE_HTTP` | — | Separately set to `true` only when a trusted self-hosted gateway cannot use HTTPS |
+| `PORTKEY_TOOL_DOMAINS` | — | Server-side tool-domain allowlist. HTTP `?tools=` may narrow this set but cannot expand it |
 | `MCP_HOST` | `127.0.0.1` | Bind address |
 | `MCP_PORT` | `3000` | Port |
 | `MCP_PUBLIC_BASE_URL` | — | Public absolute base URL to advertise from `/auth/info` and the status page; recommended for hosted deployments |
 | `MCP_AUTH_MODE` | `none` | `none`, `bearer`, or `clerk` (`none` is blocked for HTTP unless explicitly overridden) |
 | `MCP_AUTH_TOKEN` | — | Secret for bearer auth |
+| `CLERK_ISSUER` / `CLERK_AUDIENCE` | — | Required issuer and audience when `MCP_AUTH_MODE=clerk` |
+| `CLERK_ALLOWED_SUBJECTS` | — | Optional CSV subject allowlist for Clerk; at least one Clerk authorization policy is required |
+| `CLERK_ALLOWED_ORGANIZATION_IDS` / `CLERK_ALLOWED_ROLES` | — | Optional CSV organization and role constraints; every configured constraint must match |
+| `CLERK_REQUIRED_PERMISSIONS` | — | Optional CSV permissions that must all be present in the verified Clerk JWT |
 | `MCP_ALLOW_UNAUTHENTICATED_HTTP` | — | Set to `true` only for intentional local unauthenticated HTTP debugging |
 | `MCP_SESSION_MODE` | `stateful` | `stateful` or `stateless` |
 | `MCP_MAX_SESSIONS` | `100` | Maximum concurrent stateful sessions or active stateless request handlers |
 | `MCP_EVENT_STORE` | `off` | `off`, `memory`, or `redis`; stateless `GET /mcp` replay requires `memory` or `redis` |
-| `MCP_REDIS_URL` | — | Redis URL for shared event store |
+| `MCP_EVENT_TTL_SECONDS` | `300` | Replay retention in seconds |
+| `MCP_REDIS_URL` | — | Redis URL for shared event store; production requires `rediss://` and ACL-scoped credentials |
+| `MCP_EVENT_ENCRYPTION_KEY` | — | Required 32-byte base64 AES key for Redis replay payloads; generate with `openssl rand -base64 32` |
+| `MCP_REDIS_KEY_PREFIX` | `mcp:event-store` | Dedicated Redis namespace for replay data |
 | `MCP_TLS_KEY_PATH` | — | TLS key for native HTTPS |
 | `MCP_TLS_CERT_PATH` | — | TLS cert for native HTTPS |
 | `ALLOWED_ORIGINS` | — | CORS allow-list; also used to validate the `Host` header (DNS-rebinding protection) when `MCP_AUTH_MODE=none` |
 | `MCP_TRUST_PROXY` | `false` | Trust proxy headers (for reverse proxies) |
-| `RATE_LIMIT_MAX_BUCKETS` | `10000` | Maximum distinct in-memory rate-limit buckets before new clients share an overflow bucket |
+| `RATE_LIMIT_STORE` | `memory` | `redis` for multi-instance/serverless deployments; production memory mode requires `RATE_LIMIT_SINGLE_PROCESS=true` |
+| `RATE_LIMIT_REDIS_URL` | — | Shared limiter Redis URL, falling back to `MCP_REDIS_URL`/`REDIS_URL`; production requires `rediss://` |
+| `RATE_LIMIT_REDIS_KEY_PREFIX` | `mcp:rate-limit` | Redis namespace for atomic pre-authentication IP and principal-plus-IP token buckets |
+| `RATE_LIMIT_MAX_BUCKETS` | `10000` | Maximum local buckets in explicit memory mode before new clients share overflow capacity |
+
+Production containers must choose their rate-limit topology explicitly: set
+`RATE_LIMIT_STORE=redis` for multi-instance deployments, or set
+`RATE_LIMIT_SINGLE_PROCESS=true` only for a single long-lived process.
 
 <details>
 <summary><strong>Vercel deployment</strong></summary>
@@ -218,7 +233,7 @@ For local-only HTTP use, leave `MCP_HOST` at its default `127.0.0.1`. Set `MCP_H
 Vercel support is kept as a reference proof of concept — we do not run a hosted deployment. See [docs/VERCEL_DEPLOYMENT.md](./docs/VERCEL_DEPLOYMENT.md) if you want to self-deploy.
 
 Key points:
-- Uses stateless request handling with a shared Redis event store so `GET /mcp` can replay an interrupted SSE stream from `Last-Event-ID` without a session ID
+- Uses stateless request handling with encrypted, principal-bound Redis replay and a shared atomic Redis rate limiter
 - Requires Clerk or bearer auth
 - Leave `MCP_TLS_*` unset (Vercel terminates HTTPS)
 - Set `MCP_PUBLIC_BASE_URL` to your deployment URL so advertised MCP endpoints never depend on request headers

@@ -17,12 +17,14 @@ Everything after the merge is automatic:
   `main`. If the version has no existing tag and `server.json` agrees, it
   creates and pushes `vX.Y.Z` and dispatches the `Release` workflow.
 - **`Release`** (`release.yml`) re-runs the full CI suite against the tagged
-  commit, then runs three publish jobs:
-  - **`publish-npm`** publishes to npm via OIDC trusted publishing with
-    provenance attestation — no npm token is stored in the repo or CI. It
-    verifies `package.json` matches the tag and is idempotent (skips if the
-    version is already on npm). `prepublishOnly` re-runs `npm run ci` as a
-    final gate.
+  commit, then runs the publish jobs:
+  - **`package-npm`** installs with lifecycle scripts disabled, builds the
+    package without OIDC permission, and uploads the exact tarball as a
+    one-day workflow artifact.
+  - **`publish-npm`** downloads and verifies that tarball, then publishes it via
+    OIDC trusted publishing with provenance and lifecycle scripts disabled. No
+    checkout, dependency install, long-lived npm token, or build step occurs in
+    the OIDC-enabled job. It remains idempotent when the version already exists.
   - **`github-release`** publishes a non-prerelease GitHub Release for stable
     tags like `v0.4.0`. Tags containing a hyphen, such as `v0.4.0-beta.1`, are
     published as prereleases and are not marked as the latest release. The

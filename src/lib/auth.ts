@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import type { NextFunction, Request, Response } from "express";
-import { createRemoteJWKSet, jwtVerify } from "jose";
+import { createRemoteJWKSet, type JWTPayload, jwtVerify } from "jose";
 import { Logger } from "./logger.js";
 
 export type HttpAuthMode = "none" | "bearer" | "clerk";
@@ -11,7 +11,26 @@ export interface HttpAuthConfig {
 	jwksUrl?: string;
 	issuer?: string;
 	audience?: string[];
+	allowedSubjects?: string[];
+	allowedOrganizationIds?: string[];
+	allowedRoles?: string[];
+	requiredPermissions?: string[];
 }
+
+export interface AuthPrincipal {
+	id: string;
+	mode: HttpAuthMode;
+	subject?: string;
+	organizationId?: string;
+	roles: string[];
+	permissions: string[];
+}
+
+export function getPrincipalOwnerKey(principal: AuthPrincipal): string {
+	return crypto.createHash("sha256").update(principal.id, "utf8").digest("hex");
+}
+
+class ClerkAuthorizationError extends Error {}
 
 const AUTH_SCHEMES = {
 	bearer: "Bearer",
@@ -73,6 +92,12 @@ function getHttpAuthConfigFromEnv(): HttpAuthConfig {
 		process.env.CLERK_JWKS_URL?.trim(),
 		issuer,
 	);
+	const allowedSubjects = parseCsv(process.env.CLERK_ALLOWED_SUBJECTS);
+	const allowedOrganizationIds = parseCsv(
+		process.env.CLERK_ALLOWED_ORGANIZATION_IDS,
+	);
+	const allowedRoles = parseCsv(process.env.CLERK_ALLOWED_ROLES);
+	const requiredPermissions = parseCsv(process.env.CLERK_REQUIRED_PERMISSIONS);
 
 	if (mode === "bearer" && !bearerToken) {
 		throw new Error("MCP_AUTH_MODE=bearer requires MCP_AUTH_TOKEN to be set");
@@ -106,6 +131,16 @@ function getHttpAuthConfigFromEnv(): HttpAuthConfig {
 				`MCP_AUTH_MODE=clerk configuration error (${issues.join("; ")})`,
 			);
 		}
+		if (
+			!allowedSubjects &&
+			!allowedOrganizationIds &&
+			!allowedRoles &&
+			!requiredPermissions
+		) {
+			throw new Error(
+				"MCP_AUTH_MODE=clerk requires an explicit authorization policy. Set at least one of CLERK_ALLOWED_SUBJECTS, CLERK_ALLOWED_ORGANIZATION_IDS, CLERK_ALLOWED_ROLES, or CLERK_REQUIRED_PERMISSIONS.",
+			);
+		}
 	}
 
 	return {
@@ -114,6 +149,10 @@ function getHttpAuthConfigFromEnv(): HttpAuthConfig {
 		jwksUrl,
 		issuer,
 		audience,
+		allowedSubjects,
+		allowedOrganizationIds,
+		allowedRoles,
+		requiredPermissions,
 	};
 }
 
@@ -164,10 +203,91 @@ function timingSafeEqual(a: string, b: string): boolean {
 
 const jwksCache = new Map<string, ReturnType<typeof createRemoteJWKSet>>();
 
+function asString(value: unknown): string | undefined {
+	return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+function asStringArray(value: unknown): string[] {
+	if (!Array.isArray(value)) {
+		return [];
+	}
+	return value.flatMap((item) => {
+		const normalized = asString(item);
+		return normalized ? [normalized] : [];
+	});
+}
+
+function unique(values: readonly string[]): string[] {
+	return [...new Set(values)];
+}
+
+export function authorizeClerkClaims(
+	payload: JWTPayload,
+	config: HttpAuthConfig,
+): AuthPrincipal {
+	const subject = asString(payload.sub);
+	if (!subject) {
+		throw new ClerkAuthorizationError("Clerk token is missing a subject");
+	}
+
+	const organization =
+		typeof payload.o === "object" && payload.o !== null
+			? (payload.o as Record<string, unknown>)
+			: undefined;
+	const organizationId = asString(payload.org_id) ?? asString(organization?.id);
+	const roles = unique(
+		[
+			asString(payload.org_role),
+			asString(organization?.rol),
+			...asStringArray(payload.roles),
+		].filter((role): role is string => Boolean(role)),
+	);
+	const permissions = unique([
+		...asStringArray(payload.org_permissions),
+		...asStringArray(organization?.per),
+		...asStringArray(payload.permissions),
+	]);
+
+	if (config.allowedSubjects && !config.allowedSubjects.includes(subject)) {
+		throw new ClerkAuthorizationError("Clerk subject is not authorized");
+	}
+	if (
+		config.allowedOrganizationIds &&
+		(!organizationId || !config.allowedOrganizationIds.includes(organizationId))
+	) {
+		throw new ClerkAuthorizationError("Clerk organization is not authorized");
+	}
+	if (
+		config.allowedRoles &&
+		!roles.some((role) => config.allowedRoles?.includes(role))
+	) {
+		throw new ClerkAuthorizationError("Clerk role is not authorized");
+	}
+	if (
+		config.requiredPermissions &&
+		!config.requiredPermissions.every((permission) =>
+			permissions.includes(permission),
+		)
+	) {
+		throw new ClerkAuthorizationError(
+			"Clerk token is missing a required permission",
+		);
+	}
+
+	return {
+		id: `clerk:${config.issuer}:${subject}`,
+		mode: "clerk",
+		subject,
+		organizationId,
+		roles,
+		permissions,
+	};
+}
+
 async function verifyClerkToken(
 	token: string,
 	config: HttpAuthConfig,
-): Promise<void> {
+): Promise<AuthPrincipal> {
 	if (!config.jwksUrl) {
 		throw new Error("Missing Clerk JWKS URL configuration");
 	}
@@ -184,11 +304,13 @@ async function verifyClerkToken(
 		jwksCache.set(config.jwksUrl, jwks);
 	}
 
-	await jwtVerify(token, jwks, {
+	const { payload } = await jwtVerify(token, jwks, {
 		issuer: config.issuer,
 		audience: config.audience,
 		clockTolerance: "5s",
 	});
+
+	return authorizeClerkClaims(payload, config);
 }
 
 /**
@@ -212,6 +334,12 @@ export async function mcpAuthMiddleware(
 
 	const config = getHttpAuthConfig();
 	if (config.mode === "none") {
+		res.locals.authPrincipal = {
+			id: "anonymous",
+			mode: "none",
+			roles: [],
+			permissions: [],
+		} satisfies AuthPrincipal;
 		next();
 		return;
 	}
@@ -225,14 +353,22 @@ export async function mcpAuthMiddleware(
 	}
 
 	try {
+		let principal: AuthPrincipal;
 		if (config.mode === "bearer") {
 			if (!config.bearerToken || !timingSafeEqual(token, config.bearerToken)) {
 				throw new Error("Bearer token mismatch");
 			}
+			principal = {
+				id: `bearer:${crypto.createHash("sha256").update(token, "utf8").digest("hex")}`,
+				mode: "bearer",
+				roles: [],
+				permissions: [],
+			};
 		} else {
-			await verifyClerkToken(token, config);
+			principal = await verifyClerkToken(token, config);
 		}
 
+		res.locals.authPrincipal = principal;
 		next();
 	} catch (error) {
 		Logger.warn("MCP auth failed", {
@@ -243,6 +379,11 @@ export async function mcpAuthMiddleware(
 				reason: error instanceof Error ? error.message : "Unknown error",
 			},
 		});
+
+		if (error instanceof ClerkAuthorizationError) {
+			res.status(403).json({ error: "Forbidden: Principal is not authorized" });
+			return;
+		}
 
 		res.status(401).json({ error: "Unauthorized: Token validation failed" });
 	}

@@ -16,6 +16,7 @@ export interface ServerConfig {
 		ttlSeconds: number;
 		redisUrl?: string;
 		redisKeyPrefix: string;
+		encryptionKey?: Buffer;
 	};
 	/** Protocol for HTTP transport */
 	protocol: "http" | "https";
@@ -127,7 +128,7 @@ export function getServerConfig(): ServerConfig {
 		);
 	}
 
-	const eventStoreTtlStr = (process.env.MCP_EVENT_TTL_SECONDS || "3600").trim();
+	const eventStoreTtlStr = (process.env.MCP_EVENT_TTL_SECONDS || "300").trim();
 	const eventStoreTtlSeconds = parseStrictInteger(eventStoreTtlStr);
 	if (Number.isNaN(eventStoreTtlSeconds) || eventStoreTtlSeconds <= 0) {
 		throw new Error(
@@ -141,6 +142,45 @@ export function getServerConfig(): ServerConfig {
 		throw new Error(
 			"MCP_EVENT_STORE=redis requires MCP_REDIS_URL (or REDIS_URL) to be set",
 		);
+	}
+	if (eventStoreMode === "redis" && redisUrl) {
+		let parsedRedisUrl: URL;
+		try {
+			parsedRedisUrl = new URL(redisUrl);
+		} catch {
+			throw new Error(
+				"MCP_REDIS_URL must be a valid redis:// or rediss:// URL",
+			);
+		}
+		if (!["redis:", "rediss:"].includes(parsedRedisUrl.protocol)) {
+			throw new Error("MCP_REDIS_URL must use redis:// or rediss://");
+		}
+		if (
+			process.env.NODE_ENV?.trim().toLowerCase() === "production" &&
+			parsedRedisUrl.protocol !== "rediss:"
+		) {
+			throw new Error("MCP_REDIS_URL must use rediss:// in production");
+		}
+	}
+
+	const rawEventEncryptionKey = process.env.MCP_EVENT_ENCRYPTION_KEY?.trim();
+	let eventEncryptionKey: Buffer | undefined;
+	if (eventStoreMode === "redis") {
+		if (!rawEventEncryptionKey) {
+			throw new Error(
+				"MCP_EVENT_ENCRYPTION_KEY must be base64-encoded 32-byte key when MCP_EVENT_STORE=redis",
+			);
+		}
+		const decodedKey = Buffer.from(rawEventEncryptionKey, "base64");
+		if (
+			decodedKey.length !== 32 ||
+			decodedKey.toString("base64") !== rawEventEncryptionKey
+		) {
+			throw new Error(
+				"MCP_EVENT_ENCRYPTION_KEY must be base64-encoded 32-byte key when MCP_EVENT_STORE=redis",
+			);
+		}
+		eventEncryptionKey = decodedKey;
 	}
 
 	const redisKeyPrefix =
@@ -169,6 +209,7 @@ export function getServerConfig(): ServerConfig {
 			ttlSeconds: eventStoreTtlSeconds,
 			redisUrl,
 			redisKeyPrefix,
+			encryptionKey: eventEncryptionKey,
 		},
 		protocol,
 		port,

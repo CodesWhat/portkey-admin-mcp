@@ -175,6 +175,32 @@ function parseConfiguredToolDomains(
 	return normalizeToolDomains(requestedDomains as ToolDomain[]);
 }
 
+export function resolveToolDomains(
+	requestedDomains?: readonly ToolDomain[],
+): ToolDomain[] | undefined {
+	const configuredDomains = parseConfiguredToolDomains();
+	if (!configuredDomains) {
+		return requestedDomains
+			? normalizeToolDomains(requestedDomains)
+			: undefined;
+	}
+	if (!requestedDomains) {
+		return configuredDomains;
+	}
+
+	const configuredDomainSet = new Set<ToolDomain>(configuredDomains);
+	const disallowedDomains = normalizeToolDomains(requestedDomains).filter(
+		(domain) => !configuredDomainSet.has(domain),
+	);
+	if (disallowedDomains.length > 0) {
+		throw new Error(
+			`Requested tool domains are not allowed by PORTKEY_TOOL_DOMAINS: ${disallowedDomains.join(", ")}`,
+		);
+	}
+
+	return normalizeToolDomains(requestedDomains);
+}
+
 /**
  * Result of creating an MCP server
  */
@@ -220,7 +246,7 @@ export function createMcpServer(
 
 	// Register all Admin API tools
 	registerAllTools(server, service, {
-		domains: options.toolDomains ?? parseConfiguredToolDomains(),
+		domains: resolveToolDomains(options.toolDomains),
 	});
 
 	return {

@@ -21,6 +21,8 @@ export class SessionCapacityError extends Error {
 export interface SessionEntry {
 	/** The transport instance for this session */
 	transport: Transport;
+	/** One-way digest identifying the authenticated principal that owns the session */
+	ownerKey: string;
 	/** Optional tool subset fixed for the lifetime of the session */
 	toolDomains?: readonly ToolDomain[];
 	/** Negotiated MCP protocol version for the session */
@@ -53,6 +55,12 @@ export class SessionStore {
 	 */
 	get(sessionId: string): SessionEntry | undefined {
 		return this.sessions.get(sessionId);
+	}
+
+	/** Return a session only when it belongs to the supplied principal. */
+	getOwned(sessionId: string, ownerKey: string): SessionEntry | undefined {
+		const entry = this.sessions.get(sessionId);
+		return entry?.ownerKey === ownerKey ? entry : undefined;
 	}
 
 	/**

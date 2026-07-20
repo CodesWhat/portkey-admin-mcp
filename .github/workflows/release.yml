@@ -103,30 +103,23 @@ jobs:
 
           gh release create "$tag" "${args[@]}"
 
-  publish-npm:
+  package-npm:
     needs: ci
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
       contents: read
-      # OIDC token for npm trusted publishing; npm also derives provenance
-      # attestation from it, so no long-lived npm token exists anywhere.
-      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           ref: ${{ github.event.inputs.tag || github.ref }}
-          # No credentials on disk while npm ci runs dependency postinstall
-          # scripts and npm publish runs the prepublishOnly suite.
           persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: 24
-          registry-url: https://registry.npmjs.org
-          # No shared cache in the job that builds the published tarball.
           package-manager-cache: false
 
       - name: Resolve tag
@@ -161,12 +154,98 @@ jobs:
             exit 1
           fi
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Install dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts
+
+      - name: Build package
+        run: npm run build
+
+      - name: Pack package without lifecycle scripts
+        id: pack
+        run: |
+          set -euo pipefail
+          tarball="$(npm pack --ignore-scripts --silent)"
+          if [[ ! -f "$tarball" || "$tarball" != *.tgz ]]; then
+            echo "npm pack did not produce exactly one tarball: $tarball" >&2
+            exit 1
+          fi
+          echo "tarball=$tarball" >>"$GITHUB_OUTPUT"
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: npm-package
+          path: ${{ steps.pack.outputs.tarball }}
+          if-no-files-found: error
+          retention-days: 1
+
+  publish-npm:
+    needs: [ci, package-npm]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      # This job receives OIDC only after dependency execution and packaging
+      # have completed in package-npm.
+      id-token: write
+    steps:
+      - name: Setup Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+
+      - name: Resolve tag
+        id: tag
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_TAG: ${{ github.event.inputs.tag }}
+        run: |
+          set -euo pipefail
+
+          tag="${GITHUB_REF_NAME}"
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            tag="$INPUT_TAG"
+          fi
+
+          if [[ ! "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "Refusing to publish non-semver tag: $tag" >&2
+            exit 1
+          fi
+
+          echo "version=${tag#v}" >>"$GITHUB_OUTPUT"
+
+      - name: Download package artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: npm-package
+          path: package
+
+      - name: Verify package artifact
+        id: artifact
+        env:
+          VERSION: ${{ steps.tag.outputs.version }}
+        run: |
+          set -euo pipefail
+          mapfile -t tarballs < <(find package -maxdepth 1 -type f -name '*.tgz' -print)
+          if [[ "${#tarballs[@]}" -ne 1 ]]; then
+            echo "Expected exactly one npm tarball; found ${#tarballs[@]}" >&2
+            exit 1
+          fi
+
+          tarball="${tarballs[0]}"
+          tarball_version="$(tar -xOf "$tarball" package/package.json | node -e 'let data=""; process.stdin.on("data", c => data += c).on("end", () => process.stdout.write(JSON.parse(data).version))')"
+          if [[ "$tarball_version" != "$VERSION" ]]; then
+            echo "Tarball version ($tarball_version) does not match tag v$VERSION" >&2
+            exit 1
+          fi
+          echo "tarball=$tarball" >>"$GITHUB_OUTPUT"
 
       - name: Publish to npm
         env:
           VERSION: ${{ steps.tag.outputs.version }}
+          TARBALL: ${{ steps.artifact.outputs.tarball }}
         run: |
           set -euo pipefail
 
@@ -183,9 +262,13 @@ jobs:
           fi
           echo "Publishing ${VERSION} to dist-tag: ${dist_tag}"
 
-          # Authenticates via OIDC trusted publishing (configured on npmjs.com
-          # for this repo + workflow). prepublishOnly re-runs the full CI suite.
-          npm publish --access public --tag "$dist_tag"
+          # Authenticates via OIDC trusted publishing. The tarball was built in
+          # package-npm, and lifecycle scripts remain disabled here.
+          npm publish "$TARBALL" \
+            --ignore-scripts \
+            --provenance \
+            --access public \
+            --tag "$dist_tag"
 
   publish-registry:
     needs: [ci, publish-npm]

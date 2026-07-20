@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-07-20
+
+Security-hardening release. Remediates all eight findings (two high, four medium, two low) from the 2026-07-20 best-practices review; each fix ships with regression tests or configuration assertions. See [security_best_practices_report.md](./security_best_practices_report.md) for the full evidence and verification log. No Portkey Admin API tool surface changes — the 156-tool inventory is unchanged.
+
+**Several changes are breaking for HTTP/hosted deployments and require operator action:**
+
+- Production Redis (`MCP_EVENT_STORE=redis` / `RATE_LIMIT_STORE=redis`) now requires a `rediss://` URL on non-loopback hosts.
+- Redis replay now requires `MCP_EVENT_ENCRYPTION_KEY` (base64 32-byte AES key; generate with `openssl rand -base64 32`).
+- Clerk mode now requires at least one authorization policy (`CLERK_ALLOWED_SUBJECTS`, `CLERK_ALLOWED_ORGANIZATION_IDS`, `CLERK_ALLOWED_ROLES`, or `CLERK_REQUIRED_PERMISSIONS`); a valid JWT alone is no longer sufficient.
+- Production HTTP must choose a rate-limit topology explicitly: `RATE_LIMIT_STORE=redis`, or `RATE_LIMIT_SINGLE_PROCESS=true` for a single long-lived process.
+- Outbound Portkey calls are HTTPS-only by default; a plaintext self-hosted gateway now needs `PORTKEY_ALLOW_INSECURE_HTTP=true` in addition to `PORTKEY_ALLOW_PRIVATE_BASE_URL`.
+- `MCP_EVENT_TTL_SECONDS` default drops from `3600` to `300`.
+
+### Security
+
+- **SEC-001 (High):** `PORTKEY_TOOL_DOMAINS`/`MCP_TOOL_DOMAINS` is now a hard server-side allowlist. The HTTP `?tools=` query can only narrow it; a requested domain outside the configured set is rejected instead of silently overriding it, closing an authorization bypass where a caller could re-enable excluded key/user/secret mutation tools.
+- **SEC-002 (High):** Clerk mode now authorizes the verified subject rather than granting the shared `PORTKEY_API_KEY` to any valid token. It requires at least one explicit subject/organization/role/permission policy, evaluates every configured constraint, and attaches a normalized principal to the request. **Breaking:** existing Clerk deployments must add a policy.
+- **SEC-003 (Medium):** Sessions, in-memory and Redis replay events, per-stream leases, and replay cursors are bound to an opaque principal digest and equality-checked on every POST/GET/DELETE/replay. Raw session and event IDs are no longer logged; logs use capability fingerprints.
+- **SEC-004 (Medium):** Credentialed Portkey requests use `redirect: "manual"` so `x-portkey-api-key` can never follow a redirect to another origin, and default to HTTPS. **Breaking:** plaintext private gateways require the new `PORTKEY_ALLOW_INSECURE_HTTP=true` opt-in alongside `PORTKEY_ALLOW_PRIVATE_BASE_URL`.
+- **SEC-005 (Medium):** Redis replay payloads are encrypted with AES-256-GCM using `MCP_EVENT_ENCRYPTION_KEY`, non-loopback production Redis requires `rediss://`, events carry an enforced owner, and default retention drops to 300 seconds. **Breaking:** `redis://` in production and a missing encryption key are now rejected.
+- **SEC-006 (Medium):** Renovate enforces a repository-wide seven-day minimum release age and no longer automerges lockfile maintenance or devDependency updates. The release pipeline packages the tarball in a non-OIDC job and publishes only that verified artifact.
+- **SEC-007 (Low):** Added a distributed rate limiter — an atomic pre-authentication bucket keyed by normalized trusted IP and a post-authentication bucket keyed by principal plus IP, both Redis-backed and IPv6-subnet-normalized. **Breaking:** production must set `RATE_LIMIT_STORE=redis` or `RATE_LIMIT_SINGLE_PROCESS=true`; the process-local limiter remains only as defense in depth.
+- **SEC-008 (Low):** The runtime container removes npm, npx, and npm's global module tree after installing production dependencies, dropping the bundled `tar`/`undici` advisories from the image.
+
+### Added
+
+- `PORTKEY_ALLOW_INSECURE_HTTP`, `MCP_EVENT_ENCRYPTION_KEY`, `RATE_LIMIT_STORE`, `RATE_LIMIT_SINGLE_PROCESS`, `RATE_LIMIT_REDIS_URL`, `RATE_LIMIT_REDIS_KEY_PREFIX`, and the Clerk authorization variables (`CLERK_ALLOWED_SUBJECTS`, `CLERK_ALLOWED_ORGANIZATION_IDS`, `CLERK_ALLOWED_ROLES`, `CLERK_REQUIRED_PERMISSIONS`) — documented in the README env-var table, `.env.example`, and `docs/VERCEL_DEPLOYMENT.md`.
+- `express-rate-limit` (8.x) promoted to a direct dependency for the defense-in-depth Express limiter.
+- `security_best_practices_report.md` — the full remediation report with per-finding evidence, mitigations, and the verification matrix (npm audit, Trivy, Gitleaks, Semgrep, Zizmor, Actionlint, live Redis integration).
+
+### Changed
+
+- `MCP_EVENT_TTL_SECONDS` default `3600` → `300`, shortening the window in which replay data lives at rest.
+- `RATE_LIMIT_MAX_BUCKETS` now applies only in explicit memory mode.
+- The Vercel guide, `.env.example`, and Dockerfile document the required `rediss://`, replay encryption key, and explicit rate-limit topology for production.
+
 ## [0.5.0] - 2026-07-14
 
 ### Added
@@ -359,7 +395,8 @@ First stable release. Graduates from beta with 151 tools covering ~98% of the Po
 - Vercel deployment support
 - Contract tests, E2E tests, security tests
 
-[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.4.2...v0.5.0
 [0.4.2]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.4.0...v0.4.1

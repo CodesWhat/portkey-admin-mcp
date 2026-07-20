@@ -35,9 +35,12 @@ RUN addgroup -g 1001 mcpgroup && \
 # Copy package files
 COPY package.json package-lock.json ./
 
-# Install production dependencies only
+# Install production dependencies, then remove package-manager tooling from the
+# runtime image. The server executes with node directly and never needs npm/npx.
 RUN npm ci --omit=dev && \
-    npm cache clean --force
+    npm cache clean --force && \
+    rm -rf /usr/local/lib/node_modules/npm && \
+    rm -f /usr/local/bin/npm /usr/local/bin/npx
 
 # Copy built files from builder stage
 COPY --from=builder /app/build ./build
@@ -50,6 +53,8 @@ ENV NODE_ENV=production
 ENV MCP_TRANSPORT=stdio
 ENV MCP_PORT=3000
 ENV MCP_HOST=0.0.0.0
+# HTTP production deployments must explicitly choose RATE_LIMIT_STORE=redis or
+# opt into single-process memory limits with RATE_LIMIT_SINGLE_PROCESS=true.
 
 # Expose HTTP port (used when MCP_TRANSPORT=http)
 EXPOSE 3000
