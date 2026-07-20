@@ -122,7 +122,7 @@ The remaining issues concerned cross-user session/replay isolation, Portkey cred
 - **Location:** `src/lib/security.ts:233-253`, `src/lib/security.ts:286-371`, `docs/VERCEL_DEPLOYMENT.md:52-56`
 - **Evidence:** Token buckets are stored in a process-local `Map`. The Vercel/serverless guide recommends enabling this limiter even though cold starts and horizontal instances create independent buckets.
 - **Impact:** A caller can receive a fresh allowance on new instances, and aggregate traffic can exceed the configured limit. This weakens brute-force/abuse and resource-exhaustion protection for a privileged API.
-- **Fix:** Enforce the primary limit at the edge/API gateway or use Redis-backed atomic buckets: one keyed by trusted source IP before authentication and another keyed by authenticated principal plus trusted IP afterward. Retain the local limiter only as defense in depth.
+- **Fix:** Enforce the primary limit at the edge/API gateway or use Redis-backed atomic buckets: one keyed by normalized trusted source IP before authentication and another keyed by authenticated principal plus normalized trusted IP afterward. IPv6 addresses share the same subnet grouping used by the defense-in-depth Express limiter. Retain the local limiter only as defense in depth.
 - **Mitigation:** Use Vercel/WAF limits and Portkey-side quotas, and keep `MCP_MAX_SESSIONS` conservative.
 - **False-positive notes:** The current implementation is adequate for a single long-lived process when `trust proxy` matches the actual proxy topology.
 
@@ -164,7 +164,7 @@ The remaining issues concerned cross-user session/replay isolation, Portkey cred
 | Zizmor | No findings (1 ignored result and 16 explicit suppressions) |
 | Actionlint | 0 findings |
 | Lint, dead-code analysis, source/test typecheck, and build | Passed |
-| Repository tests | 296 passed, 0 failed |
+| Repository tests | 297 passed, 0 failed |
 | MCP end-to-end tests | 24 passed, 0 failed |
 | Live Redis integration tests | 2 passed: encrypted replay and atomic shared rate limiting |
 | README tool inventory | 156 tools across 19 files verified |

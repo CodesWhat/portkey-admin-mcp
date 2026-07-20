@@ -5,6 +5,7 @@
 
 import { createHash } from "node:crypto";
 import type { NextFunction, Request, Response } from "express";
+import { ipKeyGenerator } from "express-rate-limit";
 import { type AuthPrincipal, getPrincipalOwnerKey } from "./auth.js";
 import { Logger } from "./logger.js";
 
@@ -412,7 +413,7 @@ function getClientIdentifier(
 		scope === "principal" && principal
 			? getPrincipalOwnerKey(principal)
 			: scope;
-	const trustedIp = req.ip || "unknown";
+	const trustedIp = ipKeyGenerator(req.ip || "unknown");
 	return createHash("sha256")
 		.update(scope, "utf8")
 		.update("\0", "utf8")
