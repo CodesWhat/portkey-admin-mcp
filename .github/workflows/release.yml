@@ -234,7 +234,11 @@ jobs:
             exit 1
           fi
 
-          tarball="${tarballs[0]}"
+          # Resolve to an absolute path. `npm publish` parses a bare relative
+          # arg like "package/foo.tgz" as a GitHub org/repo shorthand and tries
+          # to git-clone it (fatal: Permission denied); an absolute path is
+          # unambiguously treated as a local tarball.
+          tarball="$(realpath "${tarballs[0]}")"
           tarball_version="$(tar -xOf "$tarball" package/package.json | node -e 'let data=""; process.stdin.on("data", c => data += c).on("end", () => process.stdout.write(JSON.parse(data).version))')"
           if [[ "$tarball_version" != "$VERSION" ]]; then
             echo "Tarball version ($tarball_version) does not match tag v$VERSION" >&2
