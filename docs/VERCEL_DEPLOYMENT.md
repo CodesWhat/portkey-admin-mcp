@@ -45,15 +45,21 @@ Required:
 - `PORTKEY_API_KEY`
 - `MCP_SESSION_MODE=stateless`
 - `MCP_EVENT_STORE=redis`
-- `MCP_REDIS_URL=redis://...`
+- `MCP_REDIS_URL=rediss://<ACL-user>:<password>@...`
+- `MCP_EVENT_ENCRYPTION_KEY=<base64-encoded-32-byte-key>`
 - `ALLOWED_ORIGINS=https://your-app-domain`
 - `MCP_TRUST_PROXY=true`
+- `RATE_LIMIT_STORE=redis`
 
 Recommended:
 
 - `MCP_READY_CHECK_MODE=portkey`
 - `RATE_LIMIT_ENABLED=true`
-- `RATE_LIMIT_MAX_BUCKETS=10000` (lower or raise based on expected client cardinality and memory budget)
+- `RATE_LIMIT_REDIS_URL=rediss://...` (optional; falls back to `MCP_REDIS_URL`)
+
+Generate the replay encryption key locally with `openssl rand -base64 32`. Store
+it only as a Vercel secret. Rotating it makes unexpired replay events unreadable;
+the default replay TTL is five minutes.
 
 Auth option A (recommended for teams): Clerk JWT
 
@@ -61,6 +67,9 @@ Auth option A (recommended for teams): Clerk JWT
 - `CLERK_ISSUER=https://<your-clerk-domain>`
 - `CLERK_AUDIENCE=<your-audience>` (required)
 - `CLERK_JWKS_URL=...` (optional; auto-derived from issuer if omitted)
+- At least one authorization constraint: `CLERK_ALLOWED_SUBJECTS`,
+  `CLERK_ALLOWED_ORGANIZATION_IDS`, `CLERK_ALLOWED_ROLES`, or
+  `CLERK_REQUIRED_PERMISSIONS`. Every configured constraint must match.
 
 Auth option B (internal shared token):
 
@@ -143,12 +152,19 @@ Treat this as required before making the repo public.
 
 - Only grant scopes this server actually needs for your workflows.
 
-6. Enable repository protections
+6. Isolate Redis
+
+- Require TLS (`rediss://`) and an ACL user limited to the configured replay and
+  rate-limit prefixes.
+- Use a dedicated namespace and credentials per environment.
+- Keep `MCP_EVENT_TTL_SECONDS` short; the default is 300 seconds.
+
+7. Enable repository protections
 
 - Enable GitHub secret scanning and push protection.
 - Require PR reviews before merge to `main`.
 
-7. Keep dependencies current
+8. Keep dependencies current
 
 - Run `npm audit` regularly.
 - Patch `jose`, `express`, and `redis` updates promptly.
