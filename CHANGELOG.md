@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-07-28
+
+Maintenance and dependency-security patch. No Portkey Admin API or MCP tool-surface changes; the 156-tool inventory is unchanged.
+
+### Security
+
+- Upgrade `@modelcontextprotocol/sdk` to 1.30.0, allowing the patched `@hono/node-server` 2.0.12 and closing the Windows encoded-backslash path-traversal advisory (GHSA-frvp-7c67-39w9).
+- Upgrade transitive `fast-uri` to 3.1.4, closing the host-confusion advisory (GHSA-v2hh-gcrm-f6hx). GitHub Dependabot and `npm audit` report no remaining vulnerabilities.
+
+### Fixed
+
+- Resolve the verified npm tarball artifact to an absolute path before publishing, preventing npm from misinterpreting the relative tarball path as a GitHub repository shorthand.
+
+### Changed
+
+- Update non-major npm dependencies and pinned GitHub Actions, including `actions/setup-node` 7.0.0 and `actions/checkout` 7.0.1.
+
 ## [0.6.0] - 2026-07-20
 
 Security-hardening release. Remediates all eight findings (two high, four medium, two low) from the 2026-07-20 best-practices review; each fix ships with regression tests or configuration assertions. See [security_best_practices_report.md](./security_best_practices_report.md) for the full evidence and verification log. No Portkey Admin API tool surface changes — the 156-tool inventory is unchanged.
@@ -395,7 +412,8 @@ First stable release. Graduates from beta with 151 tools covering ~98% of the Po
 - Vercel deployment support
 - Contract tests, E2E tests, security tests
 
-[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.4.2...v0.5.0
 [0.4.2]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.4.1...v0.4.2
