@@ -73,7 +73,7 @@ jobs:
     timeout-minutes: 15
     services:
       redis:
-        image: redis:8.4-alpine@sha256:43092204f39bfd5500a4ee6d9a73105ba42157a6af8a80e6a51357400a46984b
+        image: redis:8.4-alpine@sha256:bd4a0d37e7cd830117ffec9329052b4a1887afa060c265e1768f82b177ff6f43
         ports:
           - 6379:6379
         options: >-
