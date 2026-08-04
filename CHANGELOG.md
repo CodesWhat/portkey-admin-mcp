@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.2] - 2026-08-04
+
+Maintenance and dependency-security patch. No Portkey Admin API or MCP tool-surface changes; the 156-tool inventory is unchanged.
+
+### Security
+
+- Upgrade transitive `ip-address` to 10.4.0, closing two medium advisories reached through `express-rate-limit`. A CIDR suffix on a parsed address suppressed special-use classification, and IPv4-mapped and NAT64 IPv6 addresses were misclassified; both allowed SSRF and trust-boundary checks to be bypassed. GitHub Dependabot reports no remaining alerts.
+
+### Changed
+
+- Update non-major npm dependencies: `@biomejs/biome` 2.5.6, `express-rate-limit` 8.6.1, `jose` 6.2.7, `knip` 6.29.0, and `redis` 6.2.0.
+- Move the CI Redis service image to `redis:8.8-alpine`.
+- Bump the pinned `packageManager` to `npm@12.0.2`. This is a build-tooling pin only and does not affect the published package; npm 12 requires Node `^22.22.2 || ^24.15.0 || >=26`, which the Node 24 toolchain used in CI and the Docker image already satisfies.
+
+### Removed
+
+- Drop the unused `BaseService` and `validateUrl` re-exports from the services barrel. Neither was ever imported through it, and knip 6.29 flags them. Both remain exported from `src/services/base.service.ts`, where every consumer already imports them.
+
 ## [0.6.1] - 2026-07-28
 
 Maintenance and dependency-security patch. No Portkey Admin API or MCP tool-surface changes; the 156-tool inventory is unchanged.
@@ -412,7 +430,8 @@ First stable release. Graduates from beta with 151 tools covering ~98% of the Po
 - Vercel deployment support
 - Contract tests, E2E tests, security tests
 
-[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.6.1...HEAD
+[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.6.2...HEAD
+[0.6.2]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.6.1...v0.6.2
 [0.6.1]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.4.2...v0.5.0
