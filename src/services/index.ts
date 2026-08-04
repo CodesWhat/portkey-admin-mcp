@@ -4,7 +4,6 @@ export type * from "./analytics.service.js";
 export { AnalyticsService } from "./analytics.service.js";
 export type * from "./audit.service.js";
 export { AuditService } from "./audit.service.js";
-export { BaseService, validateUrl } from "./base.service.js";
 export type * from "./collections.service.js";
 export { CollectionsService } from "./collections.service.js";
 export type * from "./configs.service.js";
