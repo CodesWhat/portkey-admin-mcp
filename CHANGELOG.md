@@ -17,8 +17,9 @@ Maintenance and dependency-security patch. No Portkey Admin API or MCP tool-surf
 
 ### Changed
 
-- Update non-major npm dependencies: `@biomejs/biome` 2.5.6, `express-rate-limit` 8.6.1, `jose` 6.2.7, `knip` 6.29.0, `npm` 11.19.0, and `redis` 6.2.0.
+- Update non-major npm dependencies: `@biomejs/biome` 2.5.6, `express-rate-limit` 8.6.1, `jose` 6.2.7, `knip` 6.29.0, and `redis` 6.2.0.
 - Move the CI Redis service image to `redis:8.8-alpine`.
+- Bump the pinned `packageManager` to `npm@12.0.2`. This is a build-tooling pin only and does not affect the published package; npm 12 requires Node `^22.22.2 || ^24.15.0 || >=26`, which the Node 24 toolchain used in CI and the Docker image already satisfies.
 
 ### Removed
 
