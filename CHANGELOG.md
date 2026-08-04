@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.3] - 2026-08-04
+
+Security patch for two advisories published against transitive dependencies of `@modelcontextprotocol/sdk` shortly after 0.6.2 was cut. No Portkey Admin API or MCP tool-surface changes; the 156-tool inventory is unchanged.
+
+### Security
+
+- Upgrade transitive `fast-uri` to 3.1.5, closing a high-severity host-confusion advisory triggered by a backslash authority introducer. Reached through `ajv`. This is a distinct bypass from the `fast-uri` issue patched in 0.6.1.
+- Upgrade transitive `hono` to 4.13.0, closing a medium-severity ReDoS in the CORS middleware via the `Access-Control-Request-Headers` header. Reached through `@hono/node-server` and the SDK directly.
+
+Both are lockfile-only resolution bumps; no declared dependency ranges changed. GitHub Dependabot reports no remaining alerts.
+
 ## [0.6.2] - 2026-08-04
 
 Maintenance and dependency-security patch. No Portkey Admin API or MCP tool-surface changes; the 156-tool inventory is unchanged.
@@ -430,7 +441,8 @@ First stable release. Graduates from beta with 151 tools covering ~98% of the Po
 - Vercel deployment support
 - Contract tests, E2E tests, security tests
 
-[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.6.2...HEAD
+[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.6.3...HEAD
+[0.6.3]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.6.2...v0.6.3
 [0.6.2]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.6.1...v0.6.2
 [0.6.1]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.5.0...v0.6.0
