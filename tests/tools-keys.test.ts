@@ -507,13 +507,21 @@ describe("create_api_key", () => {
 
 		const cb = callbacks.get("create_api_key");
 		assert.ok(cb);
-		await assert.rejects(() =>
-			cb({
-				type: "workspace",
-				sub_type: "service",
-				name: "Missing workspace",
-				scopes: [],
-			}),
+		await assert.rejects(
+			() =>
+				cb({
+					type: "workspace",
+					sub_type: "service",
+					name: "Missing workspace",
+					scopes: [],
+				}),
+			(error: Error) => {
+				// Without this the stub's own throw would satisfy assert.rejects,
+				// so the test would still pass if validation stopped rejecting.
+				assert.doesNotMatch(error.message, /should not be called/);
+				assert.match(error.message, /workspace_id/i);
+				return true;
+			},
 		);
 	});
 
@@ -533,13 +541,19 @@ describe("create_api_key", () => {
 
 		const cb = callbacks.get("create_api_key");
 		assert.ok(cb);
-		await assert.rejects(() =>
-			cb({
-				type: "organisation",
-				sub_type: "user",
-				name: "Missing user",
-				scopes: [],
-			}),
+		await assert.rejects(
+			() =>
+				cb({
+					type: "organisation",
+					sub_type: "user",
+					name: "Missing user",
+					scopes: [],
+				}),
+			(error: Error) => {
+				assert.doesNotMatch(error.message, /should not be called/);
+				assert.match(error.message, /user_id/i);
+				return true;
+			},
 		);
 	});
 });

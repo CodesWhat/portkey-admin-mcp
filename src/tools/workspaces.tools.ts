@@ -128,7 +128,9 @@ const WORKSPACES_TOOL_SCHEMAS = {
 			.uuid(
 				"user_id must be a valid UUID (use list_all_users to find user IDs)",
 			)
-			.describe("The user ID to retrieve"),
+			.describe(
+				"The user ID to retrieve (must be a valid UUID from list_all_users, not an email address)",
+			),
 	},
 	updateWorkspaceMember: {
 		workspace_id: z.string().describe("The workspace ID"),
@@ -137,7 +139,9 @@ const WORKSPACES_TOOL_SCHEMAS = {
 			.uuid(
 				"user_id must be a valid UUID (use list_all_users to find user IDs)",
 			)
-			.describe("The user ID to update"),
+			.describe(
+				"The user ID to update (must be a valid UUID from list_all_users, not an email address)",
+			),
 		role: z
 			.enum(["admin", "member", "manager"])
 			.describe("New role in the workspace"),

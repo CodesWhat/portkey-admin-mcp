@@ -20,8 +20,13 @@ export function formatFullName(firstName?: string, lastName?: string): string {
  * fall back to the previous parse-from-text behavior).
  */
 export function jsonResult(data: unknown): CallToolResult {
+	// JSON.stringify returns undefined for a top-level undefined, function, or
+	// symbol. Fall back to "null" so text is always a string, matching the null
+	// that normalizeToolResult already substitutes for a missing payload.
+	const serialized = JSON.stringify(data) ?? "null";
+
 	return {
-		content: [{ type: "text", text: JSON.stringify(data) }],
+		content: [{ type: "text", text: serialized }],
 		...(isRecord(data) && !Array.isArray(data)
 			? { structuredContent: data as Record<string, unknown> }
 			: {}),

@@ -752,7 +752,7 @@
 						"type": "string",
 						"format": "uuid",
 						"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
-						"description": "The user ID to retrieve"
+						"description": "The user ID to retrieve (must be a valid UUID from list_all_users, not an email address)"
 					}
 				},
 				"required": ["workspace_id", "user_id"],
@@ -779,7 +779,7 @@
 						"type": "string",
 						"format": "uuid",
 						"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
-						"description": "The user ID to update"
+						"description": "The user ID to update (must be a valid UUID from list_all_users, not an email address)"
 					},
 					"role": {
 						"type": "string",

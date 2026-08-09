@@ -82,10 +82,10 @@ PORTKEY_TOOL_DOMAINS=prompts,analytics \
 npx -y portkey-admin-mcp
 ```
 
-Scoping domains is also the biggest lever on context cost, not just access. The full
-171-tool `tools/list` response is roughly 387 KB (~99K tokens) that every client loads
-before it does anything. Narrowing to the domains a client actually needs cuts that
-proportionally.
+Scoping domains is also the biggest lever on context cost, not just access. `tools/list`
+is paginated, and the complete 171-tool catalog is roughly 387 KB (~99K tokens) once a
+client follows `nextCursor` through every page. Narrowing to the domains a client
+actually needs cuts that roughly proportionally.
 
 <details>
 <summary><strong>Build from source</strong></summary>
