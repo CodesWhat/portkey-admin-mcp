@@ -23,7 +23,10 @@ import cors from "cors";
 import express from "express";
 import { rateLimit as expressRateLimit } from "express-rate-limit";
 import helmet from "helmet";
-import { getSharedPortkeyService } from "../services/index.js";
+import {
+	getSharedPortkeyService,
+	type HealthService,
+} from "../services/index.js";
 import {
 	isToolDomain,
 	normalizeToolDomains,
@@ -38,7 +41,10 @@ import {
 	mcpAuthMiddleware,
 } from "./auth.js";
 import { getServerConfig, type ServerConfig } from "./config.js";
-import { createManagedEventStore } from "./event-store.js";
+import {
+	createManagedEventStore,
+	type ManagedEventStore,
+} from "./event-store.js";
 import { Logger } from "./logger.js";
 import { createMcpServer, resolveToolDomains } from "./mcp-server.js";
 import {
@@ -351,50 +357,33 @@ function validateRequiredProtocolVersion(
 	return undefined;
 }
 
-export function createHttpAppRuntime(): HttpAppRuntime {
-	const config = getServerConfig();
-	const authConfig = getHttpAuthConfig();
-	assertSafeHttpAuthConfig(authConfig);
-	const managedEventStore = createManagedEventStore(config);
-	const readyCheckMode = getReadyCheckMode();
-	const requestBodyLimit = process.env.MCP_MAX_REQUEST_SIZE?.trim() || "1mb";
-	const allowedOrigins = getAllowedOrigins();
-	const corsOriginConfig: cors.CorsOptions["origin"] = allowedOrigins.includes(
-		"*",
-	)
-		? true
-		: allowedOrigins;
-	if (allowedOrigins.includes("*") && authConfig.mode === "none") {
-		Logger.warn(
-			"CORS wildcard (ALLOWED_ORIGINS=*) combined with MCP_AUTH_MODE=none: all origins are accepted with no authentication. Do not expose this server publicly.",
-		);
-	}
+interface StatelessRequestHandlerDeps {
+	managedEventStore: ManagedEventStore;
+	activeStatelessConnections: Set<() => Promise<void>>;
+}
 
-	const healthService = process.env.PORTKEY_API_KEY
-		? getSharedPortkeyService().health
-		: null;
-	const isStatefulSessionMode = config.sessionMode === "stateful";
-	const publicBaseUrl = buildConfiguredPublicBaseUrl(config);
-	const sessionStore = new SessionStore(config.maxSessions);
-	const activeStatelessConnections = new Set<() => Promise<void>>();
-	const activeReplayOperations = new Set<Promise<void>>();
-	const app = express();
+type StatelessRequestHandler = (
+	req: express.Request,
+	res: express.Response,
+	context: string,
+	ownerKey: string,
+	parsedBody?: unknown,
+	toolDomains?: readonly ToolDomain[],
+) => Promise<void>;
 
-	let isReady = false;
-	let server: HttpServer | HttpsServer | undefined;
-	let cleanupInterval: NodeJS.Timeout | undefined;
-	let closeRuntimeResourcesPromise: Promise<void> | undefined;
-	let sigintHandler: (() => void) | undefined;
-	let sigtermHandler: (() => void) | undefined;
+function createStatelessRequestHandler(
+	deps: StatelessRequestHandlerDeps,
+): StatelessRequestHandler {
+	const { managedEventStore, activeStatelessConnections } = deps;
 
-	async function handleStatelessRequest(
-		req: express.Request,
-		res: express.Response,
-		context: string,
-		ownerKey: string,
-		parsedBody?: unknown,
-		toolDomains?: readonly ToolDomain[],
-	): Promise<void> {
+	return async function handleStatelessRequest(
+		req,
+		res,
+		context,
+		ownerKey,
+		parsedBody,
+		toolDomains,
+	) {
 		// The SDK removes its response-stream mapping as soon as the client drops
 		// the POST SSE connection. Track the primed stream separately so an in-flight
 		// stateless handler can still persist progress/final messages for GET replay.
@@ -523,89 +512,48 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 			await closeConnection();
 			throw error;
 		}
-	}
+	};
+}
 
-	app.set("trust proxy", resolveTrustProxy(process.env.MCP_TRUST_PROXY));
-	app.use(
-		cors({
-			origin: corsOriginConfig,
-		}),
-	);
-	app.use(
-		helmet({
-			frameguard: { action: "deny" },
-			strictTransportSecurity: config.tls.enabled
-				? {
-						maxAge: 31_536_000,
-						includeSubDomains: true,
-					}
-				: false,
-		}),
-	);
-	app.use(express.json({ limit: requestBodyLimit }));
-	// In unauthenticated (none) mode there is no bearer/JWT gate, so validate the
-	// Host header to block DNS-rebinding against local deployments. Authenticated
-	// modes rely on the token and skip this to avoid rejecting proxied Host headers.
-	if (authConfig.mode === "none") {
-		app.use(hostValidationMiddleware);
-	}
-	app.use(originValidationMiddleware);
-	const rateLimitConfig = getRateLimitConfig();
-	app.use(
-		expressRateLimit({
-			windowMs: rateLimitConfig.windowMs,
-			limit: rateLimitConfig.maxTokens,
-			standardHeaders: false,
-			legacyHeaders: false,
-			validate: false,
-			skip: (req) => !rateLimitConfig.enabled || req.path !== "/mcp",
-			message: { error: "Too Many Requests" },
-		}),
-	);
-	app.use(rateLimitMiddleware);
-	app.use(mcpAuthMiddleware);
-	app.use(principalRateLimitMiddleware);
-
-	// Parse/body-size errors need a controlled JSON response in HTTP mode.
-	app.use(
-		(
-			err: unknown,
-			_req: express.Request,
-			res: express.Response,
-			next: express.NextFunction,
-		) => {
-			const errorType =
-				err && typeof err === "object" && "type" in err ? err.type : undefined;
-			if (errorType === "entity.too.large") {
-				res.status(413).json({ error: "Payload too large" });
-				return;
-			}
-			if (errorType === "entity.parse.failed") {
-				res.status(400).json({ error: "Malformed JSON request body" });
-				return;
-			}
-			next(err);
-		},
-	);
-
+function createHealthHandler(): express.RequestHandler {
 	/**
 	 * Health check endpoint - always returns 200 if server is running
 	 */
-	app.get("/health", (_req, res) => {
+	return function healthHandler(_req, res) {
 		res.json({
 			status: "ok",
 			timestamp: new Date().toISOString(),
 			uptime: process.uptime(),
 		});
-	});
+	};
+}
+
+interface ReadyHandlerDeps {
+	getIsReady: () => boolean;
+	readyCheckMode: "local" | "portkey";
+	healthService: HealthService | null;
+	isStatefulSessionMode: boolean;
+	sessionStore: SessionStore;
+	config: ServerConfig;
+}
+
+function createReadyHandler(deps: ReadyHandlerDeps): express.RequestHandler {
+	const {
+		getIsReady,
+		readyCheckMode,
+		healthService,
+		isStatefulSessionMode,
+		sessionStore,
+		config,
+	} = deps;
 
 	/**
 	 * Readiness check endpoint - returns 200 only when server is ready to accept MCP requests
 	 */
-	app.get("/ready", async (_req, res) => {
+	return async function readyHandler(_req, res) {
 		const sessionCount = isStatefulSessionMode ? sessionStore.size : 0;
 
-		if (isReady) {
+		if (getIsReady()) {
 			if (readyCheckMode === "portkey") {
 				if (!healthService) {
 					res.status(503).json({
@@ -657,12 +605,24 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 				timestamp: new Date().toISOString(),
 			});
 		}
-	});
+	};
+}
+
+interface RootPageHandlerDeps {
+	publicBaseUrl: string;
+	authConfig: ReturnType<typeof getHttpAuthConfig>;
+	config: ServerConfig;
+}
+
+function createRootPageHandler(
+	deps: RootPageHandlerDeps,
+): express.RequestHandler {
+	const { publicBaseUrl, authConfig, config } = deps;
 
 	/**
 	 * Lightweight web UI to simplify hosted setup verification.
 	 */
-	app.get("/", (_req, res) => {
+	return function rootPageHandler(_req, res) {
 		const baseUrl = publicBaseUrl;
 		const mcpUrl = `${baseUrl}/mcp`;
 		const authHelp =
@@ -729,9 +689,21 @@ export function createHttpAppRuntime(): HttpAppRuntime {
   </script>
 </body>
 </html>`);
-	});
+	};
+}
 
-	app.get("/auth/info", (_req, res) => {
+interface AuthInfoHandlerDeps {
+	authConfig: ReturnType<typeof getHttpAuthConfig>;
+	config: ServerConfig;
+	publicBaseUrl: string;
+}
+
+function createAuthInfoHandler(
+	deps: AuthInfoHandlerDeps,
+): express.RequestHandler {
+	const { authConfig, config, publicBaseUrl } = deps;
+
+	return function authInfoHandler(_req, res) {
 		res.json({
 			mode: authConfig.mode,
 			sessionMode: config.sessionMode,
@@ -749,13 +721,35 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 				protocol: config.protocol,
 			},
 		});
-	});
+	};
+}
+
+interface McpPostHandlerDeps {
+	isStatefulSessionMode: boolean;
+	activeStatelessConnections: Set<() => Promise<void>>;
+	config: ServerConfig;
+	managedEventStore: ManagedEventStore;
+	sessionStore: SessionStore;
+	handleStatelessRequest: StatelessRequestHandler;
+}
+
+function createMcpPostHandler(
+	deps: McpPostHandlerDeps,
+): express.RequestHandler {
+	const {
+		isStatefulSessionMode,
+		activeStatelessConnections,
+		config,
+		managedEventStore,
+		sessionStore,
+		handleStatelessRequest,
+	} = deps;
 
 	/**
 	 * MCP POST endpoint - handles MCP requests
 	 * Creates new sessions on initialize requests, reuses existing sessions otherwise
 	 */
-	app.post("/mcp", async (req, res) => {
+	return async function mcpPostHandler(req, res) {
 		const ownerKey = getRequestOwnerKey(res);
 		let requestedToolDomains: ToolDomain[] | undefined;
 		const protocolVersionHeader = getMcpProtocolVersion(req);
@@ -938,12 +932,32 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 				error,
 			);
 		}
-	});
+	};
+}
+
+interface McpGetHandlerDeps {
+	isStatefulSessionMode: boolean;
+	activeReplayOperations: Set<Promise<void>>;
+	config: ServerConfig;
+	managedEventStore: ManagedEventStore;
+	sessionStore: SessionStore;
+	getIsReady: () => boolean;
+}
+
+function createMcpGetHandler(deps: McpGetHandlerDeps): express.RequestHandler {
+	const {
+		isStatefulSessionMode,
+		activeReplayOperations,
+		config,
+		managedEventStore,
+		sessionStore,
+		getIsReady,
+	} = deps;
 
 	/**
 	 * MCP GET endpoint - handles SSE streams for server-to-client notifications
 	 */
-	app.get("/mcp", async (req, res) => {
+	return async function mcpGetHandler(req, res) {
 		const ownerKey = getRequestOwnerKey(res);
 		let requestedToolDomains: ToolDomain[] | undefined;
 		try {
@@ -1041,7 +1055,7 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 						let cursor = lastEventId;
 						let finalResponseSeen = false;
 						const deadline = Date.now() + 25_000;
-						while (isReady && !res.destroyed && !finalResponseSeen) {
+						while (getIsReady() && !res.destroyed && !finalResponseSeen) {
 							await replayEventStore.replayEventsAfter(cursor, {
 								send: async (eventId, message) => {
 									cursor = eventId;
@@ -1164,12 +1178,23 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 				id: null,
 			});
 		}
-	});
+	};
+}
+
+interface McpDeleteHandlerDeps {
+	isStatefulSessionMode: boolean;
+	sessionStore: SessionStore;
+}
+
+function createMcpDeleteHandler(
+	deps: McpDeleteHandlerDeps,
+): express.RequestHandler {
+	const { isStatefulSessionMode, sessionStore } = deps;
 
 	/**
 	 * MCP DELETE endpoint - closes sessions
 	 */
-	app.delete("/mcp", async (req, res) => {
+	return async function mcpDeleteHandler(req, res) {
 		const ownerKey = getRequestOwnerKey(res);
 		if (!isStatefulSessionMode) {
 			res.status(405).json({
@@ -1224,7 +1249,197 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 				id: null,
 			});
 		}
+	};
+}
+
+export function createHttpAppRuntime(): HttpAppRuntime {
+	const config = getServerConfig();
+	const authConfig = getHttpAuthConfig();
+	assertSafeHttpAuthConfig(authConfig);
+	const managedEventStore = createManagedEventStore(config);
+	const readyCheckMode = getReadyCheckMode();
+	const requestBodyLimit = process.env.MCP_MAX_REQUEST_SIZE?.trim() || "1mb";
+	const allowedOrigins = getAllowedOrigins();
+	const corsOriginConfig: cors.CorsOptions["origin"] = allowedOrigins.includes(
+		"*",
+	)
+		? true
+		: allowedOrigins;
+	if (allowedOrigins.includes("*") && authConfig.mode === "none") {
+		Logger.warn(
+			"CORS wildcard (ALLOWED_ORIGINS=*) combined with MCP_AUTH_MODE=none: all origins are accepted with no authentication. Do not expose this server publicly.",
+		);
+	}
+
+	const healthService = process.env.PORTKEY_API_KEY
+		? getSharedPortkeyService().health
+		: null;
+	const isStatefulSessionMode = config.sessionMode === "stateful";
+	const publicBaseUrl = buildConfiguredPublicBaseUrl(config);
+	const sessionStore = new SessionStore(config.maxSessions);
+	const activeStatelessConnections = new Set<() => Promise<void>>();
+	const activeReplayOperations = new Set<Promise<void>>();
+	const app = express();
+
+	let isReady = false;
+	let server: HttpServer | HttpsServer | undefined;
+	let cleanupInterval: NodeJS.Timeout | undefined;
+	let closeRuntimeResourcesPromise: Promise<void> | undefined;
+	let sigintHandler: (() => void) | undefined;
+	let sigtermHandler: (() => void) | undefined;
+
+	const getIsReady = () => isReady;
+
+	const handleStatelessRequest = createStatelessRequestHandler({
+		managedEventStore,
+		activeStatelessConnections,
 	});
+
+	app.set("trust proxy", resolveTrustProxy(process.env.MCP_TRUST_PROXY));
+	app.use(
+		cors({
+			origin: corsOriginConfig,
+		}),
+	);
+	app.use(
+		helmet({
+			frameguard: { action: "deny" },
+			strictTransportSecurity: config.tls.enabled
+				? {
+						maxAge: 31_536_000,
+						includeSubDomains: true,
+					}
+				: false,
+		}),
+	);
+	app.use(express.json({ limit: requestBodyLimit }));
+	// In unauthenticated (none) mode there is no bearer/JWT gate, so validate the
+	// Host header to block DNS-rebinding against local deployments. Authenticated
+	// modes rely on the token and skip this to avoid rejecting proxied Host headers.
+	if (authConfig.mode === "none") {
+		app.use(hostValidationMiddleware);
+	}
+	app.use(originValidationMiddleware);
+	const rateLimitConfig = getRateLimitConfig();
+	app.use(
+		expressRateLimit({
+			windowMs: rateLimitConfig.windowMs,
+			limit: rateLimitConfig.maxTokens,
+			standardHeaders: false,
+			legacyHeaders: false,
+			validate: false,
+			skip: (req) => !rateLimitConfig.enabled || req.path !== "/mcp",
+			message: { error: "Too Many Requests" },
+		}),
+	);
+	app.use(rateLimitMiddleware);
+	app.use(mcpAuthMiddleware);
+	app.use(principalRateLimitMiddleware);
+
+	// Parse/body-size errors need a controlled JSON response in HTTP mode.
+	app.use(
+		(
+			err: unknown,
+			_req: express.Request,
+			res: express.Response,
+			next: express.NextFunction,
+		) => {
+			const errorType =
+				err && typeof err === "object" && "type" in err ? err.type : undefined;
+			if (errorType === "entity.too.large") {
+				res.status(413).json({ error: "Payload too large" });
+				return;
+			}
+			if (errorType === "entity.parse.failed") {
+				res.status(400).json({ error: "Malformed JSON request body" });
+				return;
+			}
+			next(err);
+		},
+	);
+
+	/**
+	 * Health check endpoint - always returns 200 if server is running
+	 */
+	app.get("/health", createHealthHandler());
+
+	/**
+	 * Readiness check endpoint - returns 200 only when server is ready to accept MCP requests
+	 */
+	app.get(
+		"/ready",
+		createReadyHandler({
+			getIsReady,
+			readyCheckMode,
+			healthService,
+			isStatefulSessionMode,
+			sessionStore,
+			config,
+		}),
+	);
+
+	/**
+	 * Lightweight web UI to simplify hosted setup verification.
+	 */
+	app.get(
+		"/",
+		createRootPageHandler({
+			publicBaseUrl,
+			authConfig,
+			config,
+		}),
+	);
+
+	app.get(
+		"/auth/info",
+		createAuthInfoHandler({
+			authConfig,
+			config,
+			publicBaseUrl,
+		}),
+	);
+
+	/**
+	 * MCP POST endpoint - handles MCP requests
+	 * Creates new sessions on initialize requests, reuses existing sessions otherwise
+	 */
+	app.post(
+		"/mcp",
+		createMcpPostHandler({
+			isStatefulSessionMode,
+			activeStatelessConnections,
+			config,
+			managedEventStore,
+			sessionStore,
+			handleStatelessRequest,
+		}),
+	);
+
+	/**
+	 * MCP GET endpoint - handles SSE streams for server-to-client notifications
+	 */
+	app.get(
+		"/mcp",
+		createMcpGetHandler({
+			isStatefulSessionMode,
+			activeReplayOperations,
+			config,
+			managedEventStore,
+			sessionStore,
+			getIsReady,
+		}),
+	);
+
+	/**
+	 * MCP DELETE endpoint - closes sessions
+	 */
+	app.delete(
+		"/mcp",
+		createMcpDeleteHandler({
+			isStatefulSessionMode,
+			sessionStore,
+		}),
+	);
 
 	cleanupInterval = isStatefulSessionMode
 		? setInterval(async () => {
