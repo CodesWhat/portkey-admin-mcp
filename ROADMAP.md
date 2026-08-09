@@ -7,6 +7,7 @@
 > Added 2026-07-14: Secret References became an officially documented Admin API CRUD surface.
 > Added 2026-08-09: organisation guardrail defaults/exclusions, single-log reads, export restrictions, SCIM group mappings, MCP server connections, public model pricing, and current integration schemas.
 > The unchecked tasks in Phases 1–4 preserve the original implementation plan; Phase 5 is the current compatibility track.
+> Added 2026-08-09: Phase 6 tracks code-health findings from a full-app review (security, performance, quality, testing), including the tradeoffs deliberately left in place.
 
 ---
 
@@ -42,6 +43,76 @@
 - [x] Compatibility normalization for current `models` and `workspaces` list response keys.
 - [ ] Continue monitoring the official Portkey OpenAPI/changelog for additive control-plane surfaces.
 - [ ] Add a native Prisma AIRS adapter only when Palo Alto Networks publishes a stable AI Gateway management API.
+
+---
+
+## Phase 6: Code health (August 2026 full-app review)
+
+Findings from a four-track review (security, performance, quality, testing) of the
+whole application on 2026-08-09. Security came back clean; the work below is
+maintainability, context cost, and test coverage.
+
+### 6A — Tools layer
+
+| # | Finding | Status |
+|---|---|---|
+| 1 | ~180 hand-rolled `{ content: [{ type: "text", text: JSON.stringify(x) }] }` envelopes with no shared helper; `normalizeToolResult` then re-parses that text to build `structuredContent` | Done — `jsonResult()` in `src/tools/utils.ts` |
+| 2 | `analytics.tools.ts` had 9 tools with byte-identical bodies differing only in name/description/service method | Done — table-driven registration |
+| 3 | `keys.tools.ts` inlined response mapping in both list/get pairs, unlike every sibling module's `format<Resource>()` convention | Done |
+| 4 | `user_id` validated with `.uuid()` on `add_workspace_member` but bare `z.string()` on the get/update/remove siblings | Done |
+| 5 | SCIM tools use 0-based `page` while all 171 other list tools use 1-based `current_page`, undocumented — LLM clients silently mis-paginate | Done — noted in parameter description |
+| 6 | `TOOL_SUCCESS_DATA_SCHEMAS` covers 6 of 171 tools with no stated rollout intent; reads like an abandoned migration | Done — documented as deliberate incremental adoption |
+
+### 6B — Transport and services
+
+| # | Finding | Status |
+|---|---|---|
+| 7 | `createHttpAppRuntime()` is ~1090 lines with all route handlers as inline closures | Done — extracted to named handler factories |
+| 8 | `BaseService` fabricates `{} as T` for 204 No Content responses, a silent type lie | Done — explicit no-content result type |
+
+### 6C — Test coverage
+
+Suite was 328/328 green at review time; aggregate coverage 71.05% lines / 55.39%
+branch / 48.60% functions. Gaps closed:
+
+- [x] Clerk auth happy path. `tests/auth-clerk.test.ts` had a test titled "calls next() when jwtVerify resolves" whose body was `assert.ok(true)`, with a comment claiming integration coverage in `mcp-e2e.test.ts` — that file has zero Clerk references. The success path of the auth mode gating production JWT deployments had no test at all.
+- [x] `BaseService.executeRequest` non-ok (4xx/5xx) branch driven through a mocked `fetch`, not a hand-built `FetchError`.
+- [x] `BaseService.getPublic()` real implementation (unauthenticated catalog base URL, omitted API-key header) rather than stubbing the method away.
+- [x] Behavioural tests for the 9 untested `keys.tools.ts` callbacks and 5 untested `users.tools.ts` callbacks.
+- [x] 413 payload-too-large response, previously unreferenced by any test.
+- [x] Unicode, control-character, and injection-style strings through path-segment encoding and free-text fields.
+- [x] Per-tool query construction and response curation for representative analytics tools.
+
+### 6D — Accepted tradeoffs and deferred work
+
+- **Standard output-schema envelope stays on all 171 tools.** It costs ~104 KB of
+  the ~387 KB `tools/list` payload (~25K tokens), and 166 tools carry the identical
+  ~625-byte fragment. Dropping it is *not* an option: `scripts/check-tool-definition-quality.mjs`
+  fails the build on a missing output schema, and that gate exists to hold the Glama
+  TDQS score. The context cost is the price of the score. The real operator lever is
+  scoping `PORTKEY_TOOL_DOMAINS` / `?tools=`, which is now documented as a context-cost
+  control and not just an access-control one.
+- **Per-request server rebuild in stateless mode is accepted.** `createMcpServer()`
+  costs ~1.15 ms and ~1.5 MB per request (measured, 500-iteration steady state).
+  The SDK binds one server per transport, so there is no way around it. Previously
+  reasoned through in `docs/audit-2026-06.md`; re-confirmed here with numbers.
+- [ ] **Standardize validation style.** Cross-field rules are split between schema-level
+  `superRefine` (`keys.tools.ts`, `workspaces.tools.ts`) and manual `if` + `isError`
+  in handler bodies (`configs.tools.ts`, `integrations.tools.ts`, `mcp-integrations.tools.ts`,
+  `labels.tools.ts`, `prompts.tools.ts`). Both work; there is no rule for which to reach
+  for next. Deferred because converting handler checks to `superRefine` changes the
+  error shape clients see — that needs its own release and changelog note.
+- [ ] **Contract fixtures drift.** 4 of 14 fixtures in `tests/fixtures/manifest.json`
+  are documentation-derived rather than live-captured (the recording credential returned
+  403 on `api-keys-rotate` and the three `secret-references` endpoints). Last live
+  recording 2026-06-11. No scheduled workflow re-runs `record:fixtures`, so upstream
+  API drift is caught only at manual review. Wants either a scoped credential or a
+  monthly CI job that re-records against staging and opens a PR on diff.
+- [ ] **Unauthenticated surface review.** `/ready` in `portkey` check mode confirms a
+  working `PORTKEY_API_KEY` to any caller, and `GET /` renders auth/session/event-store
+  mode to unauthenticated callers. Both are deliberate operator conveniences with no
+  secret exposure, but they are a config fingerprint for a scanner. Decide whether
+  genuinely public deployments should gate them.
 
 ---
 
