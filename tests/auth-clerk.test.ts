@@ -14,6 +14,7 @@
 
 import assert from "node:assert/strict";
 import { afterEach, describe, it } from "node:test";
+import { exportJWK, generateKeyPair, SignJWT } from "jose";
 
 const ORIGINAL_ENV = { ...process.env };
 
@@ -76,6 +77,7 @@ function createMockResponse() {
 	return {
 		state,
 		response: {
+			locals: {} as Record<string, unknown>,
 			setHeader(name: string, value: string) {
 				state.headers[name] = value;
 				return this;
@@ -90,6 +92,44 @@ function createMockResponse() {
 			},
 		},
 	};
+}
+
+/**
+ * Stubs globalThis.fetch for the duration of `fn`, serving `jwks` as a JSON
+ * response for requests to `jwksUrl` and delegating everything else to the
+ * real fetch. This is the seam jose's createRemoteJWKSet actually uses: it
+ * calls the ambient `fetch` global with no override (auth.ts does not pass a
+ * `[customFetch]` option), so stubbing here lets jwtVerify perform a genuine
+ * signature/claims verification against a real JWKS response without any
+ * network access or a throwaway HTTP server.
+ */
+async function withStubbedJwksFetch<T>(
+	jwksUrl: string,
+	jwks: unknown,
+	fn: () => Promise<T>,
+): Promise<T> {
+	const originalFetch = globalThis.fetch;
+	globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+		const url =
+			typeof input === "string"
+				? input
+				: input instanceof URL
+					? input.href
+					: input.url;
+		if (url === jwksUrl) {
+			return new Response(JSON.stringify(jwks), {
+				status: 200,
+				headers: { "content-type": "application/json" },
+			});
+		}
+		return originalFetch(input as never, init);
+	}) as typeof fetch;
+
+	try {
+		return await fn();
+	} finally {
+		globalThis.fetch = originalFetch;
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -292,24 +332,22 @@ describe("getHttpAuthConfig under clerk mode", () => {
 // ---------------------------------------------------------------------------
 // mcpAuthMiddleware — clerk JWT verification path
 //
-// ESM named exports (jwtVerify, createRemoteJWKSet) are live bindings and
-// cannot be monkey-patched after the module resolves. We test the middleware
-// by exercising the paths where the token is absent or malformed:
+// jose's named exports (jwtVerify, createRemoteJWKSet) are live ESM bindings
+// and cannot be monkey-patched after the module resolves. But
+// createRemoteJWKSet delegates HTTP fetches to the ambient `fetch` global
+// (see node_modules/jose/dist/webapi/jwks/remote.js: `fetchImpl = fetch`),
+// and auth.ts constructs it with no `[customFetch]` override. That makes
+// `globalThis.fetch` the narrowest real seam available: stubbing it lets us
+// serve a real JWKS document to a real jose verifier without a live Clerk
+// tenant or a throwaway HTTP server. See withStubbedJwksFetch above.
 //
-//  • Missing Bearer token  → 401 before jwtVerify is ever called
-//  • Non-/mcp path         → next() called, no auth attempted
+// Covered here:
+//  • Missing Bearer token     → 401 before jwtVerify is ever called
+//  • Non-/mcp path            → next() called, no auth attempted
 //  • Structurally invalid JWT → jwtVerify throws, 401 returned
-//  • JWKS fetch fails       → jwtVerify throws, 401 returned
-//
-// The "jwtVerify resolves" path is exercised by providing an intentionally
-// minimal mock through the module's exported verifyClerkToken wrapper, which
-// is reachable indirectly: since auth.ts exposes mcpAuthMiddleware and uses
-// getHttpAuthConfig() internally, we can control the config-derived behaviour
-// by environment alone. To assert the happy path without a real Clerk tenant
-// we call the internal verifyClerkToken via a helper exported only in test
-// builds. As that helper is not exported, we instead test the contract at the
-// integration level: a malformed JWT always produces a 401, which exercises
-// the catch block and proves the middleware honours it.
+//  • JWKS fetch fails         → jwtVerify throws, 401 returned
+//  • Valid signed JWT         → next() called, res.locals.authPrincipal is
+//                                populated from org claims
 // ---------------------------------------------------------------------------
 
 describe("mcpAuthMiddleware clerk JWT verification", () => {
@@ -441,23 +479,69 @@ describe("mcpAuthMiddleware clerk JWT verification", () => {
 		});
 	});
 
-	it("calls next() when jwtVerify resolves via globalThis test hook", async () => {
-		// We cannot patch ESM named exports directly. Instead, we expose a
-		// test-only override slot on globalThis that a fresh auth module load
-		// can detect and use. Since auth.ts does not check globalThis, this
-		// approach cannot work without source changes.
-		//
-		// The happy-path contract (next() called on valid token) is therefore
-		// verified at the integration level in tests/mcp-e2e.test.ts where the
-		// full server stack handles real HTTP requests with real JWTs. Here we
-		// confirm the complementary invariant: the middleware never calls next()
-		// except when verification succeeds, and we cover all failure modes above.
-		//
-		// Mark as a documented gap so future reviewers know why the happy path is
-		// absent from unit tests.
-		assert.ok(
-			true,
-			"happy-path covered by e2e tests; ESM bindings prevent pure-unit stubbing",
-		);
+	it("calls next() and populates res.locals.authPrincipal when jwtVerify resolves", async () => {
+		const issuer = "https://clerk.example.com";
+		const jwksUrl = "https://clerk.example.com/.well-known/jwks.json";
+
+		process.env.MCP_AUTH_MODE = "clerk";
+		process.env.CLERK_ISSUER = issuer;
+		process.env.CLERK_AUDIENCE = "test-audience";
+		process.env.CLERK_JWKS_URL = jwksUrl;
+		process.env.CLERK_ALLOWED_ORGANIZATION_IDS = "org_primary";
+		process.env.CLERK_ALLOWED_ROLES = "org:admin";
+		process.env.CLERK_REQUIRED_PERMISSIONS = "org:sys_memberships:manage";
+
+		// Mint a real RSA keypair and sign a real JWT with it.
+		const { publicKey, privateKey } = await generateKeyPair("RS256", {
+			extractable: true,
+		});
+		const kid = "test-key-1";
+		const publicJwk = await exportJWK(publicKey);
+		publicJwk.kid = kid;
+		publicJwk.alg = "RS256";
+		publicJwk.use = "sig";
+		const jwks = { keys: [publicJwk] };
+
+		const token = await new SignJWT({
+			org_id: "org_primary",
+			org_role: "org:admin",
+			org_permissions: ["org:sys_memberships:manage"],
+		})
+			.setProtectedHeader({ alg: "RS256", kid })
+			.setSubject("user_test")
+			.setIssuer(issuer)
+			.setAudience("test-audience")
+			.setIssuedAt()
+			.setExpirationTime("5m")
+			.sign(privateKey);
+
+		await withStubbedJwksFetch(jwksUrl, jwks, async () => {
+			const { mcpAuthMiddleware } = await loadAuthModule();
+			const { response, state } = createMockResponse();
+			let nextCalled = false;
+
+			await mcpAuthMiddleware(
+				createMockRequest({ authorization: `Bearer ${token}` }) as never,
+				response as never,
+				() => {
+					nextCalled = true;
+				},
+			);
+
+			assert.equal(
+				nextCalled,
+				true,
+				"next() must be called when jwtVerify resolves",
+			);
+			assert.equal(state.statusCode, undefined);
+			assert.deepEqual(response.locals.authPrincipal, {
+				id: `clerk:${issuer}:user_test`,
+				mode: "clerk",
+				subject: "user_test",
+				organizationId: "org_primary",
+				roles: ["org:admin"],
+				permissions: ["org:sys_memberships:manage"],
+			});
+		});
 	});
 });
