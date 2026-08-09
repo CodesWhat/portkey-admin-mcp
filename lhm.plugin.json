@@ -1,7 +1,7 @@
 {
 	"identifier": "codeswhat-portkey-admin-mcp",
 	"name": "Portkey Admin MCP Server",
-	"version": "0.7.0",
+	"version": "0.8.0",
 	"description": "Portkey Admin API MCP server with current control-plane coverage, 171 tools, and Prisma AIRS interoperability guidance.",
 	"author": "CodesWhat",
 	"authorUrl": "https://github.com/CodesWhat",
@@ -411,7 +411,7 @@
 						"enum": ["admin", "member", "manager"]
 					},
 					"page": {
-						"description": "Zero-based results page to retrieve; the first page is 0",
+						"description": "Zero-based results page to retrieve; the first page is 0. Unlike current_page used by other list tools in this API (which is 1-based), do not pass 1 for the first page here.",
 						"type": "integer",
 						"minimum": 0,
 						"maximum": 9007199254740991
@@ -503,7 +503,7 @@
 						"type": "string"
 					},
 					"page": {
-						"description": "Zero-based results page to retrieve; the first page is 0",
+						"description": "Zero-based results page to retrieve; the first page is 0. Unlike current_page used by other list tools in this API (which is 1-based), do not pass 1 for the first page here.",
 						"type": "integer",
 						"minimum": 0,
 						"maximum": 9007199254740991
@@ -750,6 +750,8 @@
 					},
 					"user_id": {
 						"type": "string",
+						"format": "uuid",
+						"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
 						"description": "The user ID to retrieve"
 					}
 				},
@@ -775,6 +777,8 @@
 					},
 					"user_id": {
 						"type": "string",
+						"format": "uuid",
+						"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
 						"description": "The user ID to update"
 					},
 					"role": {
@@ -805,6 +809,8 @@
 					},
 					"user_id": {
 						"type": "string",
+						"format": "uuid",
+						"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
 						"description": "The user ID to remove"
 					}
 				},

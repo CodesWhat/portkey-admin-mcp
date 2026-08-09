@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-08-09
+
+Code-health release from a full-application review across security, performance, quality, and testing. No tools were added or removed; the inventory stays at 171. Security review found no exploitable issues. The tracked findings, including the ones deliberately not acted on, are recorded as Phase 6 in `ROADMAP.md`.
+
+### Added
+
+- Cover the Clerk authentication success path, which previously had no test anywhere: the suite now mints a real RSA keypair, signs a real JWT, serves a matching JWKS, and asserts the middleware admits the request with a correctly populated principal. The former placeholder asserted nothing while claiming the contract was covered elsewhere.
+- Drive `BaseService` through real 4xx JSON and 5xx non-JSON upstream error bodies, and exercise the unauthenticated public-catalog path including an assertion that no API key header is sent.
+- Add behavioural coverage for nine API/virtual key tool callbacks and five user-invite tool callbacks, plus representative analytics callbacks and a table walk that pins every generic-graph registration to its service method.
+- Add unicode, null-byte, RTL-override, and script-like string coverage through path-segment encoding and free-text parameters, and cover the 413 payload-too-large response.
+
+### Changed
+
+- Add `jsonResult()` and route all 173 tool result envelopes through it instead of hand-rolling the same JSON block per handler, and drop the stringify-then-reparse round-trip that rebuilt `structuredContent` from text already serialized from the same object.
+- Register the eight generic graph analytics tools from a table rather than eight identical bodies, and extract virtual-key and API-key response formatters in line with the convention every sibling tool module already followed.
+- Split `createHttpAppRuntime` into pure wiring plus nine named route-handler factories. Status codes, error bodies, headers, log lines, middleware order, and the session reservation lifecycle are unchanged.
+- Document tool-domain scoping as the primary lever on client context cost, not only an access-control setting.
+
+### Fixed
+
+- Validate `user_id` as a UUID on `get_workspace_member`, `update_workspace_member`, and `remove_workspace_member`. Previously only `add_workspace_member` did, so a malformed ID on the other three reached the Portkey API and surfaced as a raw upstream error instead of an actionable local one.
+- Return a real success payload from `delete_collection` and `delete_config` when Portkey answers with `204 No Content`. `BaseService` fabricated an empty object typed as a full response, so `success` read back as `undefined` and was dropped from the result entirely.
+- Describe the SCIM `page` parameter as zero-based. Every other list tool takes a 1-based `current_page`, and nothing flagged the difference, so a client generalizing from the other tools would mis-paginate.
+
 ## [0.7.0] - 2026-08-09
 
 ### Added
