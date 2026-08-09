@@ -1,6 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { PortkeyService } from "../services/index.js";
+import { jsonResult } from "./utils.js";
 
 const COLLECTIONS_TOOL_SCHEMAS = {
 	listCollections: {
@@ -58,24 +59,17 @@ export function registerCollectionsTools(
 		COLLECTIONS_TOOL_SCHEMAS.listCollections,
 		async (params) => {
 			const collections = await service.collections.listCollections(params);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							total: collections.total,
-							collections: collections.data.map((collection) => ({
-								id: collection.id,
-								name: collection.name,
-								slug: collection.slug,
-								workspace_id: collection.workspace_id,
-								created_at: collection.created_at,
-								last_updated_at: collection.last_updated_at,
-							})),
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				total: collections.total,
+				collections: collections.data.map((collection) => ({
+					id: collection.id,
+					name: collection.name,
+					slug: collection.slug,
+					workspace_id: collection.workspace_id,
+					created_at: collection.created_at,
+					last_updated_at: collection.last_updated_at,
+				})),
+			});
 		},
 	);
 
@@ -86,18 +80,11 @@ export function registerCollectionsTools(
 		COLLECTIONS_TOOL_SCHEMAS.createCollection,
 		async (params) => {
 			const result = await service.collections.createCollection(params);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully created collection "${params.name}"`,
-							id: result.id,
-							slug: result.slug,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully created collection "${params.name}"`,
+				id: result.id,
+				slug: result.slug,
+			});
 		},
 	);
 
@@ -110,21 +97,14 @@ export function registerCollectionsTools(
 			const collection = await service.collections.getCollection(
 				params.collection_id,
 			);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							id: collection.id,
-							name: collection.name,
-							slug: collection.slug,
-							workspace_id: collection.workspace_id,
-							created_at: collection.created_at,
-							last_updated_at: collection.last_updated_at,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				id: collection.id,
+				name: collection.name,
+				slug: collection.slug,
+				workspace_id: collection.workspace_id,
+				created_at: collection.created_at,
+				last_updated_at: collection.last_updated_at,
+			});
 		},
 	);
 
@@ -138,17 +118,10 @@ export function registerCollectionsTools(
 				name: params.name,
 				description: params.description,
 			});
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully updated collection "${params.collection_id}"`,
-							success: true,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully updated collection "${params.collection_id}"`,
+				success: true,
+			});
 		},
 	);
 
@@ -161,17 +134,10 @@ export function registerCollectionsTools(
 			const result = await service.collections.deleteCollection(
 				params.collection_id,
 			);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully deleted collection "${params.collection_id}"`,
-							success: result.success,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully deleted collection "${params.collection_id}"`,
+				success: result.success,
+			});
 		},
 	);
 }

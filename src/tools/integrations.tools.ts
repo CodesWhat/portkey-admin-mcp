@@ -6,6 +6,7 @@ import {
 	createSecretMappingSchema,
 	uniqueSecretMappingsSchema,
 } from "./secret-mapping.schemas.js";
+import { jsonResult } from "./utils.js";
 
 const integrationSecretMappingSchema = createSecretMappingSchema({
 	allowKeyTarget: true,
@@ -514,19 +515,13 @@ export function registerIntegrationsTools(
 			idempotentHint: true,
 			openWorldHint: true,
 		},
-		async (params) => ({
-			content: [
-				{
-					type: "text",
-					text: JSON.stringify(
-						await service.integrations.getModelPricing(
-							params.provider,
-							params.model,
-						),
-					),
-				},
-			],
-		}),
+		async (params) =>
+			jsonResult(
+				await service.integrations.getModelPricing(
+					params.provider,
+					params.model,
+				),
+			),
 	);
 
 	// List integrations tool
@@ -542,27 +537,20 @@ export function registerIntegrationsTools(
 				type: params.type,
 			});
 
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							total: integrations.total,
-							integrations: integrations.data.map((integration) => ({
-								id: integration.id,
-								name: integration.name,
-								slug: integration.slug,
-								ai_provider_id: integration.ai_provider_id,
-								status: integration.status,
-								description: integration.description,
-								organisation_id: integration.organisation_id,
-								created_at: integration.created_at,
-								last_updated_at: integration.last_updated_at,
-							})),
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				total: integrations.total,
+				integrations: integrations.data.map((integration) => ({
+					id: integration.id,
+					name: integration.name,
+					slug: integration.slug,
+					ai_provider_id: integration.ai_provider_id,
+					status: integration.status,
+					description: integration.description,
+					organisation_id: integration.organisation_id,
+					created_at: integration.created_at,
+					last_updated_at: integration.last_updated_at,
+				})),
+			});
 		},
 	);
 
@@ -601,18 +589,11 @@ export function registerIntegrationsTools(
 					: {}),
 			});
 
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully created integration "${params.name}"`,
-							id: result.id,
-							slug: result.slug,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully created integration "${params.name}"`,
+				id: result.id,
+				slug: result.slug,
+			});
 		},
 	);
 
@@ -626,32 +607,25 @@ export function registerIntegrationsTools(
 				params.slug,
 			);
 
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							id: integration.id,
-							name: integration.name,
-							slug: integration.slug,
-							ai_provider_id: integration.ai_provider_id,
-							status: integration.status,
-							description: integration.description,
-							organisation_id: integration.organisation_id,
-							masked_key: integration.masked_key,
-							configurations: integration.configurations,
-							global_workspace_access_settings:
-								integration.global_workspace_access_settings,
-							allow_all_models: integration.allow_all_models,
-							workspace_count: integration.workspace_count,
-							secret_mappings: integration.secret_mappings,
-							pricing_adjustments: integration.pricing_adjustments,
-							created_at: integration.created_at,
-							last_updated_at: integration.last_updated_at,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				id: integration.id,
+				name: integration.name,
+				slug: integration.slug,
+				ai_provider_id: integration.ai_provider_id,
+				status: integration.status,
+				description: integration.description,
+				organisation_id: integration.organisation_id,
+				masked_key: integration.masked_key,
+				configurations: integration.configurations,
+				global_workspace_access_settings:
+					integration.global_workspace_access_settings,
+				allow_all_models: integration.allow_all_models,
+				workspace_count: integration.workspace_count,
+				secret_mappings: integration.secret_mappings,
+				pricing_adjustments: integration.pricing_adjustments,
+				created_at: integration.created_at,
+				last_updated_at: integration.last_updated_at,
+			});
 		},
 	);
 
@@ -677,17 +651,10 @@ export function registerIntegrationsTools(
 				pricing_adjustments: params.pricing_adjustments,
 			});
 
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully updated integration "${params.slug}"`,
-							success: result.success,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully updated integration "${params.slug}"`,
+				success: result.success,
+			});
 		},
 	);
 
@@ -699,17 +666,10 @@ export function registerIntegrationsTools(
 		async (params) => {
 			const result = await service.integrations.deleteIntegration(params.slug);
 
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully deleted integration "${params.slug}"`,
-							success: result.success,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully deleted integration "${params.slug}"`,
+				success: result.success,
+			});
 		},
 	);
 
@@ -727,30 +687,23 @@ export function registerIntegrationsTools(
 				},
 			);
 
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							total: models.total,
-							integration_slug: params.slug,
-							models: models.data.map((model) => ({
-								id: model.id,
-								slug: model.slug ?? model.model_id,
-								name: model.name ?? model.model_name,
-								enabled: model.enabled,
-								is_custom: model.is_custom ?? model.custom,
-								is_finetune: model.is_finetune,
-								base_model_slug: model.base_model_slug,
-								configurations: model.configurations,
-								pricing_config: model.pricing_config,
-								created_at: model.created_at,
-								last_updated_at: model.last_updated_at,
-							})),
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				total: models.total,
+				integration_slug: params.slug,
+				models: models.data.map((model) => ({
+					id: model.id,
+					slug: model.slug ?? model.model_id,
+					name: model.name ?? model.model_name,
+					enabled: model.enabled,
+					is_custom: model.is_custom ?? model.custom,
+					is_finetune: model.is_finetune,
+					base_model_slug: model.base_model_slug,
+					configurations: model.configurations,
+					pricing_config: model.pricing_config,
+					created_at: model.created_at,
+					last_updated_at: model.last_updated_at,
+				})),
+			});
 		},
 	);
 
@@ -775,18 +728,11 @@ export function registerIntegrationsTools(
 				},
 			);
 
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully updated models for integration "${params.slug}"`,
-							success: result.success,
-							models_updated: params.models.length,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully updated models for integration "${params.slug}"`,
+				success: result.success,
+				models_updated: params.models.length,
+			});
 		},
 	);
 
@@ -801,17 +747,10 @@ export function registerIntegrationsTools(
 				params.model_slug,
 			);
 
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully deleted model "${params.model_slug}" from integration "${params.slug}"`,
-							success: result.success,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully deleted model "${params.model_slug}" from integration "${params.slug}"`,
+				success: result.success,
+			});
 		},
 	);
 
@@ -829,27 +768,20 @@ export function registerIntegrationsTools(
 				},
 			);
 
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							total: workspaces.total,
-							integration_slug: params.slug,
-							workspaces: workspaces.data.map((ws) => ({
-								id: ws.id,
-								workspace_id: ws.workspace_id ?? ws.id,
-								workspace_name: ws.workspace_name,
-								enabled: ws.enabled,
-								usage_limits: ws.usage_limits,
-								rate_limits: ws.rate_limits,
-								created_at: ws.created_at,
-								last_updated_at: ws.last_updated_at,
-							})),
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				total: workspaces.total,
+				integration_slug: params.slug,
+				workspaces: workspaces.data.map((ws) => ({
+					id: ws.id,
+					workspace_id: ws.workspace_id ?? ws.id,
+					workspace_name: ws.workspace_name,
+					enabled: ws.enabled,
+					usage_limits: ws.usage_limits,
+					rate_limits: ws.rate_limits,
+					created_at: ws.created_at,
+					last_updated_at: ws.last_updated_at,
+				})),
+			});
 		},
 	);
 
@@ -932,18 +864,11 @@ export function registerIntegrationsTools(
 				},
 			);
 
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully updated workspace access for integration "${params.slug}"`,
-							success: result.success,
-							workspaces_updated: params.workspaces.length,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully updated workspace access for integration "${params.slug}"`,
+				success: result.success,
+				workspaces_updated: params.workspaces.length,
+			});
 		},
 	);
 }

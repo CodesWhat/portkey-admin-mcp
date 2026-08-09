@@ -10,6 +10,7 @@ import {
 	createSecretMappingSchema,
 	uniqueSecretMappingsSchema,
 } from "./secret-mapping.schemas.js";
+import { jsonResult } from "./utils.js";
 
 const mcpSecretMappingSchema = createSecretMappingSchema({
 	allowKeyTarget: false,
@@ -260,18 +261,11 @@ export function registerMcpIntegrationsTools(
 		MCP_INTEGRATIONS_TOOL_SCHEMAS.listMcpIntegrations,
 		async (params) => {
 			const result = await service.mcpIntegrations.listMcpIntegrations(params);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							total: result.total,
-							has_more: result.has_more,
-							integrations: result.data.map(formatMcpIntegration),
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				total: result.total,
+				has_more: result.has_more,
+				integrations: result.data.map(formatMcpIntegration),
+			});
 		},
 	);
 
@@ -310,18 +304,11 @@ export function registerMcpIntegrationsTools(
 				...rest,
 				...(custom_headers ? { configurations: { custom_headers } } : {}),
 			});
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully created MCP integration "${params.name}"`,
-							id: result.id,
-							slug: result.slug,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully created MCP integration "${params.name}"`,
+				id: result.id,
+				slug: result.slug,
+			});
 		},
 	);
 
@@ -333,14 +320,7 @@ export function registerMcpIntegrationsTools(
 			const integration = await service.mcpIntegrations.getMcpIntegration(
 				params.id,
 			);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify(formatMcpIntegration(integration)),
-					},
-				],
-			};
+			return jsonResult(formatMcpIntegration(integration));
 		},
 	);
 
@@ -361,17 +341,10 @@ export function registerMcpIntegrationsTools(
 				...rest,
 				...(custom_headers ? { configurations: { custom_headers } } : {}),
 			});
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully updated MCP integration "${id}"`,
-							success: true,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully updated MCP integration "${id}"`,
+				success: true,
+			});
 		},
 	);
 
@@ -381,17 +354,10 @@ export function registerMcpIntegrationsTools(
 		MCP_INTEGRATIONS_TOOL_SCHEMAS.deleteMcpIntegration,
 		async (params) => {
 			await service.mcpIntegrations.deleteMcpIntegration(params.id);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully deleted MCP integration "${params.id}"`,
-							success: true,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully deleted MCP integration "${params.id}"`,
+				success: true,
+			});
 		},
 	);
 
@@ -403,14 +369,7 @@ export function registerMcpIntegrationsTools(
 			const metadata = await service.mcpIntegrations.getMcpIntegrationMetadata(
 				params.id,
 			);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify(formatMcpIntegrationMetadata(metadata)),
-					},
-				],
-			};
+			return jsonResult(formatMcpIntegrationMetadata(metadata));
 		},
 	);
 
@@ -421,17 +380,10 @@ export function registerMcpIntegrationsTools(
 		async (params) => {
 			const result =
 				await service.mcpIntegrations.listMcpIntegrationCapabilities(params.id);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							total: result.total,
-							capabilities: result.data,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				total: result.total,
+				capabilities: result.data,
+			});
 		},
 	);
 
@@ -452,17 +404,10 @@ export function registerMcpIntegrationsTools(
 					capabilities: params.capabilities,
 				},
 			);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully updated capabilities for MCP integration "${params.id}"`,
-							success: true,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully updated capabilities for MCP integration "${params.id}"`,
+				success: true,
+			});
 		},
 	);
 
@@ -474,18 +419,11 @@ export function registerMcpIntegrationsTools(
 			const result = await service.mcpIntegrations.listMcpIntegrationWorkspaces(
 				params.id,
 			);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							global_workspace_access: result.global_workspace_access,
-							workspace_count: result.workspaces.length,
-							workspaces: result.workspaces.map(formatMcpIntegrationWorkspace),
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				global_workspace_access: result.global_workspace_access,
+				workspace_count: result.workspaces.length,
+				workspaces: result.workspaces.map(formatMcpIntegrationWorkspace),
+			});
 		},
 	);
 
@@ -503,17 +441,10 @@ export function registerMcpIntegrationsTools(
 			await service.mcpIntegrations.updateMcpIntegrationWorkspaces(params.id, {
 				workspaces: params.workspaces,
 			});
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully updated workspace access for MCP integration "${params.id}"`,
-							success: true,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully updated workspace access for MCP integration "${params.id}"`,
+				success: true,
+			});
 		},
 	);
 }

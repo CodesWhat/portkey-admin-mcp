@@ -1,6 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { PortkeyService } from "../services/index.js";
+import { jsonResult } from "./utils.js";
 
 const PARTIALS_TOOL_SCHEMAS = {
 	createPromptPartial: {
@@ -77,19 +78,12 @@ export function registerPartialsTools(
 				workspace_id: params.workspace_id,
 				version_description: params.version_description,
 			});
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully created prompt partial "${params.name}"`,
-							id: result.id,
-							slug: result.slug,
-							version_id: result.version_id,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully created prompt partial "${params.name}"`,
+				id: result.id,
+				slug: result.slug,
+				version_id: result.version_id,
+			});
 		},
 	);
 
@@ -100,25 +94,18 @@ export function registerPartialsTools(
 		PARTIALS_TOOL_SCHEMAS.listPromptPartials,
 		async (params) => {
 			const partials = await service.partials.listPromptPartials(params);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							total: partials.length,
-							partials: partials.map((p) => ({
-								id: p.id,
-								slug: p.slug,
-								name: p.name,
-								collection_id: p.collection_id,
-								status: p.status,
-								created_at: p.created_at,
-								last_updated_at: p.last_updated_at,
-							})),
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				total: partials.length,
+				partials: partials.map((p) => ({
+					id: p.id,
+					slug: p.slug,
+					name: p.name,
+					collection_id: p.collection_id,
+					status: p.status,
+					created_at: p.created_at,
+					last_updated_at: p.last_updated_at,
+				})),
+			});
 		},
 	);
 
@@ -131,26 +118,19 @@ export function registerPartialsTools(
 			const partial = await service.partials.getPromptPartial(
 				params.prompt_partial_id,
 			);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							id: partial.id,
-							slug: partial.slug,
-							name: partial.name,
-							collection_id: partial.collection_id,
-							string: partial.string,
-							version: partial.version,
-							version_description: partial.version_description,
-							prompt_partial_version_id: partial.prompt_partial_version_id,
-							status: partial.status,
-							created_at: partial.created_at,
-							last_updated_at: partial.last_updated_at,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				id: partial.id,
+				slug: partial.slug,
+				name: partial.name,
+				collection_id: partial.collection_id,
+				string: partial.string,
+				version: partial.version,
+				version_description: partial.version_description,
+				prompt_partial_version_id: partial.prompt_partial_version_id,
+				status: partial.status,
+				created_at: partial.created_at,
+				last_updated_at: partial.last_updated_at,
+			});
 		},
 	);
 
@@ -165,17 +145,10 @@ export function registerPartialsTools(
 				prompt_partial_id,
 				updateData,
 			);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully updated prompt partial "${prompt_partial_id}"`,
-							prompt_partial_version_id: result.prompt_partial_version_id,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully updated prompt partial "${prompt_partial_id}"`,
+				prompt_partial_version_id: result.prompt_partial_version_id,
+			});
 		},
 	);
 
@@ -186,17 +159,10 @@ export function registerPartialsTools(
 		PARTIALS_TOOL_SCHEMAS.deletePromptPartial,
 		async (params) => {
 			await service.partials.deletePromptPartial(params.prompt_partial_id);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully deleted prompt partial "${params.prompt_partial_id}"`,
-							success: true,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully deleted prompt partial "${params.prompt_partial_id}"`,
+				success: true,
+			});
 		},
 	);
 
@@ -209,30 +175,23 @@ export function registerPartialsTools(
 			const versions = await service.partials.listPartialVersions(
 				params.prompt_partial_id,
 			);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							prompt_partial_id: params.prompt_partial_id,
-							total_versions: versions.length,
-							versions: versions.map((v) => ({
-								prompt_partial_id: v.prompt_partial_id,
-								prompt_partial_version_id: v.prompt_partial_version_id,
-								slug: v.slug,
-								version: v.version,
-								description: v.description,
-								status: v.prompt_version_status,
-								created_at: v.created_at,
-								content_preview:
-									v.string.length > 200
-										? `${v.string.substring(0, 200)}...`
-										: v.string,
-							})),
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				prompt_partial_id: params.prompt_partial_id,
+				total_versions: versions.length,
+				versions: versions.map((v) => ({
+					prompt_partial_id: v.prompt_partial_id,
+					prompt_partial_version_id: v.prompt_partial_version_id,
+					slug: v.slug,
+					version: v.version,
+					description: v.description,
+					status: v.prompt_version_status,
+					created_at: v.created_at,
+					content_preview:
+						v.string.length > 200
+							? `${v.string.substring(0, 200)}...`
+							: v.string,
+				})),
+			});
 		},
 	);
 
@@ -245,19 +204,12 @@ export function registerPartialsTools(
 			await service.partials.publishPartial(params.prompt_partial_id, {
 				version: params.version,
 			});
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully published version ${params.version} as default for partial "${params.prompt_partial_id}"`,
-							prompt_partial_id: params.prompt_partial_id,
-							published_version: params.version,
-							success: true,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully published version ${params.version} as default for partial "${params.prompt_partial_id}"`,
+				prompt_partial_id: params.prompt_partial_id,
+				published_version: params.version,
+				success: true,
+			});
 		},
 	);
 }

@@ -275,6 +275,19 @@ const STANDARD_TOOL_OUTPUT_SCHEMA = {
 		.describe("Structured error payload when ok is false"),
 } as const;
 
+/*
+ * Deliberate incremental adoption, not an abandoned migration. Every tool
+ * already gets a valid outputSchema via getToolOutputSchema (the
+ * STANDARD_TOOL_OUTPUT_SCHEMA envelope with `data: z.unknown()`), which
+ * satisfies the TDQS gate on its own. Entries land here only when a tighter
+ * `data` schema earns its keep, e.g.: the payload contains a one-time secret
+ * or other value an LLM client must handle specially (rotate_api_key), or the
+ * tool is newly added and its response shape is being nailed down up front
+ * (the secret-references tools). Add a tool here when a caller would benefit
+ * from structured validation/completion on its specific success shape, not
+ * as a blanket backfill exercise, since z.unknown() is already correct for
+ * payloads that don't need one.
+ */
 const TOOL_SUCCESS_DATA_SCHEMAS: Partial<Record<string, z.ZodType>> = {
 	rotate_api_key: z.object({
 		message: z.string().describe("Rotation confirmation"),
@@ -429,6 +442,16 @@ function formatToolEnvelope(envelope: StandardToolEnvelope): string {
 }
 
 function normalizeToolResult(result: CallToolResult): CallToolResult {
+	// When a tool callback used jsonResult() (src/tools/utils.ts) with a plain
+	// object payload, result.structuredContent already holds that original
+	// object. Use it directly instead of re-parsing content[0].text, which
+	// jsonResult built from the same object via JSON.stringify: parsing that
+	// text back out would only reconstruct a value whose re-serialization is
+	// byte-identical to serializing the original directly, so skipping the
+	// round trip changes nothing observable. isStandardToolEnvelope is
+	// checked first so a callback that already returns a full {ok, data}
+	// envelope (or {ok, error}) via structuredContent is passed through as-is
+	// rather than double-wrapped.
 	const envelope = isStandardToolEnvelope(result.structuredContent)
 		? result.structuredContent
 		: result.isError
@@ -438,7 +461,10 @@ function normalizeToolResult(result: CallToolResult): CallToolResult {
 				} satisfies StandardToolErrorEnvelope)
 			: ({
 					ok: true,
-					data: getSuccessData(result),
+					data:
+						result.structuredContent !== undefined
+							? result.structuredContent
+							: getSuccessData(result),
 				} satisfies StandardToolSuccessEnvelope);
 
 	return {

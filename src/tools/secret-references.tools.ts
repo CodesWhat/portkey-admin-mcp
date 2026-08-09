@@ -2,6 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { PortkeyService } from "../services/index.js";
 import type { SecretManagerType } from "../services/secret-references.service.js";
+import { jsonResult } from "./utils.js";
 
 const authFields = {
 	aws_auth_type: z
@@ -480,18 +481,11 @@ export function registerSecretReferencesTools(
 			validateManagerAuth(params.manager_type, params.auth_config);
 			const result =
 				await service.secretReferences.createSecretReference(params);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully created Secret Reference "${result.slug}"`,
-							id: result.id,
-							slug: result.slug,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully created Secret Reference "${result.slug}"`,
+				id: result.id,
+				slug: result.slug,
+			});
 		},
 	);
 
@@ -511,25 +505,18 @@ export function registerSecretReferencesTools(
 				...params,
 				tags: params.tags ? JSON.stringify(params.tags) : undefined,
 			});
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							total: result.total,
-							secret_references: result.data.map((reference) => ({
-								id: reference.id,
-								name: reference.name,
-								slug: reference.slug,
-								manager_type: reference.manager_type,
-								status: reference.status,
-								created_at: reference.created_at,
-								last_updated_at: reference.last_updated_at,
-							})),
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				total: result.total,
+				secret_references: result.data.map((reference) => ({
+					id: reference.id,
+					name: reference.name,
+					slug: reference.slug,
+					manager_type: reference.manager_type,
+					status: reference.status,
+					created_at: reference.created_at,
+					last_updated_at: reference.last_updated_at,
+				})),
+			});
 		},
 	);
 
@@ -546,17 +533,10 @@ export function registerSecretReferencesTools(
 		},
 		async ({ id }) => {
 			const result = await service.secretReferences.getSecretReference(id);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							...result,
-							auth_config: redactAuthConfig(result.auth_config),
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				...result,
+				auth_config: redactAuthConfig(result.auth_config),
+			});
 		},
 	);
 
@@ -578,17 +558,10 @@ export function registerSecretReferencesTools(
 			}
 			if (updates.auth_config) validateAuthUpdate(updates.auth_config);
 			await service.secretReferences.updateSecretReference(id, updates);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully updated Secret Reference "${id}"`,
-							success: true,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully updated Secret Reference "${id}"`,
+				success: true,
+			});
 		},
 	);
 
@@ -605,17 +578,10 @@ export function registerSecretReferencesTools(
 		},
 		async ({ id }) => {
 			const result = await service.secretReferences.deleteSecretReference(id);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully deleted Secret Reference "${id}"`,
-							success: result.success,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully deleted Secret Reference "${id}"`,
+				success: result.success,
+			});
 		},
 	);
 }

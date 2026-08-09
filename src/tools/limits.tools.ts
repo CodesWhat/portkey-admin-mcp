@@ -6,6 +6,7 @@ import type {
 	UsageLimit,
 	UsageLimitEntity,
 } from "../services/limits.service.js";
+import { jsonResult } from "./utils.js";
 
 // Reusable schema for limit conditions
 const conditionSchema = z.object({
@@ -245,17 +246,10 @@ export function registerLimitsTools(
 		LIMITS_TOOL_SCHEMAS.listRateLimits,
 		async (params) => {
 			const result = await service.limits.listRateLimits(params.workspace_id);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							total: result.total,
-							rate_limits: result.data.map(formatRateLimit),
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				total: result.total,
+				rate_limits: result.data.map(formatRateLimit),
+			});
 		},
 	);
 
@@ -266,14 +260,7 @@ export function registerLimitsTools(
 		LIMITS_TOOL_SCHEMAS.getRateLimit,
 		async (params) => {
 			const result = await service.limits.getRateLimit(params.id);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify(formatRateLimit(result)),
-					},
-				],
-			};
+			return jsonResult(formatRateLimit(result));
 		},
 	);
 
@@ -293,17 +280,10 @@ export function registerLimitsTools(
 				workspace_id: params.workspace_id,
 				organisation_id: params.organisation_id,
 			});
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully created rate limit${params.name ? ` "${params.name}"` : ""}`,
-							rate_limit: formatRateLimit(result),
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully created rate limit${params.name ? ` "${params.name}"` : ""}`,
+				rate_limit: formatRateLimit(result),
+			});
 		},
 	);
 
@@ -318,17 +298,10 @@ export function registerLimitsTools(
 				unit: params.unit,
 				value: params.value,
 			});
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully updated rate limit "${params.id}"`,
-							rate_limit: formatRateLimit(result),
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully updated rate limit "${params.id}"`,
+				rate_limit: formatRateLimit(result),
+			});
 		},
 	);
 
@@ -339,17 +312,10 @@ export function registerLimitsTools(
 		LIMITS_TOOL_SCHEMAS.deleteRateLimit,
 		async (params) => {
 			await service.limits.deleteRateLimit(params.id);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully deleted rate limit "${params.id}"`,
-							success: true,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully deleted rate limit "${params.id}"`,
+				success: true,
+			});
 		},
 	);
 
@@ -362,17 +328,10 @@ export function registerLimitsTools(
 		LIMITS_TOOL_SCHEMAS.listUsageLimits,
 		async (params) => {
 			const result = await service.limits.listUsageLimits(params.workspace_id);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							total: result.total,
-							usage_limits: result.data.map(formatUsageLimit),
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				total: result.total,
+				usage_limits: result.data.map(formatUsageLimit),
+			});
 		},
 	);
 
@@ -383,14 +342,7 @@ export function registerLimitsTools(
 		LIMITS_TOOL_SCHEMAS.getUsageLimit,
 		async (params) => {
 			const result = await service.limits.getUsageLimit(params.id);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify(formatUsageLimit(result)),
-					},
-				],
-			};
+			return jsonResult(formatUsageLimit(result));
 		},
 	);
 
@@ -411,17 +363,10 @@ export function registerLimitsTools(
 				workspace_id: params.workspace_id,
 				organisation_id: params.organisation_id,
 			});
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully created usage limit${params.name ? ` "${params.name}"` : ""}`,
-							usage_limit: formatUsageLimit(result),
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully created usage limit${params.name ? ` "${params.name}"` : ""}`,
+				usage_limit: formatUsageLimit(result),
+			});
 		},
 	);
 
@@ -438,17 +383,10 @@ export function registerLimitsTools(
 				periodic_reset: params.periodic_reset,
 				reset_usage_for_value: params.reset_usage_for_value,
 			});
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully updated usage limit "${params.id}"`,
-							usage_limit: formatUsageLimit(result),
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully updated usage limit "${params.id}"`,
+				usage_limit: formatUsageLimit(result),
+			});
 		},
 	);
 
@@ -459,17 +397,10 @@ export function registerLimitsTools(
 		LIMITS_TOOL_SCHEMAS.deleteUsageLimit,
 		async (params) => {
 			await service.limits.deleteUsageLimit(params.id);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully deleted usage limit "${params.id}"`,
-							success: true,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully deleted usage limit "${params.id}"`,
+				success: true,
+			});
 		},
 	);
 
@@ -483,17 +414,10 @@ export function registerLimitsTools(
 			const result = await service.limits.listUsageLimitEntities(
 				params.limit_id,
 			);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							total: result.total,
-							entities: result.data.map(formatUsageLimitEntity),
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				total: result.total,
+				entities: result.data.map(formatUsageLimitEntity),
+			});
 		},
 	);
 
@@ -506,17 +430,10 @@ export function registerLimitsTools(
 				params.limit_id,
 				params.entity_id,
 			);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully reset usage for entity "${params.entity_id}" on limit "${params.limit_id}"`,
-							success: true,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully reset usage for entity "${params.entity_id}" on limit "${params.limit_id}"`,
+				success: true,
+			});
 		},
 	);
 }

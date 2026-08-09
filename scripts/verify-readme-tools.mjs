@@ -13,16 +13,64 @@ const toolFileNames = readdirSync(toolsDir).filter((name) =>
 const codeToolNames = [];
 const perFileCounts = [];
 
+// Some tool domains table-drive a batch of near-identical tool registrations
+// via `for (const x of SOME_TABLE) { server.tool(x.name, ...) }` instead of a
+// literal string per call site (see analytics.tools.ts). The static scan
+// below can't see through the loop variable, so it separately finds any such
+// loop, resolves the array it iterates, and pulls tool names from that
+// array's `name: "..."` entries instead of the loop's single call site.
+function findTableDrivenToolNames(source) {
+	const names = [];
+	const loopPattern =
+		/for\s*\(\s*const\s+(\w+)\s+of\s+(\w+)\s*\)\s*\{[^}]*?server\.(?:tool|registerTool)\(\s*\1\.name/gs;
+	for (const loopMatch of source.matchAll(loopPattern)) {
+		const arrayName = loopMatch[2];
+		const declIndex = source.indexOf(`const ${arrayName}`);
+		if (declIndex === -1) continue;
+		// The array's type annotation (if any) commonly contains `=>` for
+		// function-typed fields, so don't stop at the first `=`; the actual
+		// assignment operator is followed directly by `[`.
+		const assignIndex = source.indexOf("= [", declIndex);
+		if (assignIndex === -1) continue;
+
+		// Walk forward from the opening `[` to find its matching `]`, then pull
+		// every `name: "..."` entry declared inside that array literal.
+		const start = assignIndex + 2;
+		let depth = 0;
+		let end = start;
+		for (let i = start; i < source.length; i++) {
+			if (source[i] === "[") depth++;
+			else if (source[i] === "]") {
+				depth--;
+				if (depth === 0) {
+					end = i;
+					break;
+				}
+			}
+		}
+		const arrayBody = source.slice(start, end);
+		for (const nameMatch of arrayBody.matchAll(/name:\s*["']([^"']+)["']/g)) {
+			names.push(nameMatch[1]);
+		}
+	}
+	return names;
+}
+
 for (const fileName of toolFileNames) {
 	const fullPath = path.join(toolsDir, fileName);
 	const source = readFileSync(fullPath, "utf8");
 	const matches = [
 		...source.matchAll(/server\.(?:tool|registerTool)\(\s*["']([^"']+)["']/gms),
 	];
-	perFileCounts.push({ fileName, count: matches.length });
+	const tableDrivenNames = findTableDrivenToolNames(source);
+	perFileCounts.push({
+		fileName,
+		count: matches.length + tableDrivenNames.length,
+	});
 	for (const match of matches) {
 		codeToolNames.push(match[1]);
 	}
+	codeToolNames.push(...tableDrivenNames);
 }
 
 const codeToolSet = new Set(codeToolNames);
