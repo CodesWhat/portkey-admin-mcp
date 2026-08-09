@@ -10,6 +10,10 @@ on:
         description: "Existing v* tag to publish as a GitHub Release and to the MCP Registry"
         required: true
         type: string
+      manifest_ref:
+        description: "Optional ref containing a corrected server.json for an existing release"
+        required: false
+        type: string
 
 permissions: {}
 
@@ -285,7 +289,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.inputs.tag || github.ref }}
+          # A manifest-only correction can republish an existing version without
+          # moving its immutable release tag or republishing its npm artifact.
+          ref: ${{ github.event.inputs.manifest_ref || github.event.inputs.tag || github.ref }}
           persist-credentials: false
 
       - name: Setup Node.js

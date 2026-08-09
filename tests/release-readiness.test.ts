@@ -27,6 +27,30 @@ test("all published manifests use the npm package version", () => {
 	assert.equal(lobeHub.version, packageJson.version);
 });
 
+test("the MCP Registry description satisfies the current length limit", () => {
+	const server = readJson("server.json");
+	const description = server.description;
+
+	assert.equal(typeof description, "string");
+	assert.ok(
+		(description as string).length <= 100,
+		"server.json description must be at most 100 characters",
+	);
+});
+
+test("an existing release can republish a corrected MCP Registry manifest", () => {
+	const workflowSource = readFileSync(
+		`${root}.github/workflows/release.yml`,
+		"utf8",
+	);
+
+	assert.match(workflowSource, /manifest_ref:/);
+	assert.match(
+		workflowSource,
+		/github\.event\.inputs\.manifest_ref \|\| github\.event\.inputs\.tag/,
+	);
+});
+
 test("the npm artifact includes every local document linked from README", () => {
 	const packageJson = readJson("package.json");
 	const files = packageJson.files as string[];
