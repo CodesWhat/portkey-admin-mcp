@@ -6,10 +6,19 @@ and catalog scanners can detect published versions.
 ## Publish a New Stable Release (automated)
 
 1. On a dev branch, update `package.json`, `package-lock.json`, `server.json`,
-   and `CHANGELOG.md` for the new version. Keep `server.json`'s top-level
-   `version` and `packages[0].version` in sync with `package.json`.
+   `lhm.plugin.json`, and `CHANGELOG.md` for the new version. The release
+   readiness test keeps all four version-bearing JSON files synchronized.
 2. Run `npm run ci`.
 3. Open a PR and merge it to `main`.
+
+The CI run includes `npm run verify:tool-quality`, a deterministic preflight
+based on Glama's [Tool Definition Quality Score
+(TDQS)](https://github.com/glama-ai/tool-definition-quality-score). It inspects
+the actual MCP `tools/list` output and rejects missing or tautological
+descriptions, undocumented top-level parameters, missing output schemas,
+incomplete annotations, and low selection-guidance coverage. Glama performs
+the remaining six-dimension LLM rubric and server-coherence scoring after it
+indexes the tagged release.
 
 Everything after the merge is automatic:
 
@@ -40,14 +49,19 @@ Everything after the merge is automatic:
 
 ## Publish to LobeHub Marketplace
 
-LobeHub is a manual post-release step. `lhm.plugin.json` is the source for the
-marketplace listing, so keep its `version` in sync with `package.json` when
-cutting a release. After the npm package and MCP Registry release are live,
-publish the LobeHub version:
+LobeHub is a manual post-release step. `lhm.plugin.json` is the owner-declared
+source for the marketplace listing, so keep its `version` in sync with
+`package.json` when cutting a release. Because this is an existing claimed
+listing, use `plugin update` (not `plugin publish`) after the npm package and
+MCP Registry release are live:
 
 ```bash
-npm run publish:lobehub
+npm run update:lobehub
 ```
+
+That script regenerates tools, prompts, resources, and resource templates from
+the built server before running `npx -y @lobehub/market-cli plugin update
+--dir "$PWD"`. `npm run publish:lobehub` remains a backwards-compatible alias.
 
 The command requires a logged-in LobeHub account with the GitHub `CodesWhat`
 org listing claimed. If ownership is lost, reconnect GitHub in LobeHub and
@@ -56,6 +70,39 @@ verify that `codeswhat-portkey-admin-mcp` appears in:
 ```bash
 npx -y @lobehub/market-cli plugin list --output json
 ```
+
+## Refresh Glama
+
+Glama indexes the tagged GitHub repository; it does not consume a separate
+versioned manifest from this project. The release must keep `glama.json` at the
+repository root with a claimable maintainer, then Glama refreshes the README,
+tool schemas, and scores after the release tag reaches GitHub. No source file
+should be uploaded through the Glama UI.
+
+After release, verify that the indexed commit, active-development notice,
+171-tool inventory, and TDQS score breakdown have refreshed at:
+
+```text
+https://glama.ai/mcp/servers/CodesWhat/portkey-admin-mcp
+```
+
+If the tagged release has not appeared after Glama's normal crawler window,
+use the claimed listing's support/report flow or Glama Discord and provide the
+GitHub release URL. The files under `docs/glama-score/` remain dated audit
+artifacts; Glama's live Score and Schema tabs are authoritative for a release.
+
+## Post-release catalog verification
+
+Confirm the same version and current Portkey/Prisma AIRS positioning across:
+
+- npm: `https://www.npmjs.com/package/portkey-admin-mcp`
+- MCP Registry: `io.github.CodesWhat/portkey-admin-mcp`
+- LobeHub: `https://lobehub.com/mcp/codeswhat-portkey-admin-mcp`
+- Glama: `https://glama.ai/mcp/servers/CodesWhat/portkey-admin-mcp`
+
+The release is complete only when npm and the MCP Registry show the new
+version, LobeHub has been published manually, and Glama has indexed the new
+tagged commit.
 
 ### One-time setup: npm Trusted Publisher
 

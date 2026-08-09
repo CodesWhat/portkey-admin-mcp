@@ -7,6 +7,33 @@ import type {
 	McpIntegrationWorkspace,
 } from "../services/mcp-integrations.service.js";
 
+const mcpSecretMappingSchema = z.object({
+	target_field: z
+		.string()
+		.refine(
+			(value) => value.startsWith("configurations."),
+			"MCP integration target_field must start with 'configurations.'",
+		)
+		.describe(
+			"Configuration field resolved at runtime, such as configurations.oauth_metadata",
+		),
+	secret_reference_id: z
+		.string()
+		.describe("Secret Reference UUID or slug accessible to this integration"),
+	secret_key: z
+		.string()
+		.nullable()
+		.optional()
+		.describe("Optional key to select from a multi-value secret"),
+	value_format: z
+		.enum(["string", "json"])
+		.nullable()
+		.optional()
+		.describe(
+			"Use json when the target configuration field expects a structured object",
+		),
+});
+
 const MCP_INTEGRATIONS_TOOL_SCHEMAS = {
 	listMcpIntegrations: {
 		current_page: z.coerce
@@ -57,6 +84,12 @@ const MCP_INTEGRATIONS_TOOL_SCHEMAS = {
 			.describe(
 				"Workspace ID — required when using organization admin API keys",
 			),
+		secret_mappings: z
+			.array(mcpSecretMappingSchema)
+			.optional()
+			.describe(
+				"Runtime Secret Reference mappings; every configurations.<field> target must be unique",
+			),
 	},
 	getMcpIntegration: {
 		id: z.string().describe("The MCP integration ID or slug to retrieve"),
@@ -79,6 +112,12 @@ const MCP_INTEGRATIONS_TOOL_SCHEMAS = {
 			.optional()
 			.describe(
 				"New custom headers for authentication. Sent via configurations.custom_headers",
+			),
+		secret_mappings: z
+			.array(mcpSecretMappingSchema)
+			.optional()
+			.describe(
+				"Replacement runtime Secret Reference mappings; each target_field must be unique",
 			),
 	},
 	deleteMcpIntegration: {
@@ -148,6 +187,12 @@ function formatMcpIntegration(integration: McpIntegration): {
 	global_workspace_access?: unknown;
 	configuration_keys?: string[];
 	custom_header_names?: string[];
+	secret_mappings?: Array<{
+		target_field: string;
+		secret_reference_id: string;
+		secret_key?: string | null;
+		value_format?: "json" | "string" | null;
+	}>;
 	created_at: string;
 	last_updated_at: string | null;
 } {
@@ -168,6 +213,7 @@ function formatMcpIntegration(integration: McpIntegration): {
 			? Object.keys(integration.configurations)
 			: undefined,
 		custom_header_names: getCustomHeaderNames(integration.configurations),
+		secret_mappings: integration.secret_mappings,
 		created_at: integration.created_at,
 		last_updated_at: integration.last_updated_at,
 	};
@@ -242,13 +288,23 @@ export function registerMcpIntegrationsTools(
 
 	server.tool(
 		"create_mcp_integration",
-		"Create an MCP integration from an external server URL. Registers the Portkey-side connection and returns the new id and slug; if auth_type is headers, custom_headers are required, and you usually follow with create_mcp_server and capability updates.",
+		"Create a Portkey integration for an external MCP server URL. For headers auth, provide custom_headers or a Secret Reference mapping targeting configurations.custom_headers; secret_mappings resolve protected values at runtime without storing them in the tool call. Organisation admin keys normally need workspace_id. After creation, create_mcp_server and configure capabilities/access; returns the integration id and slug.",
 		MCP_INTEGRATIONS_TOOL_SCHEMAS.createMcpIntegration,
+		{
+			title: "Create MCP Integration",
+			readOnlyHint: false,
+			destructiveHint: false,
+			idempotentHint: false,
+			openWorldHint: true,
+		},
 		async (params) => {
 			if (
 				params.auth_type === "headers" &&
 				(!params.custom_headers ||
-					Object.keys(params.custom_headers).length === 0)
+					Object.keys(params.custom_headers).length === 0) &&
+				!params.secret_mappings?.some(
+					(mapping) => mapping.target_field === "configurations.custom_headers",
+				)
 			) {
 				return {
 					content: [
@@ -301,8 +357,15 @@ export function registerMcpIntegrationsTools(
 
 	server.tool(
 		"update_mcp_integration",
-		"Update an MCP integration's name, description, URL, auth, or transport. Changes apply immediately and altering url or auth_type can break connected clients; use update_mcp_server when you only need to rename or re-describe a server.",
+		"Update an MCP integration's name, description, URL, auth, transport, headers, or runtime Secret Reference mappings. Only supplied fields change; URL, auth, header, and secret changes apply immediately and can break active clients, so inspect get_mcp_integration first. Use update_mcp_server when changing only a Portkey server instance's display metadata.",
 		MCP_INTEGRATIONS_TOOL_SCHEMAS.updateMcpIntegration,
+		{
+			title: "Update MCP Integration",
+			readOnlyHint: false,
+			destructiveHint: true,
+			idempotentHint: true,
+			openWorldHint: true,
+		},
 		async (params) => {
 			const { id, custom_headers, ...rest } = params;
 			await service.mcpIntegrations.updateMcpIntegration(id, {

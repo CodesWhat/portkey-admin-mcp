@@ -1,12 +1,13 @@
 # Portkey Admin API Endpoints
 
-This document lists all API endpoints used by the Portkey Admin MCP Server, verified against the [official Portkey Admin API documentation](https://portkey.ai/docs/api-reference/admin-api/introduction).
+This document lists the API endpoints used by the Portkey Admin MCP Server. The current additions were checked on 2026-08-09 against the [official Portkey OpenAPI](https://github.com/Portkey-AI/openapi) and product documentation; older live-verification notes are retained as historical compatibility evidence.
 
 ## Configuration
 
 - **Base URL**: `https://api.portkey.ai/v1`
 - **Authentication**: `x-portkey-api-key` header
-- **Total Endpoints**: 156
+- **Public catalog exception**: `get_model_pricing` uses `https://api.portkey.ai` without authentication
+- **Total MCP tools**: 171
 
 ## Verification Legend
 
@@ -380,7 +381,7 @@ The configured live-test credential returned 403 for this surface on 2026-07-14.
 | [x] | DELETE | `/integrations/{slug}` | `/integrations/{id}` | Delete integration |
 | [x] | GET | `/integrations/{slug}/models` | `/integrations/{id}/models` | List models |
 | [x] | PUT | `/integrations/{slug}/models` | `/integrations/{id}/models` | Update models |
-| [x] | DELETE | `/integrations/{slug}/models/{modelId}` | `/integrations/{id}/models/{model_id}` | Delete model |
+| [x] | DELETE | `/integrations/{slug}/models?slugs={modelSlug}` | `/integrations/{slug}/models?slugs={modelSlug}` | Delete custom model |
 | [x] | GET | `/integrations/{slug}/workspaces` | `/integrations/{id}/workspaces` | List workspaces |
 | [x] | PUT | `/integrations/{slug}/workspaces` | `/integrations/{id}/workspaces` | Update workspaces |
 
@@ -388,7 +389,7 @@ The configured live-test credential returned 403 for this surface on 2026-07-14.
 
 ## Summary
 
-### Verification Statistics
+### Legacy verification statistics (2025-12-31 snapshot)
 
 | Status | Count | Description |
 |--------|-------|-------------|
@@ -571,6 +572,8 @@ GET  /v1/log-exports/{id}/download
 
 All verified with live API 2026-03-23. List returns `{ object: "list", total, has_more, data }`. Workspaces returns `{ workspaces, global_workspace_access, object: "integration" }`.
 
+Create, update, and detail payloads also support `secret_mappings` for resolving `configurations.<field>` values from Portkey Secret References at runtime (added to this server 2026-08-09).
+
 ## New: MCP Servers (added 2026-03-23)
 
 **Service**: `src/services/mcp-servers.service.ts`
@@ -587,7 +590,49 @@ All verified with live API 2026-03-23. List returns `{ object: "list", total, ha
 | [x] | PUT | `/mcp-servers/{id}/capabilities` | Update capabilities |
 | [x] | GET | `/mcp-servers/{id}/user-access` | List user access |
 | [x] | PUT | `/mcp-servers/{id}/user-access` | Update user access |
+| [x] | GET | `/mcp-servers/{id}/connections` | List active connections with user/workspace filters |
+| [x] | DELETE | `/mcp-servers/{id}/connections` | Disconnect one user connection |
 
 All verified with live API 2026-03-23. List returns `{ object: "list", total, data }`. Capabilities list returns `{ total, has_more, capabilities }`. User access returns `{ object: "list", default_user_access, total, has_more, data }`.
 
 **Pagination**: `list_mcp_server_capabilities` and `list_mcp_server_user_access` accept `current_page` (page number, default 1) and `page_size` (results per page, max 100).
+
+## Current: Organisation guardrails and logs (added 2026-08-09)
+
+| Status | Method | Path | Tool |
+|---|---|---|---|
+| [x] | GET | `/admin/organisation/defaults` | `get_organisation_defaults` |
+| [x] | PUT | `/admin/organisation/defaults` | `update_organisation_defaults` |
+| [x] | GET | `/workspace-exclusions/input-guardrails` | `list_input_guardrail_workspace_exclusions` |
+| [x] | PUT | `/workspace-exclusions/input-guardrails` | `update_input_guardrail_workspace_exclusions` |
+| [x] | GET | `/workspace-exclusions/output-guardrails` | `list_output_guardrail_workspace_exclusions` |
+| [x] | PUT | `/workspace-exclusions/output-guardrails` | `update_output_guardrail_workspace_exclusions` |
+| [x] | GET | `/logs/{logId}` | `get_log` |
+| [x] | GET | `/logs/exports/field-restrictions?workspace_id={workspaceId}` | `get_log_export_field_restrictions` |
+
+The versioned single-log endpoint accepts `path_format` (`v1` or `v2`), `created_at` for v2 storage paths, and the optional `hooks` log type. Workspace exclusions require an organisation service API key with the documented organisation exclusion scopes.
+
+## Current: SCIM group mappings (added 2026-08-09)
+
+| Status | Method | Path | Tool |
+|---|---|---|---|
+| [x] | GET | `/scim/workspaces` | `list_scim_workspace_mappings` |
+| [x] | POST | `/scim/workspaces` | `create_scim_workspace_mapping` |
+| [x] | DELETE | `/scim/workspaces/{mappingId}` | `delete_scim_workspace_mapping` |
+| [x] | GET | `/scim/groups` | `list_scim_groups` |
+
+Mapping creation accepts a workspace role plus exactly one provisioned SCIM group ID or name. Both list endpoints support the current pagination fields; group listing also supports search.
+
+## Current: Model pricing and integration schemas (added 2026-08-09)
+
+| Status | Method | Base/path | Tool |
+|---|---|---|---|
+| [x] | GET | `https://api.portkey.ai/model-configs/pricing/{provider}/{model}` | `get_model_pricing` |
+
+The integration endpoints listed in section 21 now cover the current request/response schemas without adding redundant tools:
+
+- create/update integration: `secret_mappings` and `pricing_adjustments`;
+- workspace-scoped create: `create_default_provider` and `default_provider_slug`;
+- model updates: custom/fine-tuned model fields, per-model host/headers, static pricing, and `allow_all_models`;
+- workspace updates: global access, override behavior, usage reset, and top-level/per-workspace default-provider controls;
+- list compatibility: current `{ models }` and `{ workspaces }` response keys normalize to the MCP result shape.

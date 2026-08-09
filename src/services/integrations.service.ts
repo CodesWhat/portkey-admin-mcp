@@ -1,4 +1,5 @@
 import { BaseService } from "./base.service.js";
+import type { SecretMapping } from "./shared.types.js";
 
 // Integration Types
 export interface IntegrationConfigurations {
@@ -35,8 +36,37 @@ export interface IntegrationRateLimits {
 }
 
 export interface GlobalWorkspaceAccessSettings {
-	usage_limits?: IntegrationUsageLimits | null;
+	enabled?: boolean;
+	usage_limits?: IntegrationUsageLimits[] | null;
 	rate_limits?: IntegrationRateLimits[] | null;
+}
+
+export interface PricingMultiplier {
+	default?: number | null;
+	request_token?: number | null;
+	response_token?: number | null;
+	cache_read_input_token?: number | null;
+	cache_write_input_token?: number | null;
+	cache_read_audio_input_token?: number | null;
+	request_audio_token?: number | null;
+	response_audio_token?: number | null;
+	reasoning_token?: number | null;
+	prediction_accepted_token?: number | null;
+	prediction_rejected_token?: number | null;
+	request_image_token?: number | null;
+	response_image_token?: number | null;
+	request_text_token?: number | null;
+	response_text_token?: number | null;
+	cache_read_image_input_token?: number | null;
+	cache_read_text_input_token?: number | null;
+	cache_write_text_input_token?: number | null;
+	cache_write_image_input_token?: number | null;
+	image?: { default?: number | null } | null;
+	additional_units?: Record<string, number | null> | null;
+}
+
+export interface PricingAdjustments {
+	multiplier?: PricingMultiplier;
 }
 
 export interface Integration {
@@ -55,6 +85,8 @@ export interface Integration {
 	global_workspace_access_settings?: GlobalWorkspaceAccessSettings;
 	allow_all_models?: boolean;
 	workspace_count?: number;
+	secret_mappings?: SecretMapping[];
+	pricing_adjustments?: PricingAdjustments | null;
 }
 
 export interface ListIntegrationsResponse {
@@ -78,6 +110,10 @@ export interface CreateIntegrationRequest {
 	description?: string;
 	workspace_id?: string;
 	configurations?: IntegrationConfigurations;
+	create_default_provider?: boolean;
+	default_provider_slug?: string;
+	secret_mappings?: SecretMapping[];
+	pricing_adjustments?: PricingAdjustments | null;
 }
 
 export interface CreateIntegrationResponse {
@@ -90,17 +126,44 @@ export interface UpdateIntegrationRequest {
 	key?: string;
 	description?: string;
 	configurations?: IntegrationConfigurations;
+	secret_mappings?: SecretMapping[];
+	pricing_adjustments?: PricingAdjustments | null;
 }
 
 // Integration Model Types
+export interface IntegrationModelConfigurations {
+	custom_host?: string;
+	custom_headers?: Record<string, string>;
+}
+
+export interface TokenPricing {
+	price: number;
+}
+
+export interface IntegrationModelPricingConfig {
+	type?: "static";
+	pay_as_you_go?: {
+		request_token?: TokenPricing;
+		response_token?: TokenPricing;
+	};
+}
+
 export interface IntegrationModel {
-	id: string;
-	model_id: string;
-	model_name: string;
+	slug: string;
+	name: string;
 	enabled: boolean;
-	custom: boolean;
-	created_at: string;
-	last_updated_at: string | null;
+	is_custom?: boolean | null;
+	is_finetune?: boolean | null;
+	base_model_slug?: string | null;
+	configurations?: IntegrationModelConfigurations;
+	pricing_config?: IntegrationModelPricingConfig;
+	// Legacy response aliases retained for older Portkey deployments.
+	id?: string;
+	model_id?: string;
+	model_name?: string;
+	custom?: boolean;
+	created_at?: string;
+	last_updated_at?: string | null;
 }
 
 export interface ListIntegrationModelsResponse {
@@ -115,24 +178,29 @@ export interface ListIntegrationModelsParams {
 }
 
 export interface UpdateIntegrationModelsRequest {
+	allow_all_models?: boolean;
 	models: Array<{
 		slug: string;
 		model_name?: string;
 		enabled: boolean;
 		is_custom?: boolean;
+		is_finetune?: boolean;
+		base_model_slug?: string;
+		configurations?: IntegrationModelConfigurations;
+		pricing_config?: IntegrationModelPricingConfig;
 	}>;
 }
 
 // Integration Workspace Types
 export interface IntegrationWorkspace {
 	id: string;
-	workspace_id: string;
-	workspace_name: string;
 	enabled: boolean;
-	usage_limits?: IntegrationUsageLimits | null;
+	usage_limits?: IntegrationUsageLimits[] | null;
 	rate_limits?: IntegrationRateLimits[] | null;
-	created_at: string;
-	last_updated_at: string | null;
+	workspace_id?: string;
+	workspace_name?: string;
+	created_at?: string;
+	last_updated_at?: string | null;
 }
 
 export interface ListIntegrationWorkspacesResponse {
@@ -152,10 +220,40 @@ export interface UpdateIntegrationWorkspacesRequest {
 		enabled: boolean;
 		usage_limits?: IntegrationUsageLimits[] | null;
 		rate_limits?: IntegrationRateLimits[] | null;
+		reset_usage?: boolean;
+		create_default_provider?: boolean;
+		default_provider_slug?: string;
 	}>;
+	global_workspace_access?: {
+		enabled: boolean;
+		usage_limits?: IntegrationUsageLimits[] | null;
+		rate_limits?: IntegrationRateLimits[] | null;
+	};
+	override_existing_workspace_access?: boolean;
+	create_default_provider?: boolean;
+	default_provider_slug?: string;
+}
+
+/** Public pricing catalog payload; calculation trees vary by model. */
+export interface ModelPricingConfig {
+	pay_as_you_go?: Record<string, unknown>;
+	calculate?: Record<string, unknown>;
+	currency?: "USD";
+	finetune_config?: Record<string, unknown>;
+	[key: string]: unknown;
 }
 
 export class IntegrationsService extends BaseService {
+	// Get current public catalog pricing (USD cents per token/unit).
+	async getModelPricing(
+		provider: string,
+		model: string,
+	): Promise<ModelPricingConfig> {
+		return this.getPublic<ModelPricingConfig>(
+			`/model-configs/pricing/${this.encodePathSegment(provider)}/${this.encodePathSegment(model)}`,
+		);
+	}
+
 	// List all integrations
 	async listIntegrations(
 		params?: ListIntegrationsParams,
@@ -202,13 +300,18 @@ export class IntegrationsService extends BaseService {
 		slug: string,
 		params?: ListIntegrationModelsParams,
 	): Promise<ListIntegrationModelsResponse> {
-		return this.get<ListIntegrationModelsResponse>(
-			`/integrations/${this.encodePathSegment(slug)}/models`,
-			{
-				current_page: params?.current_page,
-				page_size: params?.page_size,
-			},
-		);
+		const response = await this.get<
+			ListIntegrationModelsResponse & { models?: IntegrationModel[] }
+		>(`/integrations/${this.encodePathSegment(slug)}/models`, {
+			current_page: params?.current_page,
+			page_size: params?.page_size,
+		});
+		const data = response.data ?? response.models ?? [];
+		return {
+			object: response.object ?? "list",
+			total: response.total ?? data.length,
+			data,
+		};
 	}
 
 	// Update models for an integration
@@ -239,13 +342,20 @@ export class IntegrationsService extends BaseService {
 		slug: string,
 		params?: ListIntegrationWorkspacesParams,
 	): Promise<ListIntegrationWorkspacesResponse> {
-		return this.get<ListIntegrationWorkspacesResponse>(
-			`/integrations/${this.encodePathSegment(slug)}/workspaces`,
-			{
-				current_page: params?.current_page,
-				page_size: params?.page_size,
-			},
-		);
+		const response = await this.get<
+			ListIntegrationWorkspacesResponse & {
+				workspaces?: IntegrationWorkspace[];
+			}
+		>(`/integrations/${this.encodePathSegment(slug)}/workspaces`, {
+			current_page: params?.current_page,
+			page_size: params?.page_size,
+		});
+		const data = response.data ?? response.workspaces ?? [];
+		return {
+			object: response.object ?? "list",
+			total: response.total ?? data.length,
+			data,
+		};
 	}
 
 	// Update workspaces for an integration

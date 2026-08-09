@@ -1,4 +1,5 @@
 import { BaseService } from "./base.service.js";
+import type { SecretMapping } from "./shared.types.js";
 
 // ===== Types =====
 
@@ -16,6 +17,7 @@ export interface McpIntegration {
 	type?: "workspace" | "organisation";
 	configurations?: Record<string, unknown>;
 	global_workspace_access?: unknown;
+	secret_mappings?: SecretMapping[];
 	created_at: string;
 	last_updated_at: string | null;
 	object: "mcp-integration";
@@ -45,6 +47,7 @@ export interface CreateMcpIntegrationRequest {
 	configurations?: {
 		custom_headers?: Record<string, string>;
 	};
+	secret_mappings?: SecretMapping[];
 }
 
 export interface CreateMcpIntegrationResponse {
@@ -61,6 +64,7 @@ export interface UpdateMcpIntegrationRequest {
 	configurations?: {
 		custom_headers?: Record<string, string>;
 	};
+	secret_mappings?: SecretMapping[];
 }
 
 // Sub-resource: Capabilities

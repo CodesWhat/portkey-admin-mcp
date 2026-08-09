@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-08-09
+
+### Added
+
+- Resume compatibility and API-coverage development with 15 current Portkey tools: organisation guardrail defaults and directional workspace exclusions; single-log reads and log-export field restrictions; SCIM group search and workspace-mapping CRUD; MCP server connection listing/disconnect; and public model-pricing lookup. The inventory now contains 171 tools.
+- Cover current integration schemas for Secret Reference mappings, pricing adjustments, default-provider creation, global workspace access/overrides, custom and fine-tuned models, per-model headers/hosts, and static model pricing. MCP integrations now expose Secret Reference mappings as well.
+- Add contract-first regression tests for every new service path and tool payload plus a tool-quality gate for decision-oriented descriptions, documented fields, titles, and accurate MCP annotations.
+- Add a Glama TDQS-aligned release preflight that inspects the built MCP `tools/list` output for description hard gates, parameter documentation, output schemas, annotations, and selection guidance; run it in both local and hosted CI.
+- Add `docs/PRISMA_AIRS_INTEROPERABILITY.md` with the supported Portkey/Prisma AIRS coexistence model and criteria for a future native Prisma AIRS adapter.
+
+### Changed
+
+- Replace the stale post-acquisition maintenance warning with active compatibility status. Portkey remains the supported API contract; Prisma AIRS/Strata Cloud Manager is documented as a separate, non-drop-in management surface.
+- Normalize current integration model/workspace list response keys while retaining the MCP result shape, and route public model-pricing reads through Portkey's unauthenticated non-`/v1` catalog origin.
+- Mark organisation-governance, Logs Export, and SCIM tools as enterprise-gated in MCP descriptions, including the documented organisation and log-export API-key scopes.
+- Synchronize npm, MCP Registry, and LobeHub release metadata; package the local documentation linked from the README; document Glama's tag-driven refresh; and allow the credentialed staging smoke suite to run in CI.
+- Follow LobeHub's claimed-listing workflow: regenerate every MCP capability array and use `plugin update` for new marketplace versions, retaining the former publish script as an alias.
+
+### Fixed
+
+- Accept SCIM mapping/group page `0` as Portkey's first page, explain that a group name can pre-create the Portkey SCIM group, and clarify that deleting a workspace mapping leaves already provisioned members in place.
+
 ## [0.6.3] - 2026-08-04
 
 Security patch for two advisories published against transitive dependencies of `@modelcontextprotocol/sdk` shortly after 0.6.2 was cut. No Portkey Admin API or MCP tool-surface changes; the 156-tool inventory is unchanged.
@@ -441,7 +463,8 @@ First stable release. Graduates from beta with 151 tools covering ~98% of the Po
 - Vercel deployment support
 - Contract tests, E2E tests, security tests
 
-[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.6.3...HEAD
+[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.6.3...v0.7.0
 [0.6.3]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.6.2...v0.6.3
 [0.6.2]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.6.1...v0.6.2
 [0.6.1]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.6.0...v0.6.1

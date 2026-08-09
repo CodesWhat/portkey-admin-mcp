@@ -49,7 +49,17 @@ const guardrailActionSchema = z.object({
 		.describe("Message to return when guardrail triggers"),
 });
 
+const workspaceGuardrailExclusionSchema = z.object({
+	workspace_id: z
+		.string()
+		.describe("Workspace ID whose exclusion state changes"),
+	excluded: z
+		.boolean()
+		.describe("True to exclude this workspace; false to restore enforcement"),
+});
+
 const GUARDRAILS_TOOL_SCHEMAS = {
+	getOrganisationDefaults: {},
 	listGuardrails: {
 		workspace_id: z
 			.string()
@@ -111,12 +121,183 @@ const GUARDRAILS_TOOL_SCHEMAS = {
 	deleteGuardrail: {
 		guardrail_id: z.string().describe("The guardrail UUID or slug to delete"),
 	},
+	updateOrganisationDefaults: {
+		input_guardrails: z
+			.array(z.string())
+			.optional()
+			.describe("Ordered guardrail IDs or slugs to enforce on model input"),
+		output_guardrails: z
+			.array(z.string())
+			.optional()
+			.describe("Ordered guardrail IDs or slugs to enforce on model output"),
+	},
+	listWorkspaceExclusions: {
+		organisation_id: z
+			.string()
+			.describe("Organisation ID whose workspace exclusions should be listed"),
+	},
+	updateWorkspaceExclusions: {
+		organisation_id: z
+			.string()
+			.describe("Organisation ID whose workspace exclusions should be updated"),
+		workspaces: z
+			.array(workspaceGuardrailExclusionSchema)
+			.min(1)
+			.describe("Workspace exclusion states to apply"),
+		override_existing: z
+			.boolean()
+			.optional()
+			.describe("Replace existing exclusion states instead of merging changes"),
+	},
+} as const;
+
+const GET_ORGANISATION_DEFAULTS_ANNOTATIONS = {
+	title: "Get Organisation Guardrail Defaults",
+	readOnlyHint: true,
+	destructiveHint: false,
+	idempotentHint: true,
+	openWorldHint: true,
 } as const;
 
 export function registerGuardrailsTools(
 	server: McpServer,
 	service: PortkeyService,
 ): void {
+	server.tool(
+		"get_organisation_defaults",
+		"Get the organisation-wide input and output guardrails that workspaces inherit by default. Use this before update_organisation_defaults or when auditing baseline enforcement; it does not include per-workspace exclusions, which are available from the directional exclusion list tools. Requires an organisation service API key with organisation_settings.read scope.",
+		GUARDRAILS_TOOL_SCHEMAS.getOrganisationDefaults,
+		GET_ORGANISATION_DEFAULTS_ANNOTATIONS,
+		async () => ({
+			content: [
+				{
+					type: "text",
+					text: JSON.stringify(
+						await service.guardrails.getOrganisationDefaults(),
+					),
+				},
+			],
+		}),
+	);
+
+	server.tool(
+		"update_organisation_defaults",
+		"Replace the organisation-wide default input and/or output guardrail lists inherited by workspaces. Only supplied directions change, but enforcement updates immediately across non-excluded workspaces; inspect get_organisation_defaults and the directional workspace exclusions first. Repeating the same lists is safe. Requires an organisation service API key with organisation_settings.update scope.",
+		GUARDRAILS_TOOL_SCHEMAS.updateOrganisationDefaults,
+		{
+			title: "Update Organisation Guardrail Defaults",
+			readOnlyHint: false,
+			destructiveHint: false,
+			idempotentHint: true,
+			openWorldHint: true,
+		},
+		async (params) => ({
+			content: [
+				{
+					type: "text",
+					text: JSON.stringify(
+						await service.guardrails.updateOrganisationDefaults(params),
+					),
+				},
+			],
+		}),
+	);
+
+	server.tool(
+		"list_input_guardrail_workspace_exclusions",
+		"List workspaces excluded from organisation-wide input guardrails for one organisation. Use this to audit exceptions or establish the current state before the matching update tool; it reads input exclusions only and does not return the organisation's default guardrail list. Requires an organisation service API key with organisation_exclusions.list scope.",
+		GUARDRAILS_TOOL_SCHEMAS.listWorkspaceExclusions,
+		{
+			title: "List Input Guardrail Workspace Exclusions",
+			readOnlyHint: true,
+			destructiveHint: false,
+			idempotentHint: true,
+			openWorldHint: true,
+		},
+		async (params) => ({
+			content: [
+				{
+					type: "text",
+					text: JSON.stringify(
+						await service.guardrails.listWorkspaceExclusions("input", params),
+					),
+				},
+			],
+		}),
+	);
+
+	server.tool(
+		"update_input_guardrail_workspace_exclusions",
+		"Set workspace exclusions from organisation-wide input guardrails. Each entry excludes or restores one workspace; override_existing replaces prior states while the default merge behavior preserves unmentioned workspaces. Review the matching list tool first because enforcement changes immediately. Repeating the same states is safe. Requires an organisation service API key with organisation_exclusions.update scope.",
+		GUARDRAILS_TOOL_SCHEMAS.updateWorkspaceExclusions,
+		{
+			title: "Update Input Guardrail Workspace Exclusions",
+			readOnlyHint: false,
+			destructiveHint: false,
+			idempotentHint: true,
+			openWorldHint: true,
+		},
+		async (params) => ({
+			content: [
+				{
+					type: "text",
+					text: JSON.stringify(
+						await service.guardrails.updateWorkspaceExclusions("input", params),
+					),
+				},
+			],
+		}),
+	);
+
+	server.tool(
+		"list_output_guardrail_workspace_exclusions",
+		"List workspaces excluded from organisation-wide output guardrails for one organisation. Use this to audit exceptions or establish the current state before the matching update tool; it reads output exclusions only and does not return the organisation's default guardrail list. Requires an organisation service API key with organisation_exclusions.list scope.",
+		GUARDRAILS_TOOL_SCHEMAS.listWorkspaceExclusions,
+		{
+			title: "List Output Guardrail Workspace Exclusions",
+			readOnlyHint: true,
+			destructiveHint: false,
+			idempotentHint: true,
+			openWorldHint: true,
+		},
+		async (params) => ({
+			content: [
+				{
+					type: "text",
+					text: JSON.stringify(
+						await service.guardrails.listWorkspaceExclusions("output", params),
+					),
+				},
+			],
+		}),
+	);
+
+	server.tool(
+		"update_output_guardrail_workspace_exclusions",
+		"Set workspace exclusions from organisation-wide output guardrails. Each entry excludes or restores one workspace; override_existing replaces prior states while the default merge behavior preserves unmentioned workspaces. Review the matching list tool first because enforcement changes immediately. Repeating the same states is safe. Requires an organisation service API key with organisation_exclusions.update scope.",
+		GUARDRAILS_TOOL_SCHEMAS.updateWorkspaceExclusions,
+		{
+			title: "Update Output Guardrail Workspace Exclusions",
+			readOnlyHint: false,
+			destructiveHint: false,
+			idempotentHint: true,
+			openWorldHint: true,
+		},
+		async (params) => ({
+			content: [
+				{
+					type: "text",
+					text: JSON.stringify(
+						await service.guardrails.updateWorkspaceExclusions(
+							"output",
+							params,
+						),
+					),
+				},
+			],
+		}),
+	);
+
 	// List guardrails tool
 	server.tool(
 		"list_guardrails",

@@ -2111,6 +2111,17 @@ describe("Tool callback error handling", () => {
 			"get_user",
 			"list_user_invites",
 			"get_user_stats",
+			"get_organisation_defaults",
+			"update_organisation_defaults",
+			"list_input_guardrail_workspace_exclusions",
+			"update_input_guardrail_workspace_exclusions",
+			"list_output_guardrail_workspace_exclusions",
+			"update_output_guardrail_workspace_exclusions",
+			"get_log_export_field_restrictions",
+			"list_scim_workspace_mappings",
+			"create_scim_workspace_mapping",
+			"delete_scim_workspace_mapping",
+			"list_scim_groups",
 		] as const) {
 			assert.match(
 				descriptionFor(toolName),

@@ -28,6 +28,26 @@ const logExportFieldSchema = z.enum([
 ]);
 
 const LOGGING_TOOL_SCHEMAS = {
+	getLog: {
+		log_id: z.string().describe("Gateway log ID to retrieve"),
+		path_format: z
+			.enum(["v1", "v2"])
+			.optional()
+			.describe("Log storage path format; defaults to v1"),
+		created_at: z
+			.string()
+			.optional()
+			.describe("Log creation timestamp in ISO 8601 format; required for v2"),
+		type: z
+			.enum(["hooks"])
+			.optional()
+			.describe("Set to hooks when retrieving a hook execution log"),
+	},
+	getLogExportFieldRestrictions: {
+		workspace_id: z
+			.string()
+			.describe("Workspace ID whose export field restrictions should be read"),
+	},
 	insertLog: {
 		request_url: z
 			.string()
@@ -172,6 +192,50 @@ export function registerLoggingTools(
 	server: McpServer,
 	service: PortkeyService,
 ): void {
+	server.tool(
+		"get_log",
+		"Get one gateway request log by ID, including its request, response, usage, cost, and metadata payload when available. For path_format v2, also provide the log's created_at timestamp.",
+		LOGGING_TOOL_SCHEMAS.getLog,
+		{
+			title: "Get Gateway Log",
+			readOnlyHint: true,
+			destructiveHint: false,
+			idempotentHint: true,
+			openWorldHint: true,
+		},
+		async (params) => {
+			const result = await service.logging.getLog(params.log_id, {
+				path_format: params.path_format,
+				created_at: params.created_at,
+				type: params.type,
+			});
+			return {
+				content: [{ type: "text", text: JSON.stringify(result) }],
+			};
+		},
+	);
+
+	server.tool(
+		"get_log_export_field_restrictions",
+		"Get the organisation-managed fields that a workspace is restricted from including in log exports. Use before create_log_export or update_log_export to avoid requesting disallowed fields. Requires an API key with logs.export scope; completion-log fields may additionally require completion scope.",
+		LOGGING_TOOL_SCHEMAS.getLogExportFieldRestrictions,
+		{
+			title: "Get Log Export Field Restrictions",
+			readOnlyHint: true,
+			destructiveHint: false,
+			idempotentHint: true,
+			openWorldHint: true,
+		},
+		async (params) => {
+			const result = await service.logging.getLogExportFieldRestrictions({
+				workspace_id: params.workspace_id,
+			});
+			return {
+				content: [{ type: "text", text: JSON.stringify(result) }],
+			};
+		},
+	);
+
 	// Insert log tool
 	server.tool(
 		"insert_log",

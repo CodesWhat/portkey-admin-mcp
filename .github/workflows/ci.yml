@@ -120,6 +120,9 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Verify Glama TDQS definition quality
+        run: npm run verify:tool-quality
+
       - name: E2E tests
         run: npm run test:e2e
 
