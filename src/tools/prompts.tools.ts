@@ -12,6 +12,7 @@ import {
 } from "../lib/schemas.js";
 import type { PortkeyService } from "../services/index.js";
 import type { RawGetPromptResponse } from "../services/prompts.types.js";
+import { jsonResult } from "./utils.js";
 
 const PROMPT_VARIABLES_SCHEMA = z
 	.record(z.string(), z.union([z.string(), z.coerce.number(), z.boolean()]))
@@ -471,30 +472,18 @@ export function registerPromptsTools(
 			}
 
 			if (params.dry_run) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									dry_run: true,
-									action: "create",
-									message: `Would create prompt "${params.name}" in collection ${params.collection_id}`,
-									prompt_preview: {
-										name: params.name,
-										collection_id: params.collection_id,
-										model: params.model,
-										template_length: templateString.length,
-										parameter_count: Object.keys(params.parameters ?? {})
-											.length,
-									},
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
+				return jsonResult({
+					dry_run: true,
+					action: "create",
+					message: `Would create prompt "${params.name}" in collection ${params.collection_id}`,
+					prompt_preview: {
+						name: params.name,
+						collection_id: params.collection_id,
+						model: params.model,
+						template_length: templateString.length,
+						parameter_count: Object.keys(params.parameters ?? {}).length,
+					},
+				});
 			}
 
 			const result = await service.prompts.createPrompt({
@@ -525,19 +514,12 @@ export function registerPromptsTools(
 					: {}),
 			});
 
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully created prompt "${params.name}"`,
-							id: result.id,
-							slug: result.slug,
-							version_id: result.version_id,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully created prompt "${params.name}"`,
+				id: result.id,
+				slug: result.slug,
+				version_id: result.version_id,
+			});
 		},
 	);
 
@@ -548,14 +530,7 @@ export function registerPromptsTools(
 		PROMPTS_TOOL_SCHEMAS.listPrompts,
 		async (params) => {
 			const prompts = await service.prompts.listPrompts(params);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify(formatPromptListResponse(prompts, params)),
-					},
-				],
-			};
+			return jsonResult(formatPromptListResponse(prompts, params));
 		},
 	);
 
@@ -588,42 +563,35 @@ export function registerPromptsTools(
 				}
 			}
 
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							id: prompt.id,
-							name: prompt.name,
-							slug: prompt.slug,
-							collection_id: prompt.collection_id,
-							created_at: prompt.created_at,
-							last_updated_at: prompt.last_updated_at,
-							current_version: prompt.current_version
-								? {
-										id: prompt.current_version.id,
-										version_number: prompt.current_version.version_number,
-										description: prompt.current_version.version_description,
-										model: prompt.current_version.model,
-										template_format: templateFormat,
-										template: templateString,
-										parameters: prompt.current_version.parameters,
-										metadata: prompt.current_version.template_metadata,
-										has_tools: !!prompt.current_version.tools?.length,
-										has_functions: !!prompt.current_version.functions?.length,
-									}
-								: null,
-							version_count: (prompt.versions || []).length,
-							versions: (prompt.versions || []).map((v) => ({
-								id: v.id,
-								version_number: v.version_number,
-								description: v.version_description,
-								created_at: v.created_at,
-							})),
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				id: prompt.id,
+				name: prompt.name,
+				slug: prompt.slug,
+				collection_id: prompt.collection_id,
+				created_at: prompt.created_at,
+				last_updated_at: prompt.last_updated_at,
+				current_version: prompt.current_version
+					? {
+							id: prompt.current_version.id,
+							version_number: prompt.current_version.version_number,
+							description: prompt.current_version.version_description,
+							model: prompt.current_version.model,
+							template_format: templateFormat,
+							template: templateString,
+							parameters: prompt.current_version.parameters,
+							metadata: prompt.current_version.template_metadata,
+							has_tools: !!prompt.current_version.tools?.length,
+							has_functions: !!prompt.current_version.functions?.length,
+						}
+					: null,
+				version_count: (prompt.versions || []).length,
+				versions: (prompt.versions || []).map((v) => ({
+					id: v.id,
+					version_number: v.version_number,
+					description: v.version_description,
+					created_at: v.created_at,
+				})),
+			});
 		},
 	);
 
@@ -641,28 +609,15 @@ export function registerPromptsTools(
 
 			if (dry_run) {
 				const current = await service.prompts.getPrompt(prompt_id);
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									dry_run: true,
-									action: "update",
-									message: `Would update prompt "${current.name}"`,
-									current_version:
-										current.current_version?.version_number ?? null,
-									changes: Object.keys(updateData).filter(
-										(k) =>
-											updateData[k as keyof typeof updateData] !== undefined,
-									),
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
+				return jsonResult({
+					dry_run: true,
+					action: "update",
+					message: `Would update prompt "${current.name}"`,
+					current_version: current.current_version?.version_number ?? null,
+					changes: Object.keys(updateData).filter(
+						(k) => updateData[k as keyof typeof updateData] !== undefined,
+					),
+				});
 			}
 
 			const result = await service.prompts.updatePrompt(prompt_id, {
@@ -693,19 +648,12 @@ export function registerPromptsTools(
 					: {}),
 			});
 
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: "Successfully updated prompt",
-							id: result.id,
-							slug: result.slug,
-							new_version_id: result.prompt_version_id,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: "Successfully updated prompt",
+				id: result.id,
+				slug: result.slug,
+				new_version_id: result.prompt_version_id,
+			});
 		},
 	);
 
@@ -716,17 +664,10 @@ export function registerPromptsTools(
 		PROMPTS_TOOL_SCHEMAS.deletePrompt,
 		async (params) => {
 			await service.prompts.deletePrompt(params.prompt_id);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully deleted prompt "${params.prompt_id}"`,
-							success: true,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully deleted prompt "${params.prompt_id}"`,
+				success: true,
+			});
 		},
 	);
 
@@ -739,19 +680,12 @@ export function registerPromptsTools(
 			await service.prompts.publishPrompt(params.prompt_id, {
 				version: params.version,
 			});
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully published version ${params.version} of prompt "${params.prompt_id}"`,
-							prompt_id: params.prompt_id,
-							published_version: params.version,
-							success: true,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully published version ${params.version} of prompt "${params.prompt_id}"`,
+				prompt_id: params.prompt_id,
+				published_version: params.version,
+				success: true,
+			});
 		},
 	);
 
@@ -764,39 +698,28 @@ export function registerPromptsTools(
 			const versions = await service.prompts.listPromptVersions(
 				params.prompt_id,
 			);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							prompt_id: params.prompt_id,
-							total_versions: versions.length,
-							versions: versions.map((v) => ({
-								id: v.id,
-								version_number: v.prompt_version,
-								description: v.prompt_description,
-								status: v.status,
-								label_id: v.label_id,
-								created_at: v.created_at,
-								template_preview: (() => {
-									const tmpl = v.prompt_template;
-									const str =
-										typeof tmpl === "string"
-											? tmpl
-											: typeof tmpl === "object" &&
-													tmpl !== null &&
-													"string" in tmpl
-												? (tmpl as { string: string }).string
-												: JSON.stringify(tmpl);
-									return (
-										str.substring(0, 200) + (str.length > 200 ? "..." : "")
-									);
-								})(),
-							})),
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				prompt_id: params.prompt_id,
+				total_versions: versions.length,
+				versions: versions.map((v) => ({
+					id: v.id,
+					version_number: v.prompt_version,
+					description: v.prompt_description,
+					status: v.status,
+					label_id: v.label_id,
+					created_at: v.created_at,
+					template_preview: (() => {
+						const tmpl = v.prompt_template;
+						const str =
+							typeof tmpl === "string"
+								? tmpl
+								: typeof tmpl === "object" && tmpl !== null && "string" in tmpl
+									? (tmpl as { string: string }).string
+									: JSON.stringify(tmpl);
+						return str.substring(0, 200) + (str.length > 200 ? "..." : "");
+					})(),
+				})),
+			});
 		},
 	);
 
@@ -811,23 +734,16 @@ export function registerPromptsTools(
 				hyperparameters: params.hyperparameters,
 			});
 
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							success: result.success,
-							rendered_messages: result.data.messages,
-							model: result.data.model,
-							hyperparameters: {
-								max_tokens: result.data.max_tokens,
-								temperature: result.data.temperature,
-								top_p: result.data.top_p,
-							},
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				success: result.success,
+				rendered_messages: result.data.messages,
+				model: result.data.model,
+				hyperparameters: {
+					max_tokens: result.data.max_tokens,
+					temperature: result.data.temperature,
+					top_p: result.data.top_p,
+				},
+			});
 		},
 	);
 
@@ -848,26 +764,19 @@ export function registerPromptsTools(
 			);
 
 			const choice = result.choices?.[0];
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							id: result.id,
-							model: result.model,
-							response: choice?.message?.content ?? null,
-							finish_reason: choice?.finish_reason ?? null,
-							usage: result.usage
-								? {
-										prompt_tokens: result.usage.prompt_tokens,
-										completion_tokens: result.usage.completion_tokens,
-										total_tokens: result.usage.total_tokens,
-									}
-								: null,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				id: result.id,
+				model: result.model,
+				response: choice?.message?.content ?? null,
+				finish_reason: choice?.finish_reason ?? null,
+				usage: result.usage
+					? {
+							prompt_tokens: result.usage.prompt_tokens,
+							completion_tokens: result.usage.completion_tokens,
+							total_tokens: result.usage.total_tokens,
+						}
+					: null,
+			});
 		},
 	);
 
@@ -921,21 +830,14 @@ export function registerPromptsTools(
 				...(params.dry_run !== undefined ? { dry_run: params.dry_run } : {}),
 			});
 
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							action: result.action,
-							dry_run: result.dry_run,
-							message: result.message,
-							prompt_id: result.prompt_id ?? undefined,
-							slug: result.slug ?? undefined,
-							version_id: result.version_id ?? undefined,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				action: result.action,
+				dry_run: result.dry_run,
+				message: result.message,
+				prompt_id: result.prompt_id ?? undefined,
+				slug: result.slug ?? undefined,
+				version_id: result.version_id ?? undefined,
+			});
 		},
 	);
 
@@ -953,26 +855,19 @@ export function registerPromptsTools(
 				virtual_key: params.virtual_key,
 			});
 
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully promoted prompt to ${params.target_env}`,
-							source: {
-								prompt_id: result.source_prompt_id,
-								version_id: result.source_version_id,
-							},
-							target: {
-								prompt_id: result.target_prompt_id,
-								version_id: result.target_version_id,
-								action: result.action,
-							},
-							promoted_at: result.promoted_at,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully promoted prompt to ${params.target_env}`,
+				source: {
+					prompt_id: result.source_prompt_id,
+					version_id: result.source_version_id,
+				},
+				target: {
+					prompt_id: result.target_prompt_id,
+					version_id: result.target_version_id,
+					action: result.action,
+				},
+				promoted_at: result.promoted_at,
+			});
 		},
 	);
 
@@ -984,19 +879,12 @@ export function registerPromptsTools(
 		async (params) => {
 			const result = service.prompts.validateBillingMetadata(params);
 
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							valid: result.valid,
-							errors: result.errors,
-							warnings: result.warnings,
-							metadata: params,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				valid: result.valid,
+				errors: result.errors,
+				warnings: result.warnings,
+				metadata: params,
+			});
 		},
 	);
 
@@ -1011,14 +899,7 @@ export function registerPromptsTools(
 				params.prompt_id,
 				params.version_id,
 			);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify(formatPromptVersion(version)),
-					},
-				],
-			};
+			return jsonResult(formatPromptVersion(version));
 		},
 	);
 
@@ -1034,17 +915,10 @@ export function registerPromptsTools(
 					label_id: params.label_id,
 				},
 			);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully updated version "${params.version_id}" of prompt "${params.prompt_id}"`,
-							success: true,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully updated version "${params.version_id}" of prompt "${params.prompt_id}"`,
+				success: true,
+			});
 		},
 	);
 }

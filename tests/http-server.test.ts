@@ -370,6 +370,40 @@ describe("HTTP server integration", () => {
 		});
 	});
 
+	it("returns 413 for a request body exceeding MCP_MAX_REQUEST_SIZE", async () => {
+		await withHttpServer(
+			{ MCP_MAX_REQUEST_SIZE: "1kb" },
+			async ({ baseUrl }) => {
+				const oversizedBody = JSON.stringify({
+					...INIT_PAYLOAD,
+					params: {
+						...INIT_PAYLOAD.params,
+						oversizedField: "x".repeat(5_000),
+					},
+				});
+
+				const response = await fetch(`${baseUrl}/mcp`, {
+					method: "POST",
+					headers: {
+						authorization: `Bearer ${AUTH_TOKEN}`,
+						"content-type": "application/json",
+						accept: "application/json",
+					},
+					body: oversizedBody,
+				});
+
+				assert.equal(response.status, 413);
+				assert.match(
+					response.headers.get("content-type") ?? "",
+					/application\/json/,
+				);
+				assert.deepEqual(await response.json(), {
+					error: "Payload too large",
+				});
+			},
+		);
+	});
+
 	it("rejects new initialize requests after hitting MCP_MAX_SESSIONS", async () => {
 		await withHttpServer(
 			{

@@ -8,7 +8,7 @@ import type {
 	WorkspaceDefaults,
 	WorkspaceUser,
 } from "../services/workspaces.service.js";
-import { formatFullName } from "./utils.js";
+import { formatFullName, jsonResult } from "./utils.js";
 
 const scimWorkspaceMappingBaseShape = {
 	workspace_id: z
@@ -123,18 +123,37 @@ const WORKSPACES_TOOL_SCHEMAS = {
 	},
 	getWorkspaceMember: {
 		workspace_id: z.string().describe("The workspace ID"),
-		user_id: z.string().describe("The user ID to retrieve"),
+		user_id: z
+			.string()
+			.uuid(
+				"user_id must be a valid UUID (use list_all_users to find user IDs)",
+			)
+			.describe(
+				"The user ID to retrieve (must be a valid UUID from list_all_users, not an email address)",
+			),
 	},
 	updateWorkspaceMember: {
 		workspace_id: z.string().describe("The workspace ID"),
-		user_id: z.string().describe("The user ID to update"),
+		user_id: z
+			.string()
+			.uuid(
+				"user_id must be a valid UUID (use list_all_users to find user IDs)",
+			)
+			.describe(
+				"The user ID to update (must be a valid UUID from list_all_users, not an email address)",
+			),
 		role: z
 			.enum(["admin", "member", "manager"])
 			.describe("New role in the workspace"),
 	},
 	removeWorkspaceMember: {
 		workspace_id: z.string().describe("The workspace ID"),
-		user_id: z.string().describe("The user ID to remove"),
+		user_id: z
+			.string()
+			.uuid(
+				"user_id must be a valid UUID (use list_all_users to find user IDs)",
+			)
+			.describe("The user ID to remove"),
 	},
 	listScimWorkspaceMappings: {
 		workspace_id: z
@@ -156,7 +175,9 @@ const WORKSPACES_TOOL_SCHEMAS = {
 			.int()
 			.nonnegative()
 			.optional()
-			.describe("Zero-based results page to retrieve; the first page is 0"),
+			.describe(
+				"Zero-based results page to retrieve; the first page is 0. Unlike current_page used by other list tools in this API (which is 1-based), do not pass 1 for the first page here.",
+			),
 		page_size: z.coerce
 			.number()
 			.int()
@@ -180,7 +201,9 @@ const WORKSPACES_TOOL_SCHEMAS = {
 			.int()
 			.nonnegative()
 			.optional()
-			.describe("Zero-based results page to retrieve; the first page is 0"),
+			.describe(
+				"Zero-based results page to retrieve; the first page is 0. Unlike current_page used by other list tools in this API (which is 1-based), do not pass 1 for the first page here.",
+			),
 		page_size: z.coerce
 			.number()
 			.int()
@@ -281,16 +304,8 @@ export function registerWorkspacesTools(
 			idempotentHint: true,
 			openWorldHint: true,
 		},
-		async (params) => ({
-			content: [
-				{
-					type: "text",
-					text: JSON.stringify(
-						await service.workspaces.listScimWorkspaceMappings(params),
-					),
-				},
-			],
-		}),
+		async (params) =>
+			jsonResult(await service.workspaces.listScimWorkspaceMappings(params)),
 	);
 
 	server.registerTool(
@@ -328,9 +343,7 @@ export function registerWorkspacesTools(
 			}
 			const result =
 				await service.workspaces.createScimWorkspaceMapping(request);
-			return {
-				content: [{ type: "text", text: JSON.stringify(result) }],
-			};
+			return jsonResult(result);
 		},
 	);
 
@@ -349,17 +362,10 @@ export function registerWorkspacesTools(
 			const result = await service.workspaces.deleteScimWorkspaceMapping(
 				params.mapping_id,
 			);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Deleted SCIM workspace mapping "${params.mapping_id}"`,
-							...result,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Deleted SCIM workspace mapping "${params.mapping_id}"`,
+				...result,
+			});
 		},
 	);
 
@@ -374,14 +380,8 @@ export function registerWorkspacesTools(
 			idempotentHint: true,
 			openWorldHint: true,
 		},
-		async (params) => ({
-			content: [
-				{
-					type: "text",
-					text: JSON.stringify(await service.workspaces.listScimGroups(params)),
-				},
-			],
-		}),
+		async (params) =>
+			jsonResult(await service.workspaces.listScimGroups(params)),
 	);
 
 	// List workspaces tool
@@ -391,17 +391,10 @@ export function registerWorkspacesTools(
 		WORKSPACES_TOOL_SCHEMAS.listWorkspaces,
 		async (params) => {
 			const workspaces = await service.workspaces.listWorkspaces(params);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							total: workspaces.total,
-							workspaces: workspaces.data.map(formatWorkspaceSummary),
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				total: workspaces.total,
+				workspaces: workspaces.data.map(formatWorkspaceSummary),
+			});
 		},
 	);
 
@@ -414,14 +407,7 @@ export function registerWorkspacesTools(
 			const workspace = await service.workspaces.getWorkspace(
 				params.workspace_id,
 			);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify(formatWorkspaceDetail(workspace)),
-					},
-				],
-			};
+			return jsonResult(formatWorkspaceDetail(workspace));
 		},
 	);
 
@@ -443,17 +429,10 @@ export function registerWorkspacesTools(
 							}
 						: undefined,
 			});
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully created workspace "${params.name}"`,
-							workspace: formatWorkspaceSummary(workspace),
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully created workspace "${params.name}"`,
+				workspace: formatWorkspaceSummary(workspace),
+			});
 		},
 	);
 
@@ -473,17 +452,10 @@ export function registerWorkspacesTools(
 				...rest,
 				...(Object.keys(defaults).length > 0 ? { defaults } : {}),
 			});
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: "Successfully updated workspace",
-							workspace: formatWorkspaceSummary(workspace),
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: "Successfully updated workspace",
+				workspace: formatWorkspaceSummary(workspace),
+			});
 		},
 	);
 
@@ -494,17 +466,10 @@ export function registerWorkspacesTools(
 		WORKSPACES_TOOL_SCHEMAS.deleteWorkspace,
 		async (params) => {
 			await service.workspaces.deleteWorkspace(params.workspace_id);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully deleted workspace ${params.workspace_id}`,
-							success: true,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully deleted workspace ${params.workspace_id}`,
+				success: true,
+			});
 		},
 	);
 
@@ -521,17 +486,10 @@ export function registerWorkspacesTools(
 					role: params.role,
 				},
 			);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully added user to workspace as ${params.role}`,
-							member: formatWorkspaceMember(member),
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully added user to workspace as ${params.role}`,
+				member: formatWorkspaceMember(member),
+			});
 		},
 	);
 
@@ -544,17 +502,10 @@ export function registerWorkspacesTools(
 			const members = await service.workspaces.listWorkspaceMembers(
 				params.workspace_id,
 			);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							total: members.total,
-							members: members.data.map(formatWorkspaceMember),
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				total: members.total,
+				members: members.data.map(formatWorkspaceMember),
+			});
 		},
 	);
 
@@ -568,14 +519,7 @@ export function registerWorkspacesTools(
 				params.workspace_id,
 				params.user_id,
 			);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify(formatWorkspaceMember(member)),
-					},
-				],
-			};
+			return jsonResult(formatWorkspaceMember(member));
 		},
 	);
 
@@ -592,17 +536,10 @@ export function registerWorkspacesTools(
 					role: params.role,
 				},
 			);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully updated member role to ${params.role}`,
-							member: formatWorkspaceMember(member),
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully updated member role to ${params.role}`,
+				member: formatWorkspaceMember(member),
+			});
 		},
 	);
 
@@ -616,17 +553,10 @@ export function registerWorkspacesTools(
 				params.workspace_id,
 				params.user_id,
 			);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully removed user from workspace`,
-							success: true,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully removed user from workspace`,
+				success: true,
+			});
 		},
 	);
 }

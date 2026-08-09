@@ -1,11 +1,13 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type {
+	AnalyticsService,
 	BaseAnalyticsParams,
 	GenericGraphAnalyticsResponse,
 	GroupAnalyticsResponse,
 } from "../services/analytics.service.js";
 import type { PortkeyService } from "../services/index.js";
+import { jsonResult } from "./utils.js";
 
 // ==================== Shared Zod Schemas ====================
 
@@ -228,6 +230,74 @@ function formatGenericGraphAnalytics(
 	return formatGraphAnalytics(analytics.summary, analytics.data_points);
 }
 
+/*
+ * Generic graph analytics tools all share an identical body: take
+ * baseAnalyticsSchema params, normalize them, call one AnalyticsService
+ * method, and return the formatted generic graph shape. Table-driving them
+ * keeps the per-tool name/description/method mapping explicit while
+ * eliminating the duplicated registration boilerplate.
+ */
+const GENERIC_GRAPH_ANALYTICS_TOOLS: ReadonlyArray<{
+	name: string;
+	description: string;
+	method: (
+		analytics: AnalyticsService,
+		params: BaseAnalyticsParams,
+	) => Promise<GenericGraphAnalyticsResponse>;
+}> = [
+	{
+		name: "get_error_stacks_analytics",
+		description:
+			"Get stacked error-series data grouped by HTTP status code over time, with summary and per-code series. Use this to see which error classes dominate; use get_error_status_codes_analytics for distinct-code distribution instead.",
+		method: (analytics, params) => analytics.getErrorStacksAnalytics(params),
+	},
+	{
+		name: "get_error_status_codes_analytics",
+		description:
+			"Get HTTP error-code distribution time-series data with summary and per-code series. Use this to see which codes occur most often; use get_error_stacks_analytics for stacked or cumulative breakdowns.",
+		method: (analytics, params) =>
+			analytics.getErrorStatusCodesAnalytics(params),
+	},
+	{
+		name: "get_user_requests_analytics",
+		description:
+			"Get per-user request-count time-series data with counts grouped by user. Use this to find heavy users and traffic concentration; use get_users_analytics for aggregate active and new user trends instead.",
+		method: (analytics, params) => analytics.getUserRequestsAnalytics(params),
+	},
+	{
+		name: "get_rescued_requests_analytics",
+		description:
+			"Get rescued-request time-series data showing requests recovered by retry or fallback handling. Use this only when your configs include resilience features, and use it to measure how often recovery logic saved requests.",
+		method: (analytics, params) =>
+			analytics.getRescuedRequestsAnalytics(params),
+	},
+	{
+		name: "get_feedback_analytics",
+		description:
+			"Get feedback-submission time-series data with summary totals and per-bucket counts. Use this as the top-level feedback trend view; use get_feedback_models_analytics, get_feedback_scores_analytics, or get_feedback_weighted_analytics for breakdowns.",
+		method: (analytics, params) => analytics.getFeedbackAnalytics(params),
+	},
+	{
+		name: "get_feedback_models_analytics",
+		description:
+			"Get feedback time-series data grouped by model, with per-model counts over time. Use this to compare feedback volume and satisfaction across models; use get_feedback_analytics for the overall total instead.",
+		method: (analytics, params) => analytics.getFeedbackModelsAnalytics(params),
+	},
+	{
+		name: "get_feedback_scores_analytics",
+		description:
+			"Get raw feedback-score distribution time-series data with per-score buckets. Use this to understand sentiment mix; use get_feedback_weighted_analytics for calibrated scores with weighting.",
+		method: (analytics, params) => analytics.getFeedbackScoresAnalytics(params),
+	},
+	{
+		name: "get_feedback_weighted_analytics",
+		description:
+			"Get weighted feedback-score time-series data using the weight recorded at feedback creation. Use this for calibrated quality metrics; use get_feedback_scores_analytics for the raw unweighted distribution.",
+		method: (analytics, params) =>
+			analytics.getFeedbackWeightedAnalytics(params),
+	},
+];
+
 function formatGroupedAnalytics(
 	analytics: GroupAnalyticsResponse,
 	groupLabel: string,
@@ -362,22 +432,15 @@ export function registerAnalyticsTools(
 				total_cost: point.total,
 				average_cost: point.avg,
 			}));
-			return {
-				content: [
+			return jsonResult(
+				formatGraphAnalytics(
 					{
-						type: "text",
-						text: JSON.stringify(
-							formatGraphAnalytics(
-								{
-									total_cost: analytics.summary.total,
-									average_cost_per_request: analytics.summary.avg,
-								},
-								dataPoints,
-							),
-						),
+						total_cost: analytics.summary.total,
+						average_cost_per_request: analytics.summary.avg,
 					},
-				],
-			};
+					dataPoints,
+				),
+			);
 		},
 	);
 
@@ -397,23 +460,16 @@ export function registerAnalyticsTools(
 				success: point.success,
 				failed: point.failed,
 			}));
-			return {
-				content: [
+			return jsonResult(
+				formatGraphAnalytics(
 					{
-						type: "text",
-						text: JSON.stringify(
-							formatGraphAnalytics(
-								{
-									total_requests: analytics.summary.total,
-									successful_requests: analytics.summary.success,
-									failed_requests: analytics.summary.failed,
-								},
-								dataPoints,
-							),
-						),
+						total_requests: analytics.summary.total,
+						successful_requests: analytics.summary.success,
+						failed_requests: analytics.summary.failed,
 					},
-				],
-			};
+					dataPoints,
+				),
+			);
 		},
 	);
 
@@ -431,23 +487,16 @@ export function registerAnalyticsTools(
 				prompt: point.prompt,
 				completion: point.completion,
 			}));
-			return {
-				content: [
+			return jsonResult(
+				formatGraphAnalytics(
 					{
-						type: "text",
-						text: JSON.stringify(
-							formatGraphAnalytics(
-								{
-									total_tokens: analytics.summary.total,
-									prompt_tokens: analytics.summary.prompt,
-									completion_tokens: analytics.summary.completion,
-								},
-								dataPoints,
-							),
-						),
+						total_tokens: analytics.summary.total,
+						prompt_tokens: analytics.summary.prompt,
+						completion_tokens: analytics.summary.completion,
 					},
-				],
-			};
+					dataPoints,
+				),
+			);
 		},
 	);
 
@@ -466,24 +515,17 @@ export function registerAnalyticsTools(
 				p90: point.p90,
 				p99: point.p99,
 			}));
-			return {
-				content: [
+			return jsonResult(
+				formatGraphAnalytics(
 					{
-						type: "text",
-						text: JSON.stringify(
-							formatGraphAnalytics(
-								{
-									avg_latency_ms: analytics.summary.avg,
-									p50_latency_ms: analytics.summary.p50,
-									p90_latency_ms: analytics.summary.p90,
-									p99_latency_ms: analytics.summary.p99,
-								},
-								dataPoints,
-							),
-						),
+						avg_latency_ms: analytics.summary.avg,
+						p50_latency_ms: analytics.summary.p50,
+						p90_latency_ms: analytics.summary.p90,
+						p99_latency_ms: analytics.summary.p99,
 					},
-				],
-			};
+					dataPoints,
+				),
+			);
 		},
 	);
 
@@ -499,21 +541,14 @@ export function registerAnalyticsTools(
 				timestamp: point.timestamp,
 				total_errors: point.total,
 			}));
-			return {
-				content: [
+			return jsonResult(
+				formatGraphAnalytics(
 					{
-						type: "text",
-						text: JSON.stringify(
-							formatGraphAnalytics(
-								{
-									total_errors: analytics.summary.total,
-								},
-								dataPoints,
-							),
-						),
+						total_errors: analytics.summary.total,
 					},
-				],
-			};
+					dataPoints,
+				),
+			);
 		},
 	);
 
@@ -529,21 +564,14 @@ export function registerAnalyticsTools(
 				timestamp: point.timestamp,
 				error_rate_percent: point.rate,
 			}));
-			return {
-				content: [
+			return jsonResult(
+				formatGraphAnalytics(
 					{
-						type: "text",
-						text: JSON.stringify(
-							formatGraphAnalytics(
-								{
-									error_rate_percent: analytics.summary.rate,
-								},
-								dataPoints,
-							),
-						),
+						error_rate_percent: analytics.summary.rate,
 					},
-				],
-			};
+					dataPoints,
+				),
+			);
 		},
 	);
 
@@ -562,22 +590,15 @@ export function registerAnalyticsTools(
 				total: point.total,
 				avg: point.avg,
 			}));
-			return {
-				content: [
+			return jsonResult(
+				formatGraphAnalytics(
 					{
-						type: "text",
-						text: JSON.stringify(
-							formatGraphAnalytics(
-								{
-									total_latency: analytics.summary.total,
-									avg_latency: analytics.summary.avg,
-								},
-								dataPoints,
-							),
-						),
+						total_latency: analytics.summary.total,
+						avg_latency: analytics.summary.avg,
 					},
-				],
-			};
+					dataPoints,
+				),
+			);
 		},
 	);
 
@@ -595,23 +616,16 @@ export function registerAnalyticsTools(
 				hits: point.hits,
 				misses: point.misses,
 			}));
-			return {
-				content: [
+			return jsonResult(
+				formatGraphAnalytics(
 					{
-						type: "text",
-						text: JSON.stringify(
-							formatGraphAnalytics(
-								{
-									hit_rate: analytics.summary.rate,
-									total_hits: analytics.summary.total_hits,
-									total_misses: analytics.summary.total_misses,
-								},
-								dataPoints,
-							),
-						),
+						hit_rate: analytics.summary.rate,
+						total_hits: analytics.summary.total_hits,
+						total_misses: analytics.summary.total_misses,
 					},
-				],
-			};
+					dataPoints,
+				),
+			);
 		},
 	);
 
@@ -630,178 +644,34 @@ export function registerAnalyticsTools(
 				active_users: point.active_users,
 				new_users: point.new_users,
 			}));
-			return {
-				content: [
+			return jsonResult(
+				formatGraphAnalytics(
 					{
-						type: "text",
-						text: JSON.stringify(
-							formatGraphAnalytics(
-								{
-									total_active_users: analytics.summary.total_active_users,
-									total_new_users: analytics.summary.total_new_users,
-								},
-								dataPoints,
-							),
-						),
+						total_active_users: analytics.summary.total_active_users,
+						total_new_users: analytics.summary.total_new_users,
 					},
-				],
-			};
+					dataPoints,
+				),
+			);
 		},
 	);
 
 	// ==================== Extended Graph Analytics ====================
 
-	server.tool(
-		"get_error_stacks_analytics",
-		"Get stacked error-series data grouped by HTTP status code over time, with summary and per-code series. Use this to see which error classes dominate; use get_error_status_codes_analytics for distinct-code distribution instead.",
-		baseAnalyticsSchema,
-		async (params) => {
-			const analytics = await service.analytics.getErrorStacksAnalytics(
-				normalizeAnalyticsParams(params),
-			);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify(formatGenericGraphAnalytics(analytics)),
-					},
-				],
-			};
-		},
-	);
-
-	server.tool(
-		"get_error_status_codes_analytics",
-		"Get HTTP error-code distribution time-series data with summary and per-code series. Use this to see which codes occur most often; use get_error_stacks_analytics for stacked or cumulative breakdowns.",
-		baseAnalyticsSchema,
-		async (params) => {
-			const analytics = await service.analytics.getErrorStatusCodesAnalytics(
-				normalizeAnalyticsParams(params),
-			);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify(formatGenericGraphAnalytics(analytics)),
-					},
-				],
-			};
-		},
-	);
-
-	server.tool(
-		"get_user_requests_analytics",
-		"Get per-user request-count time-series data with counts grouped by user. Use this to find heavy users and traffic concentration; use get_users_analytics for aggregate active and new user trends instead.",
-		baseAnalyticsSchema,
-		async (params) => {
-			const analytics = await service.analytics.getUserRequestsAnalytics(
-				normalizeAnalyticsParams(params),
-			);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify(formatGenericGraphAnalytics(analytics)),
-					},
-				],
-			};
-		},
-	);
-
-	server.tool(
-		"get_rescued_requests_analytics",
-		"Get rescued-request time-series data showing requests recovered by retry or fallback handling. Use this only when your configs include resilience features, and use it to measure how often recovery logic saved requests.",
-		baseAnalyticsSchema,
-		async (params) => {
-			const analytics = await service.analytics.getRescuedRequestsAnalytics(
-				normalizeAnalyticsParams(params),
-			);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify(formatGenericGraphAnalytics(analytics)),
-					},
-				],
-			};
-		},
-	);
-
-	server.tool(
-		"get_feedback_analytics",
-		"Get feedback-submission time-series data with summary totals and per-bucket counts. Use this as the top-level feedback trend view; use get_feedback_models_analytics, get_feedback_scores_analytics, or get_feedback_weighted_analytics for breakdowns.",
-		baseAnalyticsSchema,
-		async (params) => {
-			const analytics = await service.analytics.getFeedbackAnalytics(
-				normalizeAnalyticsParams(params),
-			);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify(formatGenericGraphAnalytics(analytics)),
-					},
-				],
-			};
-		},
-	);
-
-	server.tool(
-		"get_feedback_models_analytics",
-		"Get feedback time-series data grouped by model, with per-model counts over time. Use this to compare feedback volume and satisfaction across models; use get_feedback_analytics for the overall total instead.",
-		baseAnalyticsSchema,
-		async (params) => {
-			const analytics = await service.analytics.getFeedbackModelsAnalytics(
-				normalizeAnalyticsParams(params),
-			);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify(formatGenericGraphAnalytics(analytics)),
-					},
-				],
-			};
-		},
-	);
-
-	server.tool(
-		"get_feedback_scores_analytics",
-		"Get raw feedback-score distribution time-series data with per-score buckets. Use this to understand sentiment mix; use get_feedback_weighted_analytics for calibrated scores with weighting.",
-		baseAnalyticsSchema,
-		async (params) => {
-			const analytics = await service.analytics.getFeedbackScoresAnalytics(
-				normalizeAnalyticsParams(params),
-			);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify(formatGenericGraphAnalytics(analytics)),
-					},
-				],
-			};
-		},
-	);
-
-	server.tool(
-		"get_feedback_weighted_analytics",
-		"Get weighted feedback-score time-series data using the weight recorded at feedback creation. Use this for calibrated quality metrics; use get_feedback_scores_analytics for the raw unweighted distribution.",
-		baseAnalyticsSchema,
-		async (params) => {
-			const analytics = await service.analytics.getFeedbackWeightedAnalytics(
-				normalizeAnalyticsParams(params),
-			);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify(formatGenericGraphAnalytics(analytics)),
-					},
-				],
-			};
-		},
-	);
+	for (const tool of GENERIC_GRAPH_ANALYTICS_TOOLS) {
+		server.tool(
+			tool.name,
+			tool.description,
+			baseAnalyticsSchema,
+			async (params) => {
+				const analytics = await tool.method(
+					service.analytics,
+					normalizeAnalyticsParams(params),
+				);
+				return jsonResult(formatGenericGraphAnalytics(analytics));
+			},
+		);
+	}
 
 	// ==================== Analytics Groups (Paginated) ====================
 
@@ -813,14 +683,7 @@ export function registerAnalyticsTools(
 			const analytics = await service.analytics.getAnalyticsGroupUsers(
 				normalizeAnalyticsParams(params),
 			);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify(formatGroupedAnalytics(analytics, "users")),
-					},
-				],
-			};
+			return jsonResult(formatGroupedAnalytics(analytics, "users"));
 		},
 	);
 
@@ -832,14 +695,7 @@ export function registerAnalyticsTools(
 			const analytics = await service.analytics.getAnalyticsGroupModels(
 				normalizeAnalyticsParams(params),
 			);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify(formatGroupedAnalytics(analytics, "models")),
-					},
-				],
-			};
+			return jsonResult(formatGroupedAnalytics(analytics, "models"));
 		},
 	);
 
@@ -853,16 +709,7 @@ export function registerAnalyticsTools(
 				metadata_key,
 				normalizeAnalyticsParams(analyticsParams),
 			);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify(
-							formatGroupedAnalytics(analytics, "metadata_groups"),
-						),
-					},
-				],
-			};
+			return jsonResult(formatGroupedAnalytics(analytics, "metadata_groups"));
 		},
 	);
 }

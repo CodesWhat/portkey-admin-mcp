@@ -1,6 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { PortkeyService } from "../services/index.js";
+import { jsonResult } from "./utils.js";
 
 const AUDIT_TOOL_SCHEMAS = {
 	listAuditLogs: {
@@ -77,34 +78,27 @@ export function registerAuditTools(
 				current_page: params.current_page,
 				page_size: params.page_size,
 			});
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							total: result.total,
-							current_page: result.current_page,
-							page_size: result.page_size,
-							audit_logs: result.data.map((log) => ({
-								id: log.id,
-								action: log.action,
-								actor_id: log.actor_id,
-								actor_email: log.actor_email,
-								actor_name: log.actor_name,
-								resource_type: log.resource_type,
-								resource_id: log.resource_id,
-								resource_name: log.resource_name,
-								workspace_id: log.workspace_id,
-								organisation_id: log.organisation_id,
-								metadata: log.metadata,
-								ip_address: log.ip_address,
-								user_agent: log.user_agent,
-								created_at: log.created_at,
-							})),
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				total: result.total,
+				current_page: result.current_page,
+				page_size: result.page_size,
+				audit_logs: result.data.map((log) => ({
+					id: log.id,
+					action: log.action,
+					actor_id: log.actor_id,
+					actor_email: log.actor_email,
+					actor_name: log.actor_name,
+					resource_type: log.resource_type,
+					resource_id: log.resource_id,
+					resource_name: log.resource_name,
+					workspace_id: log.workspace_id,
+					organisation_id: log.organisation_id,
+					metadata: log.metadata,
+					ip_address: log.ip_address,
+					user_agent: log.user_agent,
+					created_at: log.created_at,
+				})),
+			});
 		},
 	);
 }

@@ -1,4 +1,4 @@
-import { BaseService } from "./base.service.js";
+import { BaseService, isNoContent } from "./base.service.js";
 
 // Types
 export interface Config {
@@ -166,9 +166,10 @@ export class ConfigsService extends BaseService {
 	}
 
 	async deleteConfig(slug: string): Promise<{ success: boolean }> {
-		return this.delete<{ success: boolean }>(
+		const result = await this.delete<{ success: boolean }>(
 			`/configs/${this.encodePathSegment(slug)}`,
 		);
+		return isNoContent(result) ? { success: true } : result;
 	}
 
 	async listConfigVersions(slug: string): Promise<ConfigVersionsResponse> {

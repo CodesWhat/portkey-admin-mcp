@@ -6,7 +6,7 @@ import type {
 	McpServer as PortkeyMcpServer,
 	TestMcpServerResponse,
 } from "../services/mcp-servers.service.js";
-import { formatFullName } from "./utils.js";
+import { formatFullName, jsonResult } from "./utils.js";
 
 const MCP_SERVERS_TOOL_SCHEMAS = {
 	listMcpServers: {
@@ -240,18 +240,11 @@ export function registerMcpServersTools(
 					page_size: params.page_size,
 				},
 			);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							total: result.total,
-							has_more: result.has_more,
-							connections: result.data,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				total: result.total,
+				has_more: result.has_more,
+				connections: result.data,
+			});
 		},
 	);
 
@@ -274,17 +267,10 @@ export function registerMcpServersTools(
 					workspace_id: params.workspace_id,
 				},
 			);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Disconnected MCP server connection for "${params.id}"`,
-							...result,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Disconnected MCP server connection for "${params.id}"`,
+				...result,
+			});
 		},
 	);
 
@@ -294,17 +280,10 @@ export function registerMcpServersTools(
 		MCP_SERVERS_TOOL_SCHEMAS.listMcpServers,
 		async (params) => {
 			const result = await service.mcpServers.listMcpServers(params);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							total: result.total,
-							servers: result.data.map(formatMcpServer),
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				total: result.total,
+				servers: result.data.map(formatMcpServer),
+			});
 		},
 	);
 
@@ -314,18 +293,11 @@ export function registerMcpServersTools(
 		MCP_SERVERS_TOOL_SCHEMAS.createMcpServer,
 		async (params) => {
 			const result = await service.mcpServers.createMcpServer(params);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully created MCP server "${params.name}"`,
-							id: result.id,
-							slug: result.slug,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully created MCP server "${params.name}"`,
+				id: result.id,
+				slug: result.slug,
+			});
 		},
 	);
 
@@ -335,14 +307,7 @@ export function registerMcpServersTools(
 		MCP_SERVERS_TOOL_SCHEMAS.getMcpServer,
 		async (params) => {
 			const mcpServer = await service.mcpServers.getMcpServer(params.id);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify(formatMcpServer(mcpServer)),
-					},
-				],
-			};
+			return jsonResult(formatMcpServer(mcpServer));
 		},
 	);
 
@@ -353,17 +318,10 @@ export function registerMcpServersTools(
 		async (params) => {
 			const { id, ...data } = params;
 			await service.mcpServers.updateMcpServer(id, data);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully updated MCP server "${id}"`,
-							success: true,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully updated MCP server "${id}"`,
+				success: true,
+			});
 		},
 	);
 
@@ -373,17 +331,10 @@ export function registerMcpServersTools(
 		MCP_SERVERS_TOOL_SCHEMAS.deleteMcpServer,
 		async (params) => {
 			await service.mcpServers.deleteMcpServer(params.id);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully deleted MCP server "${params.id}"`,
-							success: true,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully deleted MCP server "${params.id}"`,
+				success: true,
+			});
 		},
 	);
 
@@ -393,14 +344,7 @@ export function registerMcpServersTools(
 		MCP_SERVERS_TOOL_SCHEMAS.testMcpServer,
 		async (params) => {
 			const result = await service.mcpServers.testMcpServer(params.id);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify(formatMcpServerTest(result)),
-					},
-				],
-			};
+			return jsonResult(formatMcpServerTest(result));
 		},
 	);
 
@@ -416,18 +360,11 @@ export function registerMcpServersTools(
 					page_size: params.page_size,
 				},
 			);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							total: result.total,
-							has_more: result.has_more,
-							capabilities: result.data,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				total: result.total,
+				has_more: result.has_more,
+				capabilities: result.data,
+			});
 		},
 	);
 
@@ -439,17 +376,10 @@ export function registerMcpServersTools(
 			await service.mcpServers.updateMcpServerCapabilities(params.id, {
 				capabilities: params.capabilities,
 			});
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully updated capabilities for MCP server "${params.id}"`,
-							success: true,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully updated capabilities for MCP server "${params.id}"`,
+				success: true,
+			});
 		},
 	);
 
@@ -465,19 +395,12 @@ export function registerMcpServersTools(
 					page_size: params.page_size,
 				},
 			);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							default_user_access: result.default_user_access,
-							total: result.total,
-							has_more: result.has_more,
-							users: result.data.map(formatMcpServerUserAccess),
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				default_user_access: result.default_user_access,
+				total: result.total,
+				has_more: result.has_more,
+				users: result.data.map(formatMcpServerUserAccess),
+			});
 		},
 	);
 
@@ -489,17 +412,10 @@ export function registerMcpServersTools(
 			await service.mcpServers.updateMcpServerUserAccess(params.id, {
 				user_access: params.users,
 			});
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully updated user access for MCP server "${params.id}"`,
-							success: true,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully updated user access for MCP server "${params.id}"`,
+				success: true,
+			});
 		},
 	);
 }

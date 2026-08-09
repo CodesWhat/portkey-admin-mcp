@@ -1,4 +1,4 @@
-import { BaseService } from "./base.service.js";
+import { BaseService, isNoContent } from "./base.service.js";
 
 // ===== Types =====
 
@@ -92,8 +92,9 @@ export class LabelsService extends BaseService {
 	}
 
 	async deleteLabel(labelId: string): Promise<DeleteLabelResponse> {
-		return this.delete<DeleteLabelResponse>(
+		const result = await this.delete<DeleteLabelResponse>(
 			`/labels/${this.encodePathSegment(labelId)}`,
 		);
+		return isNoContent(result) ? {} : result;
 	}
 }

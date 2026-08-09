@@ -1,6 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { PortkeyService } from "../services/index.js";
+import { jsonResult } from "./utils.js";
 
 const TRACING_TOOL_SCHEMAS = {
 	createFeedback: {
@@ -64,18 +65,11 @@ export function registerTracingTools(
 				weight: params.weight,
 				metadata: params.metadata,
 			});
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully created feedback for trace "${params.trace_id}"`,
-							status: result.status,
-							feedback_ids: result.feedback_ids,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully created feedback for trace "${params.trace_id}"`,
+				status: result.status,
+				feedback_ids: result.feedback_ids,
+			});
 		},
 	);
 
@@ -90,18 +84,11 @@ export function registerTracingTools(
 				weight: params.weight,
 				metadata: params.metadata,
 			});
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully updated feedback "${params.id}"`,
-							status: result.status,
-							feedback_ids: result.feedback_ids,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully updated feedback "${params.id}"`,
+				status: result.status,
+				feedback_ids: result.feedback_ids,
+			});
 		},
 	);
 }

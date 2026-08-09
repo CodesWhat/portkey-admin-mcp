@@ -1,4 +1,4 @@
-import { BaseService } from "./base.service.js";
+import { BaseService, isNoContent } from "./base.service.js";
 import type {
 	CreatePromptPartialRequest,
 	CreatePromptPartialResponse,
@@ -65,9 +65,10 @@ export class PartialsService extends BaseService {
 	async deletePromptPartial(
 		promptPartialId: string,
 	): Promise<DeletePromptPartialResponse> {
-		return this.delete<DeletePromptPartialResponse>(
+		const result = await this.delete<DeletePromptPartialResponse>(
 			`/prompts/partials/${this.encodePathSegment(promptPartialId)}`,
 		);
+		return isNoContent(result) ? {} : result;
 	}
 
 	async listPartialVersions(

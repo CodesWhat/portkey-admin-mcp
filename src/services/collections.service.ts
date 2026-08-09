@@ -1,4 +1,4 @@
-import { BaseService } from "./base.service.js";
+import { BaseService, isNoContent } from "./base.service.js";
 
 // Types
 export interface Collection {
@@ -78,8 +78,9 @@ export class CollectionsService extends BaseService {
 	}
 
 	async deleteCollection(collectionId: string): Promise<{ success: boolean }> {
-		return this.delete<{ success: boolean }>(
+		const result = await this.delete<{ success: boolean }>(
 			`/collections/${this.encodePathSegment(collectionId)}`,
 		);
+		return isNoContent(result) ? { success: true } : result;
 	}
 }

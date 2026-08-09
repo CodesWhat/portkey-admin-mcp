@@ -128,7 +128,7 @@ For each tool on the checklist:
 4. **Rewrite** using the template. Keep ≤ 3 sentences.
 5. **Sanity-check against the 6 dimensions** (self-grade — does it name siblings? disclose side effects? etc.).
 6. **Grep for docs/tests** referencing the tool's description — `README.md`, `ENDPOINTS.md`, `scripts/verify-readme-tools.mjs` generated content, snapshot tests — update if present.
-7. **Tick the checkbox below**, commit with `📝 docs(tools): …`.
+7. **Tick the checkbox below**, commit with `docs(tools): …`.
 8. **After each batch**, run `npm run build` + test suite to confirm nothing references the old text.
 
 ---

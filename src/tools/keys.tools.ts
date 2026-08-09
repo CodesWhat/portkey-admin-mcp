@@ -2,6 +2,15 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { buildRateLimitsRpm, buildUsageLimits } from "../lib/limits.js";
 import type { PortkeyService } from "../services/index.js";
+import type {
+	ApiKey,
+	ApiKeyRateLimit,
+	ApiKeyUsageLimits,
+	VirtualKey,
+	VirtualKeyRateLimit,
+	VirtualKeyUsageLimits,
+} from "../services/keys.service.js";
+import { jsonResult } from "./utils.js";
 
 const KEYS_TOOL_SCHEMAS = {
 	listVirtualKeys: {
@@ -256,6 +265,147 @@ const createApiKeySchema = z
 		}
 	});
 
+function formatKeyUsageLimits(
+	limits: VirtualKeyUsageLimits | ApiKeyUsageLimits | null,
+): Pick<
+	VirtualKeyUsageLimits | ApiKeyUsageLimits,
+	"credit_limit" | "alert_threshold" | "periodic_reset"
+> | null {
+	return limits
+		? {
+				credit_limit: limits.credit_limit,
+				alert_threshold: limits.alert_threshold,
+				periodic_reset: limits.periodic_reset,
+			}
+		: null;
+}
+
+function formatKeyRateLimits(
+	limits: (VirtualKeyRateLimit | ApiKeyRateLimit)[] | null | undefined,
+):
+	| Pick<VirtualKeyRateLimit | ApiKeyRateLimit, "type" | "unit" | "value">[]
+	| null {
+	return (
+		limits?.map((limit) => ({
+			type: limit.type,
+			unit: limit.unit,
+			value: limit.value,
+		})) ?? null
+	);
+}
+
+function formatVirtualKey(key: VirtualKey): {
+	name: string;
+	slug: string;
+	status: VirtualKey["status"];
+	note: string | null;
+	usage_limits: ReturnType<typeof formatKeyUsageLimits>;
+	rate_limits: ReturnType<typeof formatKeyRateLimits>;
+	reset_usage: number | null;
+	created_at: string;
+	model_config: Record<string, unknown>;
+} {
+	return {
+		name: key.name,
+		slug: key.slug,
+		status: key.status,
+		note: key.note,
+		usage_limits: formatKeyUsageLimits(key.usage_limits),
+		rate_limits: formatKeyRateLimits(key.rate_limits),
+		reset_usage: key.reset_usage,
+		created_at: key.created_at,
+		model_config: key.model_config,
+	};
+}
+
+/**
+ * list_api_keys omits reset_usage to keep list payloads lean; get_api_key
+ * surfaces it between expires_at and created_at. Both share the same
+ * usage_limits/rate_limits mapping via formatKeyUsageLimits/formatKeyRateLimits
+ * but are kept as separate literals so each preserves its own JSON field order.
+ */
+function formatApiKeySummary(apiKey: ApiKey): {
+	id: string;
+	name: string;
+	description?: string;
+	type: ApiKey["type"];
+	status: ApiKey["status"];
+	organisation_id: string;
+	workspace_id?: string;
+	user_id?: string;
+	scopes: string[];
+	usage_limits: ReturnType<typeof formatKeyUsageLimits>;
+	rate_limits: ReturnType<typeof formatKeyRateLimits>;
+	defaults: ApiKey["defaults"];
+	alert_emails: string[];
+	expires_at: string | null;
+	created_at: string;
+	last_updated_at: string;
+	creation_mode: ApiKey["creation_mode"];
+} {
+	return {
+		id: apiKey.id,
+		name: apiKey.name,
+		description: apiKey.description,
+		type: apiKey.type,
+		status: apiKey.status,
+		organisation_id: apiKey.organisation_id,
+		workspace_id: apiKey.workspace_id,
+		user_id: apiKey.user_id,
+		scopes: apiKey.scopes,
+		usage_limits: formatKeyUsageLimits(apiKey.usage_limits),
+		rate_limits: formatKeyRateLimits(apiKey.rate_limits),
+		defaults: apiKey.defaults,
+		alert_emails: apiKey.alert_emails,
+		expires_at: apiKey.expires_at,
+		created_at: apiKey.created_at,
+		last_updated_at: apiKey.last_updated_at,
+		creation_mode: apiKey.creation_mode,
+	};
+}
+
+function formatApiKey(apiKey: ApiKey): {
+	id: string;
+	name: string;
+	description?: string;
+	type: ApiKey["type"];
+	status: ApiKey["status"];
+	organisation_id: string;
+	workspace_id?: string;
+	user_id?: string;
+	scopes: string[];
+	usage_limits: ReturnType<typeof formatKeyUsageLimits>;
+	rate_limits: ReturnType<typeof formatKeyRateLimits>;
+	defaults: ApiKey["defaults"];
+	alert_emails: string[];
+	expires_at: string | null;
+	reset_usage: number | null;
+	created_at: string;
+	last_updated_at: string;
+	creation_mode: ApiKey["creation_mode"];
+} {
+	return {
+		id: apiKey.id,
+		name: apiKey.name,
+		description: apiKey.description,
+		type: apiKey.type,
+		status: apiKey.status,
+		organisation_id: apiKey.organisation_id,
+		workspace_id: apiKey.workspace_id,
+		user_id: apiKey.user_id,
+		scopes: apiKey.scopes,
+		usage_limits: formatKeyUsageLimits(apiKey.usage_limits),
+		rate_limits: formatKeyRateLimits(apiKey.rate_limits),
+		defaults: apiKey.defaults,
+		alert_emails: apiKey.alert_emails,
+		expires_at: apiKey.expires_at,
+		reset_usage: apiKey.reset_usage,
+		created_at: apiKey.created_at,
+		last_updated_at: apiKey.last_updated_at,
+		creation_mode: apiKey.creation_mode,
+	};
+}
+
 export function registerKeysTools(
 	server: McpServer,
 	service: PortkeyService,
@@ -270,38 +420,10 @@ export function registerKeysTools(
 				current_page: params.current_page,
 				page_size: params.page_size,
 			});
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							total: virtualKeys.total,
-							virtual_keys: virtualKeys.data.map((key) => ({
-								name: key.name,
-								slug: key.slug,
-								status: key.status,
-								note: key.note,
-								usage_limits: key.usage_limits
-									? {
-											credit_limit: key.usage_limits.credit_limit,
-											alert_threshold: key.usage_limits.alert_threshold,
-											periodic_reset: key.usage_limits.periodic_reset,
-										}
-									: null,
-								rate_limits:
-									key.rate_limits?.map((limit) => ({
-										type: limit.type,
-										unit: limit.unit,
-										value: limit.value,
-									})) ?? null,
-								reset_usage: key.reset_usage,
-								created_at: key.created_at,
-								model_config: key.model_config,
-							})),
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				total: virtualKeys.total,
+				virtual_keys: virtualKeys.data.map(formatVirtualKey),
+			});
 		},
 	);
 
@@ -329,18 +451,11 @@ export function registerKeysTools(
 
 			// Handle both response formats: { data: { slug } } or { slug }
 			const slug = result.data?.slug ?? (result as { slug?: string }).slug;
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully created virtual key "${params.name}"`,
-							success: result.success,
-							slug,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully created virtual key "${params.name}"`,
+				success: result.success,
+				slug,
+			});
 		},
 	);
 
@@ -351,35 +466,7 @@ export function registerKeysTools(
 		KEYS_TOOL_SCHEMAS.getVirtualKey,
 		async (params) => {
 			const virtualKey = await service.keys.getVirtualKey(params.slug);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							name: virtualKey.name,
-							slug: virtualKey.slug,
-							status: virtualKey.status,
-							note: virtualKey.note,
-							usage_limits: virtualKey.usage_limits
-								? {
-										credit_limit: virtualKey.usage_limits.credit_limit,
-										alert_threshold: virtualKey.usage_limits.alert_threshold,
-										periodic_reset: virtualKey.usage_limits.periodic_reset,
-									}
-								: null,
-							rate_limits:
-								virtualKey.rate_limits?.map((limit) => ({
-									type: limit.type,
-									unit: limit.unit,
-									value: limit.value,
-								})) ?? null,
-							reset_usage: virtualKey.reset_usage,
-							created_at: virtualKey.created_at,
-							model_config: virtualKey.model_config,
-						}),
-					},
-				],
-			};
+			return jsonResult(formatVirtualKey(virtualKey));
 		},
 	);
 
@@ -400,19 +487,12 @@ export function registerKeysTools(
 				rate_limits: buildRateLimitsRpm(params.rate_limit_rpm),
 			});
 
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully updated virtual key "${params.slug}"`,
-							name: result.name,
-							slug: result.slug,
-							status: result.status,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully updated virtual key "${params.slug}"`,
+				name: result.name,
+				slug: result.slug,
+				status: result.status,
+			});
 		},
 	);
 
@@ -423,17 +503,10 @@ export function registerKeysTools(
 		KEYS_TOOL_SCHEMAS.deleteVirtualKey,
 		async (params) => {
 			const result = await service.keys.deleteVirtualKey(params.slug);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully deleted virtual key "${params.slug}"`,
-							success: result.success,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully deleted virtual key "${params.slug}"`,
+				success: result.success,
+			});
 		},
 	);
 
@@ -471,18 +544,11 @@ export function registerKeysTools(
 				},
 			);
 
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully created API key "${validated.name}"`,
-							id: result.id,
-							key: result.key,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully created API key "${validated.name}"`,
+				id: result.id,
+				key: result.key,
+			});
 		},
 	);
 
@@ -498,46 +564,10 @@ export function registerKeysTools(
 				workspace_id: params.workspace_id,
 			});
 
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							total: apiKeys.total,
-							api_keys: apiKeys.data.map((key) => ({
-								id: key.id,
-								name: key.name,
-								description: key.description,
-								type: key.type,
-								status: key.status,
-								organisation_id: key.organisation_id,
-								workspace_id: key.workspace_id,
-								user_id: key.user_id,
-								scopes: key.scopes,
-								usage_limits: key.usage_limits
-									? {
-											credit_limit: key.usage_limits.credit_limit,
-											alert_threshold: key.usage_limits.alert_threshold,
-											periodic_reset: key.usage_limits.periodic_reset,
-										}
-									: null,
-								rate_limits:
-									key.rate_limits?.map((limit) => ({
-										type: limit.type,
-										unit: limit.unit,
-										value: limit.value,
-									})) ?? null,
-								defaults: key.defaults,
-								alert_emails: key.alert_emails,
-								expires_at: key.expires_at,
-								created_at: key.created_at,
-								last_updated_at: key.last_updated_at,
-								creation_mode: key.creation_mode,
-							})),
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				total: apiKeys.total,
+				api_keys: apiKeys.data.map(formatApiKeySummary),
+			});
 		},
 	);
 
@@ -548,44 +578,7 @@ export function registerKeysTools(
 		KEYS_TOOL_SCHEMAS.getApiKey,
 		async (params) => {
 			const apiKey = await service.keys.getApiKey(params.id);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							id: apiKey.id,
-							name: apiKey.name,
-							description: apiKey.description,
-							type: apiKey.type,
-							status: apiKey.status,
-							organisation_id: apiKey.organisation_id,
-							workspace_id: apiKey.workspace_id,
-							user_id: apiKey.user_id,
-							scopes: apiKey.scopes,
-							usage_limits: apiKey.usage_limits
-								? {
-										credit_limit: apiKey.usage_limits.credit_limit,
-										alert_threshold: apiKey.usage_limits.alert_threshold,
-										periodic_reset: apiKey.usage_limits.periodic_reset,
-									}
-								: null,
-							rate_limits:
-								apiKey.rate_limits?.map((limit) => ({
-									type: limit.type,
-									unit: limit.unit,
-									value: limit.value,
-								})) ?? null,
-							defaults: apiKey.defaults,
-							alert_emails: apiKey.alert_emails,
-							expires_at: apiKey.expires_at,
-							reset_usage: apiKey.reset_usage,
-							created_at: apiKey.created_at,
-							last_updated_at: apiKey.last_updated_at,
-							creation_mode: apiKey.creation_mode,
-						}),
-					},
-				],
-			};
+			return jsonResult(formatApiKey(apiKey));
 		},
 	);
 
@@ -616,17 +609,10 @@ export function registerKeysTools(
 				expires_at: params.expires_at,
 			});
 
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully updated API key "${params.id}"`,
-							success: result.success,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully updated API key "${params.id}"`,
+				success: result.success,
+			});
 		},
 	);
 
@@ -637,17 +623,10 @@ export function registerKeysTools(
 		KEYS_TOOL_SCHEMAS.deleteApiKey,
 		async (params) => {
 			const result = await service.keys.deleteApiKey(params.id);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully deleted API key "${params.id}"`,
-							success: result.success,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully deleted API key "${params.id}"`,
+				success: result.success,
+			});
 		},
 	);
 
@@ -666,21 +645,14 @@ export function registerKeysTools(
 			const result = await service.keys.rotateApiKey(params.id, {
 				key_transition_period_ms: params.key_transition_period_ms,
 			});
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully rotated API key "${result.id}"`,
-							warning:
-								"Copy this new key now; it is returned only once. Replace callers before key_transition_expires_at and never log either key.",
-							id: result.id,
-							key: result.key,
-							key_transition_expires_at: result.key_transition_expires_at,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully rotated API key "${result.id}"`,
+				warning:
+					"Copy this new key now; it is returned only once. Replace callers before key_transition_expires_at and never log either key.",
+				id: result.id,
+				key: result.key,
+				key_transition_expires_at: result.key_transition_expires_at,
+			});
 		},
 	);
 }

@@ -1,6 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { PortkeyService } from "../services/index.js";
+import { jsonResult } from "./utils.js";
 
 // Zod schemas for guardrail check parameters
 const guardrailCheckSchema = z.object({
@@ -168,16 +169,7 @@ export function registerGuardrailsTools(
 		"Get the organisation-wide input and output guardrails that workspaces inherit by default. Use this before update_organisation_defaults or when auditing baseline enforcement; it does not include per-workspace exclusions, which are available from the directional exclusion list tools. Requires an organisation service API key with organisation_settings.read scope.",
 		GUARDRAILS_TOOL_SCHEMAS.getOrganisationDefaults,
 		GET_ORGANISATION_DEFAULTS_ANNOTATIONS,
-		async () => ({
-			content: [
-				{
-					type: "text",
-					text: JSON.stringify(
-						await service.guardrails.getOrganisationDefaults(),
-					),
-				},
-			],
-		}),
+		async () => jsonResult(await service.guardrails.getOrganisationDefaults()),
 	);
 
 	server.tool(
@@ -191,16 +183,8 @@ export function registerGuardrailsTools(
 			idempotentHint: true,
 			openWorldHint: true,
 		},
-		async (params) => ({
-			content: [
-				{
-					type: "text",
-					text: JSON.stringify(
-						await service.guardrails.updateOrganisationDefaults(params),
-					),
-				},
-			],
-		}),
+		async (params) =>
+			jsonResult(await service.guardrails.updateOrganisationDefaults(params)),
 	);
 
 	server.tool(
@@ -214,16 +198,10 @@ export function registerGuardrailsTools(
 			idempotentHint: true,
 			openWorldHint: true,
 		},
-		async (params) => ({
-			content: [
-				{
-					type: "text",
-					text: JSON.stringify(
-						await service.guardrails.listWorkspaceExclusions("input", params),
-					),
-				},
-			],
-		}),
+		async (params) =>
+			jsonResult(
+				await service.guardrails.listWorkspaceExclusions("input", params),
+			),
 	);
 
 	server.tool(
@@ -237,16 +215,10 @@ export function registerGuardrailsTools(
 			idempotentHint: true,
 			openWorldHint: true,
 		},
-		async (params) => ({
-			content: [
-				{
-					type: "text",
-					text: JSON.stringify(
-						await service.guardrails.updateWorkspaceExclusions("input", params),
-					),
-				},
-			],
-		}),
+		async (params) =>
+			jsonResult(
+				await service.guardrails.updateWorkspaceExclusions("input", params),
+			),
 	);
 
 	server.tool(
@@ -260,16 +232,10 @@ export function registerGuardrailsTools(
 			idempotentHint: true,
 			openWorldHint: true,
 		},
-		async (params) => ({
-			content: [
-				{
-					type: "text",
-					text: JSON.stringify(
-						await service.guardrails.listWorkspaceExclusions("output", params),
-					),
-				},
-			],
-		}),
+		async (params) =>
+			jsonResult(
+				await service.guardrails.listWorkspaceExclusions("output", params),
+			),
 	);
 
 	server.tool(
@@ -283,19 +249,10 @@ export function registerGuardrailsTools(
 			idempotentHint: true,
 			openWorldHint: true,
 		},
-		async (params) => ({
-			content: [
-				{
-					type: "text",
-					text: JSON.stringify(
-						await service.guardrails.updateWorkspaceExclusions(
-							"output",
-							params,
-						),
-					),
-				},
-			],
-		}),
+		async (params) =>
+			jsonResult(
+				await service.guardrails.updateWorkspaceExclusions("output", params),
+			),
 	);
 
 	// List guardrails tool
@@ -305,28 +262,21 @@ export function registerGuardrailsTools(
 		GUARDRAILS_TOOL_SCHEMAS.listGuardrails,
 		async (params) => {
 			const result = await service.guardrails.listGuardrails(params);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							total: result.total,
-							guardrails: result.data.map((guardrail) => ({
-								id: guardrail.id,
-								name: guardrail.name,
-								slug: guardrail.slug,
-								status: guardrail.status,
-								workspace_id: guardrail.workspace_id,
-								organisation_id: guardrail.organisation_id,
-								created_at: guardrail.created_at,
-								last_updated_at: guardrail.last_updated_at,
-								owner_id: guardrail.owner_id,
-								updated_by: guardrail.updated_by,
-							})),
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				total: result.total,
+				guardrails: result.data.map((guardrail) => ({
+					id: guardrail.id,
+					name: guardrail.name,
+					slug: guardrail.slug,
+					status: guardrail.status,
+					workspace_id: guardrail.workspace_id,
+					organisation_id: guardrail.organisation_id,
+					created_at: guardrail.created_at,
+					last_updated_at: guardrail.last_updated_at,
+					owner_id: guardrail.owner_id,
+					updated_by: guardrail.updated_by,
+				})),
+			});
 		},
 	);
 
@@ -339,27 +289,20 @@ export function registerGuardrailsTools(
 			const guardrail = await service.guardrails.getGuardrail(
 				params.guardrail_id,
 			);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							id: guardrail.id,
-							name: guardrail.name,
-							slug: guardrail.slug,
-							status: guardrail.status,
-							workspace_id: guardrail.workspace_id,
-							organisation_id: guardrail.organisation_id,
-							checks: guardrail.checks,
-							actions: guardrail.actions,
-							created_at: guardrail.created_at,
-							last_updated_at: guardrail.last_updated_at,
-							owner_id: guardrail.owner_id,
-							updated_by: guardrail.updated_by,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				id: guardrail.id,
+				name: guardrail.name,
+				slug: guardrail.slug,
+				status: guardrail.status,
+				workspace_id: guardrail.workspace_id,
+				organisation_id: guardrail.organisation_id,
+				checks: guardrail.checks,
+				actions: guardrail.actions,
+				created_at: guardrail.created_at,
+				last_updated_at: guardrail.last_updated_at,
+				owner_id: guardrail.owner_id,
+				updated_by: guardrail.updated_by,
+			});
 		},
 	);
 
@@ -376,19 +319,12 @@ export function registerGuardrailsTools(
 				workspace_id: params.workspace_id,
 				organisation_id: params.organisation_id,
 			});
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully created guardrail "${params.name}"`,
-							id: result.id,
-							slug: result.slug,
-							version_id: result.version_id,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully created guardrail "${params.name}"`,
+				id: result.id,
+				slug: result.slug,
+				version_id: result.version_id,
+			});
 		},
 	);
 
@@ -418,19 +354,12 @@ export function registerGuardrailsTools(
 				params.guardrail_id,
 				updateData,
 			);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully updated guardrail "${params.guardrail_id}"`,
-							id: result.id,
-							slug: result.slug,
-							version_id: result.version_id,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully updated guardrail "${params.guardrail_id}"`,
+				id: result.id,
+				slug: result.slug,
+				version_id: result.version_id,
+			});
 		},
 	);
 
@@ -443,17 +372,10 @@ export function registerGuardrailsTools(
 			const result = await service.guardrails.deleteGuardrail(
 				params.guardrail_id,
 			);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully deleted guardrail "${params.guardrail_id}"`,
-							success: result.success,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully deleted guardrail "${params.guardrail_id}"`,
+				success: result.success,
+			});
 		},
 	);
 }

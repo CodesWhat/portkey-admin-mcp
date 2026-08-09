@@ -6,7 +6,7 @@ import type {
 	PortkeyUser,
 	UserInvite,
 } from "../services/users.service.js";
-import { formatFullName } from "./utils.js";
+import { formatFullName, jsonResult } from "./utils.js";
 
 const USERS_TOOL_SCHEMAS = {
 	listAllUsers: {
@@ -222,17 +222,10 @@ export function registerUsersTools(
 				current_page: params.current_page,
 				page_size: params.page_size,
 			});
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							total: users.total,
-							users: users.data.map(formatUser),
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				total: users.total,
+				users: users.data.map(formatUser),
+			});
 		},
 	);
 
@@ -243,18 +236,11 @@ export function registerUsersTools(
 		USERS_TOOL_SCHEMAS.inviteUser,
 		async (params) => {
 			const result = await service.users.inviteUser(params);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully invited ${params.email} as ${params.role}`,
-							invite_id: result.id,
-							invite_link: result.invite_link,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully invited ${params.email} as ${params.role}`,
+				invite_id: result.id,
+				invite_link: result.invite_link,
+			});
 		},
 	);
 
@@ -265,17 +251,10 @@ export function registerUsersTools(
 		USERS_TOOL_SCHEMAS.getUserStats,
 		async (params) => {
 			const stats = await service.users.getUserGroupedData(params);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							total_users: stats.total,
-							users: stats.data.map(formatUserAnalyticsGroup),
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				total_users: stats.total,
+				users: stats.data.map(formatUserAnalyticsGroup),
+			});
 		},
 	);
 
@@ -286,14 +265,7 @@ export function registerUsersTools(
 		USERS_TOOL_SCHEMAS.getUser,
 		async (params) => {
 			const user = await service.users.getUser(params.user_id);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify(formatUser(user)),
-					},
-				],
-			};
+			return jsonResult(formatUser(user));
 		},
 	);
 
@@ -305,17 +277,10 @@ export function registerUsersTools(
 		async (params) => {
 			const { user_id, ...updateData } = params;
 			const user = await service.users.updateUser(user_id, updateData);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: "Successfully updated user",
-							user: formatUser(user),
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: "Successfully updated user",
+				user: formatUser(user),
+			});
 		},
 	);
 
@@ -326,17 +291,10 @@ export function registerUsersTools(
 		USERS_TOOL_SCHEMAS.deleteUser,
 		async (params) => {
 			await service.users.deleteUser(params.user_id);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully deleted user ${params.user_id}`,
-							success: true,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully deleted user ${params.user_id}`,
+				success: true,
+			});
 		},
 	);
 
@@ -350,17 +308,10 @@ export function registerUsersTools(
 				current_page: params.current_page,
 				page_size: params.page_size,
 			});
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							total: invites.total,
-							invites: invites.data.map(formatUserInvite),
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				total: invites.total,
+				invites: invites.data.map(formatUserInvite),
+			});
 		},
 	);
 
@@ -371,14 +322,7 @@ export function registerUsersTools(
 		USERS_TOOL_SCHEMAS.getUserInvite,
 		async (params) => {
 			const invite = await service.users.getUserInvite(params.invite_id);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify(formatUserInvite(invite)),
-					},
-				],
-			};
+			return jsonResult(formatUserInvite(invite));
 		},
 	);
 
@@ -389,17 +333,10 @@ export function registerUsersTools(
 		USERS_TOOL_SCHEMAS.deleteUserInvite,
 		async (params) => {
 			await service.users.deleteUserInvite(params.invite_id);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully deleted invite ${params.invite_id}`,
-							success: true,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully deleted invite ${params.invite_id}`,
+				success: true,
+			});
 		},
 	);
 
@@ -410,17 +347,10 @@ export function registerUsersTools(
 		USERS_TOOL_SCHEMAS.resendUserInvite,
 		async (params) => {
 			await service.users.resendUserInvite(params.invite_id);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully resent invite ${params.invite_id}`,
-							success: true,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully resent invite ${params.invite_id}`,
+				success: true,
+			});
 		},
 	);
 }

@@ -28,7 +28,11 @@ import { Logger } from "../src/lib/logger.js";
 import { ToolChoiceSchema, toPromptToolChoice } from "../src/lib/schemas.js";
 import { SessionStore } from "../src/lib/session-store.js";
 import { AnalyticsService } from "../src/services/analytics.service.js";
-import { BaseService } from "../src/services/base.service.js";
+import {
+	BaseService,
+	isNoContent,
+	type NoContent,
+} from "../src/services/base.service.js";
 import { ConfigsService } from "../src/services/configs.service.js";
 import { PortkeyService } from "../src/services/index.js";
 import { IntegrationsService } from "../src/services/integrations.service.js";
@@ -92,8 +96,16 @@ class TestBaseServiceClient extends BaseService {
 		return this.put<T>(path, body);
 	}
 
-	requestDelete<T>(path: string): Promise<T> {
+	requestDelete<T>(path: string): Promise<T | NoContent> {
 		return this.delete<T>(path);
+	}
+
+	requestGetPublic<T>(path: string, params?: object): Promise<T> {
+		return this.getPublic<T>(path, params);
+	}
+
+	encodeSegment(value: string): string {
+		return this.encodePathSegment(value);
 	}
 }
 
@@ -298,7 +310,10 @@ describe("BaseService HTTP execution", () => {
 				}),
 				{ method: "PUT" },
 			);
-			assert.deepEqual(await service.requestDelete("/resource/123"), {});
+			assert.ok(
+				isNoContent(await service.requestDelete("/resource/123")),
+				"expected a 204 response to resolve to the NoContent sentinel",
+			);
 
 			assert.deepEqual(
 				fetchCalls.map(({ url, options }) => ({
@@ -405,6 +420,212 @@ describe("BaseService HTTP execution", () => {
 			Logger.debug = originalLoggerDebug;
 			Logger.info = originalLoggerInfo;
 			Logger.error = originalLoggerError;
+			if (originalApiKey === undefined) {
+				delete process.env.PORTKEY_API_KEY;
+			} else {
+				process.env.PORTKEY_API_KEY = originalApiKey;
+			}
+			if (originalBaseUrl === undefined) {
+				delete process.env.PORTKEY_BASE_URL;
+			} else {
+				process.env.PORTKEY_BASE_URL = originalBaseUrl;
+			}
+		}
+	});
+});
+
+// ---------------------------------------------------------------------------
+// BaseService.executeRequest non-ok branch
+// ---------------------------------------------------------------------------
+
+describe("BaseService.executeRequest non-ok branch", () => {
+	it("throws a FetchError parsed from a 4xx JSON error body and logs the failure", async () => {
+		const originalFetch = globalThis.fetch;
+		const originalApiKey = process.env.PORTKEY_API_KEY;
+		const originalBaseUrl = process.env.PORTKEY_BASE_URL;
+		const originalLoggerError = Logger.error;
+		const loggedErrors: Array<{ message: string; extra?: object }> = [];
+
+		globalThis.fetch = (async () => {
+			return {
+				ok: false,
+				status: 403,
+				json: () =>
+					Promise.resolve({
+						status_code: 403,
+						success: false,
+						error: {
+							message: "Forbidden: insufficient permissions",
+							slug: "forbidden",
+							code: "FORBIDDEN",
+						},
+					}),
+			} as Response;
+		}) as typeof globalThis.fetch;
+
+		Logger.error = ((message: string, extra?: object) => {
+			loggedErrors.push({ message, extra });
+		}) as typeof Logger.error;
+
+		process.env.PORTKEY_API_KEY = "test-dummy-key";
+		process.env.PORTKEY_BASE_URL = "https://example.portkey.test/v1";
+
+		try {
+			const service = new TestBaseServiceClient();
+
+			let thrown: unknown;
+			try {
+				await service.requestGet("/resource/1");
+			} catch (error) {
+				thrown = error;
+			}
+
+			assert.ok(
+				thrown instanceof FetchError,
+				"expected the non-ok response to throw a FetchError",
+			);
+			const fetchError = thrown as FetchError;
+			assert.equal(fetchError.status, 403);
+			assert.equal(fetchError.message, "Forbidden: insufficient permissions");
+
+			assert.equal(loggedErrors.length, 1);
+			assert.equal(loggedErrors[0]?.message, "HTTP request failed");
+			assert.equal(
+				(loggedErrors[0]?.extra as { statusCode?: number } | undefined)
+					?.statusCode,
+				403,
+			);
+		} finally {
+			globalThis.fetch = originalFetch;
+			Logger.error = originalLoggerError;
+			if (originalApiKey === undefined) {
+				delete process.env.PORTKEY_API_KEY;
+			} else {
+				process.env.PORTKEY_API_KEY = originalApiKey;
+			}
+			if (originalBaseUrl === undefined) {
+				delete process.env.PORTKEY_BASE_URL;
+			} else {
+				process.env.PORTKEY_BASE_URL = originalBaseUrl;
+			}
+		}
+	});
+
+	it("throws a FetchError with a generic message and logs the failure for a 5xx non-JSON body", async () => {
+		const originalFetch = globalThis.fetch;
+		const originalApiKey = process.env.PORTKEY_API_KEY;
+		const originalBaseUrl = process.env.PORTKEY_BASE_URL;
+		const originalLoggerError = Logger.error;
+		const loggedErrors: Array<{ message: string; extra?: object }> = [];
+
+		globalThis.fetch = (async () => {
+			return {
+				ok: false,
+				status: 502,
+				json: () => Promise.reject(new Error("not json")),
+			} as Response;
+		}) as typeof globalThis.fetch;
+
+		Logger.error = ((message: string, extra?: object) => {
+			loggedErrors.push({ message, extra });
+		}) as typeof Logger.error;
+
+		process.env.PORTKEY_API_KEY = "test-dummy-key";
+		process.env.PORTKEY_BASE_URL = "https://example.portkey.test/v1";
+
+		try {
+			const service = new TestBaseServiceClient();
+
+			let thrown: unknown;
+			try {
+				await service.requestPost("/resource", { name: "x" });
+			} catch (error) {
+				thrown = error;
+			}
+
+			assert.ok(
+				thrown instanceof FetchError,
+				"expected the non-ok response to throw a FetchError",
+			);
+			const fetchError = thrown as FetchError;
+			assert.equal(fetchError.status, 502);
+			assert.equal(fetchError.message, "HTTP error! status: 502");
+
+			assert.equal(loggedErrors.length, 1);
+			assert.equal(loggedErrors[0]?.message, "HTTP request failed");
+			assert.equal(
+				(loggedErrors[0]?.extra as { statusCode?: number } | undefined)
+					?.statusCode,
+				502,
+			);
+		} finally {
+			globalThis.fetch = originalFetch;
+			Logger.error = originalLoggerError;
+			if (originalApiKey === undefined) {
+				delete process.env.PORTKEY_API_KEY;
+			} else {
+				process.env.PORTKEY_API_KEY = originalApiKey;
+			}
+			if (originalBaseUrl === undefined) {
+				delete process.env.PORTKEY_BASE_URL;
+			} else {
+				process.env.PORTKEY_BASE_URL = originalBaseUrl;
+			}
+		}
+	});
+});
+
+// ---------------------------------------------------------------------------
+// BaseService.getPublic
+// ---------------------------------------------------------------------------
+
+describe("BaseService.getPublic", () => {
+	it("requests the unauthenticated public-catalog base URL without the tenant API key header", async () => {
+		const originalFetch = globalThis.fetch;
+		const originalApiKey = process.env.PORTKEY_API_KEY;
+		const originalBaseUrl = process.env.PORTKEY_BASE_URL;
+		const fetchCalls: Array<{ url: string; headers: Record<string, string> }> =
+			[];
+
+		globalThis.fetch = (async (
+			url: string | URL | Request,
+			options?: RequestInit,
+		) => {
+			fetchCalls.push({
+				url: String(url),
+				headers: (options?.headers ?? {}) as Record<string, string>,
+			});
+			return {
+				ok: true,
+				status: 200,
+				json: async () => ({ input_cost_per_unit: 0.000002 }),
+			} as Response;
+		}) as typeof globalThis.fetch;
+
+		process.env.PORTKEY_API_KEY = "test-dummy-key";
+		// Tenant base URL must never leak into the unauthenticated public-catalog request.
+		process.env.PORTKEY_BASE_URL = "https://tenant.portkey.test/v1";
+
+		try {
+			const service = new TestBaseServiceClient();
+
+			const result = await service.requestGetPublic<{
+				input_cost_per_unit: number;
+			}>("/model-configs/pricing/openai/gpt-4");
+
+			assert.deepEqual(result, { input_cost_per_unit: 0.000002 });
+			assert.equal(fetchCalls.length, 1);
+			assert.equal(
+				fetchCalls[0]?.url,
+				"https://api.portkey.ai/model-configs/pricing/openai/gpt-4",
+				"getPublic should target the public-catalog base URL, not the tenant base URL",
+			);
+			assert.ok(
+				!("x-portkey-api-key" in (fetchCalls[0]?.headers ?? {})),
+				"getPublic must never send the tenant x-portkey-api-key header",
+			);
+		} finally {
+			globalThis.fetch = originalFetch;
 			if (originalApiKey === undefined) {
 				delete process.env.PORTKEY_API_KEY;
 			} else {
@@ -1834,6 +2055,164 @@ describe("Service path param encoding", () => {
 				request.path,
 				testCase.expectedPath,
 				`${testCase.description}: path`,
+			);
+		}
+	});
+});
+
+// ---------------------------------------------------------------------------
+// Unicode / control-character / injection edge cases
+// ---------------------------------------------------------------------------
+
+describe("encodePathSegment unicode and control-character handling", () => {
+	it("percent-encodes emoji, non-ASCII, null bytes, RTL overrides, and script-like strings", () => {
+		const service = new TestBaseServiceClient("test-dummy-key");
+		const NUL = String.fromCharCode(0);
+		const RTL_OVERRIDE = String.fromCharCode(0x202e);
+
+		const cases = [
+			{
+				description: "emoji",
+				input: `prompt-${String.fromCodePoint(0x1f680)}`,
+				expected: "prompt-%F0%9F%9A%80",
+			},
+			{
+				description: "non-ASCII CJK characters",
+				input: "配置",
+				expected: "%E9%85%8D%E7%BD%AE",
+			},
+			{
+				description: "embedded null byte",
+				input: `id${NUL}drop`,
+				expected: "id%00drop",
+			},
+			{
+				description: "RTL override character",
+				input: `id${RTL_OVERRIDE}evil`,
+				expected: "id%E2%80%AEevil",
+			},
+			{
+				description: "script-tag-style string",
+				input: "<script>alert(1)</script>",
+				expected: "%3Cscript%3Ealert(1)%3C%2Fscript%3E",
+			},
+		];
+
+		for (const { description, input, expected } of cases) {
+			const encoded = service.encodeSegment(input);
+			assert.equal(encoded, expected, description);
+			assert.notEqual(
+				encoded,
+				input,
+				`${description}: value must be transformed, never passed through raw`,
+			);
+			assert.ok(
+				!encoded.includes("/"),
+				`${description}: encoded segment must never introduce a literal path separator`,
+			);
+		}
+	});
+});
+
+describe("Service path param encoding: unicode and injection-style values", () => {
+	it("percent-encodes emoji, non-ASCII, null bytes, RTL overrides, and script-like ids before building the request path", async () => {
+		const NUL = String.fromCharCode(0);
+		const RTL_OVERRIDE = String.fromCharCode(0x202e);
+
+		const cases = [
+			{
+				description: "emoji in an API key id",
+				id: `key-${String.fromCodePoint(0x1f680)}`,
+				expectedPath: "/api-keys/key-%F0%9F%9A%80",
+			},
+			{
+				description: "non-ASCII CJK characters in an API key id",
+				id: "密钥",
+				expectedPath: "/api-keys/%E5%AF%86%E9%92%A5",
+			},
+			{
+				description: "embedded null byte in an API key id",
+				id: `key${NUL}drop`,
+				expectedPath: "/api-keys/key%00drop",
+			},
+			{
+				description: "RTL override character in an API key id",
+				id: `key${RTL_OVERRIDE}evil`,
+				expectedPath: "/api-keys/key%E2%80%AEevil",
+			},
+			{
+				description: "script-tag-style API key id",
+				id: "<script>alert(1)</script>",
+				expectedPath: "/api-keys/%3Cscript%3Ealert(1)%3C%2Fscript%3E",
+			},
+		] as const;
+
+		for (const { description, id, expectedPath } of cases) {
+			const request = await captureServiceRequest(() =>
+				new KeysService("test-dummy-key").getApiKey(id),
+			);
+			assert.equal(request.method, "GET", description);
+			assert.equal(request.path, expectedPath, description);
+		}
+	});
+});
+
+describe("update_prompt free-text template param: unicode and injection-style values", () => {
+	it("accepts and forwards emoji, non-ASCII, null bytes, RTL overrides, and script-like text without mangling", async () => {
+		const NUL = String.fromCharCode(0);
+		const RTL_OVERRIDE = String.fromCharCode(0x202e);
+
+		const weirdValues = [
+			`Be helpful ${String.fromCodePoint(0x1f680)}`,
+			"请用中文回答",
+			`before${NUL}after`,
+			`safe${RTL_OVERRIDE}text`,
+			"<script>alert(1)</script>",
+		];
+
+		for (const value of weirdValues) {
+			let receivedUpdatePrompt:
+				| { prompt_id: string; body: Record<string, unknown> }
+				| undefined;
+			const callbacks = registerToolCallbacks((server) => {
+				registerPromptsTools(
+					server as never,
+					{
+						prompts: {
+							updatePrompt: async (
+								promptId: string,
+								body: Record<string, unknown>,
+							) => {
+								receivedUpdatePrompt = { prompt_id: promptId, body };
+								return {
+									id: promptId,
+									slug: "support-prompt",
+									prompt_version_id: "version-2",
+									object: "prompt",
+								};
+							},
+						},
+					} as never,
+				);
+			});
+
+			const updatePromptCallback = callbacks.get("update_prompt");
+			assert.ok(updatePromptCallback, "expected update_prompt callback");
+
+			const result = (await updatePromptCallback({
+				prompt_id: "prompt-1",
+				string: value,
+			})) as { isError?: boolean };
+
+			assert.equal(
+				result.isError,
+				undefined,
+				`schema should accept free text: ${JSON.stringify(value)}`,
+			);
+			assert.equal(
+				receivedUpdatePrompt?.body.string,
+				value,
+				`value must reach the service call unmangled: ${JSON.stringify(value)}`,
 			);
 		}
 	});

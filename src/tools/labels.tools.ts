@@ -1,6 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { PortkeyService } from "../services/index.js";
+import { jsonResult } from "./utils.js";
 
 const LABELS_TOOL_SCHEMAS = {
 	createPromptLabel: {
@@ -94,17 +95,10 @@ export function registerLabelsTools(
 				description: params.description,
 				color_code: params.color_code,
 			});
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully created label "${params.name}"`,
-							id: result.id,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully created label "${params.name}"`,
+				id: result.id,
+			});
 		},
 	);
 
@@ -115,26 +109,19 @@ export function registerLabelsTools(
 		LABELS_TOOL_SCHEMAS.listPromptLabels,
 		async (params) => {
 			const result = await service.labels.listLabels(params);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							total: result.total,
-							labels: result.data.map((label) => ({
-								id: label.id,
-								name: label.name,
-								description: label.description,
-								color_code: label.color_code,
-								is_universal: label.is_universal,
-								status: label.status,
-								created_at: label.created_at,
-								last_updated_at: label.last_updated_at,
-							})),
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				total: result.total,
+				labels: result.data.map((label) => ({
+					id: label.id,
+					name: label.name,
+					description: label.description,
+					color_code: label.color_code,
+					is_universal: label.is_universal,
+					status: label.status,
+					created_at: label.created_at,
+					last_updated_at: label.last_updated_at,
+				})),
+			});
 		},
 	);
 
@@ -148,25 +135,18 @@ export function registerLabelsTools(
 				organisation_id: params.organisation_id,
 				workspace_id: params.workspace_id,
 			});
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							id: label.id,
-							name: label.name,
-							description: label.description,
-							color_code: label.color_code,
-							organisation_id: label.organisation_id,
-							workspace_id: label.workspace_id,
-							is_universal: label.is_universal,
-							status: label.status,
-							created_at: label.created_at,
-							last_updated_at: label.last_updated_at,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				id: label.id,
+				name: label.name,
+				description: label.description,
+				color_code: label.color_code,
+				organisation_id: label.organisation_id,
+				workspace_id: label.workspace_id,
+				is_universal: label.is_universal,
+				status: label.status,
+				created_at: label.created_at,
+				last_updated_at: label.last_updated_at,
+			});
 		},
 	);
 
@@ -178,17 +158,10 @@ export function registerLabelsTools(
 		async (params) => {
 			const { label_id, ...updateData } = params;
 			await service.labels.updateLabel(label_id, updateData);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully updated label "${label_id}"`,
-							success: true,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully updated label "${label_id}"`,
+				success: true,
+			});
 		},
 	);
 
@@ -199,17 +172,10 @@ export function registerLabelsTools(
 		LABELS_TOOL_SCHEMAS.deletePromptLabel,
 		async (params) => {
 			await service.labels.deleteLabel(params.label_id);
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: `Successfully deleted label "${params.label_id}"`,
-							success: true,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: `Successfully deleted label "${params.label_id}"`,
+				success: true,
+			});
 		},
 	);
 }

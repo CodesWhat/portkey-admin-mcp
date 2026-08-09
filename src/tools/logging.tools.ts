@@ -2,6 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { PortkeyService } from "../services/index.js";
 import type { LogExportField } from "../services/logging.service.js";
+import { jsonResult } from "./utils.js";
 
 // Schema for log export fields enum
 const logExportFieldSchema = z.enum([
@@ -223,9 +224,7 @@ export function registerLoggingTools(
 				created_at: params.created_at,
 				type: params.type,
 			});
-			return {
-				content: [{ type: "text", text: JSON.stringify(result) }],
-			};
+			return jsonResult(result);
 		},
 	);
 
@@ -244,9 +243,7 @@ export function registerLoggingTools(
 			const result = await service.logging.getLogExportFieldRestrictions({
 				workspace_id: params.workspace_id,
 			});
-			return {
-				content: [{ type: "text", text: JSON.stringify(result) }],
-			};
+			return jsonResult(result);
 		},
 	);
 
@@ -284,17 +281,10 @@ export function registerLoggingTools(
 
 			const result = await service.logging.insertLog(entry);
 
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: "Successfully inserted log entry",
-							success: result.success,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: "Successfully inserted log entry",
+				success: result.success,
+			});
 		},
 	);
 
@@ -319,19 +309,12 @@ export function registerLoggingTools(
 				requested_data: params.requested_fields,
 			});
 
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: "Successfully created log export",
-							id: result.id,
-							total: result.total,
-							object: result.object,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: "Successfully created log export",
+				id: result.id,
+				total: result.total,
+				object: result.object,
+			});
 		},
 	);
 
@@ -345,27 +328,20 @@ export function registerLoggingTools(
 				workspace_id: params.workspace_id,
 			});
 
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							total: result.total,
-							exports: result.data.map((exp) => ({
-								id: exp.id,
-								status: exp.status,
-								description: exp.description,
-								filters: exp.filters,
-								requested_data: exp.requested_data,
-								workspace_id: exp.workspace_id,
-								created_at: exp.created_at,
-								last_updated_at: exp.last_updated_at,
-								created_by: exp.created_by,
-							})),
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				total: result.total,
+				exports: result.data.map((exp) => ({
+					id: exp.id,
+					status: exp.status,
+					description: exp.description,
+					filters: exp.filters,
+					requested_data: exp.requested_data,
+					workspace_id: exp.workspace_id,
+					created_at: exp.created_at,
+					last_updated_at: exp.last_updated_at,
+					created_by: exp.created_by,
+				})),
+			});
 		},
 	);
 
@@ -377,25 +353,18 @@ export function registerLoggingTools(
 		async (params) => {
 			const result = await service.logging.getLogExport(params.export_id);
 
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							id: result.id,
-							status: result.status,
-							description: result.description,
-							filters: result.filters,
-							requested_data: result.requested_data,
-							organisation_id: result.organisation_id,
-							workspace_id: result.workspace_id,
-							created_at: result.created_at,
-							last_updated_at: result.last_updated_at,
-							created_by: result.created_by,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				id: result.id,
+				status: result.status,
+				description: result.description,
+				filters: result.filters,
+				requested_data: result.requested_data,
+				organisation_id: result.organisation_id,
+				workspace_id: result.workspace_id,
+				created_at: result.created_at,
+				last_updated_at: result.last_updated_at,
+				created_by: result.created_by,
+			});
 		},
 	);
 
@@ -407,18 +376,11 @@ export function registerLoggingTools(
 		async (params) => {
 			const result = await service.logging.startLogExport(params.export_id);
 
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: result.message,
-							export_id: params.export_id,
-							status: "started",
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: result.message,
+				export_id: params.export_id,
+				status: "started",
+			});
 		},
 	);
 
@@ -430,18 +392,11 @@ export function registerLoggingTools(
 		async (params) => {
 			const result = await service.logging.cancelLogExport(params.export_id);
 
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: result.message,
-							export_id: params.export_id,
-							status: "cancelled",
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: result.message,
+				export_id: params.export_id,
+				status: "cancelled",
+			});
 		},
 	);
 
@@ -453,18 +408,11 @@ export function registerLoggingTools(
 		async (params) => {
 			const result = await service.logging.downloadLogExport(params.export_id);
 
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: "Download URL generated successfully",
-							export_id: params.export_id,
-							signed_url: result.signed_url,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: "Download URL generated successfully",
+				export_id: params.export_id,
+				signed_url: result.signed_url,
+			});
 		},
 	);
 
@@ -499,19 +447,12 @@ export function registerLoggingTools(
 				updateData,
 			);
 
-			return {
-				content: [
-					{
-						type: "text",
-						text: JSON.stringify({
-							message: "Successfully updated log export",
-							id: result.id,
-							total: result.total,
-							object: result.object,
-						}),
-					},
-				],
-			};
+			return jsonResult({
+				message: "Successfully updated log export",
+				id: result.id,
+				total: result.total,
+				object: result.object,
+			});
 		},
 	);
 }
