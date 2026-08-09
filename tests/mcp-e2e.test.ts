@@ -102,7 +102,7 @@ const EXPECTED_TOOLS = [
 	"update_config",
 	"delete_config",
 	"list_config_versions",
-	// keys (11)
+	// keys and secret references (16)
 	"list_virtual_keys",
 	"create_virtual_key",
 	"get_virtual_key",

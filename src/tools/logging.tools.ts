@@ -27,22 +27,33 @@ const logExportFieldSchema = z.enum([
 	"metadata",
 ]);
 
-const LOGGING_TOOL_SCHEMAS = {
-	getLog: {
+const getLogInputSchema = z
+	.object({
 		log_id: z.string().describe("Gateway log ID to retrieve"),
 		path_format: z
 			.enum(["v1", "v2"])
 			.optional()
 			.describe("Log storage path format; defaults to v1"),
-		created_at: z
-			.string()
+		created_at: z.iso
+			.datetime({ offset: true })
 			.optional()
 			.describe("Log creation timestamp in ISO 8601 format; required for v2"),
 		type: z
 			.enum(["hooks"])
 			.optional()
 			.describe("Set to hooks when retrieving a hook execution log"),
-	},
+	})
+	.superRefine((input, context) => {
+		if (input.path_format === "v2" && input.created_at === undefined) {
+			context.addIssue({
+				code: "custom",
+				path: ["created_at"],
+				message: "created_at is required when path_format is v2",
+			});
+		}
+	});
+
+const LOGGING_TOOL_SCHEMAS = {
 	getLogExportFieldRestrictions: {
 		workspace_id: z
 			.string()
@@ -192,16 +203,19 @@ export function registerLoggingTools(
 	server: McpServer,
 	service: PortkeyService,
 ): void {
-	server.tool(
+	server.registerTool(
 		"get_log",
-		"Get one gateway request log by ID, including its request, response, usage, cost, and metadata payload when available. For path_format v2, also provide the log's created_at timestamp.",
-		LOGGING_TOOL_SCHEMAS.getLog,
 		{
-			title: "Get Gateway Log",
-			readOnlyHint: true,
-			destructiveHint: false,
-			idempotentHint: true,
-			openWorldHint: true,
+			description:
+				"Get one gateway request log by ID, including its request, response, usage, cost, and metadata payload when available. For path_format v2, also provide the log's created_at timestamp.",
+			inputSchema: getLogInputSchema,
+			annotations: {
+				title: "Get Gateway Log",
+				readOnlyHint: true,
+				destructiveHint: false,
+				idempotentHint: true,
+				openWorldHint: true,
+			},
 		},
 		async (params) => {
 			const result = await service.logging.getLog(params.log_id, {

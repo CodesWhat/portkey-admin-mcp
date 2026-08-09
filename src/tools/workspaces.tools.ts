@@ -2,12 +2,50 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { PortkeyService } from "../services/index.js";
 import type {
+	CreateScimWorkspaceMappingRequest,
 	SingleWorkspaceResponse,
 	Workspace,
 	WorkspaceDefaults,
 	WorkspaceUser,
 } from "../services/workspaces.service.js";
 import { formatFullName } from "./utils.js";
+
+const scimWorkspaceMappingBaseShape = {
+	workspace_id: z
+		.string()
+		.describe("Portkey workspace ID that the SCIM group should access"),
+	role: z
+		.enum(["admin", "member", "manager"])
+		.describe("Workspace role automatically granted to group members"),
+};
+
+const createScimWorkspaceMappingInputSchema = z
+	.object({
+		...scimWorkspaceMappingBaseShape,
+		scim_group_id: z
+			.string()
+			.min(1)
+			.optional()
+			.describe(
+				"Existing identity-provider SCIM group ID; provide this or scim_group_name, but not both",
+			),
+		scim_group_name: z
+			.string()
+			.min(1)
+			.optional()
+			.describe(
+				"Existing SCIM group display name; provide this or scim_group_id, but not both",
+			),
+	})
+	.superRefine((input, context) => {
+		if (Boolean(input.scim_group_id) === Boolean(input.scim_group_name)) {
+			context.addIssue({
+				code: "custom",
+				path: ["scim_group_id"],
+				message: "Provide exactly one of scim_group_id or scim_group_name",
+			});
+		}
+	});
 
 const WORKSPACES_TOOL_SCHEMAS = {
 	listWorkspaces: {
@@ -126,26 +164,6 @@ const WORKSPACES_TOOL_SCHEMAS = {
 			.max(100)
 			.optional()
 			.describe("Mappings per page, from 1 through 100"),
-	},
-	createScimWorkspaceMapping: {
-		workspace_id: z
-			.string()
-			.describe("Portkey workspace ID that the SCIM group should access"),
-		role: z
-			.enum(["admin", "member", "manager"])
-			.describe("Workspace role automatically granted to group members"),
-		scim_group_id: z
-			.string()
-			.optional()
-			.describe(
-				"Existing identity-provider SCIM group ID; provide this or scim_group_name, but not both",
-			),
-		scim_group_name: z
-			.string()
-			.optional()
-			.describe(
-				"Existing SCIM group display name; provide this or scim_group_id, but not both",
-			),
 	},
 	deleteScimWorkspaceMapping: {
 		mapping_id: z
@@ -275,37 +293,41 @@ export function registerWorkspacesTools(
 		}),
 	);
 
-	server.tool(
+	server.registerTool(
 		"create_scim_workspace_mapping",
-		"Map one identity-provider SCIM group to a Portkey workspace role so current and future group members receive access automatically. Provide exactly one of scim_group_id or scim_group_name; a name can pre-create the Portkey SCIM group before the IdP provisions it. Use list_scim_groups to discover existing groups and list_workspaces for the workspace ID. This changes access provisioning and is distinct from add_workspace_member, which grants one user directly.",
-		WORKSPACES_TOOL_SCHEMAS.createScimWorkspaceMapping,
 		{
-			title: "Create SCIM Workspace Mapping",
-			readOnlyHint: false,
-			destructiveHint: false,
-			idempotentHint: false,
-			openWorldHint: true,
+			description:
+				"Map one identity-provider SCIM group to a Portkey workspace role so current and future group members receive access automatically. Provide exactly one of scim_group_id or scim_group_name; a name can pre-create the Portkey SCIM group before the IdP provisions it. Use list_scim_groups to discover existing groups and list_workspaces for the workspace ID. This changes access provisioning and is distinct from add_workspace_member, which grants one user directly.",
+			inputSchema: createScimWorkspaceMappingInputSchema,
+			annotations: {
+				title: "Create SCIM Workspace Mapping",
+				readOnlyHint: false,
+				destructiveHint: false,
+				idempotentHint: false,
+				openWorldHint: true,
+			},
 		},
 		async (params) => {
-			if (Boolean(params.scim_group_id) === Boolean(params.scim_group_name)) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: "Provide exactly one of scim_group_id or scim_group_name.",
-						},
-					],
-					isError: true,
+			let request: CreateScimWorkspaceMappingRequest;
+			if (params.scim_group_id !== undefined) {
+				request = {
+					workspace_id: params.workspace_id,
+					role: params.role,
+					scim_group_id: params.scim_group_id,
 				};
+			} else if (params.scim_group_name !== undefined) {
+				request = {
+					workspace_id: params.workspace_id,
+					role: params.role,
+					scim_group_name: params.scim_group_name,
+				};
+			} else {
+				throw new Error(
+					"Provide exactly one of scim_group_id or scim_group_name",
+				);
 			}
-
-			const result = await service.workspaces.createScimWorkspaceMapping({
-				workspace_id: params.workspace_id,
-				role: params.role,
-				...(params.scim_group_id
-					? { scim_group_id: params.scim_group_id }
-					: { scim_group_name: params.scim_group_name }),
-			});
+			const result =
+				await service.workspaces.createScimWorkspaceMapping(request);
 			return {
 				content: [{ type: "text", text: JSON.stringify(result) }],
 			};

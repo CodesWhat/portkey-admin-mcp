@@ -155,10 +155,11 @@ export class McpServersService extends BaseService {
 		id: string,
 		params?: DisconnectMcpServerConnectionParams,
 	): Promise<{ success: boolean }> {
-		return this.delete<{ success: boolean }>(
+		await this.delete(
 			`/mcp-servers/${this.encodePathSegment(id)}/connections`,
 			params,
 		);
+		return { success: true };
 	}
 
 	async listMcpServers(

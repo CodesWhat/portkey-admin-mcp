@@ -5,6 +5,7 @@
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { z } from "zod";
 import { BaseService } from "../src/services/base.service.js";
 import { GuardrailsService } from "../src/services/guardrails.service.js";
 import { IntegrationsService } from "../src/services/integrations.service.js";
@@ -17,6 +18,7 @@ import { registerLoggingTools } from "../src/tools/logging.tools.js";
 import { registerMcpIntegrationsTools } from "../src/tools/mcp-integrations.tools.js";
 import { registerMcpServersTools } from "../src/tools/mcp-servers.tools.js";
 import { registerWorkspacesTools } from "../src/tools/workspaces.tools.js";
+import { registerToolCallbacks } from "./helpers/tool-registry.js";
 
 type CapturedRequest = {
 	method: "GET" | "POST" | "PUT" | "DELETE";
@@ -113,22 +115,60 @@ async function withMockServiceGet<T>(
 	}
 }
 
-function registerToolCallbacks(
-	register: (server: { tool(name: string, ...rest: unknown[]): never }) => void,
-): Map<string, (...args: unknown[]) => Promise<unknown>> {
-	const callbacks = new Map<string, (...args: unknown[]) => Promise<unknown>>();
+type CapturedToolDefinition = {
+	description?: string;
+	inputSchema?: unknown;
+	annotations?: Record<string, unknown>;
+};
 
+function captureToolDefinitions(
+	register: (server: {
+		tool(name: string, ...rest: unknown[]): never;
+		registerTool(
+			name: string,
+			config: Record<string, unknown>,
+			callback: (...args: unknown[]) => Promise<unknown>,
+		): never;
+	}) => void,
+): Map<string, CapturedToolDefinition> {
+	const definitions = new Map<string, CapturedToolDefinition>();
 	register({
 		tool(name: string, ...rest: unknown[]) {
-			callbacks.set(
-				name,
-				rest[rest.length - 1] as (...args: unknown[]) => Promise<unknown>,
-			);
+			const description =
+				typeof rest[0] === "string" ? (rest[0] as string) : undefined;
+			const offset = description === undefined ? 0 : 1;
+			definitions.set(name, {
+				description,
+				inputSchema: rest[offset],
+				annotations: rest.at(-2) as Record<string, unknown>,
+			});
+			return {} as never;
+		},
+		registerTool(name: string, config: Record<string, unknown>) {
+			definitions.set(name, {
+				description: config.description as string | undefined,
+				inputSchema: config.inputSchema,
+				annotations: config.annotations as Record<string, unknown> | undefined,
+			});
 			return {} as never;
 		},
 	});
+	return definitions;
+}
 
-	return callbacks;
+function safeParseToolInput(
+	definition: CapturedToolDefinition | undefined,
+	input: unknown,
+): ReturnType<z.ZodType["safeParse"]> {
+	assert.ok(definition?.inputSchema, "tool should declare an input schema");
+	const inputSchema = definition.inputSchema as
+		| z.ZodType
+		| Record<string, z.ZodType>;
+	const schema: z.ZodType =
+		typeof (inputSchema as z.ZodType).safeParse === "function"
+			? (inputSchema as z.ZodType)
+			: z.object(inputSchema as Record<string, z.ZodType>);
+	return schema.safeParse(input);
 }
 
 describe("current Portkey organisation guardrail APIs", () => {
@@ -403,6 +443,42 @@ describe("current Portkey log APIs", () => {
 			},
 		]);
 	});
+
+	it("validates v2 log timestamps before invoking Portkey", () => {
+		const definitions = captureToolDefinitions((server) => {
+			registerLoggingTools(server as never, {} as never);
+		});
+		const getLog = definitions.get("get_log");
+
+		assert.equal(
+			safeParseToolInput(getLog, { log_id: "log-1", path_format: "v2" })
+				.success,
+			false,
+			"v2 log reads require created_at",
+		);
+		assert.equal(
+			safeParseToolInput(getLog, {
+				log_id: "log-1",
+				path_format: "v2",
+				created_at: "not-a-timestamp",
+			}).success,
+			false,
+			"created_at must be an ISO 8601 timestamp",
+		);
+		assert.equal(
+			safeParseToolInput(getLog, {
+				log_id: "log-1",
+				path_format: "v2",
+				created_at: "2026-08-09T12:00:00Z",
+			}).success,
+			true,
+		);
+		assert.equal(
+			safeParseToolInput(getLog, { log_id: "log-1" }).success,
+			true,
+			"v1 log reads do not require created_at",
+		);
+	});
 });
 
 describe("current Portkey SCIM workspace APIs", () => {
@@ -412,6 +488,19 @@ describe("current Portkey SCIM workspace APIs", () => {
 			{
 				tool(name: string, ...rest: unknown[]) {
 					registrations.set(name, rest);
+					return {} as never;
+				},
+				registerTool(
+					name: string,
+					config: Record<string, unknown>,
+					callback: (...args: unknown[]) => Promise<unknown>,
+				) {
+					registrations.set(name, [
+						config.description,
+						config.inputSchema,
+						config.annotations,
+						callback,
+					]);
 					return {} as never;
 				},
 			} as never,
@@ -510,6 +599,38 @@ describe("current Portkey SCIM workspace APIs", () => {
 				() => service.listScimGroups?.(groupParams) as Promise<unknown>,
 			),
 			{ method: "GET", path: "/scim/groups", params: groupParams },
+		);
+	});
+
+	it("requires exactly one SCIM group selector in the tool schema", () => {
+		const definitions = captureToolDefinitions((server) => {
+			registerWorkspacesTools(server as never, {} as never);
+		});
+		const createMapping = definitions.get("create_scim_workspace_mapping");
+		const common = { workspace_id: "ws-1", role: "member" };
+
+		assert.equal(safeParseToolInput(createMapping, common).success, false);
+		assert.equal(
+			safeParseToolInput(createMapping, {
+				...common,
+				scim_group_id: "group-1",
+				scim_group_name: "Engineering",
+			}).success,
+			false,
+		);
+		assert.equal(
+			safeParseToolInput(createMapping, {
+				...common,
+				scim_group_id: "group-1",
+			}).success,
+			true,
+		);
+		assert.equal(
+			safeParseToolInput(createMapping, {
+				...common,
+				scim_group_name: "Engineering",
+			}).success,
+			true,
 		);
 	});
 
@@ -643,6 +764,24 @@ describe("current Portkey MCP server connection APIs", () => {
 				params: disconnectParams,
 			},
 		);
+	});
+
+	it("normalizes an empty disconnect response to explicit success", async () => {
+		const basePrototype = BaseService.prototype as unknown as {
+			delete: (path: string, params?: object) => Promise<unknown>;
+		};
+		const originalDelete = basePrototype.delete;
+		basePrototype.delete = async () => undefined;
+		try {
+			assert.deepEqual(
+				await new McpServersService(
+					"test-dummy-key",
+				).disconnectMcpServerConnection("server-1", { user_id: "user-1" }),
+				{ success: true },
+			);
+		} finally {
+			basePrototype.delete = originalDelete;
+		}
 	});
 
 	it("registers and forwards connection management tools", async () => {
@@ -994,6 +1133,89 @@ describe("current Portkey integration schemas and model pricing", () => {
 			},
 		]);
 	});
+
+	it("rejects incomplete pricing, out-of-range alerts, and duplicate secret targets", () => {
+		const integrationDefinitions = captureToolDefinitions((server) => {
+			registerIntegrationsTools(server as never, {} as never);
+		});
+		const mcpDefinitions = captureToolDefinitions((server) => {
+			registerMcpIntegrationsTools(server as never, {} as never);
+		});
+
+		const modelUpdate = {
+			slug: "prod-openai",
+			models: [{ slug: "custom-model", enabled: true, pricing_config: {} }],
+		};
+		assert.equal(
+			safeParseToolInput(
+				integrationDefinitions.get("update_integration_models"),
+				modelUpdate,
+			).success,
+			false,
+			"pricing_config.type is required when pricing_config is supplied",
+		);
+
+		for (const threshold of [-1, 101]) {
+			assert.equal(
+				safeParseToolInput(
+					integrationDefinitions.get("update_integration_workspaces"),
+					{
+						slug: "prod-openai",
+						workspaces: [],
+						global_alert_threshold: threshold,
+					},
+				).success,
+				false,
+				`global_alert_threshold ${threshold} should be rejected`,
+			);
+		}
+		for (const threshold of [0, 100]) {
+			assert.equal(
+				safeParseToolInput(
+					integrationDefinitions.get("update_integration_workspaces"),
+					{
+						slug: "prod-openai",
+						workspaces: [],
+						global_alert_threshold: threshold,
+					},
+				).success,
+				true,
+				`global_alert_threshold ${threshold} should be accepted`,
+			);
+		}
+
+		const duplicateMappings = [
+			{ target_field: "key", secret_reference_id: "secret-1" },
+			{ target_field: "key", secret_reference_id: "secret-2" },
+		];
+		for (const [name, definition] of [
+			["create_integration", integrationDefinitions.get("create_integration")],
+			["update_integration", integrationDefinitions.get("update_integration")],
+			["create_mcp_integration", mcpDefinitions.get("create_mcp_integration")],
+			["update_mcp_integration", mcpDefinitions.get("update_mcp_integration")],
+		] as const) {
+			const required = name.startsWith("create")
+				? name === "create_integration"
+					? { name: "Integration", ai_provider_id: "openai" }
+					: {
+							name: "MCP",
+							url: "https://mcp.example.com",
+							auth_type: "none",
+							transport: "http",
+						}
+				: name === "update_integration"
+					? { slug: "integration-1" }
+					: { id: "mcp-1" };
+			assert.equal(
+				safeParseToolInput(definition, {
+					...required,
+					secret_mappings: duplicateMappings,
+				}).success,
+				false,
+				`${name} should reject duplicate target_field values`,
+			);
+		}
+	});
 });
 
 describe("current Portkey MCP integration secret mappings", () => {
@@ -1064,6 +1286,19 @@ describe("new tool quality contract", () => {
 				registrations.set(name, rest);
 				return {} as never;
 			},
+			registerTool(
+				name: string,
+				config: Record<string, unknown>,
+				callback: (...args: unknown[]) => Promise<unknown>,
+			) {
+				registrations.set(name, [
+					config.description,
+					config.inputSchema,
+					config.annotations,
+					callback,
+				]);
+				return {} as never;
+			},
 		};
 		const emptyService = {} as never;
 		registerGuardrailsTools(server as never, emptyService);
@@ -1095,7 +1330,7 @@ describe("new tool quality contract", () => {
 			],
 			[
 				"update_input_guardrail_workspace_exclusions",
-				{ readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+				{ readOnlyHint: false, destructiveHint: true, idempotentHint: true },
 			],
 			[
 				"list_output_guardrail_workspace_exclusions",
@@ -1103,7 +1338,7 @@ describe("new tool quality contract", () => {
 			],
 			[
 				"update_output_guardrail_workspace_exclusions",
-				{ readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+				{ readOnlyHint: false, destructiveHint: true, idempotentHint: true },
 			],
 			[
 				"get_log",
@@ -1198,7 +1433,8 @@ describe("new tool quality contract", () => {
 			if (
 				possibleSchema &&
 				typeof possibleSchema === "object" &&
-				!("readOnlyHint" in (possibleSchema as Record<string, unknown>))
+				!("readOnlyHint" in (possibleSchema as Record<string, unknown>)) &&
+				typeof (possibleSchema as z.ZodType).safeParse !== "function"
 			) {
 				for (const [field, schema] of Object.entries(
 					possibleSchema as Record<string, { description?: string }>,

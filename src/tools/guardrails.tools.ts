@@ -233,7 +233,7 @@ export function registerGuardrailsTools(
 		{
 			title: "Update Input Guardrail Workspace Exclusions",
 			readOnlyHint: false,
-			destructiveHint: false,
+			destructiveHint: true,
 			idempotentHint: true,
 			openWorldHint: true,
 		},
@@ -279,7 +279,7 @@ export function registerGuardrailsTools(
 		{
 			title: "Update Output Guardrail Workspace Exclusions",
 			readOnlyHint: false,
-			destructiveHint: false,
+			destructiveHint: true,
 			idempotentHint: true,
 			openWorldHint: true,
 		},

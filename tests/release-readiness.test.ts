@@ -67,7 +67,11 @@ test("the release guide covers every published catalog", () => {
 	const releaseGuide = readFileSync(`${root}docs/RELEASE.md`, "utf8");
 
 	for (const catalog of ["npm", "MCP Registry", "LobeHub", "Glama"]) {
-		assert.match(releaseGuide, new RegExp(catalog, "i"));
+		assert.match(
+			releaseGuide,
+			new RegExp(`^#{2,3} .*${catalog}`, "im"),
+			`RELEASE.md needs a ${catalog} section`,
+		);
 	}
 });
 
@@ -79,11 +83,18 @@ test("release verification includes a Glama TDQS-compatible tool-definition gate
 		`${root}.github/workflows/ci.yml`,
 		"utf8",
 	);
+	const qualitySource = readFileSync(
+		`${root}scripts/check-tool-definition-quality.mjs`,
+		"utf8",
+	);
 
 	assert.match(scripts["verify:tool-quality"] ?? "", /tool-definition-quality/);
 	assert.match(scripts.ci ?? "", /verify:tool-quality/);
 	assert.match(workflowSource, /npm run verify:tool-quality/);
 	assert.match(releaseGuide, /TDQS|Tool Definition Quality Score/i);
+	assert.match(qualitySource, /walkParameters/);
+	assert.match(qualitySource, /manifestToolCount/);
+	assert.match(qualitySource, /transport\.stderr/);
 });
 
 test("LobeHub release automation updates the claimed listing and all MCP capabilities", () => {
@@ -97,9 +108,10 @@ test("LobeHub release automation updates the claimed listing and all MCP capabil
 
 	assert.match(scripts["update:lobehub"] ?? "", /plugin update/);
 	assert.doesNotMatch(scripts["update:lobehub"] ?? "", /plugin publish/);
-	assert.match(generatorSource, /listTools/);
-	assert.match(generatorSource, /listPrompts/);
-	assert.match(generatorSource, /listResources/);
-	assert.match(generatorSource, /listResourceTemplates/);
+	assert.match(generatorSource, /\blistTools\b/);
+	assert.match(generatorSource, /\blistPrompts\b/);
+	assert.match(generatorSource, /\blistResources\b/);
+	assert.match(generatorSource, /\blistResourceTemplates\b/);
+	assert.match(generatorSource, /finally/);
 	assert.match(releaseGuide, /plugin update/);
 });

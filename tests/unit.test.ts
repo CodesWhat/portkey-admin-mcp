@@ -42,6 +42,7 @@ import { registerConfigsTools } from "../src/tools/configs.tools.js";
 import { registerAllTools } from "../src/tools/index.js";
 import { registerPromptsTools } from "../src/tools/prompts.tools.js";
 import { registerUsersTools } from "../src/tools/users.tools.js";
+import { registerToolCallbacks } from "./helpers/tool-registry.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -147,24 +148,6 @@ async function captureServiceRequest(
 		basePrototype.put = originalMethods.put;
 		basePrototype.delete = originalMethods.delete;
 	}
-}
-
-function registerToolCallbacks(
-	register: (server: { tool(name: string, ...rest: unknown[]): never }) => void,
-): Map<string, (...args: unknown[]) => Promise<unknown>> {
-	const callbacks = new Map<string, (...args: unknown[]) => Promise<unknown>>();
-
-	register({
-		tool(name: string, ...rest: unknown[]) {
-			callbacks.set(
-				name,
-				rest[rest.length - 1] as (...args: unknown[]) => Promise<unknown>,
-			);
-			return {} as never;
-		},
-	});
-
-	return callbacks;
 }
 
 // ---------------------------------------------------------------------------

@@ -588,6 +588,43 @@ function createSafeToolServer(server: McpServer): McpServer {
 		);
 	};
 
+	safeServer.registerTool = ((
+		name: string,
+		config: Record<string, unknown>,
+		callback: ToolCallback,
+	) => {
+		const description = augmentToolDescription(
+			name,
+			typeof config.description === "string" ? config.description : undefined,
+		);
+		const annotations = {
+			...inferToolAnnotations(name),
+			...(isToolAnnotationsLike(config.annotations) ? config.annotations : {}),
+		};
+
+		const wrappedCallback = wrapToolCallback(name, callback);
+		if (originalRegisterTool) {
+			return callOriginalRegisterTool(
+				name,
+				{
+					...config,
+					...(description === undefined ? {} : { description }),
+					outputSchema: config.outputSchema ?? getToolOutputSchema(name),
+					annotations,
+				},
+				wrappedCallback,
+			);
+		}
+
+		const legacyArguments = [
+			...(description === undefined ? [] : [description]),
+			...(config.inputSchema === undefined ? [] : [config.inputSchema]),
+			annotations,
+			wrappedCallback,
+		];
+		return callOriginalTool(name, ...legacyArguments);
+	}) as McpServer["registerTool"];
+
 	safeServer.tool = ((name: string, ...rest: unknown[]) => {
 		const maybeCallback = rest.at(-1);
 		if (typeof maybeCallback !== "function") {

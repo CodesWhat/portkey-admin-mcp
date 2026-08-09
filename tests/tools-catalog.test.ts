@@ -23,6 +23,7 @@ import { registerIntegrationsTools } from "../src/tools/integrations.tools.js";
 import { registerLabelsTools } from "../src/tools/labels.tools.js";
 import { registerPartialsTools } from "../src/tools/partials.tools.js";
 import { registerProvidersTools } from "../src/tools/providers.tools.js";
+import { registerToolCallbacks } from "./helpers/tool-registry.js";
 
 // ---------------------------------------------------------------------------
 // Shared test helpers (mirrors the pattern in unit.test.ts)
@@ -79,24 +80,6 @@ async function captureServiceRequest(
 		basePrototype.put = originalMethods.put;
 		basePrototype.delete = originalMethods.delete;
 	}
-}
-
-function registerToolCallbacks(
-	register: (server: { tool(name: string, ...rest: unknown[]): never }) => void,
-): Map<string, (...args: unknown[]) => Promise<unknown>> {
-	const callbacks = new Map<string, (...args: unknown[]) => Promise<unknown>>();
-
-	register({
-		tool(name: string, ...rest: unknown[]) {
-			callbacks.set(
-				name,
-				rest[rest.length - 1] as (...args: unknown[]) => Promise<unknown>,
-			);
-			return {} as never;
-		},
-	});
-
-	return callbacks;
 }
 
 // ---------------------------------------------------------------------------

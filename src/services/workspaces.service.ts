@@ -119,13 +119,21 @@ export interface ListScimWorkspaceMappingsResponse {
 	[key: string]: unknown;
 }
 
-/** Create a mapping using exactly one SCIM group identifier. */
-export interface CreateScimWorkspaceMappingRequest {
+type CreateScimWorkspaceMappingBase = {
 	workspace_id: string;
 	role: ScimWorkspaceRole;
-	scim_group_id?: string;
-	scim_group_name?: string;
-}
+};
+
+/** Create a mapping using exactly one SCIM group identifier. */
+export type CreateScimWorkspaceMappingRequest =
+	| (CreateScimWorkspaceMappingBase & {
+			scim_group_id: string;
+			scim_group_name?: never;
+	  })
+	| (CreateScimWorkspaceMappingBase & {
+			scim_group_name: string;
+			scim_group_id?: never;
+	  });
 
 /** Filters and pagination for SCIM groups synchronized to Portkey. */
 export interface ListScimGroupsParams {

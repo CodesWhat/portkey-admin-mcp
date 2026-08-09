@@ -33,11 +33,11 @@ const transport = new StdioClientTransport({
 	env: { ...cleanEnv, PORTKEY_API_KEY: "manifest-generation-dummy-key" },
 	stderr: "pipe",
 });
+transport.stderr?.on("data", () => undefined);
 const client = new Client({
 	name: "lobehub-manifest-generator",
 	version: "1.0.0",
 });
-await client.connect(transport);
 
 async function collectPages(listPage, field) {
 	const items = [];
@@ -50,20 +50,28 @@ async function collectPages(listPage, field) {
 	return items;
 }
 
-const tools = await collectPages((params) => client.listTools(params), "tools");
-const prompts = await collectPages(
-	(params) => client.listPrompts(params),
-	"prompts",
-);
-const resources = await collectPages(
-	(params) => client.listResources(params),
-	"resources",
-);
-const resourceTemplates = await collectPages(
-	(params) => client.listResourceTemplates(params),
-	"resourceTemplates",
-);
-await client.close();
+let tools;
+let prompts;
+let resources;
+let resourceTemplates;
+try {
+	await client.connect(transport);
+	tools = await collectPages((params) => client.listTools(params), "tools");
+	prompts = await collectPages(
+		(params) => client.listPrompts(params),
+		"prompts",
+	);
+	resources = await collectPages(
+		(params) => client.listResources(params),
+		"resources",
+	);
+	resourceTemplates = await collectPages(
+		(params) => client.listResourceTemplates(params),
+		"resourceTemplates",
+	);
+} finally {
+	await client.close().catch(() => undefined);
+}
 
 const manifest = JSON.parse(readFileSync(MANIFEST, "utf8"));
 const packageMetadata = JSON.parse(readFileSync(PACKAGE_JSON, "utf8"));

@@ -6,33 +6,24 @@ import type {
 	McpIntegrationMetadata,
 	McpIntegrationWorkspace,
 } from "../services/mcp-integrations.service.js";
+import {
+	createSecretMappingSchema,
+	uniqueSecretMappingsSchema,
+} from "./secret-mapping.schemas.js";
 
-const mcpSecretMappingSchema = z.object({
-	target_field: z
-		.string()
-		.refine(
-			(value) => value.startsWith("configurations."),
-			"MCP integration target_field must start with 'configurations.'",
-		)
-		.describe(
-			"Configuration field resolved at runtime, such as configurations.oauth_metadata",
-		),
-	secret_reference_id: z
-		.string()
-		.describe("Secret Reference UUID or slug accessible to this integration"),
-	secret_key: z
-		.string()
-		.nullable()
-		.optional()
-		.describe("Optional key to select from a multi-value secret"),
-	value_format: z
-		.enum(["string", "json"])
-		.nullable()
-		.optional()
-		.describe(
-			"Use json when the target configuration field expects a structured object",
-		),
+const mcpSecretMappingSchema = createSecretMappingSchema({
+	allowKeyTarget: false,
+	targetFieldDescription:
+		"Configuration field resolved at runtime, such as configurations.oauth_metadata",
+	secretReferenceDescription:
+		"Secret Reference UUID or slug accessible to this integration",
+	valueFormatDescription:
+		"Use json when the target configuration field expects a structured object",
 });
+
+const mcpSecretMappingsSchema = uniqueSecretMappingsSchema(
+	mcpSecretMappingSchema,
+);
 
 const MCP_INTEGRATIONS_TOOL_SCHEMAS = {
 	listMcpIntegrations: {
@@ -84,8 +75,7 @@ const MCP_INTEGRATIONS_TOOL_SCHEMAS = {
 			.describe(
 				"Workspace ID — required when using organization admin API keys",
 			),
-		secret_mappings: z
-			.array(mcpSecretMappingSchema)
+		secret_mappings: mcpSecretMappingsSchema
 			.optional()
 			.describe(
 				"Runtime Secret Reference mappings; every configurations.<field> target must be unique",
@@ -113,8 +103,7 @@ const MCP_INTEGRATIONS_TOOL_SCHEMAS = {
 			.describe(
 				"New custom headers for authentication. Sent via configurations.custom_headers",
 			),
-		secret_mappings: z
-			.array(mcpSecretMappingSchema)
+		secret_mappings: mcpSecretMappingsSchema
 			.optional()
 			.describe(
 				"Replacement runtime Secret Reference mappings; each target_field must be unique",

@@ -2,31 +2,24 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { buildRateLimitsRpm, buildUsageLimits } from "../lib/limits.js";
 import type { PortkeyService } from "../services/index.js";
+import {
+	createSecretMappingSchema,
+	uniqueSecretMappingsSchema,
+} from "./secret-mapping.schemas.js";
 
-const integrationSecretMappingSchema = z.object({
-	target_field: z
-		.string()
-		.refine(
-			(value) => value === "key" || value.startsWith("configurations."),
-			"target_field must be 'key' or start with 'configurations.'",
-		)
-		.describe(
-			"Integration field populated at runtime: key or configurations.<field>",
-		),
-	secret_reference_id: z
-		.string()
-		.describe("Secret Reference UUID or slug accessible to the workspace"),
-	secret_key: z
-		.string()
-		.nullable()
-		.optional()
-		.describe("Optional key to select from a multi-value secret"),
-	value_format: z
-		.enum(["string", "json"])
-		.nullable()
-		.optional()
-		.describe("Treat the resolved value as a plain string or parsed JSON"),
+const integrationSecretMappingSchema = createSecretMappingSchema({
+	allowKeyTarget: true,
+	targetFieldDescription:
+		"Integration field populated at runtime: key or configurations.<field>",
+	secretReferenceDescription:
+		"Secret Reference UUID or slug accessible to the workspace",
+	valueFormatDescription:
+		"Treat the resolved value as a plain string or parsed JSON",
 });
+
+const integrationSecretMappingsSchema = uniqueSecretMappingsSchema(
+	integrationSecretMappingSchema,
+);
 
 const nullableMultiplier = (description: string) =>
 	z.coerce.number().nonnegative().nullable().optional().describe(description);
@@ -119,10 +112,7 @@ const tokenPricingSchema = z.object({
 });
 
 const integrationModelPricingSchema = z.object({
-	type: z
-		.literal("static")
-		.optional()
-		.describe("Static per-token pricing configuration"),
+	type: z.literal("static").describe("Static per-token pricing configuration"),
 	pay_as_you_go: z
 		.object({
 			request_token: tokenPricingSchema
@@ -239,8 +229,7 @@ const INTEGRATIONS_TOOL_SCHEMAS = {
 			.regex(/^[a-zA-Z0-9_-]+$/)
 			.optional()
 			.describe("Custom slug for the automatically created workspace provider"),
-		secret_mappings: z
-			.array(integrationSecretMappingSchema)
+		secret_mappings: integrationSecretMappingsSchema
 			.optional()
 			.describe(
 				"Unique runtime Secret Reference mappings; mapping key allows the key field to be omitted",
@@ -303,8 +292,7 @@ const INTEGRATIONS_TOOL_SCHEMAS = {
 			.string()
 			.optional()
 			.describe("New custom base URL for the provider"),
-		secret_mappings: z
-			.array(integrationSecretMappingSchema)
+		secret_mappings: integrationSecretMappingsSchema
 			.optional()
 			.describe(
 				"Replacement runtime Secret Reference mappings; each target_field must be unique",
@@ -454,7 +442,8 @@ const INTEGRATIONS_TOOL_SCHEMAS = {
 			),
 		global_alert_threshold: z.coerce
 			.number()
-			.positive()
+			.nonnegative()
+			.max(100)
 			.optional()
 			.describe("Global cost alert threshold applied to workspace access"),
 		global_rate_limit_rpm: z.coerce

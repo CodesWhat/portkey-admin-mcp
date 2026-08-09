@@ -15,10 +15,12 @@ The CI run includes `npm run verify:tool-quality`, a deterministic preflight
 based on Glama's [Tool Definition Quality Score
 (TDQS)](https://github.com/glama-ai/tool-definition-quality-score). It inspects
 the actual MCP `tools/list` output and rejects missing or tautological
-descriptions, undocumented top-level parameters, missing output schemas,
+descriptions, undocumented parameters at any nesting depth, missing output schemas,
 incomplete annotations, and low selection-guidance coverage. Glama performs
 the remaining six-dimension LLM rubric and server-coherence scoring after it
 indexes the tagged release.
+
+### npm and MCP Registry publication
 
 Everything after the merge is automatic:
 

@@ -24,6 +24,7 @@ import { registerMcpIntegrationsTools } from "../src/tools/mcp-integrations.tool
 import { registerMcpServersTools } from "../src/tools/mcp-servers.tools.js";
 import { registerSecretReferencesTools } from "../src/tools/secret-references.tools.js";
 import { registerWorkspacesTools } from "../src/tools/workspaces.tools.js";
+import { registerToolCallbacks } from "./helpers/tool-registry.js";
 
 // ---------------------------------------------------------------------------
 // Shared helpers (mirrors unit.test.ts pattern exactly)
@@ -80,24 +81,6 @@ async function captureServiceRequest(
 		basePrototype.put = originalMethods.put;
 		basePrototype.delete = originalMethods.delete;
 	}
-}
-
-function registerToolCallbacks(
-	register: (server: { tool(name: string, ...rest: unknown[]): never }) => void,
-): Map<string, (...args: unknown[]) => Promise<unknown>> {
-	const callbacks = new Map<string, (...args: unknown[]) => Promise<unknown>>();
-
-	register({
-		tool(name: string, ...rest: unknown[]) {
-			callbacks.set(
-				name,
-				rest[rest.length - 1] as (...args: unknown[]) => Promise<unknown>,
-			);
-			return {} as never;
-		},
-	});
-
-	return callbacks;
 }
 
 function registerToolSchemas(

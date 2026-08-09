@@ -450,11 +450,13 @@
 					},
 					"scim_group_id": {
 						"description": "Existing identity-provider SCIM group ID; provide this or scim_group_name, but not both",
-						"type": "string"
+						"type": "string",
+						"minLength": 1
 					},
 					"scim_group_name": {
 						"description": "Existing SCIM group display name; provide this or scim_group_id, but not both",
-						"type": "string"
+						"type": "string",
+						"minLength": 1
 					}
 				},
 				"required": ["workspace_id", "role"],
@@ -914,9 +916,11 @@
 							"type": "object",
 							"properties": {
 								"provider": {
+									"description": "Provider slug to route requests to",
 									"type": "string"
 								},
 								"virtual_key": {
+									"description": "Virtual key slug to use for this routing target",
 									"type": "string"
 								}
 							}
@@ -987,9 +991,11 @@
 							"type": "object",
 							"properties": {
 								"provider": {
+									"description": "Provider slug to route requests to",
 									"type": "string"
 								},
 								"virtual_key": {
+									"description": "Virtual key slug to use for this routing target",
 									"type": "string"
 								}
 							}
@@ -6176,7 +6182,7 @@
 			"annotations": {
 				"title": "Update Input Guardrail Workspace Exclusions",
 				"readOnlyHint": false,
-				"destructiveHint": false,
+				"destructiveHint": true,
 				"idempotentHint": true,
 				"openWorldHint": true
 			}
@@ -6243,7 +6249,7 @@
 			"annotations": {
 				"title": "Update Output Guardrail Workspace Exclusions",
 				"readOnlyHint": false,
-				"destructiveHint": false,
+				"destructiveHint": true,
 				"idempotentHint": true,
 				"openWorldHint": true
 			}
@@ -7463,7 +7469,9 @@
 					},
 					"created_at": {
 						"description": "Log creation timestamp in ISO 8601 format; required for v2",
-						"type": "string"
+						"type": "string",
+						"format": "date-time",
+						"pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
 					},
 					"type": {
 						"description": "Set to hooks when retrieving a hook execution log",
@@ -9789,9 +9797,9 @@
 									"type": "object",
 									"properties": {
 										"type": {
-											"description": "Static per-token pricing configuration",
 											"type": "string",
-											"const": "static"
+											"const": "static",
+											"description": "Static per-token pricing configuration"
 										},
 										"pay_as_you_go": {
 											"description": "Pay-as-you-go rates for this integration model",
@@ -9823,7 +9831,8 @@
 												}
 											}
 										}
-									}
+									},
+									"required": ["type"]
 								}
 							},
 							"required": ["slug", "enabled"]
@@ -9968,7 +9977,8 @@
 					"global_alert_threshold": {
 						"description": "Global cost alert threshold applied to workspace access",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0,
+						"maximum": 100
 					},
 					"global_rate_limit_rpm": {
 						"description": "Global requests-per-minute limit for workspace access",
