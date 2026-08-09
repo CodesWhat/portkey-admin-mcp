@@ -1,4 +1,4 @@
-import { BaseService } from "./base.service.js";
+import { BaseService, isNoContent } from "./base.service.js";
 import type {
 	BillingMetadata,
 	CreatePromptRequest,
@@ -100,9 +100,10 @@ export class PromptsService extends BaseService {
 	}
 
 	async deletePrompt(promptId: string): Promise<DeletePromptResponse> {
-		return this.delete<DeletePromptResponse>(
+		const result = await this.delete<DeletePromptResponse>(
 			`/prompts/${this.encodePathSegment(promptId)}`,
 		);
+		return isNoContent(result) ? {} : result;
 	}
 
 	async publishPrompt(

@@ -119,6 +119,22 @@ interface ExecuteRequestOptions {
 	authenticate?: boolean;
 }
 
+/**
+ * Sentinel returned when `allowNoContent` is set and the upstream responds
+ * with HTTP 204. A 204 carries no body, so there is no real `T` to hand
+ * back — returning this sentinel instead of fabricating `{} as T` means the
+ * type system forces every caller to decide what "no content" means for
+ * them, rather than silently exposing an object that lies about carrying
+ * `T`'s fields.
+ */
+export const NO_CONTENT = Symbol("NoContent");
+export type NoContent = typeof NO_CONTENT;
+
+/** Narrows a `delete<T>()` result away from the {@link NoContent} sentinel. */
+export function isNoContent<T>(value: T | NoContent): value is NoContent {
+	return value === NO_CONTENT;
+}
+
 export class BaseService {
 	protected readonly apiKey: string;
 	protected readonly baseUrl: string;
@@ -172,7 +188,7 @@ export class BaseService {
 		method: HttpMethod,
 		path: string,
 		options: ExecuteRequestOptions = {},
-	): Promise<T> {
+	): Promise<T | NoContent> {
 		const requestId = crypto.randomUUID();
 		const url = this.buildUrl(path, options.params, options.baseUrl);
 		const startTime = Date.now();
@@ -221,7 +237,7 @@ export class BaseService {
 			});
 
 			if (options.allowNoContent && response.status === 204) {
-				return {} as T;
+				return NO_CONTENT;
 			}
 
 			return (await response.json()) as T;
@@ -242,28 +258,59 @@ export class BaseService {
 		}
 	}
 
+	/**
+	 * Asserts that a request known not to set `allowNoContent` never actually
+	 * resolves to the {@link NoContent} sentinel. `get`/`post`/`put`/`getPublic`
+	 * never pass `allowNoContent`, so `executeRequest` cannot take the 204
+	 * branch for them — this only guards against that invariant breaking.
+	 */
+	private rejectNoContent<T>(result: T | NoContent): T {
+		if (isNoContent(result)) {
+			throw new Error(
+				"Unexpected HTTP 204 No Content response for a request that did not allow it",
+			);
+		}
+		return result;
+	}
+
 	protected async get<T>(path: string, params?: object): Promise<T> {
-		return this.executeRequest<T>("GET", path, { params });
+		return this.rejectNoContent(
+			await this.executeRequest<T>("GET", path, { params }),
+		);
 	}
 
 	/** Read an unauthenticated Portkey public-catalog endpoint outside /v1. */
 	protected async getPublic<T>(path: string, params?: object): Promise<T> {
-		return this.executeRequest<T>("GET", path, {
-			params,
-			baseUrl: DEFAULT_PUBLIC_BASE_URL,
-			authenticate: false,
-		});
+		return this.rejectNoContent(
+			await this.executeRequest<T>("GET", path, {
+				params,
+				baseUrl: DEFAULT_PUBLIC_BASE_URL,
+				authenticate: false,
+			}),
+		);
 	}
 
 	protected async post<T>(path: string, body?: unknown): Promise<T> {
-		return this.executeRequest<T>("POST", path, { body });
+		return this.rejectNoContent(
+			await this.executeRequest<T>("POST", path, { body }),
+		);
 	}
 
 	protected async put<T>(path: string, body?: unknown): Promise<T> {
-		return this.executeRequest<T>("PUT", path, { body });
+		return this.rejectNoContent(
+			await this.executeRequest<T>("PUT", path, { body }),
+		);
 	}
 
-	protected async delete<T>(path: string, params?: object): Promise<T> {
+	/**
+	 * DELETE responses may legitimately come back as HTTP 204. Callers get
+	 * `T | NoContent` back and must narrow with {@link isNoContent} instead of
+	 * being handed a fabricated `{}` that silently claims to be a real `T`.
+	 */
+	protected async delete<T>(
+		path: string,
+		params?: object,
+	): Promise<T | NoContent> {
 		return this.executeRequest<T>("DELETE", path, {
 			params,
 			allowNoContent: true,

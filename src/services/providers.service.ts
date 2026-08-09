@@ -1,4 +1,4 @@
-import { BaseService } from "./base.service.js";
+import { BaseService, isNoContent } from "./base.service.js";
 
 // Provider Types
 export interface ProviderRateLimit {
@@ -107,6 +107,7 @@ export class ProvidersService extends BaseService {
 		const path = workspaceId
 			? `/providers/${this.encodePathSegment(slug)}?workspace_id=${encodeURIComponent(workspaceId)}`
 			: `/providers/${this.encodePathSegment(slug)}`;
-		return this.delete<Record<string, never>>(path);
+		const result = await this.delete<Record<string, never>>(path);
+		return isNoContent(result) ? {} : result;
 	}
 }

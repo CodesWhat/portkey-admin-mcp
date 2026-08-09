@@ -28,7 +28,11 @@ import { Logger } from "../src/lib/logger.js";
 import { ToolChoiceSchema, toPromptToolChoice } from "../src/lib/schemas.js";
 import { SessionStore } from "../src/lib/session-store.js";
 import { AnalyticsService } from "../src/services/analytics.service.js";
-import { BaseService } from "../src/services/base.service.js";
+import {
+	BaseService,
+	isNoContent,
+	type NoContent,
+} from "../src/services/base.service.js";
 import { ConfigsService } from "../src/services/configs.service.js";
 import { PortkeyService } from "../src/services/index.js";
 import { IntegrationsService } from "../src/services/integrations.service.js";
@@ -92,7 +96,7 @@ class TestBaseServiceClient extends BaseService {
 		return this.put<T>(path, body);
 	}
 
-	requestDelete<T>(path: string): Promise<T> {
+	requestDelete<T>(path: string): Promise<T | NoContent> {
 		return this.delete<T>(path);
 	}
 }
@@ -298,7 +302,10 @@ describe("BaseService HTTP execution", () => {
 				}),
 				{ method: "PUT" },
 			);
-			assert.deepEqual(await service.requestDelete("/resource/123"), {});
+			assert.ok(
+				isNoContent(await service.requestDelete("/resource/123")),
+				"expected a 204 response to resolve to the NoContent sentinel",
+			);
 
 			assert.deepEqual(
 				fetchCalls.map(({ url, options }) => ({

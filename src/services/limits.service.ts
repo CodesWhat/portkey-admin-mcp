@@ -1,4 +1,4 @@
-import { BaseService } from "./base.service.js";
+import { BaseService, isNoContent } from "./base.service.js";
 
 // ── Shared condition / group_by types ──
 
@@ -151,9 +151,10 @@ export class LimitsService extends BaseService {
 		if (!id?.trim()) {
 			throw new Error("Rate limit ID is required");
 		}
-		return this.delete<{ success: boolean }>(
+		const result = await this.delete<{ success: boolean }>(
 			`/policies/rate-limits/${this.encodePathSegment(id)}`,
 		);
+		return isNoContent(result) ? { success: true } : result;
 	}
 
 	// ── Usage Limits ──
@@ -196,9 +197,10 @@ export class LimitsService extends BaseService {
 		if (!id?.trim()) {
 			throw new Error("Usage limit ID is required");
 		}
-		return this.delete<{ success: boolean }>(
+		const result = await this.delete<{ success: boolean }>(
 			`/policies/usage-limits/${this.encodePathSegment(id)}`,
 		);
+		return isNoContent(result) ? { success: true } : result;
 	}
 
 	// ── Usage Limit Entities ──
