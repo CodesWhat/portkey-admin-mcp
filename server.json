@@ -1,17 +1,17 @@
 {
 	"$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
 	"name": "io.github.CodesWhat/portkey-admin-mcp",
-	"description": "Full Portkey Admin API MCP server — configs, prompts, keys, analytics, and more.",
+	"description": "Portkey Admin API MCP server with current control-plane coverage and Prisma AIRS interoperability guidance.",
 	"repository": {
 		"url": "https://github.com/CodesWhat/portkey-admin-mcp",
 		"source": "github"
 	},
-	"version": "0.6.3",
+	"version": "0.7.0",
 	"packages": [
 		{
 			"registryType": "npm",
 			"identifier": "portkey-admin-mcp",
-			"version": "0.6.3",
+			"version": "0.7.0",
 			"transport": {
 				"type": "stdio"
 			},
@@ -32,7 +32,7 @@
 				},
 				{
 					"name": "PORTKEY_BASE_URL",
-					"description": "Portkey Admin API base URL. Defaults to https://api.portkey.ai/v1; point at a self-hosted gateway if needed",
+					"description": "Portkey Admin API base URL. Defaults to https://api.portkey.ai/v1; a Prisma AIRS or Strata Cloud Manager URL is not compatible",
 					"isRequired": false,
 					"format": "string",
 					"isSecret": false

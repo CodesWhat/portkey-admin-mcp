@@ -1,11 +1,47 @@
 # Portkey Admin MCP — API Coverage Roadmap
 
-> Last reviewed: 2026-07-14
-> **Status: COMPLETE** — 156 tools including API-key rotation and the now-documented Secret References surface
-> **Maintenance decision recorded 2026-06:** No further API-coverage work was planned following the Palo Alto Networks acquisition of Portkey; security and dependency patches remained in scope. See [README](./README.md) and [docs/audit-2026-06.md](./docs/audit-2026-06.md).
-> Completed: MCP Integrations (10), MCP Servers (10), Analytics (11), Prompt Versions (2), Usage Limit Entities (2)
+> Last reviewed: 2026-08-09
+> **Status: ACTIVE** — 171 tools, with compatibility and API-coverage development resumed against Portkey's current official OpenAPI and changelog
+> **The 2026-06 maintenance decision is superseded.** Portkey continued publishing control-plane API additions after the Palo Alto Networks acquisition, so new documented surfaces are back in scope. Prisma AIRS itself remains a separate interoperability track; see [the guide](./docs/PRISMA_AIRS_INTEROPERABILITY.md).
+> Completed: MCP Integrations (10), MCP Servers (12), Analytics (11), Prompt Versions (2), Usage Limit Entities (2)
 > Added 2026-07-14: Secret References became an officially documented Admin API CRUD surface.
-> The unchecked tasks below preserve the original implementation plan; they are not an active backlog. The completion table at the end records the delivered scope.
+> Added 2026-08-09: organisation guardrail defaults/exclusions, single-log reads, export restrictions, SCIM group mappings, MCP server connections, public model pricing, and current integration schemas.
+> The unchecked tasks in Phases 1–4 preserve the original implementation plan; Phase 5 is the current compatibility track.
+
+---
+
+## Phase 5: Current Portkey compatibility (August 2026)
+
+### 5A — Organisation governance and logs
+
+| Endpoint | Method | Tool Name | Status |
+|---|---|---|---|
+| `/admin/organisation/defaults` | GET | `get_organisation_defaults` | Done |
+| `/admin/organisation/defaults` | PUT | `update_organisation_defaults` | Done |
+| `/workspace-exclusions/input-guardrails` | GET/PUT | `list_input_guardrail_workspace_exclusions`, `update_input_guardrail_workspace_exclusions` | Done |
+| `/workspace-exclusions/output-guardrails` | GET/PUT | `list_output_guardrail_workspace_exclusions`, `update_output_guardrail_workspace_exclusions` | Done |
+| `/logs/{logId}` | GET | `get_log` | Done |
+| `/logs/exports/field-restrictions` | GET | `get_log_export_field_restrictions` | Done |
+
+### 5B — Enterprise directory and MCP connections
+
+| Endpoint | Method | Tool Name | Status |
+|---|---|---|---|
+| `/scim/workspaces` | GET/POST | `list_scim_workspace_mappings`, `create_scim_workspace_mapping` | Done |
+| `/scim/workspaces/{mappingId}` | DELETE | `delete_scim_workspace_mapping` | Done |
+| `/scim/groups` | GET | `list_scim_groups` | Done |
+| `/mcp-servers/{id}/connections` | GET/DELETE | `list_mcp_server_connections`, `disconnect_mcp_server_connection` | Done |
+
+### 5C — Pricing and schema parity
+
+- [x] Public `/model-configs/pricing/{provider}/{model}` lookup via `get_model_pricing`, using the unauthenticated non-`/v1` catalog base.
+- [x] Integration Secret Reference mappings and pricing adjustments.
+- [x] Custom/fine-tuned model configuration, custom headers, static pricing, and `allow_all_models`.
+- [x] Global/per-workspace access overrides and default-provider creation controls.
+- [x] MCP integration Secret Reference mappings.
+- [x] Compatibility normalization for current `models` and `workspaces` list response keys.
+- [ ] Continue monitoring the official Portkey OpenAPI/changelog for additive control-plane surfaces.
+- [ ] Add a native Prisma AIRS adapter only when Palo Alto Networks publishes a stable AI Gateway management API.
 
 ---
 
@@ -227,4 +263,6 @@ Apply the same audit methodology from this session to all new services:
 | 3B (Usage Limit Entities) | 2 | Done |
 | **Total** | **40** | |
 
-Final tool count: **156 tools** (115 baseline + 40 roadmap tools + API-key rotation)
+Original roadmap count: **156 tools** (115 baseline + 40 roadmap tools + API-key rotation).
+
+Current count: **171 tools** after the 15 Phase 5 compatibility additions.

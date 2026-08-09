@@ -92,7 +92,97 @@ export interface WorkspaceMembersResponse {
 	data: WorkspaceUser[];
 }
 
+export type ScimWorkspaceRole = "admin" | "member" | "manager";
+
+/** Filters and pagination for SCIM group-to-workspace mappings. */
+export interface ListScimWorkspaceMappingsParams {
+	workspace_id?: string;
+	scim_group_id?: string;
+	role?: ScimWorkspaceRole;
+	page?: number;
+	page_size?: number;
+}
+
+/** A SCIM group mapping that grants members a role in a workspace. */
+export interface ScimWorkspaceMapping {
+	id: string;
+	workspace_id: string;
+	scim_group_id?: string;
+	scim_group_name?: string;
+	role: ScimWorkspaceRole;
+	[key: string]: unknown;
+}
+
+export interface ListScimWorkspaceMappingsResponse {
+	mappings: ScimWorkspaceMapping[];
+	total_count: number;
+	[key: string]: unknown;
+}
+
+type CreateScimWorkspaceMappingBase = {
+	workspace_id: string;
+	role: ScimWorkspaceRole;
+};
+
+/** Create a mapping using exactly one SCIM group identifier. */
+export type CreateScimWorkspaceMappingRequest =
+	| (CreateScimWorkspaceMappingBase & {
+			scim_group_id: string;
+			scim_group_name?: never;
+	  })
+	| (CreateScimWorkspaceMappingBase & {
+			scim_group_name: string;
+			scim_group_id?: never;
+	  });
+
+/** Filters and pagination for SCIM groups synchronized to Portkey. */
+export interface ListScimGroupsParams {
+	search?: string;
+	page?: number;
+	page_size?: number;
+}
+
+export interface ScimGroup {
+	id: string;
+	name: string;
+	[key: string]: unknown;
+}
+
+export interface ListScimGroupsResponse {
+	groups: ScimGroup[];
+	total_count: number;
+	[key: string]: unknown;
+}
+
 export class WorkspacesService extends BaseService {
+	async listScimWorkspaceMappings(
+		params?: ListScimWorkspaceMappingsParams,
+	): Promise<ListScimWorkspaceMappingsResponse> {
+		return this.get<ListScimWorkspaceMappingsResponse>(
+			"/scim/workspaces",
+			params,
+		);
+	}
+
+	async createScimWorkspaceMapping(
+		data: CreateScimWorkspaceMappingRequest,
+	): Promise<ScimWorkspaceMapping> {
+		return this.post<ScimWorkspaceMapping>("/scim/workspaces", data);
+	}
+
+	async deleteScimWorkspaceMapping(
+		mappingId: string,
+	): Promise<{ success: boolean }> {
+		await this.delete(`/scim/workspaces/${this.encodePathSegment(mappingId)}`);
+		return { success: true };
+	}
+
+	async listScimGroups(
+		params?: ListScimGroupsParams,
+	): Promise<ListScimGroupsResponse> {
+		return this.get<ListScimGroupsResponse>("/scim/groups", params);
+	}
+
 	async listWorkspaces(
 		params?: ListWorkspacesParams,
 	): Promise<ListWorkspacesResponse> {

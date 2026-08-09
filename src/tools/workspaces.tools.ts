@@ -2,12 +2,50 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { PortkeyService } from "../services/index.js";
 import type {
+	CreateScimWorkspaceMappingRequest,
 	SingleWorkspaceResponse,
 	Workspace,
 	WorkspaceDefaults,
 	WorkspaceUser,
 } from "../services/workspaces.service.js";
 import { formatFullName } from "./utils.js";
+
+const scimWorkspaceMappingBaseShape = {
+	workspace_id: z
+		.string()
+		.describe("Portkey workspace ID that the SCIM group should access"),
+	role: z
+		.enum(["admin", "member", "manager"])
+		.describe("Workspace role automatically granted to group members"),
+};
+
+const createScimWorkspaceMappingInputSchema = z
+	.object({
+		...scimWorkspaceMappingBaseShape,
+		scim_group_id: z
+			.string()
+			.min(1)
+			.optional()
+			.describe(
+				"Existing identity-provider SCIM group ID; provide this or scim_group_name, but not both",
+			),
+		scim_group_name: z
+			.string()
+			.min(1)
+			.optional()
+			.describe(
+				"Existing SCIM group display name; provide this or scim_group_id, but not both",
+			),
+	})
+	.superRefine((input, context) => {
+		if (Boolean(input.scim_group_id) === Boolean(input.scim_group_name)) {
+			context.addIssue({
+				code: "custom",
+				path: ["scim_group_id"],
+				message: "Provide exactly one of scim_group_id or scim_group_name",
+			});
+		}
+	});
 
 const WORKSPACES_TOOL_SCHEMAS = {
 	listWorkspaces: {
@@ -98,6 +136,59 @@ const WORKSPACES_TOOL_SCHEMAS = {
 		workspace_id: z.string().describe("The workspace ID"),
 		user_id: z.string().describe("The user ID to remove"),
 	},
+	listScimWorkspaceMappings: {
+		workspace_id: z
+			.string()
+			.optional()
+			.describe("Return only mappings for this Portkey workspace ID"),
+		scim_group_id: z
+			.string()
+			.optional()
+			.describe(
+				"Return only mappings for this identity-provider SCIM group ID",
+			),
+		role: z
+			.enum(["admin", "member", "manager"])
+			.optional()
+			.describe("Return only mappings that grant this workspace role"),
+		page: z.coerce
+			.number()
+			.int()
+			.nonnegative()
+			.optional()
+			.describe("Zero-based results page to retrieve; the first page is 0"),
+		page_size: z.coerce
+			.number()
+			.int()
+			.positive()
+			.max(100)
+			.optional()
+			.describe("Mappings per page, from 1 through 100"),
+	},
+	deleteScimWorkspaceMapping: {
+		mapping_id: z
+			.string()
+			.describe("SCIM workspace mapping ID from list_scim_workspace_mappings"),
+	},
+	listScimGroups: {
+		search: z
+			.string()
+			.optional()
+			.describe("Case-insensitive text to match against SCIM group names"),
+		page: z.coerce
+			.number()
+			.int()
+			.nonnegative()
+			.optional()
+			.describe("Zero-based results page to retrieve; the first page is 0"),
+		page_size: z.coerce
+			.number()
+			.int()
+			.positive()
+			.max(100)
+			.optional()
+			.describe("SCIM groups per page, from 1 through 100"),
+	},
 } as const;
 
 function formatWorkspaceDefaults(
@@ -179,6 +270,120 @@ export function registerWorkspacesTools(
 	server: McpServer,
 	service: PortkeyService,
 ): void {
+	server.tool(
+		"list_scim_workspace_mappings",
+		"List identity-provider SCIM group mappings that automatically grant Portkey workspace roles. Use it to audit provisioned access or obtain mapping_id before delete_scim_workspace_mapping; filter by workspace, group, or role and page through large directories. This reads mappings only and does not query individual workspace members.",
+		WORKSPACES_TOOL_SCHEMAS.listScimWorkspaceMappings,
+		{
+			title: "List SCIM Workspace Mappings",
+			readOnlyHint: true,
+			destructiveHint: false,
+			idempotentHint: true,
+			openWorldHint: true,
+		},
+		async (params) => ({
+			content: [
+				{
+					type: "text",
+					text: JSON.stringify(
+						await service.workspaces.listScimWorkspaceMappings(params),
+					),
+				},
+			],
+		}),
+	);
+
+	server.registerTool(
+		"create_scim_workspace_mapping",
+		{
+			description:
+				"Map one identity-provider SCIM group to a Portkey workspace role so current and future group members receive access automatically. Provide exactly one of scim_group_id or scim_group_name; a name can pre-create the Portkey SCIM group before the IdP provisions it. Use list_scim_groups to discover existing groups and list_workspaces for the workspace ID. This changes access provisioning and is distinct from add_workspace_member, which grants one user directly.",
+			inputSchema: createScimWorkspaceMappingInputSchema,
+			annotations: {
+				title: "Create SCIM Workspace Mapping",
+				readOnlyHint: false,
+				destructiveHint: false,
+				idempotentHint: false,
+				openWorldHint: true,
+			},
+		},
+		async (params) => {
+			let request: CreateScimWorkspaceMappingRequest;
+			if (params.scim_group_id !== undefined) {
+				request = {
+					workspace_id: params.workspace_id,
+					role: params.role,
+					scim_group_id: params.scim_group_id,
+				};
+			} else if (params.scim_group_name !== undefined) {
+				request = {
+					workspace_id: params.workspace_id,
+					role: params.role,
+					scim_group_name: params.scim_group_name,
+				};
+			} else {
+				throw new Error(
+					"Provide exactly one of scim_group_id or scim_group_name",
+				);
+			}
+			const result =
+				await service.workspaces.createScimWorkspaceMapping(request);
+			return {
+				content: [{ type: "text", text: JSON.stringify(result) }],
+			};
+		},
+	);
+
+	server.tool(
+		"delete_scim_workspace_mapping",
+		"Delete a SCIM group-to-workspace mapping by mapping_id and stop future group updates from affecting that workspace. Existing provisioned members remain in the workspace and must be managed separately. Inspect list_scim_workspace_mappings first; this does not delete the identity-provider group or the Portkey workspace.",
+		WORKSPACES_TOOL_SCHEMAS.deleteScimWorkspaceMapping,
+		{
+			title: "Delete SCIM Workspace Mapping",
+			readOnlyHint: false,
+			destructiveHint: true,
+			idempotentHint: true,
+			openWorldHint: true,
+		},
+		async (params) => {
+			const result = await service.workspaces.deleteScimWorkspaceMapping(
+				params.mapping_id,
+			);
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify({
+							message: `Deleted SCIM workspace mapping "${params.mapping_id}"`,
+							...result,
+						}),
+					},
+				],
+			};
+		},
+	);
+
+	server.tool(
+		"list_scim_groups",
+		"Search and page through identity-provider groups synchronized to Portkey over SCIM. Use this to resolve a group ID or exact display name before create_scim_workspace_mapping; it reads directory groups only and does not show their workspace mappings or individual members.",
+		WORKSPACES_TOOL_SCHEMAS.listScimGroups,
+		{
+			title: "List SCIM Groups",
+			readOnlyHint: true,
+			destructiveHint: false,
+			idempotentHint: true,
+			openWorldHint: true,
+		},
+		async (params) => ({
+			content: [
+				{
+					type: "text",
+					text: JSON.stringify(await service.workspaces.listScimGroups(params)),
+				},
+			],
+		}),
+	);
+
 	// List workspaces tool
 	server.tool(
 		"list_workspaces",

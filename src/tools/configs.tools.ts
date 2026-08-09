@@ -2,6 +2,21 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { PortkeyService } from "../services/index.js";
 
+const configTargetSchema = z
+	.object({
+		provider: z
+			.string()
+			.optional()
+			.describe("Provider slug to route requests to"),
+		virtual_key: z
+			.string()
+			.optional()
+			.describe("Virtual key slug to use for this routing target"),
+	})
+	.refine((target) => target.provider || target.virtual_key, {
+		message: "Each target must have at least provider or virtual_key",
+	});
+
 const CONFIGS_TOOL_SCHEMAS = {
 	listConfigs: {
 		current_page: z.coerce
@@ -56,16 +71,7 @@ const CONFIGS_TOOL_SCHEMAS = {
 			.optional()
 			.describe("Routing strategy: 'loadbalance' or 'fallback'"),
 		targets: z
-			.array(
-				z
-					.object({
-						provider: z.string().optional(),
-						virtual_key: z.string().optional(),
-					})
-					.refine((t) => t.provider || t.virtual_key, {
-						message: "Each target must have at least provider or virtual_key",
-					}),
-			)
+			.array(configTargetSchema)
 			.optional()
 			.describe("Array of target providers with virtual keys"),
 	},
@@ -100,16 +106,7 @@ const CONFIGS_TOOL_SCHEMAS = {
 			.optional()
 			.describe("Routing strategy"),
 		targets: z
-			.array(
-				z
-					.object({
-						provider: z.string().optional(),
-						virtual_key: z.string().optional(),
-					})
-					.refine((t) => t.provider || t.virtual_key, {
-						message: "Each target must have at least provider or virtual_key",
-					}),
-			)
+			.array(configTargetSchema)
 			.optional()
 			.describe("Array of target providers"),
 	},
@@ -127,14 +124,7 @@ const configPayloadSchema = z.object({
 	retry_attempts: z.coerce.number().positive().max(5).optional(),
 	retry_on_status_codes: z.array(z.coerce.number()).optional(),
 	strategy_mode: z.enum(["loadbalance", "fallback"]).optional(),
-	targets: z
-		.array(
-			z.object({
-				provider: z.string().optional(),
-				virtual_key: z.string().optional(),
-			}),
-		)
-		.optional(),
+	targets: z.array(configTargetSchema).optional(),
 });
 
 type ConfigPayloadParams = z.infer<typeof configPayloadSchema>;

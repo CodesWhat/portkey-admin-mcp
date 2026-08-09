@@ -39,6 +39,24 @@ export interface InsertLogResponse {
 	message?: string;
 }
 
+/** Query options used by Portkey's versioned single-log endpoint */
+export interface GetLogParams {
+	path_format?: "v1" | "v2";
+	created_at?: string;
+	type?: "hooks";
+}
+
+/** A log payload varies by provider, mode, and requested path format. */
+export type LogDetail = Record<string, unknown>;
+
+/** Query for fields an organisation prevents a workspace from exporting. */
+export interface GetLogExportFieldRestrictionsParams {
+	workspace_id: string;
+}
+
+/** Export restriction payloads may grow as new log fields are introduced. */
+export type LogExportFieldRestrictions = Record<string, unknown>;
+
 // Log Export Types
 export type LogExportField =
 	| "id"
@@ -143,6 +161,24 @@ export interface DownloadLogExportResponse {
 }
 
 export class LoggingService extends BaseService {
+	/** Get one gateway log by ID. */
+	async getLog(logId: string, params?: GetLogParams): Promise<LogDetail> {
+		return this.get<LogDetail>(
+			`/logs/${this.encodePathSegment(logId)}`,
+			params,
+		);
+	}
+
+	/** Get organisation-managed export field restrictions for a workspace. */
+	async getLogExportFieldRestrictions(
+		params: GetLogExportFieldRestrictionsParams,
+	): Promise<LogExportFieldRestrictions> {
+		return this.get<LogExportFieldRestrictions>(
+			"/logs/exports/field-restrictions",
+			params,
+		);
+	}
+
 	/**
 	 * Insert a log entry (or multiple entries) into Portkey
 	 */

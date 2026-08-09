@@ -4,7 +4,7 @@
 
 <h1>Portkey Admin MCP Server</h1>
 
-**The full [Portkey](https://portkey.ai/) Admin API as an MCP server — 156 tools across prompts, configs, keys, analytics, and more.**
+**The [Portkey](https://portkey.ai/) Admin API as an MCP server — 171 tools across prompts, configs, keys, analytics, governance, and more.**
 
 </div>
 
@@ -26,7 +26,7 @@
 <hr>
 
 > [!IMPORTANT]
-> **Maintenance mode.** Portkey was acquired by **Palo Alto Networks** (completed 2026‑05‑29) and is being folded into the Prisma AIRS platform. The Portkey Admin API this server targets is **live and unchanged as of June 2026**, and this project still works end‑to‑end — but it is now in **maintenance mode**: security and dependency patches only, no new features, pending Palo Alto's post‑acquisition API roadmap. If the hosted Admin API is ever deprecated, point `PORTKEY_BASE_URL` at a self‑hosted [Portkey gateway](https://github.com/Portkey-AI/gateway). See [docs/audit-2026-06.md](./docs/audit-2026-06.md) for the full assessment and [security_best_practices_report.md](./security_best_practices_report.md) for the 0.6.0 security-hardening review.
+> **Active compatibility development.** Palo Alto Networks completed its Portkey acquisition on 2026‑05‑29 and now presents Portkey as the core of Prisma AIRS AI Gateway. The Portkey Admin API remains live, and its official OpenAPI and product changelog continued adding control-plane surfaces through August 2026; this project has therefore resumed API-coverage work. It targets the Portkey-compatible API (`x-portkey-api-key`), not Prisma AIRS/Strata Cloud Manager directly. Prisma AIRS AI Gateway currently has a different management and authentication surface, so it is not a `PORTKEY_BASE_URL` swap. See the short [Prisma AIRS interoperability guide](./docs/PRISMA_AIRS_INTEROPERABILITY.md) for the supported side-by-side model and adapter criteria.
 
 <h2 align="center">📑 Contents</h2>
 
@@ -34,6 +34,7 @@
 - [🧰 What You Can Do](#what-you-can-do)
 - [🔑 API Key Scopes](#api-key-scopes)
 - [🌐 HTTP Server (Experimental)](#http-server)
+- [🔄 Prisma AIRS interoperability](./docs/PRISMA_AIRS_INTEROPERABILITY.md)
 - [🛠️ Development](#development)
 - [🧾 Full tool list — ENDPOINTS.md](./ENDPOINTS.md)
 
@@ -122,19 +123,19 @@ Then use this config:
 | **Virtual Keys** | 5 | Manage provider access keys |
 | **Collections** | 5 | Group prompts by app or project |
 | **Providers** | 5 | Manage AI provider configurations |
-| **Integrations** | 10 | Provider integrations, models, workspace access |
+| **Integrations** | 11 | Provider integrations, model pricing, models, workspace access |
 | **MCP Integrations** | 10 | External MCP tool integrations |
-| **MCP Servers** | 10 | MCP server registry and capabilities |
-| **Guardrails** | 5 | Content safety policies |
+| **MCP Servers** | 12 | MCP server registry, capabilities, and live connections |
+| **Guardrails** | 11 | Content safety policies, organisation defaults, workspace exclusions |
 | **Usage Limits** | 7 | Cost and token consumption limits |
 | **Rate Limits** | 5 | Request frequency controls |
 | **Analytics** | 20 | Cost, latency, errors, tokens, cache, feedback |
-| **Logging** | 8 | Log ingestion and export |
+| **Logging** | 10 | Log retrieval, ingestion, export, and field restrictions |
 | **Tracing** | 2 | Feedback creation and updates on traces |
-| **Users & Workspaces** | 20 | User management, invites, workspace members |
+| **Users & Workspaces** | 24 | User management, invites, workspace members, SCIM group mappings |
 | **Audit** | 1 | Audit log access |
 
-**156 tools total.** See [ENDPOINTS.md](./ENDPOINTS.md) for the full list with descriptions.
+**171 tools total.** See [ENDPOINTS.md](./ENDPOINTS.md) for the full list with descriptions.
 
 <hr>
 
@@ -142,7 +143,7 @@ Then use this config:
 
 Most tools work with a **workspace-scoped service key** that has Select All permissions enabled. That covers prompts, configs, virtual/API keys, providers, guardrails, workspace integrations, MCP servers, rate/usage limits, logs, prompt completions, and workspace user management.
 
-### Enterprise-gated tools (28)
+### Enterprise-gated tools (40)
 
 The following tools require an **organisation-level scope that is only available on Portkey Enterprise plans**. They return `403 You do not have enough permissions to execute this request` on workspace plans. Their descriptions include an `Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.` suffix so MCP clients know upfront.
 
@@ -152,6 +153,8 @@ The following tools require an **organisation-level scope that is only available
 | Audit | `list_audit_logs` | `audit_logs.list` |
 | Org-level integrations | `get_integration`, `list_integration_models`, `list_integration_workspaces` | `organisation_integrations.read` |
 | Org-level users | `list_all_users`, `get_user`, `get_user_stats`, `list_user_invites` | `organisation_users.list` / `organisation_users.read` |
+| Log exports (8) | `create_log_export`, `list_log_exports`, `get_log_export`, `start_log_export`, `cancel_log_export`, `download_log_export`, `update_log_export`, `get_log_export_field_restrictions` | Enterprise Logs Export + `logs.export` |
+| SCIM groups (4) | `list_scim_groups`, `list_scim_workspace_mappings`, `create_scim_workspace_mapping`, `delete_scim_workspace_mapping` | SCIM enabled + organisation admin access |
 
 ### Other scope requirements
 
@@ -193,7 +196,7 @@ For local-only HTTP use, leave `MCP_HOST` at its default `127.0.0.1`. Set `MCP_H
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `PORTKEY_API_KEY` | (required) | Your Portkey API key |
-| `PORTKEY_BASE_URL` | `https://api.portkey.ai/v1` | Portkey Admin API base URL. Credentialed requests never auto-follow redirects |
+| `PORTKEY_BASE_URL` | `https://api.portkey.ai/v1` | Portkey Admin API base URL. Prisma AIRS/SCM URLs are not compatible; credentialed requests never auto-follow redirects |
 | `PORTKEY_ALLOW_PRIVATE_BASE_URL` | — | Set to `true` to allow a literal loopback/private `PORTKEY_BASE_URL` |
 | `PORTKEY_ALLOW_INSECURE_HTTP` | — | Separately set to `true` only when a trusted self-hosted gateway cannot use HTTPS |
 | `PORTKEY_TOOL_DOMAINS` | — | Server-side tool-domain allowlist. HTTP `?tools=` may narrow this set but cannot expand it |
@@ -289,7 +292,7 @@ npm run ci            # full pipeline (lint + typecheck + test + build + e2e + v
 ### Built With
 
 [![TypeScript](https://img.shields.io/badge/TypeScript_7.0-3178C6?logo=typescript&logoColor=fff)](https://www.typescriptlang.org/)
-[![MCP SDK](https://img.shields.io/badge/MCP_SDK_1.29-000?logo=modelcontextprotocol&logoColor=fff)](https://github.com/modelcontextprotocol/typescript-sdk)
+[![MCP SDK](https://img.shields.io/badge/MCP_SDK_1.30-000?logo=modelcontextprotocol&logoColor=fff)](https://github.com/modelcontextprotocol/typescript-sdk)
 [![Zod 4](https://img.shields.io/badge/Zod_4-3E67B1?logo=zod&logoColor=fff)](https://zod.dev/)
 [![Biome](https://img.shields.io/badge/Biome_2.5-60a5fa?logo=biome&logoColor=fff)](https://biomejs.dev/)
 [![Node 24](https://img.shields.io/badge/Node_24-339933?logo=nodedotjs&logoColor=fff)](https://nodejs.org/)

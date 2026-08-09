@@ -101,6 +101,32 @@ export interface UpdateMcpServerUserAccessRequest {
 	}>;
 }
 
+// Sub-resource: Active connections
+export interface ListMcpServerConnectionsParams {
+	user_id?: string;
+	workspace_id?: string;
+	current_page?: number;
+	page_size?: number;
+}
+
+export interface McpServerConnection {
+	user_id: string;
+	connected: boolean;
+	created_at: string;
+	last_updated_at: string;
+}
+
+export interface ListMcpServerConnectionsResponse {
+	data: McpServerConnection[];
+	total: number;
+	has_more: boolean;
+}
+
+export interface DisconnectMcpServerConnectionParams {
+	user_id?: string;
+	workspace_id?: string;
+}
+
 // Test connectivity
 export interface TestMcpServerResponse {
 	success: boolean;
@@ -115,6 +141,27 @@ export interface TestMcpServerResponse {
 // ===== Service =====
 
 export class McpServersService extends BaseService {
+	async listMcpServerConnections(
+		id: string,
+		params?: ListMcpServerConnectionsParams,
+	): Promise<ListMcpServerConnectionsResponse> {
+		return this.get<ListMcpServerConnectionsResponse>(
+			`/mcp-servers/${this.encodePathSegment(id)}/connections`,
+			params,
+		);
+	}
+
+	async disconnectMcpServerConnection(
+		id: string,
+		params?: DisconnectMcpServerConnectionParams,
+	): Promise<{ success: boolean }> {
+		await this.delete(
+			`/mcp-servers/${this.encodePathSegment(id)}/connections`,
+			params,
+		);
+		return { success: true };
+	}
+
 	async listMcpServers(
 		params?: ListMcpServersParams,
 	): Promise<ListMcpServersResponse> {

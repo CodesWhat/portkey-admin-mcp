@@ -23,6 +23,7 @@ import { registerGuardrailsTools } from "../src/tools/guardrails.tools.js";
 import { registerLimitsTools } from "../src/tools/limits.tools.js";
 import { registerLoggingTools } from "../src/tools/logging.tools.js";
 import { registerTracingTools } from "../src/tools/tracing.tools.js";
+import { registerToolCallbacks } from "./helpers/tool-registry.js";
 
 // ---------------------------------------------------------------------------
 // Helpers (mirrored from unit.test.ts)
@@ -79,24 +80,6 @@ async function captureServiceRequest(
 		basePrototype.put = originalMethods.put;
 		basePrototype.delete = originalMethods.delete;
 	}
-}
-
-function registerToolCallbacks(
-	register: (server: { tool(name: string, ...rest: unknown[]): never }) => void,
-): Map<string, (...args: unknown[]) => Promise<unknown>> {
-	const callbacks = new Map<string, (...args: unknown[]) => Promise<unknown>>();
-
-	register({
-		tool(name: string, ...rest: unknown[]) {
-			callbacks.set(
-				name,
-				rest[rest.length - 1] as (...args: unknown[]) => Promise<unknown>,
-			);
-			return {} as never;
-		},
-	});
-
-	return callbacks;
 }
 
 // ---------------------------------------------------------------------------

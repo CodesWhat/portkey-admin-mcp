@@ -8,6 +8,7 @@ import {
 import { Logger } from "../lib/logger.js";
 
 const DEFAULT_BASE_URL = "https://api.portkey.ai/v1";
+const DEFAULT_PUBLIC_BASE_URL = "https://api.portkey.ai";
 
 const PRIVATE_BASE_URL_OVERRIDE_HINT =
 	"Set PORTKEY_ALLOW_PRIVATE_BASE_URL=true to allow self-hosted gateways on loopback or private networks.";
@@ -114,6 +115,8 @@ interface ExecuteRequestOptions {
 	params?: object;
 	body?: unknown;
 	allowNoContent?: boolean;
+	baseUrl?: string;
+	authenticate?: boolean;
 }
 
 export class BaseService {
@@ -139,15 +142,20 @@ export class BaseService {
 		return encodeURIComponent(value);
 	}
 
-	private buildUrl(path: string, params?: object): string {
-		return `${this.baseUrl}${path}${buildQueryString(params)}`;
+	private buildUrl(
+		path: string,
+		params?: object,
+		baseUrl = this.baseUrl,
+	): string {
+		return `${baseUrl}${path}${buildQueryString(params)}`;
 	}
 
-	private buildHeaders(method: HttpMethod): Record<string, string> {
-		const headers: Record<string, string> = {
-			"x-portkey-api-key": this.apiKey,
-			Accept: "application/json",
-		};
+	private buildHeaders(
+		method: HttpMethod,
+		authenticate = true,
+	): Record<string, string> {
+		const headers: Record<string, string> = { Accept: "application/json" };
+		if (authenticate) headers["x-portkey-api-key"] = this.apiKey;
 
 		if (method === "POST" || method === "PUT") {
 			headers["Content-Type"] = "application/json";
@@ -166,7 +174,7 @@ export class BaseService {
 		options: ExecuteRequestOptions = {},
 	): Promise<T> {
 		const requestId = crypto.randomUUID();
-		const url = this.buildUrl(path, options.params);
+		const url = this.buildUrl(path, options.params, options.baseUrl);
 		const startTime = Date.now();
 
 		// Log only the param keys, never the composed URL — query values can carry
@@ -184,7 +192,7 @@ export class BaseService {
 			const response = await fetchWithTimeout(url, {
 				method,
 				redirect: "manual",
-				headers: this.buildHeaders(method),
+				headers: this.buildHeaders(method, options.authenticate),
 				body: this.serializeBody(options.body),
 				timeout: this.timeout,
 			});
@@ -238,6 +246,15 @@ export class BaseService {
 		return this.executeRequest<T>("GET", path, { params });
 	}
 
+	/** Read an unauthenticated Portkey public-catalog endpoint outside /v1. */
+	protected async getPublic<T>(path: string, params?: object): Promise<T> {
+		return this.executeRequest<T>("GET", path, {
+			params,
+			baseUrl: DEFAULT_PUBLIC_BASE_URL,
+			authenticate: false,
+		});
+	}
+
 	protected async post<T>(path: string, body?: unknown): Promise<T> {
 		return this.executeRequest<T>("POST", path, { body });
 	}
@@ -246,7 +263,10 @@ export class BaseService {
 		return this.executeRequest<T>("PUT", path, { body });
 	}
 
-	protected async delete<T>(path: string): Promise<T> {
-		return this.executeRequest<T>("DELETE", path, { allowNoContent: true });
+	protected async delete<T>(path: string, params?: object): Promise<T> {
+		return this.executeRequest<T>("DELETE", path, {
+			params,
+			allowNoContent: true,
+		});
 	}
 }

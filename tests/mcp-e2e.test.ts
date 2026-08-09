@@ -67,7 +67,7 @@ const PKG = JSON.parse(
 	readFileSync(new URL("../package.json", import.meta.url), "utf-8"),
 );
 
-// All 156 expected tool names across 19 domains
+// All 171 expected tool names across 19 domains
 const EXPECTED_TOOLS = [
 	// users (10)
 	"list_all_users",
@@ -80,7 +80,11 @@ const EXPECTED_TOOLS = [
 	"get_user_invite",
 	"delete_user_invite",
 	"resend_user_invite",
-	// workspaces (9)
+	// workspaces (14)
+	"list_scim_workspace_mappings",
+	"create_scim_workspace_mapping",
+	"delete_scim_workspace_mapping",
+	"list_scim_groups",
 	"list_workspaces",
 	"get_workspace",
 	"create_workspace",
@@ -98,7 +102,7 @@ const EXPECTED_TOOLS = [
 	"update_config",
 	"delete_config",
 	"list_config_versions",
-	// keys (11)
+	// keys and secret references (16)
 	"list_virtual_keys",
 	"create_virtual_key",
 	"get_virtual_key",
@@ -158,7 +162,13 @@ const EXPECTED_TOOLS = [
 	"get_analytics_group_users",
 	"get_analytics_group_models",
 	"get_analytics_group_metadata",
-	// guardrails (5)
+	// guardrails (11)
+	"get_organisation_defaults",
+	"update_organisation_defaults",
+	"list_input_guardrail_workspace_exclusions",
+	"update_input_guardrail_workspace_exclusions",
+	"list_output_guardrail_workspace_exclusions",
+	"update_output_guardrail_workspace_exclusions",
 	"list_guardrails",
 	"get_guardrail",
 	"create_guardrail",
@@ -196,7 +206,9 @@ const EXPECTED_TOOLS = [
 	// tracing (2)
 	"create_feedback",
 	"update_feedback",
-	// logging (8)
+	// logging (10)
+	"get_log",
+	"get_log_export_field_restrictions",
 	"insert_log",
 	"create_log_export",
 	"list_log_exports",
@@ -211,7 +223,8 @@ const EXPECTED_TOOLS = [
 	"get_provider",
 	"update_provider",
 	"delete_provider",
-	// integrations (10)
+	// integrations (11)
+	"get_model_pricing",
 	"list_integrations",
 	"create_integration",
 	"get_integration",
@@ -233,7 +246,9 @@ const EXPECTED_TOOLS = [
 	"update_mcp_integration_capabilities",
 	"list_mcp_integration_workspaces",
 	"update_mcp_integration_workspaces",
-	// mcp-servers (10)
+	// mcp-servers (12)
+	"list_mcp_server_connections",
+	"disconnect_mcp_server_connection",
 	"list_mcp_servers",
 	"create_mcp_server",
 	"get_mcp_server",

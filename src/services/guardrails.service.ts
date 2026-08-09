@@ -89,7 +89,92 @@ export interface GuardrailMutationResponse {
 	version_id: string;
 }
 
+/** Whether organisation guardrails run before or after the model call */
+export type GuardrailDirection = "input" | "output";
+
+/** Guardrail reference returned by the organisation defaults endpoint */
+export interface OrganisationGuardrailReference {
+	id: string;
+	slug: string;
+}
+
+/** Organisation-wide input and output guardrail defaults */
+export interface OrganisationGuardrailDefaults {
+	input_guardrails: OrganisationGuardrailReference[];
+	output_guardrails: OrganisationGuardrailReference[];
+}
+
+/** Request body for replacing organisation-wide guardrail defaults */
+export interface UpdateOrganisationGuardrailDefaultsRequest {
+	input_guardrails?: string[];
+	output_guardrails?: string[];
+}
+
+/** Query parameters for workspace guardrail exclusions */
+export interface ListWorkspaceExclusionsParams {
+	organisation_id: string;
+}
+
+/** A workspace's exclusion state for an organisation guardrail direction */
+export interface WorkspaceGuardrailExclusion {
+	workspace_id: string;
+	excluded: boolean;
+	[key: string]: unknown;
+}
+
+/** Workspace exclusions returned for one guardrail direction */
+export interface ListWorkspaceExclusionsResponse {
+	workspaces: WorkspaceGuardrailExclusion[];
+	[key: string]: unknown;
+}
+
+/** Request body for updating workspace exclusions */
+export interface UpdateWorkspaceExclusionsRequest {
+	organisation_id: string;
+	workspaces: WorkspaceGuardrailExclusion[];
+	override_existing?: boolean;
+}
+
 export class GuardrailsService extends BaseService {
+	/** Get the organisation-wide input and output guardrail defaults. */
+	async getOrganisationDefaults(): Promise<OrganisationGuardrailDefaults> {
+		return this.get<OrganisationGuardrailDefaults>(
+			"/admin/organisation/defaults",
+		);
+	}
+
+	/** Replace either or both organisation-wide guardrail default lists. */
+	async updateOrganisationDefaults(
+		data: UpdateOrganisationGuardrailDefaultsRequest,
+	): Promise<OrganisationGuardrailDefaults> {
+		return this.put<OrganisationGuardrailDefaults>(
+			"/admin/organisation/defaults",
+			data,
+		);
+	}
+
+	/** List workspace exclusions for input or output organisation guardrails. */
+	async listWorkspaceExclusions(
+		direction: GuardrailDirection,
+		params: ListWorkspaceExclusionsParams,
+	): Promise<ListWorkspaceExclusionsResponse> {
+		return this.get<ListWorkspaceExclusionsResponse>(
+			`/workspace-exclusions/${direction}-guardrails`,
+			params,
+		);
+	}
+
+	/** Update workspace exclusions for input or output organisation guardrails. */
+	async updateWorkspaceExclusions(
+		direction: GuardrailDirection,
+		data: UpdateWorkspaceExclusionsRequest,
+	): Promise<ListWorkspaceExclusionsResponse> {
+		return this.put<ListWorkspaceExclusionsResponse>(
+			`/workspace-exclusions/${direction}-guardrails`,
+			data,
+		);
+	}
+
 	/**
 	 * List all guardrails with optional filtering
 	 */

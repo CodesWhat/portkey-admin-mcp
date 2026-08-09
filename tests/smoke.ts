@@ -8,17 +8,8 @@
 import "dotenv/config";
 import { HealthService, PortkeyService } from "../src/services/index.js";
 
-// Guard: abort early when running in CI or when no API key is present.
-// The smoke suite hits the live Portkey API and must not run in automated
-// pipelines that lack real credentials.
-if (process.env.CI) {
-	console.error(
-		"SKIP: smoke tests are disabled in CI (CI env var is set).\n" +
-			"Smoke tests require a live PORTKEY_API_KEY and are intended for\n" +
-			"manual pre-release verification only.",
-	);
-	process.exit(0);
-}
+// The smoke suite hits the live Portkey API. CI only invokes it when the
+// release workflow provides the dedicated staging key.
 if (!process.env.PORTKEY_API_KEY) {
 	console.error(
 		"SKIP: PORTKEY_API_KEY is not set.\n" +
@@ -49,6 +40,7 @@ interface TestContext {
 	logExportId?: string;
 	providerSlug?: string;
 	apiKeyId?: string;
+	mcpServerId?: string;
 }
 
 interface TestResult {
@@ -224,6 +216,23 @@ async function main() {
 		if (res.data?.[0]) ctx.integrationSlug = res.data[0].slug;
 	});
 
+	await test("listMcpServers", async () => {
+		const res = await portkey.mcpServers.listMcpServers({
+			workspace_id: ctx.workspaceId,
+		});
+		if (res.data?.[0]) ctx.mcpServerId = res.data[0].id;
+	});
+
+	await test("listScimWorkspaceMappings", async () => {
+		await portkey.workspaces.listScimWorkspaceMappings({
+			workspace_id: ctx.workspaceId,
+		});
+	});
+
+	await test("listScimGroups", async () => {
+		await portkey.workspaces.listScimGroups({ page_size: 1 });
+	});
+
 	await test("listAuditLogs", async () => {
 		await portkey.audit.listAuditLogs();
 	});
@@ -383,6 +392,16 @@ async function main() {
 	);
 
 	await test(
+		"getLogExportFieldRestrictions",
+		async () => {
+			await portkey.logging.getLogExportFieldRestrictions({
+				workspace_id: ctx.workspaceId!,
+			});
+		},
+		() => (ctx.workspaceId ? null : "no workspaceId"),
+	);
+
+	await test(
 		"getProvider",
 		async () => {
 			await portkey.providers.getProvider(ctx.providerSlug!);
@@ -397,6 +416,24 @@ async function main() {
 		},
 		() => (ctx.integrationSlug ? null : "no integrationSlug"),
 	);
+
+	await test("getOrganisationDefaults", async () => {
+		await portkey.guardrails.getOrganisationDefaults();
+	});
+
+	await test(
+		"listMcpServerConnections",
+		async () => {
+			await portkey.mcpServers.listMcpServerConnections(ctx.mcpServerId!, {
+				page_size: 1,
+			});
+		},
+		() => (ctx.mcpServerId ? null : "no mcpServerId"),
+	);
+
+	await test("getModelPricing", async () => {
+		await portkey.integrations.getModelPricing("openai", "gpt-4o");
+	});
 
 	await test(
 		"listIntegrationModels",

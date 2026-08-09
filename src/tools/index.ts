@@ -138,6 +138,24 @@ const ENTERPRISE_GATED_TOOL_NAMES = new Set([
 	"get_user",
 	"list_user_invites",
 	"get_user_stats",
+	"get_organisation_defaults",
+	"update_organisation_defaults",
+	"list_input_guardrail_workspace_exclusions",
+	"update_input_guardrail_workspace_exclusions",
+	"list_output_guardrail_workspace_exclusions",
+	"update_output_guardrail_workspace_exclusions",
+	"create_log_export",
+	"list_log_exports",
+	"get_log_export",
+	"start_log_export",
+	"cancel_log_export",
+	"download_log_export",
+	"update_log_export",
+	"get_log_export_field_restrictions",
+	"list_scim_workspace_mappings",
+	"create_scim_workspace_mapping",
+	"delete_scim_workspace_mapping",
+	"list_scim_groups",
 ]);
 
 const ENTERPRISE_GATED_DESCRIPTION_NOTE =
@@ -569,6 +587,43 @@ function createSafeToolServer(server: McpServer): McpServer {
 			args,
 		);
 	};
+
+	safeServer.registerTool = ((
+		name: string,
+		config: Record<string, unknown>,
+		callback: ToolCallback,
+	) => {
+		const description = augmentToolDescription(
+			name,
+			typeof config.description === "string" ? config.description : undefined,
+		);
+		const annotations = {
+			...inferToolAnnotations(name),
+			...(isToolAnnotationsLike(config.annotations) ? config.annotations : {}),
+		};
+
+		const wrappedCallback = wrapToolCallback(name, callback);
+		if (originalRegisterTool) {
+			return callOriginalRegisterTool(
+				name,
+				{
+					...config,
+					...(description === undefined ? {} : { description }),
+					outputSchema: config.outputSchema ?? getToolOutputSchema(name),
+					annotations,
+				},
+				wrappedCallback,
+			);
+		}
+
+		const legacyArguments = [
+			...(description === undefined ? [] : [description]),
+			...(config.inputSchema === undefined ? [] : [config.inputSchema]),
+			annotations,
+			wrappedCallback,
+		];
+		return callOriginalTool(name, ...legacyArguments);
+	}) as McpServer["registerTool"];
 
 	safeServer.tool = ((name: string, ...rest: unknown[]) => {
 		const maybeCallback = rest.at(-1);

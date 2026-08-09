@@ -112,6 +112,53 @@ const MCP_SERVERS_TOOL_SCHEMAS = {
 			.min(1)
 			.describe("Array of user access updates"),
 	},
+	listMcpServerConnections: {
+		id: z.string().describe("MCP server ID or slug whose connections to list"),
+		user_id: z
+			.string()
+			.uuid()
+			.optional()
+			.describe(
+				"User UUID to filter; user-scoped keys default to their own user when omitted",
+			),
+		workspace_id: z
+			.string()
+			.optional()
+			.describe(
+				"Workspace ID or slug; required with an organisation admin API key",
+			),
+		current_page: z.coerce
+			.number()
+			.int()
+			.min(0)
+			.optional()
+			.describe("Zero-based results page; defaults to 0"),
+		page_size: z.coerce
+			.number()
+			.int()
+			.min(1)
+			.max(500)
+			.optional()
+			.describe("Connections per page, from 1 through 500; defaults to 100"),
+	},
+	disconnectMcpServerConnection: {
+		id: z
+			.string()
+			.describe("MCP server ID or slug containing the active connection"),
+		user_id: z
+			.string()
+			.uuid()
+			.optional()
+			.describe(
+				"User UUID to disconnect; required with service keys and derived from user keys when omitted",
+			),
+		workspace_id: z
+			.string()
+			.optional()
+			.describe(
+				"Workspace ID or slug; required with an organisation admin API key",
+			),
+	},
 } as const;
 
 function formatMcpServer(server: PortkeyMcpServer): {
@@ -172,6 +219,75 @@ export function registerMcpServersTools(
 	server: McpServer,
 	service: PortkeyService,
 ): void {
+	server.tool(
+		"list_mcp_server_connections",
+		"List active connection records for one Portkey-managed MCP server, including user, connected state, and connection timestamps. Use it to audit sessions or identify the user/workspace before disconnect_mcp_server_connection; service keys can list all users, while user keys default to their own user. Organisation admin keys must provide workspace_id. This reads live connection state and does not test upstream server reachability (use test_mcp_server for that).",
+		MCP_SERVERS_TOOL_SCHEMAS.listMcpServerConnections,
+		{
+			title: "List MCP Server Connections",
+			readOnlyHint: true,
+			destructiveHint: false,
+			idempotentHint: true,
+			openWorldHint: true,
+		},
+		async (params) => {
+			const result = await service.mcpServers.listMcpServerConnections(
+				params.id,
+				{
+					user_id: params.user_id,
+					workspace_id: params.workspace_id,
+					current_page: params.current_page,
+					page_size: params.page_size,
+				},
+			);
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify({
+							total: result.total,
+							has_more: result.has_more,
+							connections: result.data,
+						}),
+					},
+				],
+			};
+		},
+	);
+
+	server.tool(
+		"disconnect_mcp_server_connection",
+		"Disconnect one user's active session from a Portkey-managed MCP server. This immediately ends that connection but does not revoke future access; use update_mcp_server_user_access when access itself should be removed. Provide user_id with service keys (user keys derive it), and workspace_id with organisation admin keys. Inspect list_mcp_server_connections first when the target is uncertain.",
+		MCP_SERVERS_TOOL_SCHEMAS.disconnectMcpServerConnection,
+		{
+			title: "Disconnect MCP Server Connection",
+			readOnlyHint: false,
+			destructiveHint: true,
+			idempotentHint: true,
+			openWorldHint: true,
+		},
+		async (params) => {
+			const result = await service.mcpServers.disconnectMcpServerConnection(
+				params.id,
+				{
+					user_id: params.user_id,
+					workspace_id: params.workspace_id,
+				},
+			);
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify({
+							message: `Disconnected MCP server connection for "${params.id}"`,
+							...result,
+						}),
+					},
+				],
+			};
+		},
+	);
+
 	server.tool(
 		"list_mcp_servers",
 		"List MCP servers in the organization. Returns paginated server records plus total for discovering server IDs; use get_mcp_server for one server's details and list_mcp_integrations for the parent integration.",
