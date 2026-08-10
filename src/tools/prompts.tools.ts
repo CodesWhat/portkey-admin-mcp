@@ -304,6 +304,35 @@ const PROMPTS_TOOL_SCHEMAS = {
 	},
 } as const;
 
+const createPromptSchema = z
+	.object(PROMPTS_TOOL_SCHEMAS.createPrompt)
+	.superRefine((value, ctx) => {
+		if (!value.model && !value.ai_model_id && !value.finetune_id) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				message:
+					"At least one of model, ai_model_id, or finetune_id must be provided",
+			});
+		}
+		if (value.string === undefined && value.messages === undefined) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				message: "Provide either string or messages",
+			});
+		}
+	});
+
+const migratePromptSchema = z
+	.object(PROMPTS_TOOL_SCHEMAS.migratePrompt)
+	.superRefine((value, ctx) => {
+		if (value.string === undefined && value.messages === undefined) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				message: "Provide either string or messages",
+			});
+		}
+	});
+
 function normalizePromptTemplateString(params: {
 	string?: string;
 	messages?: PromptTemplateMessage[];
@@ -445,31 +474,11 @@ export function registerPromptsTools(
 		"create_prompt",
 		"Create a new prompt template and initial version. Use this for first-time setup; use migrate_prompt for idempotent CI/CD flows. Accepts plain text or structured chat messages, creates a new version immediately, and returns the prompt id, slug, and version id. For multi-message chat prompts pass messages (preferred) or a JSON-encoded array as string.",
 		PROMPTS_TOOL_SCHEMAS.createPrompt,
-		async (params) => {
-			if (!params.model && !params.ai_model_id && !params.finetune_id) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: "Error creating prompt: At least one of model, ai_model_id, or finetune_id must be provided",
-						},
-					],
-					isError: true,
-				};
-			}
-
-			const templateString = normalizePromptTemplateString(params);
-			if (templateString === undefined) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: "Error creating prompt: Provide either string or messages",
-						},
-					],
-					isError: true,
-				};
-			}
+		async (rawParams) => {
+			const params = createPromptSchema.parse(rawParams);
+			// createPromptSchema.superRefine already requires string or messages,
+			// so normalizePromptTemplateString cannot return undefined here.
+			const templateString = normalizePromptTemplateString(params) as string;
 
 			if (params.dry_run) {
 				return jsonResult({
@@ -791,19 +800,11 @@ export function registerPromptsTools(
 			idempotentHint: true,
 			openWorldHint: false,
 		},
-		async (params) => {
-			const templateString = normalizePromptTemplateString(params);
-			if (templateString === undefined) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: "Error migrating prompt: Provide either string or messages",
-						},
-					],
-					isError: true,
-				};
-			}
+		async (rawParams) => {
+			const params = migratePromptSchema.parse(rawParams);
+			// migratePromptSchema.superRefine already requires string or messages,
+			// so normalizePromptTemplateString cannot return undefined here.
+			const templateString = normalizePromptTemplateString(params) as string;
 
 			const result = await service.prompts.migratePrompt({
 				name: params.name,

@@ -28,31 +28,35 @@ const logExportFieldSchema = z.enum([
 	"metadata",
 ]);
 
-const getLogInputSchema = z
-	.object({
-		log_id: z.string().describe("Gateway log ID to retrieve"),
-		path_format: z
-			.enum(["v1", "v2"])
-			.optional()
-			.describe("Log storage path format; defaults to v1"),
-		created_at: z.iso
-			.datetime({ offset: true })
-			.optional()
-			.describe("Log creation timestamp in ISO 8601 format; required for v2"),
-		type: z
-			.enum(["hooks"])
-			.optional()
-			.describe("Set to hooks when retrieving a hook execution log"),
-	})
-	.superRefine((input, context) => {
-		if (input.path_format === "v2" && input.created_at === undefined) {
-			context.addIssue({
-				code: "custom",
-				path: ["created_at"],
-				message: "created_at is required when path_format is v2",
-			});
-		}
-	});
+const getLogShape = {
+	log_id: z.string().describe("Gateway log ID to retrieve"),
+	path_format: z
+		.enum(["v1", "v2"])
+		.optional()
+		.describe("Log storage path format; defaults to v1"),
+	created_at: z.iso
+		.datetime({ offset: true })
+		.optional()
+		.describe("Log creation timestamp in ISO 8601 format; required for v2"),
+	type: z
+		.enum(["hooks"])
+		.optional()
+		.describe("Set to hooks when retrieving a hook execution log"),
+};
+
+// Registered as the raw shape so the cross-field rule runs inside the handler,
+// where wrapToolCallback can turn the ZodError into the same message shape every
+// other tool returns. Registering the refined schema instead hands validation to
+// the SDK, which answers with an unenveloped "MCP error -32602" string.
+const getLogSchema = z.object(getLogShape).superRefine((input, context) => {
+	if (input.path_format === "v2" && input.created_at === undefined) {
+		context.addIssue({
+			code: "custom",
+			path: ["created_at"],
+			message: "created_at is required when path_format is v2",
+		});
+	}
+});
 
 const LOGGING_TOOL_SCHEMAS = {
 	getLogExportFieldRestrictions: {
@@ -209,7 +213,7 @@ export function registerLoggingTools(
 		{
 			description:
 				"Get one gateway request log by ID, including its request, response, usage, cost, and metadata payload when available. For path_format v2, also provide the log's created_at timestamp.",
-			inputSchema: getLogInputSchema,
+			inputSchema: getLogShape,
 			annotations: {
 				title: "Get Gateway Log",
 				readOnlyHint: true,
@@ -218,7 +222,8 @@ export function registerLoggingTools(
 				openWorldHint: true,
 			},
 		},
-		async (params) => {
+		async (rawParams) => {
+			const params = getLogSchema.parse(rawParams);
 			const result = await service.logging.getLog(params.log_id, {
 				path_format: params.path_format,
 				created_at: params.created_at,

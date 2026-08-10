@@ -630,15 +630,25 @@ describe("create_mcp_integration tool payload assembly", () => {
 			"expected create_mcp_integration to be registered",
 		);
 
-		const result = (await createCallback({
-			name: "Bad Integration",
-			url: "https://mcp.example.com/v1",
-			auth_type: "headers",
-			transport: "http",
-		})) as { isError?: boolean; content: Array<{ text: string }> };
-
-		assert.equal(result.isError, true);
-		assert.match(result.content[0]?.text || "", /custom_headers/);
+		// registerMcpIntegrationsTools alone (unlike registerAllTools) does not
+		// apply wrapToolCallback, so the raw z.ZodError from
+		// createMcpIntegrationSchema.parse() rejects the call directly instead
+		// of being formatted into an isError result. See tests/unit.test.ts's
+		// "ZodError formatting through wrapToolCallback" for the formatted
+		// client-visible message.
+		await assert.rejects(
+			() =>
+				createCallback({
+					name: "Bad Integration",
+					url: "https://mcp.example.com/v1",
+					auth_type: "headers",
+					transport: "http",
+				}),
+			(error: Error) => {
+				assert.match(error.message, /custom_headers/);
+				return true;
+			},
+		);
 	});
 });
 

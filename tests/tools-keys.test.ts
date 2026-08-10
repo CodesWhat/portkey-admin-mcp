@@ -18,6 +18,7 @@
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { registerAllTools } from "../src/tools/index.js";
 import { registerKeysTools } from "../src/tools/keys.tools.js";
 import { registerToolCallbacks } from "./helpers/tool-registry.js";
 
@@ -555,6 +556,63 @@ describe("create_api_key", () => {
 				return true;
 			},
 		);
+	});
+
+	it("surfaces the raw superRefine rejection as a clean client-visible message once routed through registerAllTools", async () => {
+		// The tests above call registerKeysTools directly, so cb() rejects with
+		// the raw z.ZodError thrown by createApiKeySchema.parse(). That raw
+		// error only becomes the client-visible "Invalid arguments for ..."
+		// text once it passes through wrapToolCallback, which registerAllTools
+		// applies and registerKeysTools alone does not. See
+		// tests/unit.test.ts's "ZodError formatting through wrapToolCallback"
+		// for the formatting rules (message joining, path prefixing).
+		const callbacks = new Map<
+			string,
+			(...args: unknown[]) => Promise<unknown>
+		>();
+
+		registerAllTools(
+			{
+				tool(name: string, ...rest: unknown[]) {
+					callbacks.set(
+						name,
+						rest[rest.length - 1] as (...args: unknown[]) => Promise<unknown>,
+					);
+					return {} as never;
+				},
+			} as never,
+			{
+				keys: {
+					createApiKey: async () => {
+						throw new Error("should not be called");
+					},
+				},
+			} as never,
+		);
+
+		const cb = callbacks.get("create_api_key");
+		assert.ok(cb);
+
+		const result = (await cb({
+			type: "workspace",
+			sub_type: "service",
+			name: "Missing workspace",
+			scopes: [],
+		})) as {
+			content: Array<{ type: string; text: string }>;
+			isError?: boolean;
+		};
+		const payload = JSON.parse(result.content[0]?.text || "{}") as {
+			error?: { message?: string };
+		};
+
+		assert.equal(result.isError, true);
+		assert.equal(
+			payload.error?.message,
+			"Invalid arguments for \"create_api_key\": workspace_id is required when type is 'workspace'",
+		);
+		assert.doesNotMatch(payload.error?.message || "", /"code"/);
+		assert.doesNotMatch(payload.error?.message || "", /\[\{/);
 	});
 });
 

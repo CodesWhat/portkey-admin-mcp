@@ -230,7 +230,31 @@ function augmentToolDescription(
 	return `${description} ${ENTERPRISE_GATED_DESCRIPTION_NOTE}`;
 }
 
+/**
+ * Render a schema validation failure as one actionable sentence.
+ *
+ * ZodError.message is a JSON dump of the raw issue array. Surfacing that to an
+ * MCP client buries the useful part — the field name and what it wants — in
+ * serialized noise, so issues are flattened to "field: message" instead. The
+ * path is omitted when the message already names the field, which the
+ * superRefine checks in this codebase generally do.
+ */
+function formatZodIssues(error: z.ZodError): string {
+	return error.issues
+		.map((issue) => {
+			const path = issue.path.join(".");
+			return path && !issue.message.includes(path)
+				? `${path}: ${issue.message}`
+				: issue.message;
+		})
+		.join("; ");
+}
+
 function getToolErrorMessage(error: unknown): string {
+	if (error instanceof z.ZodError) {
+		return formatZodIssues(error);
+	}
+
 	if (error instanceof Error && error.message) {
 		return error.message;
 	}
@@ -483,6 +507,12 @@ function wrapToolCallback(
 			return normalizeToolResult((await callback(...args)) as CallToolResult);
 		} catch (error) {
 			const message = getToolErrorMessage(error);
+			// A validation failure is the caller's to fix, not a tool malfunction,
+			// so it gets a prefix that says which it is.
+			const isValidationError = error instanceof z.ZodError;
+			const text = isValidationError
+				? `Invalid arguments for "${toolName}": ${message}`
+				: `Tool "${toolName}" failed: ${message}`;
 
 			Logger.error("Tool callback failed", {
 				error: message,
@@ -490,9 +520,7 @@ function wrapToolCallback(
 			});
 
 			return normalizeToolResult({
-				content: [
-					{ type: "text", text: `Tool "${toolName}" failed: ${message}` },
-				],
+				content: [{ type: "text", text }],
 				isError: true,
 			} satisfies CallToolResult);
 		}

@@ -177,6 +177,18 @@ function hasConfigSettings(
 	);
 }
 
+const createConfigSchema = z
+	.object(CONFIGS_TOOL_SCHEMAS.createConfig)
+	.superRefine((value, ctx) => {
+		if (!hasConfigSettings(buildConfigPayload(value))) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				message:
+					"At least one config setting (cache_mode, retry_attempts, strategy_mode, or targets) must be provided",
+			});
+		}
+	});
+
 export function registerConfigsTools(
 	server: McpServer,
 	service: PortkeyService,
@@ -250,29 +262,17 @@ export function registerConfigsTools(
 		"Create a config that defines routing, cache, retry, and targets for requests; use update_config to modify an existing one and list_config_versions for history. At least one setting is required, new configs become active immediately once referenced by a key or prompt, and the call returns the new id and version_id.",
 		CONFIGS_TOOL_SCHEMAS.createConfig,
 		async (params) => {
-			const config = buildConfigPayload(params);
-
-			// API requires config to have at least one non-empty setting
-			if (!hasConfigSettings(config)) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: "Error creating configuration: At least one config setting (cache_mode, retry_attempts, strategy_mode, or targets) must be provided",
-						},
-					],
-					isError: true,
-				};
-			}
+			const validated = createConfigSchema.parse(params);
+			const config = buildConfigPayload(validated);
 
 			const result = await service.configs.createConfig({
-				name: params.name,
+				name: validated.name,
 				config,
-				workspace_id: params.workspace_id,
+				workspace_id: validated.workspace_id,
 			});
 
 			return jsonResult({
-				message: `Successfully created configuration "${params.name}"`,
+				message: `Successfully created configuration "${validated.name}"`,
 				id: result.id,
 				version_id: result.version_id,
 			});

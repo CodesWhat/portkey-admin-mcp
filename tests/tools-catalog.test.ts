@@ -320,13 +320,20 @@ describe("labels tools — create_prompt_label payload assembly", () => {
 		const cb = callbacks.get("create_prompt_label");
 		assert.ok(cb, "create_prompt_label should be registered");
 
-		const result = (await cb({ name: "missing-scope" })) as {
-			isError?: boolean;
-			content: Array<{ text: string }>;
-		};
-
-		assert.equal(result.isError, true);
-		assert.match(result.content[0]?.text ?? "", /organisation_id|workspace_id/);
+		// registerLabelsTools alone (unlike registerAllTools) does not apply
+		// wrapToolCallback, so the raw z.ZodError from
+		// createPromptLabelSchema.parse() rejects the call directly instead of
+		// being formatted into an isError result. See tests/unit.test.ts's
+		// "ZodError formatting through wrapToolCallback" for the formatted
+		// client-visible message.
+		await assert.rejects(
+			() => cb({ name: "missing-scope" }),
+			(error: Error) => {
+				assert.doesNotMatch(error.message, /should not be called/);
+				assert.match(error.message, /organisation_id|workspace_id/);
+				return true;
+			},
+		);
 	});
 });
 

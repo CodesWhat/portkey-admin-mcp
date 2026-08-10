@@ -19,24 +19,30 @@ const scimWorkspaceMappingBaseShape = {
 		.describe("Workspace role automatically granted to group members"),
 };
 
-const createScimWorkspaceMappingInputSchema = z
-	.object({
-		...scimWorkspaceMappingBaseShape,
-		scim_group_id: z
-			.string()
-			.min(1)
-			.optional()
-			.describe(
-				"Existing identity-provider SCIM group ID; provide this or scim_group_name, but not both",
-			),
-		scim_group_name: z
-			.string()
-			.min(1)
-			.optional()
-			.describe(
-				"Existing SCIM group display name; provide this or scim_group_id, but not both",
-			),
-	})
+const createScimWorkspaceMappingShape = {
+	...scimWorkspaceMappingBaseShape,
+	scim_group_id: z
+		.string()
+		.min(1)
+		.optional()
+		.describe(
+			"Existing identity-provider SCIM group ID; provide this or scim_group_name, but not both",
+		),
+	scim_group_name: z
+		.string()
+		.min(1)
+		.optional()
+		.describe(
+			"Existing SCIM group display name; provide this or scim_group_id, but not both",
+		),
+};
+
+// Registered as the raw shape so the cross-field rule runs inside the handler,
+// where wrapToolCallback can turn the ZodError into the same message shape every
+// other tool returns. Registering the refined schema instead hands validation to
+// the SDK, which answers with an unenveloped "MCP error -32602" string.
+const createScimWorkspaceMappingSchema = z
+	.object(createScimWorkspaceMappingShape)
 	.superRefine((input, context) => {
 		if (Boolean(input.scim_group_id) === Boolean(input.scim_group_name)) {
 			context.addIssue({
@@ -313,7 +319,7 @@ export function registerWorkspacesTools(
 		{
 			description:
 				"Map one identity-provider SCIM group to a Portkey workspace role so current and future group members receive access automatically. Provide exactly one of scim_group_id or scim_group_name; a name can pre-create the Portkey SCIM group before the IdP provisions it. Use list_scim_groups to discover existing groups and list_workspaces for the workspace ID. This changes access provisioning and is distinct from add_workspace_member, which grants one user directly.",
-			inputSchema: createScimWorkspaceMappingInputSchema,
+			inputSchema: createScimWorkspaceMappingShape,
 			annotations: {
 				title: "Create SCIM Workspace Mapping",
 				readOnlyHint: false,
@@ -322,7 +328,8 @@ export function registerWorkspacesTools(
 				openWorldHint: true,
 			},
 		},
-		async (params) => {
+		async (rawParams) => {
+			const params = createScimWorkspaceMappingSchema.parse(rawParams);
 			let request: CreateScimWorkspaceMappingRequest;
 			if (params.scim_group_id !== undefined) {
 				request = {
