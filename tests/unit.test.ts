@@ -2264,11 +2264,19 @@ describe("Config tool payload assembly", () => {
 		assert.ok(createConfigCallback, "expected create_config to be registered");
 		assert.ok(updateConfigCallback, "expected update_config to be registered");
 
+		// create_config now runs createConfigSchema.parse() (the superRefine
+		// "at least one setting" check), which also re-enforces the raw
+		// shape's cache_max_age/retry_attempts .positive() constraint that a
+		// direct callback call previously bypassed. 0 is schema-invalid for
+		// those two fields, so the create call below uses a small positive
+		// number instead; the falsy-vs-undefined distinction in
+		// buildConfigPayload is still exercised with real 0 values via
+		// update_config below, which is unaffected by this conversion.
 		await createConfigCallback({
 			name: "config-zero",
 			cache_mode: "simple",
-			cache_max_age: 0,
-			retry_attempts: 0,
+			cache_max_age: 1,
+			retry_attempts: 1,
 			retry_on_status_codes: [429],
 		});
 		await updateConfigCallback({
@@ -2285,10 +2293,10 @@ describe("Config tool payload assembly", () => {
 				config: {
 					cache: {
 						mode: "simple",
-						max_age: 0,
+						max_age: 1,
 					},
 					retry: {
-						attempts: 0,
+						attempts: 1,
 						on_status_codes: [429],
 					},
 					strategy: undefined,
@@ -3259,6 +3267,233 @@ describe("Tool callback error handling", () => {
 		} finally {
 			Logger.error = originalLoggerError;
 		}
+	});
+});
+
+// ---------------------------------------------------------------------------
+// ZodError formatting through wrapToolCallback (formatZodIssues /
+// getToolErrorMessage). A superRefine schema throws z.ZodError from deep
+// inside a handler (either via a manual `.parse()` call or, in principle,
+// any code path that surfaces one); wrapToolCallback must render that as one
+// actionable sentence rather than ZodError.message's raw JSON issue dump.
+// ---------------------------------------------------------------------------
+
+describe("ZodError formatting through wrapToolCallback", () => {
+	function registerUsersWithListUsersThrowing(
+		impl: () => never,
+	): Map<string, (...args: unknown[]) => Promise<unknown>> {
+		const callbacks = new Map<
+			string,
+			(...args: unknown[]) => Promise<unknown>
+		>();
+
+		registerAllTools(
+			{
+				tool(name: string, ...rest: unknown[]) {
+					callbacks.set(
+						name,
+						rest[rest.length - 1] as (...args: unknown[]) => Promise<unknown>,
+					);
+					return {} as never;
+				},
+			} as never,
+			{
+				users: {
+					listUsers: impl,
+				},
+			} as never,
+		);
+
+		return callbacks;
+	}
+
+	async function callListAllUsers(
+		callbacks: Map<string, (...args: unknown[]) => Promise<unknown>>,
+	): Promise<{ isError?: boolean; message: string }> {
+		const cb = callbacks.get("list_all_users");
+		assert.ok(cb, "expected list_all_users to be registered");
+
+		const result = (await cb({})) as {
+			content: Array<{ type: string; text: string }>;
+			isError?: boolean;
+		};
+		const payload = JSON.parse(result.content[0]?.text || "{}") as {
+			error?: { message?: string };
+		};
+
+		return { isError: result.isError, message: payload.error?.message || "" };
+	}
+
+	it('prefixes a superRefine failure with Invalid arguments for "<tool>" instead of dumping raw JSON issues', async () => {
+		const callbacks = registerUsersWithListUsersThrowing(() => {
+			throw new z.ZodError([
+				{
+					code: "custom",
+					path: ["workspace_id"],
+					message: "workspace_id is required when type is 'workspace'",
+				},
+			]);
+		});
+
+		const { isError, message } = await callListAllUsers(callbacks);
+
+		assert.equal(isError, true);
+		assert.equal(
+			message,
+			"Invalid arguments for \"list_all_users\": workspace_id is required when type is 'workspace'",
+		);
+		assert.doesNotMatch(message, /"code"/);
+		assert.doesNotMatch(message, /\[\{/);
+	});
+
+	it("joins multiple issues into one readable message", async () => {
+		const callbacks = registerUsersWithListUsersThrowing(() => {
+			throw new z.ZodError([
+				{
+					code: "custom",
+					path: ["workspace_id"],
+					message: "workspace_id is required when type is 'workspace'",
+				},
+				{
+					code: "custom",
+					path: ["user_id"],
+					message: "user_id is required when sub_type is 'user'",
+				},
+			]);
+		});
+
+		const { message } = await callListAllUsers(callbacks);
+
+		assert.equal(
+			message,
+			"Invalid arguments for \"list_all_users\": workspace_id is required when type is 'workspace'; user_id is required when sub_type is 'user'",
+		);
+		assert.doesNotMatch(message, /"code"/);
+		assert.doesNotMatch(message, /\[\{/);
+	});
+
+	it("prefixes the field path when the issue message does not already name the field", async () => {
+		const callbacks = registerUsersWithListUsersThrowing(() => {
+			throw new z.ZodError([
+				{ code: "custom", path: ["some_field"], message: "is required" },
+			]);
+		});
+
+		const { message } = await callListAllUsers(callbacks);
+
+		assert.equal(
+			message,
+			'Invalid arguments for "list_all_users": some_field: is required',
+		);
+	});
+
+	it("keeps the field path when it only appears inside a longer word", async () => {
+		// Zod's stock wording for a wrong type is "Invalid input", which contains
+		// "id" as a substring. A substring check would drop the field name from
+		// exactly the messages that carry no other clue about which field failed.
+		const callbacks = registerUsersWithListUsersThrowing(() => {
+			throw new z.ZodError([
+				{ code: "custom", path: ["id"], message: "Invalid input" },
+			]);
+		});
+
+		const { message } = await callListAllUsers(callbacks);
+
+		assert.equal(
+			message,
+			'Invalid arguments for "list_all_users": id: Invalid input',
+		);
+	});
+
+	it("does not double-prefix the field path when the issue message already names the field", async () => {
+		const callbacks = registerUsersWithListUsersThrowing(() => {
+			throw new z.ZodError([
+				{
+					code: "custom",
+					path: ["some_field"],
+					message: "some_field must be provided",
+				},
+			]);
+		});
+
+		const { message } = await callListAllUsers(callbacks);
+
+		assert.equal(
+			message,
+			'Invalid arguments for "list_all_users": some_field must be provided',
+		);
+	});
+
+	it("keeps the ZodError and non-Zod error branches distinct", async () => {
+		const zodCallbacks = registerUsersWithListUsersThrowing(() => {
+			throw new z.ZodError([
+				{ code: "custom", path: ["some_field"], message: "is required" },
+			]);
+		});
+		const errorCallbacks = registerUsersWithListUsersThrowing(() => {
+			throw new Error("upstream boom");
+		});
+
+		const zodResult = await callListAllUsers(zodCallbacks);
+		const errorResult = await callListAllUsers(errorCallbacks);
+
+		assert.match(zodResult.message, /^Invalid arguments for "list_all_users":/);
+		assert.match(errorResult.message, /^Tool "list_all_users" failed:/);
+		assert.doesNotMatch(errorResult.message, /^Invalid arguments for/);
+		assert.doesNotMatch(zodResult.message, /^Tool "list_all_users" failed:/);
+	});
+
+	it('formats create_api_key\'s real superRefine rejection as "Invalid arguments for" with both issues, not a JSON dump', async () => {
+		const callbacks = new Map<
+			string,
+			(...args: unknown[]) => Promise<unknown>
+		>();
+
+		registerAllTools(
+			{
+				tool(name: string, ...rest: unknown[]) {
+					callbacks.set(
+						name,
+						rest[rest.length - 1] as (...args: unknown[]) => Promise<unknown>,
+					);
+					return {} as never;
+				},
+			} as never,
+			{
+				keys: {
+					createApiKey: async () => {
+						throw new Error(
+							"should not be called: validation must reject first",
+						);
+					},
+				},
+			} as never,
+		);
+
+		const cb = callbacks.get("create_api_key");
+		assert.ok(cb, "expected create_api_key to be registered");
+
+		const result = (await cb({
+			type: "workspace",
+			sub_type: "user",
+			name: "Broken key",
+			scopes: [],
+		})) as {
+			content: Array<{ type: string; text: string }>;
+			isError?: boolean;
+		};
+		const payload = JSON.parse(result.content[0]?.text || "{}") as {
+			error?: { message?: string };
+		};
+		const message = payload.error?.message || "";
+
+		assert.equal(result.isError, true);
+		assert.match(message, /^Invalid arguments for "create_api_key": /);
+		assert.match(message, /workspace_id is required when type is 'workspace'/);
+		assert.match(message, /user_id is required when sub_type is 'user'/);
+		assert.doesNotMatch(message, /"code"/);
+		assert.doesNotMatch(message, /\[\{/);
+		assert.doesNotMatch(message, /should not be called/);
 	});
 });
 

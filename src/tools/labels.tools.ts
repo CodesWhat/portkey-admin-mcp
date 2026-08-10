@@ -67,6 +67,17 @@ const LABELS_TOOL_SCHEMAS = {
 	},
 } as const;
 
+const createPromptLabelSchema = z
+	.object(LABELS_TOOL_SCHEMAS.createPromptLabel)
+	.superRefine((value, ctx) => {
+		if (!value.organisation_id && !value.workspace_id) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				message: "Either organisation_id or workspace_id is required",
+			});
+		}
+	});
+
 export function registerLabelsTools(
 	server: McpServer,
 	service: PortkeyService,
@@ -76,18 +87,8 @@ export function registerLabelsTools(
 		"create_prompt_label",
 		"Create a prompt label for tagging prompt versions such as production, staging, or experiment. Requires either organisation_id or workspace_id to set scope, returns the new label id, and does not assign it to any versions yet.",
 		LABELS_TOOL_SCHEMAS.createPromptLabel,
-		async (params) => {
-			if (!params.organisation_id && !params.workspace_id) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: "Error: Either organisation_id or workspace_id is required",
-						},
-					],
-					isError: true,
-				};
-			}
+		async (rawParams) => {
+			const params = createPromptLabelSchema.parse(rawParams);
 			const result = await service.labels.createLabel({
 				name: params.name,
 				organisation_id: params.organisation_id,

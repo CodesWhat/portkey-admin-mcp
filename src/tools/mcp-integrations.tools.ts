@@ -151,6 +151,25 @@ const MCP_INTEGRATIONS_TOOL_SCHEMAS = {
 	},
 } as const;
 
+const createMcpIntegrationSchema = z
+	.object(MCP_INTEGRATIONS_TOOL_SCHEMAS.createMcpIntegration)
+	.superRefine((value, ctx) => {
+		if (
+			value.auth_type === "headers" &&
+			(!value.custom_headers ||
+				Object.keys(value.custom_headers).length === 0) &&
+			!value.secret_mappings?.some(
+				(mapping) => mapping.target_field === "configurations.custom_headers",
+			)
+		) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["custom_headers"],
+				message: "custom_headers must be provided when auth_type is 'headers'",
+			});
+		}
+	});
+
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null;
 }
@@ -280,25 +299,8 @@ export function registerMcpIntegrationsTools(
 			idempotentHint: false,
 			openWorldHint: true,
 		},
-		async (params) => {
-			if (
-				params.auth_type === "headers" &&
-				(!params.custom_headers ||
-					Object.keys(params.custom_headers).length === 0) &&
-				!params.secret_mappings?.some(
-					(mapping) => mapping.target_field === "configurations.custom_headers",
-				)
-			) {
-				return {
-					content: [
-						{
-							type: "text" as const,
-							text: "Error: custom_headers must be provided when auth_type is 'headers'",
-						},
-					],
-					isError: true,
-				};
-			}
+		async (rawParams) => {
+			const params = createMcpIntegrationSchema.parse(rawParams);
 			const { custom_headers, ...rest } = params;
 			const result = await service.mcpIntegrations.createMcpIntegration({
 				...rest,

@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-08-10
+
+Cross-field argument validation now reads the same on every tool that has it. Tool inventory is unchanged at 171 and `tools/list` output is byte-identical to 0.8.0, so no client needs to re-sync schemas. The error *text* a client sees for these ten tools does change; anything matching on the old strings needs updating.
+
+### Fixed
+
+- Render schema validation failures as a readable sentence instead of a serialized issue array. `ZodError.message` is a JSON dump, and tools that validated with `superRefine` surfaced it verbatim, so a caller got `Tool "create_api_key" failed: [\n {\n "code": "custom", ...` where the useful part — the field and what it wants — was buried in escaped noise. Issues are now flattened to `field: message`, joined with `; `.
+- Distinguish a bad argument from a broken tool. Validation failures now read `Invalid arguments for "<tool>": <what is wrong>`; genuine tool failures keep `Tool "<tool>" failed: <reason>`. Previously both used the failure wording.
+
+### Changed
+
+- Route every cross-field validation rule through one pattern: the raw shape stays the registered `inputSchema`, and a sibling `superRefine` schema is parsed inside the handler. Ten tools were split across three behaviours before this — `create_config`, `update_integration_workspaces`, `create_prompt_label`, `create_mcp_integration`, `create_prompt`, and `migrate_prompt` returned hand-written strings from manual `if` checks; `get_log` and `create_scim_workspace_mapping` registered the refined schema directly and answered with the SDK's unenveloped `MCP error -32602` text; only `create_api_key` used the pattern now standard. Registering the refined schema carried no benefit, since a `superRefine` has no JSON Schema representation and never reached `tools/list`.
+
 ## [0.8.0] - 2026-08-09
 
 Code-health release from a full-application review across security, performance, quality, and testing. No tools were added or removed; the inventory stays at 171. Security review found no exploitable issues. The tracked findings, including the ones deliberately not acted on, are recorded as Phase 6 in `ROADMAP.md`.
@@ -487,7 +500,9 @@ First stable release. Graduates from beta with 151 tools covering ~98% of the Po
 - Vercel deployment support
 - Contract tests, E2E tests, security tests
 
-[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.8.0...v0.9.0
+[0.8.0]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.6.3...v0.7.0
 [0.6.3]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.6.2...v0.6.3
 [0.6.2]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.6.1...v0.6.2

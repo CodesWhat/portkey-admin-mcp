@@ -467,6 +467,26 @@ const INTEGRATIONS_TOOL_SCHEMAS = {
 	},
 } as const;
 
+const updateIntegrationWorkspacesSchema = z
+	.object(INTEGRATIONS_TOOL_SCHEMAS.updateIntegrationWorkspaces)
+	.superRefine((value, ctx) => {
+		const hasGlobalLimits =
+			value.global_credit_limit !== undefined ||
+			value.global_alert_threshold !== undefined ||
+			value.global_rate_limit_rpm !== undefined;
+		if (
+			hasGlobalLimits &&
+			value.global_workspace_access_enabled === undefined
+		) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["global_workspace_access_enabled"],
+				message:
+					"global_workspace_access_enabled is required when setting global limits.",
+			});
+		}
+	});
+
 function buildIntegrationConfigurations(params: {
 	api_version?: string;
 	resource_name?: string;
@@ -797,25 +817,8 @@ export function registerIntegrationsTools(
 			idempotentHint: true,
 			openWorldHint: true,
 		},
-		async (params) => {
-			const hasGlobalLimits =
-				params.global_credit_limit !== undefined ||
-				params.global_alert_threshold !== undefined ||
-				params.global_rate_limit_rpm !== undefined;
-			if (
-				hasGlobalLimits &&
-				params.global_workspace_access_enabled === undefined
-			) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: "global_workspace_access_enabled is required when setting global limits.",
-						},
-					],
-					isError: true,
-				};
-			}
+		async (rawParams) => {
+			const params = updateIntegrationWorkspacesSchema.parse(rawParams);
 
 			const globalUsageLimits =
 				params.global_credit_limit !== undefined ||

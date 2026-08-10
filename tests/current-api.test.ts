@@ -444,18 +444,36 @@ describe("current Portkey log APIs", () => {
 		]);
 	});
 
-	it("validates v2 log timestamps before invoking Portkey", () => {
+	it("validates v2 log timestamps before invoking Portkey", async () => {
 		const definitions = captureToolDefinitions((server) => {
 			registerLoggingTools(server as never, {} as never);
 		});
 		const getLog = definitions.get("get_log");
 
-		assert.equal(
-			safeParseToolInput(getLog, { log_id: "log-1", path_format: "v2" })
-				.success,
-			false,
-			"v2 log reads require created_at",
+		// The path_format/created_at pairing is a cross-field rule, so it lives in
+		// the handler rather than the registered schema. That keeps its failure on
+		// the same path as every other tool's, where wrapToolCallback formats it.
+		const callbacks = registerToolCallbacks((server) => {
+			registerLoggingTools(
+				server as never,
+				{
+					logging: {
+						getLog: async () => {
+							assert.fail(
+								"v2 log reads must not reach Portkey without created_at",
+							);
+						},
+					},
+				} as never,
+			);
+		});
+		const getLogCallback = callbacks.get("get_log");
+		assert.ok(getLogCallback);
+		await assert.rejects(
+			() => getLogCallback({ log_id: "log-1", path_format: "v2" }),
+			/created_at is required when path_format is v2/,
 		);
+
 		assert.equal(
 			safeParseToolInput(getLog, {
 				log_id: "log-1",
@@ -602,22 +620,46 @@ describe("current Portkey SCIM workspace APIs", () => {
 		);
 	});
 
-	it("requires exactly one SCIM group selector in the tool schema", () => {
+	it("requires exactly one SCIM group selector", async () => {
 		const definitions = captureToolDefinitions((server) => {
 			registerWorkspacesTools(server as never, {} as never);
 		});
 		const createMapping = definitions.get("create_scim_workspace_mapping");
 		const common = { workspace_id: "ws-1", role: "member" };
 
-		assert.equal(safeParseToolInput(createMapping, common).success, false);
-		assert.equal(
-			safeParseToolInput(createMapping, {
-				...common,
-				scim_group_id: "group-1",
-				scim_group_name: "Engineering",
-			}).success,
-			false,
+		// Exactly-one-of is a cross-field rule, so it lives in the handler rather
+		// than the registered schema. That keeps its failure on the same path as
+		// every other tool's, where wrapToolCallback formats it.
+		const callbacks = registerToolCallbacks((server) => {
+			registerWorkspacesTools(
+				server as never,
+				{
+					workspaces: {
+						createScimWorkspaceMapping: async () => {
+							assert.fail("ambiguous SCIM selectors must not reach Portkey");
+						},
+					},
+				} as never,
+			);
+		});
+		const createMappingCallback = callbacks.get(
+			"create_scim_workspace_mapping",
 		);
+		assert.ok(createMappingCallback);
+		const selectorError =
+			/Provide exactly one of scim_group_id or scim_group_name/;
+
+		await assert.rejects(() => createMappingCallback(common), selectorError);
+		await assert.rejects(
+			() =>
+				createMappingCallback({
+					...common,
+					scim_group_id: "group-1",
+					scim_group_name: "Engineering",
+				}),
+			selectorError,
+		);
+
 		assert.equal(
 			safeParseToolInput(createMapping, {
 				...common,

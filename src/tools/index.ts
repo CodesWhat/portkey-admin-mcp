@@ -230,7 +230,44 @@ function augmentToolDescription(
 	return `${description} ${ENTERPRISE_GATED_DESCRIPTION_NOTE}`;
 }
 
+/**
+ * Render a schema validation failure as one actionable sentence.
+ *
+ * ZodError.message is a JSON dump of the raw issue array. Surfacing that to an
+ * MCP client buries the useful part — the field name and what it wants — in
+ * serialized noise, so issues are flattened to "field: message" instead. The
+ * path is omitted when the message already names the field, which the
+ * superRefine checks in this codebase generally do.
+ *
+ * The match is on a word boundary, not a substring: path "id" appears inside
+ * Zod's stock "Invalid input" and would otherwise suppress the field name on
+ * exactly the messages that need it most.
+ */
+function formatZodIssues(error: z.ZodError): string {
+	return error.issues
+		.map((issue) => {
+			const path = issue.path.join(".");
+			if (!path) {
+				return issue.message;
+			}
+
+			const namesPath = new RegExp(`\\b${escapeRegExp(path)}\\b`).test(
+				issue.message,
+			);
+			return namesPath ? issue.message : `${path}: ${issue.message}`;
+		})
+		.join("; ");
+}
+
+function escapeRegExp(value: string): string {
+	return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function getToolErrorMessage(error: unknown): string {
+	if (error instanceof z.ZodError) {
+		return formatZodIssues(error);
+	}
+
 	if (error instanceof Error && error.message) {
 		return error.message;
 	}
@@ -483,6 +520,12 @@ function wrapToolCallback(
 			return normalizeToolResult((await callback(...args)) as CallToolResult);
 		} catch (error) {
 			const message = getToolErrorMessage(error);
+			// A validation failure is the caller's to fix, not a tool malfunction,
+			// so it gets a prefix that says which it is.
+			const isValidationError = error instanceof z.ZodError;
+			const text = isValidationError
+				? `Invalid arguments for "${toolName}": ${message}`
+				: `Tool "${toolName}" failed: ${message}`;
 
 			Logger.error("Tool callback failed", {
 				error: message,
@@ -490,9 +533,7 @@ function wrapToolCallback(
 			});
 
 			return normalizeToolResult({
-				content: [
-					{ type: "text", text: `Tool "${toolName}" failed: ${message}` },
-				],
+				content: [{ type: "text", text }],
 				isError: true,
 			} satisfies CallToolResult);
 		}
