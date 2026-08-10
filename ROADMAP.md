@@ -96,23 +96,36 @@ branch / 48.60% functions. Gaps closed:
   costs ~1.15 ms and ~1.5 MB per request (measured, 500-iteration steady state).
   The SDK binds one server per transport, so there is no way around it. Previously
   reasoned through in `docs/audit-2026-06.md`; re-confirmed here with numbers.
-- [ ] **Standardize validation style.** Cross-field rules are split between schema-level
-  `superRefine` (`keys.tools.ts`, `workspaces.tools.ts`) and manual `if` + `isError`
-  in handler bodies (`configs.tools.ts`, `integrations.tools.ts`, `mcp-integrations.tools.ts`,
-  `labels.tools.ts`, `prompts.tools.ts`). Both work; there is no rule for which to reach
-  for next. Deferred because converting handler checks to `superRefine` changes the
-  error shape clients see — that needs its own release and changelog note.
-- [ ] **Contract fixtures drift.** 4 of 14 fixtures in `tests/fixtures/manifest.json`
-  are documentation-derived rather than live-captured (the recording credential returned
-  403 on `api-keys-rotate` and the three `secret-references` endpoints). Last live
-  recording 2026-06-11. No scheduled workflow re-runs `record:fixtures`, so upstream
-  API drift is caught only at manual review. Wants either a scoped credential or a
-  monthly CI job that re-records against staging and opens a PR on diff.
-- [ ] **Unauthenticated surface review.** `/ready` in `portkey` check mode confirms a
-  working `PORTKEY_API_KEY` to any caller, and `GET /` renders auth/session/event-store
-  mode to unauthenticated callers. Both are deliberate operator conveniences with no
-  secret exposure, but they are a config fingerprint for a scanner. Decide whether
-  genuinely public deployments should gate them.
+- [x] **Standardize validation style.** Done in 0.9.0, but not the way this item
+  originally proposed. Converting handler checks to `superRefine` as written would have
+  made errors *worse*: a `superRefine` schema bypasses the SDK's argument validation and
+  throws a ZodError into the tool wrapper, which rendered `ZodError.message` — a JSON dump
+  of the raw issue array — so a client saw `Tool "create_api_key" failed: [\n {\n "code":
+  "custom", ...` where the handler checks gave a clean sentence. The fix was central
+  rather than per-tool: `formatZodIssues` in `src/tools/index.ts` flattens issues to
+  readable text, and validation failures now carry an `Invalid arguments for "<tool>"`
+  prefix that distinguishes a caller error from a tool malfunction. Only once both styles
+  produced the same clean envelope was converting the handler checks worth doing.
+  With that in place all 10 cross-field rules now follow one pattern: the raw shape stays
+  the registered `inputSchema`, and a sibling `superRefine` schema is parsed inside the
+  handler. That covers the 7 former handler checks (`configs`, `integrations`, `labels`,
+  `mcp-integrations`, `prompts` ×3) plus `get_log` and `create_scim_workspace_mapping`,
+  which used to register the refined schema directly and so answered with the SDK's own
+  unenveloped `MCP error -32602` string. Registering the refined schema buys nothing —
+  a `superRefine` is not expressible in JSON Schema, so `tools/list` is byte-identical
+  either way — while costing the standard error envelope.
+- **Four contract fixtures are permanently documentation-derived.** `api-keys-rotate`
+  and the three `secret-references` fixtures in `tests/fixtures/manifest.json` cannot be
+  live-recorded: the endpoints need organisation scopes that no available Portkey key
+  carries, so `record:fixtures` gets a 403. This is a standing limitation of the account,
+  not a blocked task — do not reopen it looking for a better credential. The other 10
+  fixtures are live-captured and remain the real drift detector. If drift on the
+  documented four ever matters, the only route is Portkey granting the scope.
+- **Unauthenticated `/ready` and `GET /` stay open, by decision.** `/ready` in `portkey`
+  check mode confirms a working `PORTKEY_API_KEY` to any caller, and `GET /` renders
+  auth/session/event-store mode. The security review rated both notes rather than
+  findings: no secret is exposed, and gating them would break the health checks and
+  setup-verification flow they exist to serve. Reviewed 2026-08-09 and accepted as-is.
 
 ---
 
