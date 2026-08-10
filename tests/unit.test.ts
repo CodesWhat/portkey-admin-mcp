@@ -3387,6 +3387,24 @@ describe("ZodError formatting through wrapToolCallback", () => {
 		);
 	});
 
+	it("keeps the field path when it only appears inside a longer word", async () => {
+		// Zod's stock wording for a wrong type is "Invalid input", which contains
+		// "id" as a substring. A substring check would drop the field name from
+		// exactly the messages that carry no other clue about which field failed.
+		const callbacks = registerUsersWithListUsersThrowing(() => {
+			throw new z.ZodError([
+				{ code: "custom", path: ["id"], message: "Invalid input" },
+			]);
+		});
+
+		const { message } = await callListAllUsers(callbacks);
+
+		assert.equal(
+			message,
+			'Invalid arguments for "list_all_users": id: Invalid input',
+		);
+	});
+
 	it("does not double-prefix the field path when the issue message already names the field", async () => {
 		const callbacks = registerUsersWithListUsersThrowing(() => {
 			throw new z.ZodError([

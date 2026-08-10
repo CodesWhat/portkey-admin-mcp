@@ -238,16 +238,29 @@ function augmentToolDescription(
  * serialized noise, so issues are flattened to "field: message" instead. The
  * path is omitted when the message already names the field, which the
  * superRefine checks in this codebase generally do.
+ *
+ * The match is on a word boundary, not a substring: path "id" appears inside
+ * Zod's stock "Invalid input" and would otherwise suppress the field name on
+ * exactly the messages that need it most.
  */
 function formatZodIssues(error: z.ZodError): string {
 	return error.issues
 		.map((issue) => {
 			const path = issue.path.join(".");
-			return path && !issue.message.includes(path)
-				? `${path}: ${issue.message}`
-				: issue.message;
+			if (!path) {
+				return issue.message;
+			}
+
+			const namesPath = new RegExp(`\\b${escapeRegExp(path)}\\b`).test(
+				issue.message,
+			);
+			return namesPath ? issue.message : `${path}: ${issue.message}`;
 		})
 		.join("; ");
+}
+
+function escapeRegExp(value: string): string {
+	return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function getToolErrorMessage(error: unknown): string {
