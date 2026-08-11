@@ -15,6 +15,7 @@
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
   <br>
   <a href="https://github.com/CodesWhat/portkey-admin-mcp/actions/workflows/ci.yml"><img src="https://github.com/CodesWhat/portkey-admin-mcp/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://www.bestpractices.dev/projects/14031"><img src="https://www.bestpractices.dev/projects/14031/badge" alt="OpenSSF Best Practices"></a>
   <a href="https://github.com/punkpeye/awesome-mcp-servers"><img src="https://awesome.re/mentioned-badge.svg" alt="Mentioned in Awesome MCP Servers"></a>
   <a href="https://lobehub.com/mcp/codeswhat-portkey-admin-mcp"><img src="https://lobehub.com/badge/mcp/codeswhat-portkey-admin-mcp" alt="LobeHub MCP"></a>
 </p>
@@ -36,6 +37,9 @@
 - [🌐 HTTP Server (Experimental)](#http-server)
 - [🔄 Prisma AIRS interoperability](./docs/PRISMA_AIRS_INTEROPERABILITY.md)
 - [🛠️ Development](#development)
+- [🤝 Contributing](./CONTRIBUTING.md)
+- [🏛️ Governance](./GOVERNANCE.md)
+- [🛡️ Security assurance](./SECURITY-ASSURANCE.md)
 - [🧾 Full tool list — ENDPOINTS.md](./ENDPOINTS.md)
 
 <hr>
@@ -289,6 +293,12 @@ npm run ci            # full pipeline (lint + typecheck + test + build + e2e + v
 ```
 
 `npm run dev:http` now requires `MCP_AUTH_MODE=bearer` or `MCP_AUTH_MODE=clerk` by default. For deliberate local-only unauthenticated testing, set `MCP_ALLOW_UNAUTHENTICATED_HTTP=true`.
+
+Contributions use pull requests and the checks documented in
+[`CONTRIBUTING.md`](CONTRIBUTING.md). Project decisions and maintainer roles are
+documented in [`GOVERNANCE.md`](GOVERNANCE.md). Report vulnerabilities through
+[`SECURITY.md`](SECURITY.md), and see [`SECURITY-ASSURANCE.md`](SECURITY-ASSURANCE.md)
+for the public threat model and assurance case.
 
 ---
 

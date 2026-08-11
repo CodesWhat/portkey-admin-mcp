@@ -9,6 +9,10 @@
 > The unchecked tasks in Phases 1–4 preserve the original implementation plan; Phase 5 is the current compatibility track.
 > Added 2026-08-09: Phase 6 tracks code-health findings from a full-app review (security, performance, quality, testing), including the tradeoffs deliberately left in place.
 
+This direction covers at least the next twelve months, through August 2027.
+Unchecked work is prioritized by API drift, security impact, and user demand;
+it is not a commitment to a specific release date.
+
 ---
 
 ## Phase 5: Current Portkey compatibility (August 2026)
