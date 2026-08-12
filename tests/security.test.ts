@@ -2,6 +2,13 @@ import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import { readFileSync } from "node:fs";
 import { afterEach, describe, it } from "node:test";
+import {
+	assertSafeHttpAuthConfig,
+	authorizeClerkClaims,
+	getPrincipalOwnerKey,
+	mcpAuthMiddleware,
+	resetHttpAuthStateForTest,
+} from "../src/lib/auth.js";
 
 const ORIGINAL_ENV = { ...process.env };
 const ORIGINAL_TIMING_SAFE_EQUAL = crypto.timingSafeEqual;
@@ -88,10 +95,6 @@ function resetEnv(): void {
 	process.env = { ...ORIGINAL_ENV };
 }
 
-async function loadAuthModule() {
-	return import(`../src/lib/auth.js?test=${Date.now()}-${Math.random()}`);
-}
-
 async function loadSecurityModule() {
 	await securityModule.resetSecurityStateForTest();
 	return securityModule;
@@ -164,6 +167,7 @@ function createMockResponse() {
 describe("origin security configuration", () => {
 	afterEach(async () => {
 		resetEnv();
+		resetHttpAuthStateForTest();
 		crypto.timingSafeEqual = ORIGINAL_TIMING_SAFE_EQUAL;
 		await securityModule.resetSecurityStateForTest();
 	});
@@ -309,12 +313,7 @@ describe("origin security configuration", () => {
 	it("authenticates bearer requests and rejects malformed or mismatched credentials", async () => {
 		process.env.MCP_AUTH_MODE = "bearer";
 		process.env.MCP_AUTH_TOKEN = "expected-secret-token";
-
-		const {
-			assertSafeHttpAuthConfig,
-			getPrincipalOwnerKey,
-			mcpAuthMiddleware,
-		} = await loadAuthModule();
+		resetHttpAuthStateForTest();
 		let timingSafeEqualCalls = 0;
 
 		crypto.timingSafeEqual = ((left: Buffer, right: Buffer) => {
@@ -389,9 +388,7 @@ describe("origin security configuration", () => {
 	it("requires an explicit override for anonymous HTTP authentication", async () => {
 		delete process.env.MCP_AUTH_MODE;
 		delete process.env.MCP_ALLOW_UNAUTHENTICATED_HTTP;
-
-		const { assertSafeHttpAuthConfig, mcpAuthMiddleware } =
-			await loadAuthModule();
+		resetHttpAuthStateForTest();
 
 		assert.throws(
 			() => assertSafeHttpAuthConfig(),
@@ -775,13 +772,13 @@ describe("origin security configuration", () => {
 		process.env.RATE_LIMIT_MAX = "1";
 		process.env.RATE_LIMIT_REFILL = "1";
 		process.env.RATE_LIMIT_WINDOW_MS = "10";
+		resetHttpAuthStateForTest();
 
-		const auth = await loadAuthModule();
 		const security = await loadSecurityModule();
 
 		const authenticated = createMockResponse();
 		let authenticatedNext = false;
-		await auth.mcpAuthMiddleware(
+		await mcpAuthMiddleware(
 			createMockRequest("  Bearer   integrated-secret  ") as never,
 			authenticated.response as never,
 			() => {
@@ -793,7 +790,7 @@ describe("origin security configuration", () => {
 			.authPrincipal as { mode: string };
 		assert.equal(authenticatedPrincipal?.mode, "bearer");
 		assert.match(
-			auth.getPrincipalOwnerKey(authenticatedPrincipal as never),
+			getPrincipalOwnerKey(authenticatedPrincipal as never),
 			/^[a-f0-9]{64}$/,
 		);
 
@@ -805,7 +802,7 @@ describe("origin security configuration", () => {
 			allowedRoles: ["admin"],
 			requiredPermissions: ["read"],
 		};
-		const clerkPrincipal = auth.authorizeClerkClaims(
+		const clerkPrincipal = authorizeClerkClaims(
 			{
 				sub: "user-2",
 				o: { id: "org-2", rol: "admin", per: ["read", "read", null] },
@@ -834,10 +831,7 @@ describe("origin security configuration", () => {
 				/missing a required permission/,
 			],
 		] as const) {
-			assert.throws(
-				() => auth.authorizeClerkClaims(payload, clerkConfig),
-				message,
-			);
+			assert.throws(() => authorizeClerkClaims(payload, clerkConfig), message);
 		}
 
 		assert.deepEqual(security.getAllowedOrigins(), [

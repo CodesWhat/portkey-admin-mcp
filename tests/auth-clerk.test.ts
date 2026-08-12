@@ -15,6 +15,14 @@
 import assert from "node:assert/strict";
 import { afterEach, describe, it } from "node:test";
 import { exportJWK, generateKeyPair, SignJWT } from "jose";
+import {
+	assertSafeHttpAuthConfig,
+	authorizeClerkClaims,
+	getHttpAuthConfig,
+	getPrincipalOwnerKey,
+	mcpAuthMiddleware,
+	resetHttpAuthStateForTest,
+} from "../src/lib/auth.js";
 
 const ORIGINAL_ENV = { ...process.env };
 
@@ -38,11 +46,6 @@ function resetEnv(): void {
 			delete process.env[key];
 		}
 	}
-}
-
-/** Fresh module import — bypasses the module-level HTTP_AUTH_CONFIG constant. */
-async function loadAuthModule() {
-	return import(`../src/lib/auth.js?test=${Date.now()}-${Math.random()}`);
 }
 
 function allowTestClerkSubject(): void {
@@ -139,6 +142,7 @@ async function withStubbedJwksFetch<T>(
 describe("getHttpAuthConfig under clerk mode", () => {
 	afterEach(() => {
 		resetEnv();
+		resetHttpAuthStateForTest();
 	});
 
 	it("accepts a valid clerk configuration with explicit JWKS URL", async () => {
@@ -149,7 +153,7 @@ describe("getHttpAuthConfig under clerk mode", () => {
 		process.env.CLERK_JWKS_URL =
 			"https://clerk.example.com/.well-known/jwks.json";
 
-		const { getHttpAuthConfig } = await loadAuthModule();
+		resetHttpAuthStateForTest();
 		const config = getHttpAuthConfig();
 
 		assert.equal(config.mode, "clerk");
@@ -168,8 +172,8 @@ describe("getHttpAuthConfig under clerk mode", () => {
 		process.env.CLERK_JWKS_URL =
 			"https://clerk.example.com/.well-known/jwks.json";
 
-		await assert.rejects(
-			() => loadAuthModule(),
+		assert.throws(
+			() => resetHttpAuthStateForTest(),
 			/MCP_AUTH_MODE=clerk requires an explicit authorization policy/,
 		);
 	});
@@ -181,8 +185,7 @@ describe("getHttpAuthConfig under clerk mode", () => {
 		process.env.CLERK_JWKS_URL =
 			"https://clerk.example.com/.well-known/jwks.json";
 		process.env.CLERK_ALLOWED_SUBJECTS = "user_admin";
-
-		const { authorizeClerkClaims, getHttpAuthConfig } = await loadAuthModule();
+		resetHttpAuthStateForTest();
 
 		assert.throws(
 			() => authorizeClerkClaims({ sub: "user_member" }, getHttpAuthConfig()),
@@ -199,8 +202,8 @@ describe("getHttpAuthConfig under clerk mode", () => {
 		process.env.CLERK_ALLOWED_ROLES = "org:admin";
 		process.env.CLERK_REQUIRED_PERMISSIONS =
 			"org:sys_memberships:manage,org:sys_domains:manage";
+		resetHttpAuthStateForTest();
 
-		const { authorizeClerkClaims, getHttpAuthConfig } = await loadAuthModule();
 		const principal = authorizeClerkClaims(
 			{
 				sub: "user_admin",
@@ -231,8 +234,8 @@ describe("getHttpAuthConfig under clerk mode", () => {
 		process.env.CLERK_JWKS_URL =
 			"https://clerk.example.com/.well-known/jwks.json";
 
-		await assert.rejects(
-			() => loadAuthModule(),
+		assert.throws(
+			() => resetHttpAuthStateForTest(),
 			(err: unknown) => {
 				assert.ok(err instanceof Error);
 				assert.match(err.message, /MCP_AUTH_MODE=clerk configuration error/);
@@ -250,8 +253,8 @@ describe("getHttpAuthConfig under clerk mode", () => {
 		process.env.CLERK_JWKS_URL =
 			"https://clerk.example.com/.well-known/jwks.json";
 
-		await assert.rejects(
-			() => loadAuthModule(),
+		assert.throws(
+			() => resetHttpAuthStateForTest(),
 			(err: unknown) => {
 				assert.ok(err instanceof Error);
 				assert.match(err.message, /MCP_AUTH_MODE=clerk configuration error/);
@@ -267,12 +270,10 @@ describe("getHttpAuthConfig under clerk mode", () => {
 		process.env.CLERK_ISSUER = "https://clerk.example.com";
 		process.env.CLERK_AUDIENCE = "my-audience";
 		delete process.env.CLERK_JWKS_URL;
-
-		const { getHttpAuthConfig } = await loadAuthModule();
-		const config = getHttpAuthConfig();
+		resetHttpAuthStateForTest();
 
 		assert.equal(
-			config.jwksUrl,
+			getHttpAuthConfig().jwksUrl,
 			"https://clerk.example.com/.well-known/jwks.json",
 		);
 	});
@@ -284,7 +285,7 @@ describe("getHttpAuthConfig under clerk mode", () => {
 		process.env.CLERK_AUDIENCE = "my-audience";
 		delete process.env.CLERK_JWKS_URL;
 
-		const { getHttpAuthConfig } = await loadAuthModule();
+		resetHttpAuthStateForTest();
 		const config = getHttpAuthConfig();
 
 		assert.equal(
@@ -299,11 +300,9 @@ describe("getHttpAuthConfig under clerk mode", () => {
 		process.env.CLERK_ISSUER = "https://clerk.example.com";
 		process.env.CLERK_AUDIENCE = "audience-one, audience-two, audience-three";
 		delete process.env.CLERK_JWKS_URL;
+		resetHttpAuthStateForTest();
 
-		const { getHttpAuthConfig } = await loadAuthModule();
-		const config = getHttpAuthConfig();
-
-		assert.deepEqual(config.audience, [
+		assert.deepEqual(getHttpAuthConfig().audience, [
 			"audience-one",
 			"audience-two",
 			"audience-three",
@@ -318,8 +317,8 @@ describe("getHttpAuthConfig under clerk mode", () => {
 		process.env.CLERK_JWKS_URL =
 			"https://clerk.example.com/.well-known/jwks.json";
 
-		await assert.rejects(
-			() => loadAuthModule(),
+		assert.throws(
+			() => resetHttpAuthStateForTest(),
 			(err: unknown) => {
 				assert.ok(err instanceof Error);
 				assert.match(err.message, /invalid https URL: CLERK_ISSUER/);
@@ -353,6 +352,7 @@ describe("getHttpAuthConfig under clerk mode", () => {
 describe("mcpAuthMiddleware clerk JWT verification", () => {
 	afterEach(() => {
 		resetEnv();
+		resetHttpAuthStateForTest();
 	});
 
 	it("returns 401 when Authorization header is missing in clerk mode", async () => {
@@ -361,11 +361,10 @@ describe("mcpAuthMiddleware clerk JWT verification", () => {
 		process.env.CLERK_ISSUER = "https://clerk.example.com";
 		process.env.CLERK_AUDIENCE = "test-audience";
 		delete process.env.CLERK_JWKS_URL;
+		resetHttpAuthStateForTest();
 
-		const { mcpAuthMiddleware } = await loadAuthModule();
 		const { response, state } = createMockResponse();
 		let nextCalled = false;
-
 		await mcpAuthMiddleware(
 			createMockRequest({ path: "/mcp" }) as never,
 			response as never,
@@ -387,11 +386,10 @@ describe("mcpAuthMiddleware clerk JWT verification", () => {
 		process.env.CLERK_ISSUER = "https://clerk.example.com";
 		process.env.CLERK_AUDIENCE = "test-audience";
 		delete process.env.CLERK_JWKS_URL;
+		resetHttpAuthStateForTest();
 
-		const { mcpAuthMiddleware } = await loadAuthModule();
 		const { response, state } = createMockResponse();
 		let nextCalled = false;
-
 		await mcpAuthMiddleware(
 			createMockRequest({ path: "/health" }) as never,
 			response as never,
@@ -414,11 +412,10 @@ describe("mcpAuthMiddleware clerk JWT verification", () => {
 		process.env.CLERK_ISSUER = "https://clerk.example.com";
 		process.env.CLERK_AUDIENCE = "test-audience";
 		delete process.env.CLERK_JWKS_URL;
+		resetHttpAuthStateForTest();
 
-		const { mcpAuthMiddleware } = await loadAuthModule();
 		const { response, state } = createMockResponse();
 		let nextCalled = false;
-
 		await mcpAuthMiddleware(
 			// "not.a.valid.jwt.at.all" has more than 3 segments → jose rejects
 			createMockRequest({
@@ -452,7 +449,7 @@ describe("mcpAuthMiddleware clerk JWT verification", () => {
 		process.env.CLERK_JWKS_URL =
 			"https://clerk.example.test/.well-known/jwks.json";
 
-		const { mcpAuthMiddleware } = await loadAuthModule();
+		resetHttpAuthStateForTest();
 		const { response, state } = createMockResponse();
 		let nextCalled = false;
 
@@ -528,13 +525,7 @@ describe("mcpAuthMiddleware clerk JWT verification", () => {
 			.sign(privateKey);
 
 		await withStubbedJwksFetch(jwksUrl, jwks, async () => {
-			const {
-				assertSafeHttpAuthConfig,
-				authorizeClerkClaims,
-				getHttpAuthConfig,
-				getPrincipalOwnerKey,
-				mcpAuthMiddleware,
-			} = await loadAuthModule();
+			resetHttpAuthStateForTest();
 			const config = getHttpAuthConfig();
 			assert.doesNotThrow(() => assertSafeHttpAuthConfig());
 			assert.deepEqual(config, {
