@@ -10,6 +10,9 @@ process.env.RATE_LIMIT_WINDOW_MS = "60000";
 process.env.RATE_LIMIT_REFILL = "1";
 process.env.RATE_LIMIT_MAX_BUCKETS = "10";
 
+const securityModule = await import("../src/lib/security.js");
+await securityModule.resetSecurityStateForTest();
+
 const {
 	closeRateLimitStore,
 	consumeRedisRateLimitToken,
@@ -19,7 +22,7 @@ const {
 	originValidationMiddleware,
 	principalRateLimitMiddleware,
 	rateLimitMiddleware,
-} = await import("../src/lib/security.js");
+} = securityModule;
 
 after(async () => {
 	await closeRateLimitStore();

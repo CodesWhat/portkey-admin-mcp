@@ -5,6 +5,7 @@ import { afterEach, describe, it } from "node:test";
 
 const ORIGINAL_ENV = { ...process.env };
 const ORIGINAL_TIMING_SAFE_EQUAL = crypto.timingSafeEqual;
+const securityModule = await import("../src/lib/security.js");
 
 describe("supply-chain configuration", () => {
 	it("holds dependency updates for review after a seven-day release age", () => {
@@ -92,7 +93,8 @@ async function loadAuthModule() {
 }
 
 async function loadSecurityModule() {
-	return import(`../src/lib/security.js?test=${Date.now()}-${Math.random()}`);
+	await securityModule.resetSecurityStateForTest();
+	return securityModule;
 }
 
 async function loadBaseService() {
@@ -160,9 +162,10 @@ function createMockResponse() {
 }
 
 describe("origin security configuration", () => {
-	afterEach(() => {
+	afterEach(async () => {
 		resetEnv();
 		crypto.timingSafeEqual = ORIGINAL_TIMING_SAFE_EQUAL;
+		await securityModule.resetSecurityStateForTest();
 	});
 
 	it("uses ALLOWED_ORIGINS when configured", async () => {

@@ -91,10 +91,10 @@ const moduleHooks = registerHooks({
 	},
 });
 
-// Keep the environment-variant suites in this worker so their cache-busted
-// imports aggregate with the canonical runtime scenarios below.
-await import("./security.test.js");
+// Keep the environment-variant suites in this worker so they share the
+// canonical security module and its explicit reset lifecycle.
 await import("./lib-security-runtime.test.js");
+await import("./security.test.js");
 const security = await import("../src/lib/security.js");
 const rateLimitConfig = security.getRateLimitConfig();
 
