@@ -618,14 +618,18 @@ export function registerPromptsTools(
 
 			if (dry_run) {
 				const current = await service.prompts.getPrompt(prompt_id);
+				const changes = Object.keys(updateData).filter(
+					(k) => updateData[k as keyof typeof updateData] !== undefined,
+				);
+				if (messages !== undefined && !changes.includes("string")) {
+					changes.push("string");
+				}
 				return jsonResult({
 					dry_run: true,
 					action: "update",
 					message: `Would update prompt "${current.name}"`,
 					current_version: current.current_version?.version_number ?? null,
-					changes: Object.keys(updateData).filter(
-						(k) => updateData[k as keyof typeof updateData] !== undefined,
-					),
+					changes,
 				});
 			}
 

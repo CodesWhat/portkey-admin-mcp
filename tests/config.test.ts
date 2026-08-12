@@ -180,4 +180,98 @@ describe("getServerConfig", () => {
 			/Invalid MCP_SHUTDOWN_TIMEOUT_MS value/,
 		);
 	});
+
+	it("validates host, integer, Redis URL, and TLS edge cases", () => {
+		process.env.MCP_HOST = "   ";
+		assert.throws(() => getServerConfig(), /Invalid MCP_HOST value/);
+
+		resetEnv();
+		process.env.MCP_SESSION_TIMEOUT = "9007199254740992";
+		assert.throws(() => getServerConfig(), /Invalid MCP_SESSION_TIMEOUT value/);
+
+		resetEnv();
+		process.env.MCP_SHUTDOWN_TIMEOUT_MS = "0";
+		assert.throws(
+			() => getServerConfig(),
+			/Invalid MCP_SHUTDOWN_TIMEOUT_MS value/,
+		);
+
+		resetEnv();
+		process.env.MCP_EVENT_TTL_SECONDS = "0";
+		assert.throws(
+			() => getServerConfig(),
+			/Invalid MCP_EVENT_TTL_SECONDS value/,
+		);
+
+		for (const redisUrl of ["not a URL", "https://cache.example.com"]) {
+			resetEnv();
+			process.env.MCP_EVENT_STORE = "redis";
+			process.env.MCP_REDIS_URL = redisUrl;
+			process.env.MCP_EVENT_ENCRYPTION_KEY = Buffer.alloc(32, 7).toString(
+				"base64",
+			);
+			assert.throws(() => getServerConfig(), /MCP_REDIS_URL must/);
+		}
+
+		resetEnv();
+		process.env.MCP_EVENT_STORE = "redis";
+		process.env.MCP_REDIS_URL = "redis://localhost:6379";
+		process.env.MCP_EVENT_ENCRYPTION_KEY = Buffer.alloc(32, 7)
+			.toString("base64")
+			.replace(/=+$/, "");
+		assert.throws(
+			() => getServerConfig(),
+			/MCP_EVENT_ENCRYPTION_KEY must be base64-encoded 32-byte key/,
+		);
+
+		resetEnv();
+		process.env.MCP_TLS_KEY_PATH = "/tmp/server-key.pem";
+		process.env.MCP_TLS_CERT_PATH = "/tmp/server-cert.pem";
+		process.env.MCP_TLS_CA_PATH = "/tmp/server-ca.pem";
+		const tlsConfig = getServerConfig();
+		assert.equal(tlsConfig.protocol, "https");
+		assert.deepEqual(tlsConfig.tls, {
+			enabled: true,
+			keyPath: "/tmp/server-key.pem",
+			certPath: "/tmp/server-cert.pem",
+			caPath: "/tmp/server-ca.pem",
+		});
+	});
+});
+
+describe("Logger level filtering", () => {
+	afterEach(() => {
+		resetEnv();
+	});
+
+	it("defaults invalid levels to info and writes structured entries", async () => {
+		process.env.LOG_LEVEL = "verbose";
+		const { Logger } = await import("../src/lib/logger.js");
+		const originalWrite = process.stderr.write;
+		const writes: string[] = [];
+		process.stderr.write = ((chunk: string | Uint8Array) => {
+			writes.push(String(chunk));
+			return true;
+		}) as typeof process.stderr.write;
+
+		try {
+			Logger.debug("debug message");
+			Logger.info("info message", { requestId: "request-1" });
+			Logger.warn("warn message", { statusCode: 429 });
+			Logger.error("error message", { error: "upstream failure" });
+		} finally {
+			process.stderr.write = originalWrite;
+		}
+
+		const entries = writes.map(
+			(write) => JSON.parse(write) as Record<string, unknown>,
+		);
+		assert.deepEqual(
+			entries.map((entry) => entry.level),
+			["info", "warn", "error"],
+		);
+		assert.equal(entries[0]?.requestId, "request-1");
+		assert.equal(entries.at(-1)?.message, "error message");
+		assert.equal(entries.at(-1)?.error, "upstream failure");
+	});
 });

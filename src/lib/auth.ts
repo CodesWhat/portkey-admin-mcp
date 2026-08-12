@@ -156,7 +156,7 @@ function getHttpAuthConfigFromEnv(): HttpAuthConfig {
 	};
 }
 
-const HTTP_AUTH_CONFIG = getHttpAuthConfigFromEnv();
+let HTTP_AUTH_CONFIG = getHttpAuthConfigFromEnv();
 
 export function getHttpAuthConfig(): HttpAuthConfig {
 	return HTTP_AUTH_CONFIG;
@@ -202,6 +202,11 @@ function timingSafeEqual(a: string, b: string): boolean {
 }
 
 const jwksCache = new Map<string, ReturnType<typeof createRemoteJWKSet>>();
+
+export function resetHttpAuthStateForTest(): void {
+	HTTP_AUTH_CONFIG = getHttpAuthConfigFromEnv();
+	jwksCache.clear();
+}
 
 function asString(value: unknown): string | undefined {
 	return typeof value === "string" && value.trim() ? value.trim() : undefined;

@@ -12,6 +12,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { toJsonSchemaCompat } from "@modelcontextprotocol/sdk/server/zod-json-schema-compat.js";
 import { z } from "zod";
 import {
@@ -159,6 +162,95 @@ async function captureServiceRequest(
 		basePrototype.post = originalMethods.post;
 		basePrototype.put = originalMethods.put;
 		basePrototype.delete = originalMethods.delete;
+	}
+}
+
+async function exerciseMcpWorkflowGuidance(server: McpServer): Promise<void> {
+	const client = new Client({
+		name: "unit-test-client",
+		version: "1.0.0",
+	});
+	const [clientTransport, serverTransport] =
+		InMemoryTransport.createLinkedPair();
+
+	try {
+		await server.connect(serverTransport);
+		await client.connect(clientTransport);
+
+		const prompts = await client.listPrompts();
+		assert.ok(
+			prompts.prompts.some(
+				(prompt) => prompt.name === "plan_portkey_admin_workflow",
+			),
+		);
+		const rendered = await client.getPrompt({
+			name: "plan_portkey_admin_workflow",
+			arguments: { task: "audit prompt versions", area: "prompts" },
+		});
+		assert.equal(rendered.messages.length, 2);
+		const taskMessage = rendered.messages[1]?.content;
+		assert.equal(taskMessage?.type, "text");
+		if (taskMessage?.type === "text") {
+			assert.match(taskMessage.text, /audit prompt versions/);
+			assert.match(taskMessage.text, /^Area: prompts$/m);
+		}
+
+		const resources = await client.listResources();
+		assert.ok(
+			resources.resources.some(
+				(resource) => resource.uri === "portkey-admin://docs/workflow-guide",
+			),
+		);
+		const guide = await client.readResource({
+			uri: "portkey-admin://docs/workflow-guide",
+		});
+		assert.ok(guide.contents[0] && "text" in guide.contents[0]);
+	} finally {
+		await Promise.allSettled([client.close(), server.close()]);
+	}
+}
+
+function exerciseMcpDomainResolution(
+	resolveToolDomains: (
+		requestedDomains?: readonly ("prompts" | "analytics" | "keys")[],
+	) => readonly string[] | undefined,
+): void {
+	const originalPortkeyDomains = process.env.PORTKEY_TOOL_DOMAINS;
+	const originalMcpDomains = process.env.MCP_TOOL_DOMAINS;
+
+	try {
+		delete process.env.PORTKEY_TOOL_DOMAINS;
+		delete process.env.MCP_TOOL_DOMAINS;
+		assert.equal(resolveToolDomains(), undefined);
+		assert.deepEqual(
+			resolveToolDomains(["analytics", "prompts", "analytics"]),
+			["prompts", "analytics"],
+		);
+
+		process.env.PORTKEY_TOOL_DOMAINS = "prompts,analytics";
+		assert.deepEqual(resolveToolDomains(), ["prompts", "analytics"]);
+		assert.deepEqual(resolveToolDomains(["prompts"]), ["prompts"]);
+		assert.throws(() => resolveToolDomains(["keys"]), /not allowed/);
+
+		process.env.PORTKEY_TOOL_DOMAINS = ", ,";
+		assert.throws(() => resolveToolDomains(), /Expected one or more domains/);
+		process.env.PORTKEY_TOOL_DOMAINS = "not-a-domain";
+		assert.throws(() => resolveToolDomains(), /Unknown tool domains/);
+
+		delete process.env.PORTKEY_TOOL_DOMAINS;
+		process.env.MCP_TOOL_DOMAINS = "keys";
+		assert.deepEqual(resolveToolDomains(), ["keys"]);
+	} finally {
+		if (originalPortkeyDomains === undefined) {
+			delete process.env.PORTKEY_TOOL_DOMAINS;
+		} else {
+			process.env.PORTKEY_TOOL_DOMAINS = originalPortkeyDomains;
+		}
+		if (originalMcpDomains === undefined) {
+			delete process.env.MCP_TOOL_DOMAINS;
+		} else {
+			process.env.MCP_TOOL_DOMAINS = originalMcpDomains;
+		}
 	}
 }
 
@@ -736,6 +828,7 @@ describe("ToolChoiceSchema", () => {
 	});
 
 	it("maps flat MCP tool_choice input back to the Portkey API shape", () => {
+		assert.equal(toPromptToolChoice(), undefined);
 		assert.equal(toPromptToolChoice({ mode: "auto" }), "auto");
 		assert.equal(toPromptToolChoice({ mode: "none" }), "none");
 		assert.deepEqual(
@@ -750,6 +843,26 @@ describe("ToolChoiceSchema", () => {
 				},
 			},
 		);
+	});
+
+	it("rejects missing or contradictory function selections", () => {
+		const missingName = ToolChoiceSchema.safeParse({ mode: "function" });
+		assert.equal(missingName.success, false);
+		if (!missingName.success) {
+			assert.match(missingName.error.issues[0]?.message ?? "", /is required/);
+		}
+
+		const unexpectedName = ToolChoiceSchema.safeParse({
+			mode: "auto",
+			function_name: "search_docs",
+		});
+		assert.equal(unexpectedName.success, false);
+		if (!unexpectedName.success) {
+			assert.match(
+				unexpectedName.error.issues[0]?.message ?? "",
+				/only allowed/,
+			);
+		}
 	});
 });
 
@@ -1541,12 +1654,14 @@ describe("createMcpServer package metadata caching", () => {
 		process.env.PORTKEY_API_KEY = "test-dummy-key";
 
 		try {
-			const { createMcpServer } = await import(
+			const { createMcpServer, resolveToolDomains } = await import(
 				`../src/lib/mcp-server.js?test=${Date.now()}-${Math.random()}`
 			);
 
+			exerciseMcpDomainResolution(resolveToolDomains);
+			const first = createMcpServer();
 			createMcpServer();
-			createMcpServer();
+			await exerciseMcpWorkflowGuidance(first.server);
 
 			assert.equal(readFileSyncCalls, 1);
 		} finally {
@@ -1572,11 +1687,13 @@ describe("createMcpServer package metadata caching", () => {
 		process.chdir(tempCwd);
 
 		try {
-			const { createMcpServer } = await import(
+			const { createMcpServer, resolveToolDomains } = await import(
 				`../src/lib/mcp-server.js?test=${Date.now()}-${Math.random()}`
 			);
 
+			exerciseMcpDomainResolution(resolveToolDomains);
 			const { server } = createMcpServer();
+			await exerciseMcpWorkflowGuidance(server);
 			const version = (
 				server as unknown as {
 					server: { _serverInfo?: { version?: string } };
@@ -1600,12 +1717,14 @@ describe("createMcpServer package metadata caching", () => {
 		process.env.PORTKEY_API_KEY = "test-dummy-key";
 
 		try {
-			const { createMcpServer } = await import(
+			const { createMcpServer, resolveToolDomains } = await import(
 				`../src/lib/mcp-server.js?test=${Date.now()}-${Math.random()}`
 			);
 
+			exerciseMcpDomainResolution(resolveToolDomains);
 			const first = createMcpServer();
 			const second = createMcpServer();
+			await exerciseMcpWorkflowGuidance(first.server);
 
 			assert.notEqual(first.server, second.server);
 			assert.equal(first.service, second.service);

@@ -292,6 +292,89 @@ describe("HTTP server integration", () => {
 		});
 	});
 
+	it("serves the hosted setup page with escaped deployment metadata", async () => {
+		await withHttpServer(
+			{
+				MCP_PUBLIC_BASE_URL: "https://mcp.example.com/tenant&one/",
+			},
+			async ({ baseUrl }) => {
+				const response = await fetch(`${baseUrl}/`);
+				assert.equal(response.status, 200);
+				assert.equal(
+					response.headers.get("content-security-policy"),
+					"default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
+				);
+				assert.match(response.headers.get("content-type") ?? "", /text\/html/);
+				const html = await response.text();
+				assert.match(html, /https:\/\/mcp\.example\.com\/tenant&amp;one\/mcp/);
+				assert.match(
+					html,
+					/Send Authorization: Bearer &lt;MCP_AUTH_TOKEN&gt;\./,
+				);
+				assert.match(html, /Session mode:<\/strong> <code>stateful<\/code>/);
+			},
+		);
+	});
+
+	it("reports why Portkey readiness cannot run without an API key", async () => {
+		await withHttpServer(
+			{
+				MCP_READY_CHECK_MODE: "portkey",
+				PORTKEY_API_KEY: "",
+			},
+			async ({ baseUrl }) => {
+				const response = await fetch(`${baseUrl}/ready`);
+				assert.equal(response.status, 503);
+				const body = (await response.json()) as Record<string, unknown>;
+				assert.equal(body.status, "not_ready");
+				assert.equal(body.reason, "PORTKEY_API_KEY is not configured");
+				assert.equal(typeof body.timestamp, "string");
+			},
+		);
+	});
+
+	it("includes a successful Portkey API check in readiness", async () => {
+		const upstreamPort = await getFreePort();
+		const upstream = createHttpServer((_request, response) => {
+			response.writeHead(200, { "content-type": "application/json" });
+			response.end(JSON.stringify({ object: "list", total: 0, data: [] }));
+		});
+		await new Promise<void>((resolveListen) => {
+			upstream.listen(upstreamPort, "127.0.0.1", resolveListen);
+		});
+
+		try {
+			await withHttpServer(
+				{
+					MCP_READY_CHECK_MODE: "portkey",
+					PORTKEY_BASE_URL: `http://127.0.0.1:${upstreamPort}`,
+					PORTKEY_ALLOW_PRIVATE_BASE_URL: "true",
+					PORTKEY_ALLOW_INSECURE_HTTP: "true",
+				},
+				async ({ baseUrl }) => {
+					const response = await fetch(`${baseUrl}/ready`);
+					assert.equal(response.status, 200);
+					const body = (await response.json()) as Record<string, unknown>;
+					assert.equal(body.status, "ready");
+					assert.equal(body.sessionMode, "stateful");
+					assert.equal(body.eventStoreMode, "off");
+					assert.deepEqual(body.portkey, {
+						status: "ok",
+						latency_ms: (body.portkey as { latency_ms: number }).latency_ms,
+					});
+					assert.equal(
+						typeof (body.portkey as { latency_ms: unknown }).latency_ms,
+						"number",
+					);
+				},
+			);
+		} finally {
+			await new Promise<void>((resolveClose, reject) => {
+				upstream.close((error) => (error ? reject(error) : resolveClose()));
+			});
+		}
+	});
+
 	it("omits HSTS when TLS is not configured in app (even with x-forwarded-proto: https)", async () => {
 		await withHttpServer(
 			{

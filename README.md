@@ -15,6 +15,7 @@
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
   <br>
   <a href="https://github.com/CodesWhat/portkey-admin-mcp/actions/workflows/ci.yml"><img src="https://github.com/CodesWhat/portkey-admin-mcp/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://securityscorecards.dev/viewer/?uri=github.com/CodesWhat/portkey-admin-mcp"><img src="https://img.shields.io/ossf-scorecard/github.com/CodesWhat/portkey-admin-mcp?label=openssf+scorecard&style=flat" alt="OpenSSF Scorecard"></a>
   <a href="https://www.bestpractices.dev/projects/14031"><img src="https://www.bestpractices.dev/projects/14031/badge" alt="OpenSSF Best Practices"></a>
   <a href="https://github.com/punkpeye/awesome-mcp-servers"><img src="https://awesome.re/mentioned-badge.svg" alt="Mentioned in Awesome MCP Servers"></a>
   <a href="https://lobehub.com/mcp/codeswhat-portkey-admin-mcp"><img src="https://lobehub.com/badge/mcp/codeswhat-portkey-admin-mcp" alt="LobeHub MCP"></a>
@@ -35,7 +36,9 @@
 - [🧰 What You Can Do](#what-you-can-do)
 - [🔑 API Key Scopes](#api-key-scopes)
 - [🌐 HTTP Server (Experimental)](#http-server)
+- [🏗️ Architecture](./docs/ARCHITECTURE.md)
 - [🔄 Prisma AIRS interoperability](./docs/PRISMA_AIRS_INTEROPERABILITY.md)
+- [🔏 Verify a release](./docs/VERIFY_RELEASE.md)
 - [🛠️ Development](#development)
 - [🤝 Contributing](./CONTRIBUTING.md)
 - [🏛️ Governance](./GOVERNANCE.md)
@@ -287,10 +290,15 @@ docker run \
 npm run dev           # stdio with hot reload
 npm run dev:http      # HTTP with hot reload
 npm test              # unit + contract tests
+npm run test:coverage # unit + contract tests with the enforced 80% line floor
 npm run test:e2e      # MCP protocol tests
 npm run test:http     # HTTP endpoint smoke test
-npm run ci            # full pipeline (lint + typecheck + test + build + e2e + verify)
+npm run ci            # full pipeline (lint + typecheck + coverage + build + e2e + verify)
 ```
+
+The required CI and release gates measure every TypeScript source file and fail
+below 80% line coverage. The current full report is 99.36% lines, 92.41%
+branches, and 99.01% functions.
 
 `npm run dev:http` now requires `MCP_AUTH_MODE=bearer` or `MCP_AUTH_MODE=clerk` by default. For deliberate local-only unauthenticated testing, set `MCP_ALLOW_UNAUTHENTICATED_HTTP=true`.
 

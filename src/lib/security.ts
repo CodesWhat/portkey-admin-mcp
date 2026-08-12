@@ -94,7 +94,7 @@ function resolveAllowedOrigins(): string[] {
 	];
 }
 
-const ALLOWED_ORIGINS = resolveAllowedOrigins();
+let ALLOWED_ORIGINS = resolveAllowedOrigins();
 
 export function getAllowedOrigins(): string[] {
 	return ALLOWED_ORIGINS;
@@ -367,31 +367,35 @@ function resolveRateLimitRedisUrl(
 	return redisUrl;
 }
 
-// Cache rate limit config at module load
-const rateLimitEnabled =
-	process.env.RATE_LIMIT_ENABLED?.trim().toLowerCase() !== "false";
-const rateLimitStore = resolveRateLimitStore();
-if (
-	rateLimitEnabled &&
-	rateLimitStore === "memory" &&
-	process.env.NODE_ENV?.trim().toLowerCase() === "production" &&
-	!isExplicitlyEnabled(process.env.RATE_LIMIT_SINGLE_PROCESS)
-) {
-	throw new Error(
-		"Production in-memory rate limiting requires RATE_LIMIT_SINGLE_PROCESS=true. Use RATE_LIMIT_STORE=redis for multi-instance deployments.",
-	);
+function resolveRateLimitConfig(): RateLimitConfig {
+	const enabled =
+		process.env.RATE_LIMIT_ENABLED?.trim().toLowerCase() !== "false";
+	const store = resolveRateLimitStore();
+	if (
+		enabled &&
+		store === "memory" &&
+		process.env.NODE_ENV?.trim().toLowerCase() === "production" &&
+		!isExplicitlyEnabled(process.env.RATE_LIMIT_SINGLE_PROCESS)
+	) {
+		throw new Error(
+			"Production in-memory rate limiting requires RATE_LIMIT_SINGLE_PROCESS=true. Use RATE_LIMIT_STORE=redis for multi-instance deployments.",
+		);
+	}
+	return {
+		enabled,
+		store,
+		maxTokens: parsePositiveIntegerEnv("RATE_LIMIT_MAX", 60),
+		windowMs: parsePositiveIntegerEnv("RATE_LIMIT_WINDOW_MS", 60000),
+		refillRate: parsePositiveIntegerEnv("RATE_LIMIT_REFILL", 60),
+		maxBuckets: parsePositiveIntegerEnv("RATE_LIMIT_MAX_BUCKETS", 10000),
+		redisUrl: resolveRateLimitRedisUrl(store),
+		redisKeyPrefix:
+			process.env.RATE_LIMIT_REDIS_KEY_PREFIX?.trim() || "mcp:rate-limit",
+	};
 }
-const RATE_LIMIT_CONFIG: RateLimitConfig = {
-	enabled: rateLimitEnabled,
-	store: rateLimitStore,
-	maxTokens: parsePositiveIntegerEnv("RATE_LIMIT_MAX", 60),
-	windowMs: parsePositiveIntegerEnv("RATE_LIMIT_WINDOW_MS", 60000),
-	refillRate: parsePositiveIntegerEnv("RATE_LIMIT_REFILL", 60),
-	maxBuckets: parsePositiveIntegerEnv("RATE_LIMIT_MAX_BUCKETS", 10000),
-	redisUrl: resolveRateLimitRedisUrl(rateLimitStore),
-	redisKeyPrefix:
-		process.env.RATE_LIMIT_REDIS_KEY_PREFIX?.trim() || "mcp:rate-limit",
-};
+
+// Cache rate limit config at module load.
+const RATE_LIMIT_CONFIG = resolveRateLimitConfig();
 
 export function getRateLimitConfig(): RateLimitConfig {
 	return RATE_LIMIT_CONFIG;
@@ -687,6 +691,17 @@ export async function closeRateLimitStore(): Promise<void> {
 	rateLimitRedisClient = undefined;
 	rateLimitRedisCreatePromise = undefined;
 	rateLimitRedisConnectPromise = undefined;
+}
+
+/** Resets module-load state between isolated environment tests. */
+export async function resetSecurityStateForTest(): Promise<void> {
+	const allowedOrigins = resolveAllowedOrigins();
+	const rateLimitConfig = resolveRateLimitConfig();
+	await closeRateLimitStore();
+	ALLOWED_ORIGINS = allowedOrigins;
+	Object.assign(RATE_LIMIT_CONFIG, rateLimitConfig);
+	buckets.clear();
+	overflowBucket = undefined;
 }
 
 /** @public — consumed by tests via dynamic import */

@@ -110,7 +110,7 @@ jobs:
         run: npm run typecheck:tests
 
       - name: Unit tests
-        run: npm test
+        run: npm run test:coverage
 
       - name: Redis event-store integration
         env:

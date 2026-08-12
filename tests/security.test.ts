@@ -2,9 +2,17 @@ import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import { readFileSync } from "node:fs";
 import { afterEach, describe, it } from "node:test";
+import {
+	assertSafeHttpAuthConfig,
+	authorizeClerkClaims,
+	getPrincipalOwnerKey,
+	mcpAuthMiddleware,
+	resetHttpAuthStateForTest,
+} from "../src/lib/auth.js";
 
 const ORIGINAL_ENV = { ...process.env };
 const ORIGINAL_TIMING_SAFE_EQUAL = crypto.timingSafeEqual;
+const securityModule = await import("../src/lib/security.js");
 
 describe("supply-chain configuration", () => {
 	it("holds dependency updates for review after a seven-day release age", () => {
@@ -87,18 +95,13 @@ function resetEnv(): void {
 	process.env = { ...ORIGINAL_ENV };
 }
 
-async function loadAuthModule() {
-	return import(`../src/lib/auth.js?test=${Date.now()}-${Math.random()}`);
-}
-
 async function loadSecurityModule() {
-	return import(`../src/lib/security.js?test=${Date.now()}-${Math.random()}`);
+	await securityModule.resetSecurityStateForTest();
+	return securityModule;
 }
 
 async function loadBaseService() {
-	return import(
-		`../src/services/base.service.js?test=${Date.now()}-${Math.random()}`
-	);
+	return import("../src/services/base.service.js");
 }
 
 async function loadOriginHelpers() {
@@ -162,9 +165,11 @@ function createMockResponse() {
 }
 
 describe("origin security configuration", () => {
-	afterEach(() => {
+	afterEach(async () => {
 		resetEnv();
+		resetHttpAuthStateForTest();
 		crypto.timingSafeEqual = ORIGINAL_TIMING_SAFE_EQUAL;
+		await securityModule.resetSecurityStateForTest();
 	});
 
 	it("uses ALLOWED_ORIGINS when configured", async () => {
@@ -305,13 +310,10 @@ describe("origin security configuration", () => {
 		assert.equal(validateOrigin("https://mutated.example.com"), false);
 	});
 
-	it("hashes mismatched bearer tokens before constant-time comparison", async () => {
+	it("authenticates bearer requests and rejects malformed or mismatched credentials", async () => {
 		process.env.MCP_AUTH_MODE = "bearer";
 		process.env.MCP_AUTH_TOKEN = "expected-secret-token";
-
-		const { mcpAuthMiddleware } = await loadAuthModule();
-		const { response, state } = createMockResponse();
-		let nextCalled = false;
+		resetHttpAuthStateForTest();
 		let timingSafeEqualCalls = 0;
 
 		crypto.timingSafeEqual = ((left: Buffer, right: Buffer) => {
@@ -321,41 +323,96 @@ describe("origin security configuration", () => {
 			return ORIGINAL_TIMING_SAFE_EQUAL(left, right);
 		}) as typeof crypto.timingSafeEqual;
 
+		assert.doesNotThrow(() => assertSafeHttpAuthConfig());
+
+		const publicRoute = createMockResponse();
+		let publicRouteNext = false;
 		await mcpAuthMiddleware(
-			createMockRequest("Bearer short") as never,
-			response as never,
+			createMockRequest({ path: "/health" }) as never,
+			publicRoute.response as never,
 			() => {
-				nextCalled = true;
+				publicRouteNext = true;
 			},
 		);
+		assert.equal(publicRouteNext, true);
 
-		assert.equal(timingSafeEqualCalls, 1);
-		assert.equal(nextCalled, false);
-		assert.equal(state.statusCode, 401);
-		assert.deepEqual(state.body, {
+		for (const authorization of [undefined, "Basic credential", "Bearer a b"]) {
+			const rejected = createMockResponse();
+			let rejectedNext = false;
+			await mcpAuthMiddleware(
+				createMockRequest({ authorization }) as never,
+				rejected.response as never,
+				() => {
+					rejectedNext = true;
+				},
+			);
+			assert.equal(rejectedNext, false);
+			assert.equal(rejected.state.statusCode, 401);
+			assert.deepEqual(rejected.state.body, {
+				error: "Unauthorized: Missing or invalid Authorization Bearer token",
+			});
+		}
+
+		const mismatch = createMockResponse();
+		await mcpAuthMiddleware(
+			createMockRequest("Bearer short") as never,
+			mismatch.response as never,
+			() => assert.fail("mismatched credentials must not be accepted"),
+		);
+		assert.equal(mismatch.state.statusCode, 401);
+		assert.deepEqual(mismatch.state.body, {
 			error: "Unauthorized: Token validation failed",
 		});
+
+		const accepted = createMockResponse();
+		let acceptedNext = false;
+		await mcpAuthMiddleware(
+			createMockRequest("bearer expected-secret-token") as never,
+			accepted.response as never,
+			() => {
+				acceptedNext = true;
+			},
+		);
+		assert.equal(acceptedNext, true);
+		assert.equal(accepted.state.statusCode, undefined);
+		const principal = accepted.response.locals.authPrincipal as {
+			id: string;
+			mode: string;
+		};
+		assert.equal(principal.mode, "bearer");
+		assert.match(principal.id, /^bearer:[a-f0-9]{64}$/);
+		assert.match(getPrincipalOwnerKey(principal as never), /^[a-f0-9]{64}$/);
+		assert.equal(timingSafeEqualCalls, 2);
 	});
 
-	it("refuses unauthenticated HTTP startup by default", async () => {
+	it("requires an explicit override for anonymous HTTP authentication", async () => {
 		delete process.env.MCP_AUTH_MODE;
 		delete process.env.MCP_ALLOW_UNAUTHENTICATED_HTTP;
-
-		const { assertSafeHttpAuthConfig } = await loadAuthModule();
+		resetHttpAuthStateForTest();
 
 		assert.throws(
 			() => assertSafeHttpAuthConfig(),
 			/MCP_AUTH_MODE=none is not allowed for HTTP transport/,
 		);
-	});
-
-	it("allows unauthenticated HTTP startup only when explicitly overridden", async () => {
-		delete process.env.MCP_AUTH_MODE;
 		process.env.MCP_ALLOW_UNAUTHENTICATED_HTTP = "true";
-
-		const { assertSafeHttpAuthConfig } = await loadAuthModule();
-
 		assert.doesNotThrow(() => assertSafeHttpAuthConfig());
+
+		const anonymous = createMockResponse();
+		let nextCalled = false;
+		await mcpAuthMiddleware(
+			createMockRequest() as never,
+			anonymous.response as never,
+			() => {
+				nextCalled = true;
+			},
+		);
+		assert.equal(nextCalled, true);
+		assert.deepEqual(anonymous.response.locals.authPrincipal, {
+			id: "anonymous",
+			mode: "none",
+			roles: [],
+			permissions: [],
+		});
 	});
 
 	it("requires an explicit rate-limit store policy in production", async () => {
@@ -705,6 +762,232 @@ describe("origin security configuration", () => {
 		assert.equal(fourth.state.statusCode, 429);
 		assert.deepEqual(fourth.state.body, { error: "Too Many Requests" });
 		assert.equal(fourth.state.headers["Retry-After"], "60");
+	});
+
+	it("applies bearer, origin, and rate-limit policies through their middleware contracts", async () => {
+		process.env.MCP_AUTH_MODE = "bearer";
+		process.env.MCP_AUTH_TOKEN = "integrated-secret";
+		process.env.ALLOWED_ORIGINS =
+			"https://trusted.example:8443, internal.example";
+		process.env.RATE_LIMIT_MAX = "1";
+		process.env.RATE_LIMIT_REFILL = "1";
+		process.env.RATE_LIMIT_WINDOW_MS = "10";
+		resetHttpAuthStateForTest();
+
+		const security = await loadSecurityModule();
+
+		const authenticated = createMockResponse();
+		let authenticatedNext = false;
+		await mcpAuthMiddleware(
+			createMockRequest("  Bearer   integrated-secret  ") as never,
+			authenticated.response as never,
+			() => {
+				authenticatedNext = true;
+			},
+		);
+		assert.equal(authenticatedNext, true);
+		const authenticatedPrincipal = authenticated.response.locals
+			.authPrincipal as { mode: string };
+		assert.equal(authenticatedPrincipal?.mode, "bearer");
+		assert.match(
+			getPrincipalOwnerKey(authenticatedPrincipal as never),
+			/^[a-f0-9]{64}$/,
+		);
+
+		const clerkConfig = {
+			mode: "clerk" as const,
+			issuer: "https://clerk.example.com",
+			allowedSubjects: ["user-2"],
+			allowedOrganizationIds: ["org-2"],
+			allowedRoles: ["admin"],
+			requiredPermissions: ["read"],
+		};
+		const clerkPrincipal = authorizeClerkClaims(
+			{
+				sub: "user-2",
+				o: { id: "org-2", rol: "admin", per: ["read", "read", null] },
+				roles: "ignored",
+			},
+			clerkConfig,
+		);
+		assert.deepEqual(clerkPrincipal, {
+			id: "clerk:https://clerk.example.com:user-2",
+			mode: "clerk",
+			subject: "user-2",
+			organizationId: "org-2",
+			roles: ["admin"],
+			permissions: ["read"],
+		});
+		for (const [payload, message] of [
+			[{}, /missing a subject/],
+			[{ sub: "other" }, /subject is not authorized/],
+			[{ sub: "user-2" }, /organization is not authorized/],
+			[
+				{ sub: "user-2", org_id: "org-2", org_role: "viewer" },
+				/role is not authorized/,
+			],
+			[
+				{ sub: "user-2", org_id: "org-2", org_role: "admin" },
+				/missing a required permission/,
+			],
+		] as const) {
+			assert.throws(() => authorizeClerkClaims(payload, clerkConfig), message);
+		}
+
+		assert.deepEqual(security.getAllowedOrigins(), [
+			"https://trusted.example:8443",
+			"internal.example",
+		]);
+		assert.equal(security.validateOrigin(undefined), true);
+		assert.equal(security.validateOrigin("https://trusted.example:8443"), true);
+		assert.equal(
+			security.validateOrigin("https://trusted.example:9443"),
+			false,
+		);
+		assert.equal(security.validateOrigin("not a URL"), false);
+		assert.equal(security.isAllowedHost("internal.example:3000"), true);
+
+		const rejectedOrigin = createMockResponse();
+		security.originValidationMiddleware(
+			createMockRequest({
+				headers: { origin: "https://attacker.example" },
+			}) as never,
+			rejectedOrigin.response as never,
+			() => assert.fail("untrusted origins must not be accepted"),
+		);
+		assert.equal(rejectedOrigin.state.statusCode, 403);
+		assert.deepEqual(rejectedOrigin.state.body, {
+			error: "Forbidden: Origin not allowed",
+		});
+
+		for (const request of [
+			createMockRequest({ path: "/ready" }),
+			createMockRequest({
+				headers: { origin: "https://trusted.example:8443" },
+			}),
+		]) {
+			const allowedOrigin = createMockResponse();
+			let allowedOriginNext = false;
+			security.originValidationMiddleware(
+				request as never,
+				allowedOrigin.response as never,
+				() => {
+					allowedOriginNext = true;
+				},
+			);
+			assert.equal(allowedOriginNext, true);
+		}
+
+		const missingHost = createMockResponse();
+		let missingHostNext = false;
+		security.hostValidationMiddleware(
+			createMockRequest() as never,
+			missingHost.response as never,
+			() => {
+				missingHostNext = true;
+			},
+		);
+		assert.equal(missingHostNext, true);
+
+		const evalCalls: Array<{
+			keys: string[];
+			arguments: string[];
+		}> = [];
+		const redisClient = {
+			async eval(
+				_script: string,
+				options: { keys: string[]; arguments: string[] },
+			) {
+				evalCalls.push(options);
+				return evalCalls.length === 1 ? [1, 0] : [0, 0];
+			},
+		};
+		const redisOptions = {
+			key: "rate:test",
+			maxTokens: 2,
+			windowMs: 1000,
+			refillRate: 1,
+			now: 123,
+			timeoutMs: 50,
+		};
+		assert.deepEqual(
+			await security.consumeRedisRateLimitToken(redisClient, redisOptions),
+			{ allowed: true },
+		);
+		assert.deepEqual(
+			await security.consumeRedisRateLimitToken(redisClient, redisOptions),
+			{ allowed: false },
+		);
+		assert.deepEqual(evalCalls[0], {
+			keys: ["rate:test"],
+			arguments: ["2", "1000", "1", "123"],
+		});
+		await assert.rejects(
+			() =>
+				security.consumeRedisRateLimitToken(
+					{ eval: async () => ({ invalid: true }) },
+					redisOptions,
+				),
+			/Invalid response/,
+		);
+
+		assert.equal(security.getRateLimitConfig().store, "memory");
+		for (const path of ["/health", "/other"]) {
+			const skipped = createMockResponse();
+			let skippedNext = false;
+			await security.rateLimitMiddleware(
+				createMockRequest({ path }) as never,
+				skipped.response as never,
+				() => {
+					skippedNext = true;
+				},
+			);
+			assert.equal(skippedNext, true);
+		}
+
+		const originalDateNow = Date.now;
+		let now = 1_000;
+		Date.now = () => now;
+		try {
+			const request = createMockRequest({ ip: "203.0.113.99" });
+			const first = createMockResponse();
+			first.response.locals.authPrincipal = clerkPrincipal;
+			let allowed = 0;
+			await security.principalRateLimitMiddleware(
+				request as never,
+				first.response as never,
+				() => {
+					allowed += 1;
+				},
+			);
+
+			const limited = createMockResponse();
+			limited.response.locals.authPrincipal = clerkPrincipal;
+			await security.principalRateLimitMiddleware(
+				request as never,
+				limited.response as never,
+				() => {
+					allowed += 1;
+				},
+			);
+			assert.equal(limited.state.statusCode, 429);
+
+			now += 10;
+			const refilled = createMockResponse();
+			refilled.response.locals.authPrincipal = clerkPrincipal;
+			await security.principalRateLimitMiddleware(
+				request as never,
+				refilled.response as never,
+				() => {
+					allowed += 1;
+				},
+			);
+			assert.equal(allowed, 2);
+		} finally {
+			Date.now = originalDateNow;
+		}
+
+		await security.closeRateLimitStore();
 	});
 });
 

@@ -1,6 +1,6 @@
 # Portkey Admin MCP — API Coverage Roadmap
 
-> Last reviewed: 2026-08-09
+> Last reviewed: 2026-08-11
 > **Status: ACTIVE** — 171 tools, with compatibility and API-coverage development resumed against Portkey's current official OpenAPI and changelog
 > **The 2026-06 maintenance decision is superseded.** Portkey continued publishing control-plane API additions after the Palo Alto Networks acquisition, so new documented surfaces are back in scope. Prisma AIRS itself remains a separate interoperability track; see [the guide](./docs/PRISMA_AIRS_INTEROPERABILITY.md).
 > Completed: MCP Integrations (10), MCP Servers (12), Analytics (11), Prompt Versions (2), Usage Limit Entities (2)
@@ -76,8 +76,8 @@ maintainability, context cost, and test coverage.
 
 ### 6C — Test coverage
 
-Suite was 328/328 green at review time; aggregate coverage 71.05% lines / 55.39%
-branch / 48.60% functions. Gaps closed:
+Suite is 531/531 green; aggregate coverage is 99.36% lines / 92.41% branches /
+99.01% functions, with an enforced 80% line floor. Gaps closed:
 
 - [x] Clerk auth happy path. `tests/auth-clerk.test.ts` had a test titled "calls next() when jwtVerify resolves" whose body was `assert.ok(true)`, with a comment claiming integration coverage in `mcp-e2e.test.ts` — that file has zero Clerk references. The success path of the auth mode gating production JWT deployments had no test at all.
 - [x] `BaseService.executeRequest` non-ok (4xx/5xx) branch driven through a mocked `fetch`, not a hand-built `FetchError`.
