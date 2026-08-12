@@ -1,17 +1,10 @@
 import assert from "node:assert/strict";
 import { registerHooks } from "node:module";
 import { after, describe, it } from "node:test";
+import { configureSecurityWorkerEnvironment } from "./helpers/security-worker-environment.js";
 
 const ORIGINAL_ENV = { ...process.env };
-
-process.env.ALLOWED_ORIGINS = " , ";
-delete process.env.CORS_ORIGIN;
-process.env.RATE_LIMIT_ENABLED = "true";
-process.env.RATE_LIMIT_STORE = "memory";
-process.env.RATE_LIMIT_MAX = "2";
-process.env.RATE_LIMIT_WINDOW_MS = "10";
-process.env.RATE_LIMIT_REFILL = "1";
-delete process.env.RATE_LIMIT_MAX_BUCKETS;
+configureSecurityWorkerEnvironment();
 
 interface FakeRedisClient {
 	isOpen: boolean;
@@ -93,8 +86,8 @@ const moduleHooks = registerHooks({
 
 // Keep the environment-variant suites in this worker so they share the
 // canonical security module and its explicit reset lifecycle.
-await import("./lib-security-runtime.test.js");
-await import("./security.test.js");
+await import("./lib-security-runtime.suite.js");
+await import("./security-runtime.suite.js");
 const security = await import("../src/lib/security.js");
 const rateLimitConfig = security.getRateLimitConfig();
 
@@ -161,23 +154,19 @@ async function waitFor(predicate: () => boolean): Promise<void> {
 }
 
 describe("origin and Host edge validation", () => {
-	it("normalizes IPv6 Host values and malformed allow-list entries", () => {
-		const allowedOrigins = security.getAllowedOrigins();
-		assert.deepEqual(allowedOrigins, ["https://admin.example.com"]);
-		const originalOrigins = [...allowedOrigins];
-		allowedOrigins.splice(
-			0,
-			allowedOrigins.length,
-			...[
+	it("normalizes IPv6 Host values and malformed allow-list entries", async () => {
+		const originalAllowedOrigins = process.env.ALLOWED_ORIGINS;
+		const originalCorsOrigin = process.env.CORS_ORIGIN;
+		try {
+			process.env.ALLOWED_ORIGINS = [
 				"http://localhost",
 				"https://localhost",
 				"http://127.0.0.1",
 				"https://127.0.0.1",
 				"http://[::1]",
 				"https://[::1]",
-			],
-		);
-		try {
+			].join(",");
+			await security.resetSecurityStateForTest();
 			assert.equal(security.validateOrigin(undefined), true);
 			assert.equal(security.validateOrigin("not an origin"), false);
 			assert.equal(security.validateOrigin("ftp://localhost"), false);
@@ -187,7 +176,9 @@ describe("origin and Host edge validation", () => {
 			assert.equal(security.isAllowedHost("[::1"), false);
 			assert.equal(security.isAllowedHost("[::1]:invalid"), false);
 
-			allowedOrigins.push("https://admin.example.com:8443", "internal.example");
+			process.env.ALLOWED_ORIGINS =
+				"https://admin.example.com:8443,internal.example";
+			await security.resetSecurityStateForTest();
 			assert.equal(
 				security.validateOrigin("https://admin.example.com:8443"),
 				true,
@@ -198,11 +189,22 @@ describe("origin and Host edge validation", () => {
 			);
 			assert.equal(security.isAllowedHost("internal.example:9000"), true);
 
-			allowedOrigins.push("*");
+			process.env.ALLOWED_ORIGINS = "*";
+			await security.resetSecurityStateForTest();
 			assert.equal(security.validateOrigin("https://any.example"), true);
 			assert.equal(security.isAllowedHost("anything.example"), true);
 		} finally {
-			allowedOrigins.splice(0, allowedOrigins.length, ...originalOrigins);
+			if (originalAllowedOrigins === undefined) {
+				delete process.env.ALLOWED_ORIGINS;
+			} else {
+				process.env.ALLOWED_ORIGINS = originalAllowedOrigins;
+			}
+			if (originalCorsOrigin === undefined) {
+				delete process.env.CORS_ORIGIN;
+			} else {
+				process.env.CORS_ORIGIN = originalCorsOrigin;
+			}
+			await security.resetSecurityStateForTest();
 		}
 	});
 
@@ -437,6 +439,9 @@ describe("in-memory rate-limit edge behavior", () => {
 describe("Redis-backed rate-limit lifecycle", () => {
 	it("fails closed without a URL, retries client creation, and applies decisions", async () => {
 		rateLimitConfig.store = "redis";
+		rateLimitConfig.maxTokens = 1;
+		rateLimitConfig.windowMs = 10;
+		rateLimitConfig.refillRate = 1;
 		rateLimitConfig.redisUrl = undefined;
 		const missingUrl = createResponse();
 		await security.rateLimitMiddleware(
@@ -602,7 +607,7 @@ describe("Redis-backed rate-limit lifecycle", () => {
 		assert.equal(pendingClient.closeCalls, 0);
 	});
 
-	it("validates direct Redis script failures and default timeout setup", async () => {
+	it("validates direct Redis script failures and invalid responses", async () => {
 		await assert.rejects(
 			security.consumeRedisRateLimitToken(
 				{

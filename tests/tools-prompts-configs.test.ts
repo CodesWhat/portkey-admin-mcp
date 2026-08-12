@@ -2,12 +2,10 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { registerConfigsTools } from "../src/tools/configs.tools.js";
 import { registerPromptsTools } from "../src/tools/prompts.tools.js";
-import { registerToolCallbacks } from "./helpers/tool-registry.js";
-
-function parseToolResult(result: unknown): Record<string, unknown> {
-	const content = (result as { content?: Array<{ text?: string }> }).content;
-	return JSON.parse(content?.[0]?.text ?? "{}") as Record<string, unknown>;
-}
+import {
+	parseToolResult,
+	registerToolCallbacks,
+} from "./helpers/tool-registry.js";
 
 function promptCallbacks(
 	prompts: Record<string, unknown>,

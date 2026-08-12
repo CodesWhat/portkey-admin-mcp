@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { registerAllTools, type ToolDomain } from "../src/tools/index.js";
-import { registerToolCallbacks } from "./helpers/tool-registry.js";
+import {
+	parseToolResult,
+	registerToolCallbacks,
+} from "./helpers/tool-registry.js";
 
 function callbacksForDomain(
 	domain: ToolDomain,
@@ -13,8 +16,7 @@ function callbacksForDomain(
 }
 
 function parseEnvelope(result: unknown): Record<string, unknown> {
-	const content = (result as { content?: Array<{ text?: string }> }).content;
-	const envelope = JSON.parse(content?.[0]?.text ?? "{}") as {
+	const envelope = parseToolResult(result) as {
 		ok?: boolean;
 		data?: Record<string, unknown>;
 	};

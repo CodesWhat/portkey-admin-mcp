@@ -476,6 +476,63 @@ describe("mcpAuthMiddleware clerk JWT verification", () => {
 		});
 	});
 
+	it("clears cached JWKS providers when an auth reset rejects invalid config", async () => {
+		const issuer = "https://clerk.example.com";
+		const jwksUrl = `${issuer}/.well-known/jwks.json`;
+		process.env.MCP_AUTH_MODE = "clerk";
+		process.env.CLERK_ISSUER = issuer;
+		process.env.CLERK_AUDIENCE = "test-audience";
+		process.env.CLERK_ALLOWED_SUBJECTS = "user_test";
+
+		const { publicKey, privateKey } = await generateKeyPair("RS256", {
+			extractable: true,
+		});
+		const publicJwk = await exportJWK(publicKey);
+		publicJwk.kid = "cache-reset-key";
+		publicJwk.alg = "RS256";
+		publicJwk.use = "sig";
+		const token = await new SignJWT({})
+			.setProtectedHeader({ alg: "RS256", kid: publicJwk.kid })
+			.setSubject("user_test")
+			.setIssuer(issuer)
+			.setAudience("test-audience")
+			.setIssuedAt()
+			.setExpirationTime("5m")
+			.sign(privateKey);
+
+		await withStubbedJwksFetch(jwksUrl, { keys: [publicJwk] }, async () => {
+			const jwksFetch = globalThis.fetch;
+			let jwksFetches = 0;
+			globalThis.fetch = (async (...args: Parameters<typeof fetch>) => {
+				jwksFetches += 1;
+				return jwksFetch(...args);
+			}) as typeof fetch;
+			try {
+				resetHttpAuthStateForTest();
+				await mcpAuthMiddleware(
+					createMockRequest({ authorization: `Bearer ${token}` }) as never,
+					createMockResponse().response as never,
+					() => undefined,
+				);
+				assert.equal(jwksFetches, 1);
+
+				delete process.env.CLERK_ALLOWED_SUBJECTS;
+				assert.throws(
+					() => resetHttpAuthStateForTest(),
+					/requires an explicit authorization policy/,
+				);
+				await mcpAuthMiddleware(
+					createMockRequest({ authorization: `Bearer ${token}` }) as never,
+					createMockResponse().response as never,
+					() => undefined,
+				);
+				assert.equal(jwksFetches, 2);
+			} finally {
+				globalThis.fetch = jwksFetch;
+			}
+		});
+	});
+
 	it("calls next() and populates res.locals.authPrincipal when jwtVerify resolves", async () => {
 		const issuer = "https://clerk.example.com";
 		const jwksUrl = "https://clerk.example.com/.well-known/jwks.json";

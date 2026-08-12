@@ -1,15 +1,6 @@
 import assert from "node:assert/strict";
 import { after, describe, it } from "node:test";
 
-const ORIGINAL_ENV = { ...process.env };
-process.env.ALLOWED_ORIGINS = "https://admin.example.com";
-process.env.RATE_LIMIT_ENABLED = "true";
-process.env.RATE_LIMIT_STORE = "memory";
-process.env.RATE_LIMIT_MAX = "2";
-process.env.RATE_LIMIT_WINDOW_MS = "60000";
-process.env.RATE_LIMIT_REFILL = "1";
-process.env.RATE_LIMIT_MAX_BUCKETS = "10";
-
 const securityModule = await import("../src/lib/security.js");
 await securityModule.resetSecurityStateForTest();
 
@@ -26,7 +17,6 @@ const {
 
 after(async () => {
 	await closeRateLimitStore();
-	process.env = { ...ORIGINAL_ENV };
 });
 
 function createRequest(options: {
@@ -187,6 +177,7 @@ describe("Redis token-bucket decisions", () => {
 
 describe("in-memory request rate limiting", () => {
 	it("allows the configured burst and returns retry guidance after exhaustion", () => {
+		const initialBucketCount = getRateLimitBucketCountForTest();
 		const request = createRequest({ ip: "192.0.2.55" });
 
 		for (let requestNumber = 0; requestNumber < 2; requestNumber += 1) {
@@ -207,10 +198,11 @@ describe("in-memory request rate limiting", () => {
 		assert.equal(rejected.state.statusCode, 429);
 		assert.equal(rejected.state.headers["Retry-After"], "60");
 		assert.deepEqual(rejected.state.body, { error: "Too Many Requests" });
-		assert.equal(getRateLimitBucketCountForTest(), 1);
+		assert.equal(getRateLimitBucketCountForTest(), initialBucketCount + 1);
 	});
 
 	it("separates authenticated principal buckets and skips probe or non-MCP routes", () => {
+		const initialBucketCount = getRateLimitBucketCountForTest();
 		const principalResponse = createResponse();
 		principalResponse.response.locals.authPrincipal = {
 			id: "clerk:issuer:user-1",
@@ -227,7 +219,7 @@ describe("in-memory request rate limiting", () => {
 			},
 		);
 		assert.equal(principalNextCalls, 1);
-		assert.equal(getRateLimitBucketCountForTest(), 2);
+		assert.equal(getRateLimitBucketCountForTest(), initialBucketCount + 1);
 
 		for (const [middleware, path] of [
 			[rateLimitMiddleware, "/status"],

@@ -9,6 +9,11 @@ export type ToolRegistrationTestServer = {
 	): never;
 };
 
+export function parseToolResult(result: unknown): Record<string, unknown> {
+	const content = (result as { content?: Array<{ text?: string }> }).content;
+	return JSON.parse(content?.[0]?.text ?? "{}") as Record<string, unknown>;
+}
+
 /** Capture callbacks registered through either the legacy or current MCP API. */
 export function registerToolCallbacks(
 	register: (server: ToolRegistrationTestServer) => void,

@@ -297,7 +297,7 @@ npm run ci            # full pipeline (lint + typecheck + coverage + build + e2e
 ```
 
 The required CI and release gates measure every TypeScript source file and fail
-below 80% line coverage. The current full report is 99.36% lines, 92.41%
+below 80% line coverage. The current full report is 99.36% lines, 92.61%
 branches, and 99.01% functions.
 
 `npm run dev:http` now requires `MCP_AUTH_MODE=bearer` or `MCP_AUTH_MODE=clerk` by default. For deliberate local-only unauthenticated testing, set `MCP_ALLOW_UNAUTHENTICATED_HTTP=true`.

@@ -76,7 +76,7 @@ maintainability, context cost, and test coverage.
 
 ### 6C — Test coverage
 
-Suite is 531/531 green; aggregate coverage is 99.36% lines / 92.41% branches /
+Suite is 534/534 green; aggregate coverage is 99.36% lines / 92.61% branches /
 99.01% functions, with an enforced 80% line floor. Gaps closed:
 
 - [x] Clerk auth happy path. `tests/auth-clerk.test.ts` had a test titled "calls next() when jwtVerify resolves" whose body was `assert.ok(true)`, with a comment claiming integration coverage in `mcp-e2e.test.ts` — that file has zero Clerk references. The success path of the auth mode gating production JWT deployments had no test at all.
