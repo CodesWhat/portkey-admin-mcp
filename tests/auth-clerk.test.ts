@@ -486,7 +486,7 @@ describe("mcpAuthMiddleware clerk JWT verification", () => {
 		process.env.MCP_AUTH_MODE = "clerk";
 		process.env.CLERK_ISSUER = issuer;
 		process.env.CLERK_AUDIENCE = "test-audience";
-		process.env.CLERK_JWKS_URL = jwksUrl;
+		delete process.env.CLERK_JWKS_URL;
 		process.env.CLERK_ALLOWED_ORGANIZATION_IDS = "org_primary";
 		process.env.CLERK_ALLOWED_ROLES = "org:admin";
 		process.env.CLERK_REQUIRED_PERMISSIONS = "org:sys_memberships:manage";
@@ -514,9 +514,40 @@ describe("mcpAuthMiddleware clerk JWT verification", () => {
 			.setIssuedAt()
 			.setExpirationTime("5m")
 			.sign(privateKey);
+		const forbiddenToken = await new SignJWT({
+			org_id: "org_other",
+			org_role: "org:admin",
+			org_permissions: ["org:sys_memberships:manage"],
+		})
+			.setProtectedHeader({ alg: "RS256", kid })
+			.setSubject("user_test")
+			.setIssuer(issuer)
+			.setAudience("test-audience")
+			.setIssuedAt()
+			.setExpirationTime("5m")
+			.sign(privateKey);
 
 		await withStubbedJwksFetch(jwksUrl, jwks, async () => {
-			const { mcpAuthMiddleware } = await loadAuthModule();
+			const {
+				assertSafeHttpAuthConfig,
+				authorizeClerkClaims,
+				getHttpAuthConfig,
+				getPrincipalOwnerKey,
+				mcpAuthMiddleware,
+			} = await loadAuthModule();
+			const config = getHttpAuthConfig();
+			assert.doesNotThrow(() => assertSafeHttpAuthConfig());
+			assert.deepEqual(config, {
+				mode: "clerk",
+				bearerToken: undefined,
+				jwksUrl,
+				issuer,
+				audience: ["test-audience"],
+				allowedSubjects: undefined,
+				allowedOrganizationIds: ["org_primary"],
+				allowedRoles: ["org:admin"],
+				requiredPermissions: ["org:sys_memberships:manage"],
+			});
 			const { response, state } = createMockResponse();
 			let nextCalled = false;
 
@@ -542,6 +573,117 @@ describe("mcpAuthMiddleware clerk JWT verification", () => {
 				roles: ["org:admin"],
 				permissions: ["org:sys_memberships:manage"],
 			});
+			assert.match(
+				getPrincipalOwnerKey(response.locals.authPrincipal as never),
+				/^[a-f0-9]{64}$/,
+			);
+
+			const publicRoute = createMockResponse();
+			let publicRouteNext = false;
+			await mcpAuthMiddleware(
+				createMockRequest({ path: "/ready" }) as never,
+				publicRoute.response as never,
+				() => {
+					publicRouteNext = true;
+				},
+			);
+			assert.equal(publicRouteNext, true);
+
+			for (const authorization of [
+				undefined,
+				"Basic credential",
+				"Bearer token with extra fields",
+			]) {
+				const rejected = createMockResponse();
+				await mcpAuthMiddleware(
+					createMockRequest({ authorization }) as never,
+					rejected.response as never,
+					() => assert.fail("invalid authorization headers must not pass"),
+				);
+				assert.equal(rejected.state.statusCode, 401);
+				assert.deepEqual(rejected.state.body, {
+					error: "Unauthorized: Missing or invalid Authorization Bearer token",
+				});
+			}
+
+			const invalidJwt = createMockResponse();
+			await mcpAuthMiddleware(
+				createMockRequest({ authorization: "Bearer not.a.jwt" }) as never,
+				invalidJwt.response as never,
+				() => assert.fail("invalid JWTs must not pass"),
+			);
+			assert.equal(invalidJwt.state.statusCode, 401);
+			assert.deepEqual(invalidJwt.state.body, {
+				error: "Unauthorized: Token validation failed",
+			});
+
+			const forbidden = createMockResponse();
+			await mcpAuthMiddleware(
+				createMockRequest({
+					authorization: `Bearer ${forbiddenToken}`,
+				}) as never,
+				forbidden.response as never,
+				() => assert.fail("disallowed organizations must not pass"),
+			);
+			assert.equal(forbidden.state.statusCode, 403);
+			assert.deepEqual(forbidden.state.body, {
+				error: "Forbidden: Principal is not authorized",
+			});
+
+			const policy = {
+				mode: "clerk" as const,
+				issuer,
+				allowedSubjects: ["user_test"],
+				allowedOrganizationIds: ["org_primary"],
+				allowedRoles: ["org:admin"],
+				requiredPermissions: ["org:read", "org:write"],
+			};
+			const nestedPrincipal = authorizeClerkClaims(
+				{
+					sub: " user_test ",
+					o: {
+						id: "org_primary",
+						rol: "org:admin",
+						per: ["org:read", "org:write", "org:read", null],
+					},
+					roles: ["org:admin", "org:viewer", "", 7],
+					permissions: ["org:write"],
+				},
+				policy,
+			);
+			assert.deepEqual(nestedPrincipal, {
+				id: `clerk:${issuer}:user_test`,
+				mode: "clerk",
+				subject: "user_test",
+				organizationId: "org_primary",
+				roles: ["org:admin", "org:viewer"],
+				permissions: ["org:read", "org:write"],
+			});
+
+			for (const [claims, message] of [
+				[{}, /missing a subject/],
+				[{ sub: "other" }, /subject is not authorized/],
+				[{ sub: "user_test" }, /organization is not authorized/],
+				[
+					{
+						sub: "user_test",
+						org_id: "org_primary",
+						org_role: "org:viewer",
+					},
+					/role is not authorized/,
+				],
+				[
+					{
+						sub: "user_test",
+						org_id: "org_primary",
+						org_role: "org:admin",
+						org_permissions: ["org:read"],
+					},
+					/missing a required permission/,
+				],
+			] as const) {
+				assert.throws(() => authorizeClerkClaims(claims, policy), message);
+			}
 		});
 	});
 });
