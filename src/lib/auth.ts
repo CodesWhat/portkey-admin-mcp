@@ -204,8 +204,8 @@ function timingSafeEqual(a: string, b: string): boolean {
 const jwksCache = new Map<string, ReturnType<typeof createRemoteJWKSet>>();
 
 export function resetHttpAuthStateForTest(): void {
-	HTTP_AUTH_CONFIG = getHttpAuthConfigFromEnv();
 	jwksCache.clear();
+	HTTP_AUTH_CONFIG = getHttpAuthConfigFromEnv();
 }
 
 function asString(value: unknown): string | undefined {

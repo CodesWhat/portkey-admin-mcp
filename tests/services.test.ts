@@ -885,17 +885,20 @@ describe("Configuration and platform service contracts", () => {
 			success: true,
 		});
 		assert.deepEqual(
-			capturedFetches.map((_, index) => capturedUrl(index).pathname),
+			capturedFetches.map((captured, index) => [
+				captured.init?.method ?? "GET",
+				capturedUrl(index).pathname,
+			]),
 			[
-				"/v1/admin/organisation/defaults",
-				"/v1/admin/organisation/defaults",
-				"/v1/workspace-exclusions/input-guardrails",
-				"/v1/workspace-exclusions/output-guardrails",
-				"/v1/guardrails",
-				"/v1/guardrails/guardrail%2Fone",
-				"/v1/guardrails",
-				"/v1/guardrails/guardrail%2Fone",
-				"/v1/guardrails/guardrail%2Fone",
+				["GET", "/v1/admin/organisation/defaults"],
+				["PUT", "/v1/admin/organisation/defaults"],
+				["GET", "/v1/workspace-exclusions/input-guardrails"],
+				["PUT", "/v1/workspace-exclusions/output-guardrails"],
+				["GET", "/v1/guardrails"],
+				["GET", "/v1/guardrails/guardrail%2Fone"],
+				["POST", "/v1/guardrails"],
+				["PUT", "/v1/guardrails/guardrail%2Fone"],
+				["DELETE", "/v1/guardrails/guardrail%2Fone"],
 			],
 		);
 	});

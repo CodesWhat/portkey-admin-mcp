@@ -95,7 +95,7 @@ function resetEnv(): void {
 	process.env = { ...ORIGINAL_ENV };
 }
 
-async function loadSecurityModule() {
+async function resetSecurityModule() {
 	await securityModule.resetSecurityStateForTest();
 	return securityModule;
 }
@@ -106,7 +106,7 @@ async function loadBaseService() {
 
 async function loadOriginHelpers() {
 	const { getAllowedOrigins, isAllowedHost, validateOrigin } =
-		await loadSecurityModule();
+		await resetSecurityModule();
 	return { getAllowedOrigins, isAllowedHost, validateOrigin };
 }
 
@@ -166,9 +166,9 @@ function createMockResponse() {
 
 describe("origin security configuration", () => {
 	afterEach(async () => {
+		crypto.timingSafeEqual = ORIGINAL_TIMING_SAFE_EQUAL;
 		resetEnv();
 		resetHttpAuthStateForTest();
-		crypto.timingSafeEqual = ORIGINAL_TIMING_SAFE_EQUAL;
 		await securityModule.resetSecurityStateForTest();
 	});
 
@@ -243,7 +243,7 @@ describe("origin security configuration", () => {
 
 	it("rejects requests whose Host header is not allow-listed", async () => {
 		process.env.ALLOWED_ORIGINS = "https://mcp.example.com";
-		const { hostValidationMiddleware } = await loadSecurityModule();
+		const { hostValidationMiddleware } = await resetSecurityModule();
 		const { response, state } = createMockResponse();
 		let nextCalled = false;
 
@@ -262,7 +262,7 @@ describe("origin security configuration", () => {
 
 	it("allows requests whose Host header matches the allow-list", async () => {
 		process.env.ALLOWED_ORIGINS = "https://mcp.example.com";
-		const { hostValidationMiddleware } = await loadSecurityModule();
+		const { hostValidationMiddleware } = await resetSecurityModule();
 		const { response, state } = createMockResponse();
 		let nextCalled = false;
 
@@ -280,7 +280,7 @@ describe("origin security configuration", () => {
 
 	it("skips Host validation for health and readiness probes", async () => {
 		process.env.ALLOWED_ORIGINS = "https://mcp.example.com";
-		const { hostValidationMiddleware } = await loadSecurityModule();
+		const { hostValidationMiddleware } = await resetSecurityModule();
 		const { response, state } = createMockResponse();
 		let nextCalled = false;
 
@@ -422,7 +422,7 @@ describe("origin security configuration", () => {
 		delete process.env.RATE_LIMIT_SINGLE_PROCESS;
 
 		await assert.rejects(
-			() => loadSecurityModule(),
+			() => resetSecurityModule(),
 			/RATE_LIMIT_SINGLE_PROCESS=true/,
 		);
 	});
@@ -441,7 +441,7 @@ describe("origin security configuration", () => {
 	});
 
 	it("fails closed when a Redis rate-limit command stalls", async () => {
-		const { consumeRedisRateLimitToken } = await loadSecurityModule();
+		const { consumeRedisRateLimitToken } = await resetSecurityModule();
 		const stalledClient = {
 			eval: () => new Promise<never>(() => undefined),
 		};
@@ -510,7 +510,7 @@ describe("origin security configuration", () => {
 		process.env.RATE_LIMIT_REFILL = "1";
 		process.env.RATE_LIMIT_WINDOW_MS = "60000";
 
-		const securityModule = (await loadSecurityModule()) as {
+		const securityModule = (await resetSecurityModule()) as {
 			rateLimitMiddleware: typeof import("../src/lib/security.js").rateLimitMiddleware;
 		};
 		const { rateLimitMiddleware } = securityModule;
@@ -564,7 +564,7 @@ describe("origin security configuration", () => {
 		process.env.RATE_LIMIT_REFILL = "1";
 		process.env.RATE_LIMIT_WINDOW_MS = "60000";
 
-		const { rateLimitMiddleware } = await loadSecurityModule();
+		const { rateLimitMiddleware } = await resetSecurityModule();
 		const first = createMockResponse();
 		const second = createMockResponse();
 		let firstNextCalled = false;
@@ -605,7 +605,7 @@ describe("origin security configuration", () => {
 		process.env.RATE_LIMIT_REFILL = "1";
 		process.env.RATE_LIMIT_WINDOW_MS = "60000";
 
-		const { rateLimitMiddleware } = await loadSecurityModule();
+		const { rateLimitMiddleware } = await resetSecurityModule();
 		const first = createMockResponse();
 		const second = createMockResponse();
 		let firstNextCalled = false;
@@ -637,7 +637,7 @@ describe("origin security configuration", () => {
 		process.env.RATE_LIMIT_REFILL = "1";
 		process.env.RATE_LIMIT_WINDOW_MS = "60000";
 
-		const securityModule = (await loadSecurityModule()) as {
+		const securityModule = (await resetSecurityModule()) as {
 			principalRateLimitMiddleware?: typeof import("../src/lib/security.js").rateLimitMiddleware;
 		};
 		const { principalRateLimitMiddleware } = securityModule;
@@ -686,7 +686,7 @@ describe("origin security configuration", () => {
 		process.env.RATE_LIMIT_REFILL = "60";
 		process.env.RATE_LIMIT_WINDOW_MS = "60000";
 
-		const { rateLimitMiddleware } = await loadSecurityModule();
+		const { rateLimitMiddleware } = await resetSecurityModule();
 		let nextCalls = 0;
 
 		for (let attempt = 0; attempt < 2; attempt += 1) {
@@ -710,7 +710,7 @@ describe("origin security configuration", () => {
 		process.env.RATE_LIMIT_WINDOW_MS = "60000";
 		process.env.RATE_LIMIT_MAX_BUCKETS = "2";
 
-		const securityModule = (await loadSecurityModule()) as {
+		const securityModule = (await resetSecurityModule()) as {
 			rateLimitMiddleware: typeof import("../src/lib/security.js").rateLimitMiddleware;
 			getRateLimitBucketCountForTest?: () => number;
 		};
@@ -774,7 +774,7 @@ describe("origin security configuration", () => {
 		process.env.RATE_LIMIT_WINDOW_MS = "10";
 		resetHttpAuthStateForTest();
 
-		const security = await loadSecurityModule();
+		const security = await resetSecurityModule();
 
 		const authenticated = createMockResponse();
 		let authenticatedNext = false;

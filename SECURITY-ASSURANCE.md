@@ -72,7 +72,8 @@ errors are converted without exposing configured credentials. The in-process
 service cache stores a SHA-256 key digest rather than a plaintext API key.
 
 Evidence: [`src/tools/`](src/tools), [`src/services/`](src/services),
-[`src/lib/`](src/lib), [`tests/security.test.ts`](tests/security.test.ts), and
+[`src/lib/`](src/lib),
+[`tests/security-runtime.suite.ts`](tests/security-runtime.suite.ts), and
 the tool-specific test suites under [`tests/`](tests).
 
 ### Least privilege, hosted state, and secrets

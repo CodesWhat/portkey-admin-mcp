@@ -11,7 +11,10 @@ import { registerPartialsTools } from "../src/tools/partials.tools.js";
 import { registerProvidersTools } from "../src/tools/providers.tools.js";
 import { registerUsersTools } from "../src/tools/users.tools.js";
 import { registerWorkspacesTools } from "../src/tools/workspaces.tools.js";
-import { registerToolCallbacks } from "./helpers/tool-registry.js";
+import {
+	parseToolResult,
+	registerToolCallbacks,
+} from "./helpers/tool-registry.js";
 
 type RegisterTools = (server: never, service: never) => void;
 
@@ -23,11 +26,6 @@ function callbacksFor(
 	return registerToolCallbacks((server) => {
 		register(server as never, { [domain]: implementation } as never);
 	});
-}
-
-function parseResult(result: unknown): Record<string, unknown> {
-	const content = (result as { content?: Array<{ text?: string }> }).content;
-	return JSON.parse(content?.[0]?.text ?? "{}") as Record<string, unknown>;
 }
 
 const ANALYTICS_RANGE = {
@@ -173,7 +171,7 @@ describe("distinct analytics callbacks", () => {
 			}).get(analyticsCase.tool);
 			assert.ok(callback);
 
-			const payload = parseResult(await callback(ANALYTICS_RANGE));
+			const payload = parseToolResult(await callback(ANALYTICS_RANGE));
 			assert.deepEqual(received, ANALYTICS_RANGE);
 			assert.deepEqual(payload.summary, analyticsCase.expectedSummary);
 			assert.equal(payload.point_count, 1);
@@ -209,11 +207,11 @@ describe("distinct analytics callbacks", () => {
 		const metadata = callbacks.get("get_analytics_group_metadata");
 		assert.ok(users && models && metadata);
 
-		const userPayload = parseResult(
+		const userPayload = parseToolResult(
 			await users({ ...ANALYTICS_RANGE, current_page: 2, page_size: 10 }),
 		);
-		const modelPayload = parseResult(await models(ANALYTICS_RANGE));
-		const metadataPayload = parseResult(
+		const modelPayload = parseToolResult(await models(ANALYTICS_RANGE));
+		const metadataPayload = parseToolResult(
 			await metadata({ ...ANALYTICS_RANGE, metadata_key: "environment" }),
 		);
 
@@ -333,14 +331,14 @@ describe("label lifecycle callbacks", () => {
 		const remove = callbacks.get("delete_prompt_label");
 		assert.ok(get && update && remove);
 
-		const label = parseResult(
+		const label = parseToolResult(
 			await get({
 				label_id: "label-1",
 				organisation_id: "org-1",
 				workspace_id: "workspace-1",
 			}),
 		);
-		const updated = parseResult(
+		const updated = parseToolResult(
 			await update({
 				label_id: "label-1",
 				name: "Production v2",
@@ -348,7 +346,7 @@ describe("label lifecycle callbacks", () => {
 				color_code: "#00FF00",
 			}),
 		);
-		const deleted = parseResult(await remove({ label_id: "label-1" }));
+		const deleted = parseToolResult(await remove({ label_id: "label-1" }));
 
 		assert.equal(label.name, "Production");
 		assert.equal(label.workspace_id, "workspace-1");
@@ -415,7 +413,7 @@ describe("provider lifecycle callbacks", () => {
 		}).get("list_providers");
 		assert.ok(callback);
 
-		const payload = parseResult(
+		const payload = parseToolResult(
 			await callback({
 				current_page: 2,
 				page_size: 25,
@@ -452,7 +450,7 @@ describe("provider lifecycle callbacks", () => {
 		const remove = callbacks.get("delete_provider");
 		assert.ok(update && remove);
 
-		const updated = parseResult(
+		const updated = parseToolResult(
 			await update({
 				slug: "openai-prod",
 				workspace_id: "workspace-1",
@@ -468,7 +466,7 @@ describe("provider lifecycle callbacks", () => {
 				reset_usage: true,
 			}),
 		);
-		const deleted = parseResult(
+		const deleted = parseToolResult(
 			await remove({ slug: "openai-prod", workspace_id: "workspace-1" }),
 		);
 
@@ -518,7 +516,7 @@ describe("partial lifecycle callbacks", () => {
 		const remove = callbacks.get("delete_prompt_partial");
 		assert.ok(update && publish && remove);
 
-		const updated = parseResult(
+		const updated = parseToolResult(
 			await update({
 				prompt_partial_id: "partial-1",
 				name: "Header",
@@ -527,10 +525,10 @@ describe("partial lifecycle callbacks", () => {
 				status: "active",
 			}),
 		);
-		const published = parseResult(
+		const published = parseToolResult(
 			await publish({ prompt_partial_id: "partial-1", version: 2 }),
 		);
-		const deleted = parseResult(
+		const deleted = parseToolResult(
 			await remove({ prompt_partial_id: "partial-1" }),
 		);
 
@@ -567,13 +565,13 @@ describe("user query and lifecycle callbacks", () => {
 		const invites = callbacks.get("list_user_invites");
 		assert.ok(stats && invites);
 
-		const statsPayload = parseResult(
+		const statsPayload = parseToolResult(
 			await stats({
 				time_of_generation_min: "2026-01-01T00:00:00.000Z",
 				time_of_generation_max: "2026-02-01T00:00:00.000Z",
 			}),
 		);
-		const invitesPayload = parseResult(
+		const invitesPayload = parseToolResult(
 			await invites({ current_page: 1, page_size: 20 }),
 		);
 
@@ -597,8 +595,8 @@ describe("user query and lifecycle callbacks", () => {
 		const remove = callbacks.get("delete_user");
 		assert.ok(get && remove);
 
-		const user = parseResult(await get({ user_id: "user-1" }));
-		const result = parseResult(await remove({ user_id: "user-1" }));
+		const user = parseToolResult(await get({ user_id: "user-1" }));
+		const result = parseToolResult(await remove({ user_id: "user-1" }));
 		assert.deepEqual(user, {
 			id: "user-1",
 			name: "Ada Lovelace",
@@ -666,13 +664,13 @@ describe("workspace mutation callbacks", () => {
 		const removeWorkspace = callbacks.get("delete_workspace");
 		assert.ok(get && removeMember && removeWorkspace);
 
-		const member = parseResult(
+		const member = parseToolResult(
 			await get({ workspace_id: "workspace-1", user_id: MEMBER.id }),
 		);
-		const removed = parseResult(
+		const removed = parseToolResult(
 			await removeMember({ workspace_id: "workspace-1", user_id: MEMBER.id }),
 		);
-		const deleted = parseResult(
+		const deleted = parseToolResult(
 			await removeWorkspace({ workspace_id: "workspace-1" }),
 		);
 
@@ -721,9 +719,9 @@ describe("log export lifecycle callbacks", () => {
 		const cancel = callbacks.get("cancel_log_export");
 		assert.ok(get && start && cancel);
 
-		const job = parseResult(await get({ export_id: "export-1" }));
-		const started = parseResult(await start({ export_id: "export-1" }));
-		const cancelled = parseResult(await cancel({ export_id: "export-1" }));
+		const job = parseToolResult(await get({ export_id: "export-1" }));
+		const started = parseToolResult(await start({ export_id: "export-1" }));
+		const cancelled = parseToolResult(await cancel({ export_id: "export-1" }));
 		assert.equal(job.status, "pending");
 		assert.equal(started.status, "started");
 		assert.equal(cancelled.status, "cancelled");
@@ -744,7 +742,7 @@ describe("log export lifecycle callbacks", () => {
 		}).get("update_log_export");
 		assert.ok(callback);
 
-		const full = parseResult(
+		const full = parseToolResult(
 			await callback({
 				export_id: "export-1",
 				workspace_id: "workspace-1",
@@ -790,11 +788,11 @@ describe("rate and usage limit lifecycle callbacks", () => {
 		const remove = callbacks.get("delete_rate_limit");
 		assert.ok(list && update && remove);
 
-		const listed = parseResult(await list({ workspace_id: "workspace-1" }));
-		const updated = parseResult(
+		const listed = parseToolResult(await list({ workspace_id: "workspace-1" }));
+		const updated = parseToolResult(
 			await update({ id: "rate-1", name: "Updated", unit: "rph", value: 200 }),
 		);
-		const deleted = parseResult(await remove({ id: "rate-1" }));
+		const deleted = parseToolResult(await remove({ id: "rate-1" }));
 		assert.equal(listed.total, 1);
 		assert.equal((updated.rate_limit as Record<string, unknown>).value, 200);
 		assert.equal(deleted.success, true);
@@ -825,8 +823,8 @@ describe("rate and usage limit lifecycle callbacks", () => {
 		const remove = callbacks.get("delete_usage_limit");
 		assert.ok(get && update && remove);
 
-		const usage = parseResult(await get({ id: "usage-1" }));
-		const updated = parseResult(
+		const usage = parseToolResult(await get({ id: "usage-1" }));
+		const updated = parseToolResult(
 			await update({
 				id: "usage-1",
 				name: "Updated budget",
@@ -836,7 +834,7 @@ describe("rate and usage limit lifecycle callbacks", () => {
 				reset_usage_for_value: "user-1",
 			}),
 		);
-		const deleted = parseResult(await remove({ id: "usage-1" }));
+		const deleted = parseToolResult(await remove({ id: "usage-1" }));
 		assert.equal(usage.credit_limit, 500);
 		assert.equal(
 			(updated.usage_limit as Record<string, unknown>).credit_limit,
@@ -887,8 +885,8 @@ describe("rate and usage limit lifecycle callbacks", () => {
 		const reset = callbacks.get("reset_usage_limit_entity");
 		assert.ok(list && reset);
 
-		const listed = parseResult(await list({ limit_id: "usage-1" }));
-		const result = parseResult(
+		const listed = parseToolResult(await list({ limit_id: "usage-1" }));
+		const result = parseToolResult(
 			await reset({ limit_id: "usage-1", entity_id: "user-1" }),
 		);
 		assert.equal(listed.total, 1);
@@ -930,12 +928,12 @@ describe("MCP integration access callbacks", () => {
 		const update = callbacks.get("update_mcp_integration_capabilities");
 		assert.ok(remove && list && update);
 
-		const listed = parseResult(await list({ id: "integration-1" }));
+		const listed = parseToolResult(await list({ id: "integration-1" }));
 		const changes = [{ name: "search", type: "tool", enabled: false }];
-		const updated = parseResult(
+		const updated = parseToolResult(
 			await update({ id: "integration-1", capabilities: changes }),
 		);
-		const deleted = parseResult(await remove({ id: "integration-1" }));
+		const deleted = parseToolResult(await remove({ id: "integration-1" }));
 		assert.equal(listed.total, 1);
 		assert.equal(updated.success, true);
 		assert.equal(deleted.success, true);
@@ -976,9 +974,9 @@ describe("MCP integration access callbacks", () => {
 		const update = callbacks.get("update_mcp_integration_workspaces");
 		assert.ok(list && update);
 
-		const listed = parseResult(await list({ id: "integration-1" }));
+		const listed = parseToolResult(await list({ id: "integration-1" }));
 		const workspaces = [{ id: "workspace-1", enabled: false }];
-		const updated = parseResult(
+		const updated = parseToolResult(
 			await update({ id: "integration-1", workspaces }),
 		);
 		assert.equal(listed.workspace_count, 1);
@@ -1034,22 +1032,22 @@ describe("MCP server lifecycle callbacks", () => {
 		const remove = callbacks.get("delete_mcp_server");
 		assert.ok(list && update && test && remove);
 
-		const listed = parseResult(
+		const listed = parseToolResult(
 			await list({
 				current_page: 1,
 				page_size: 20,
 				workspace_id: "workspace-1",
 			}),
 		);
-		const updated = parseResult(
+		const updated = parseToolResult(
 			await update({
 				id: "server-1",
 				name: "Support MCP v2",
 				description: "Updated",
 			}),
 		);
-		const tested = parseResult(await test({ id: "server-1" }));
-		const deleted = parseResult(await remove({ id: "server-1" }));
+		const tested = parseToolResult(await test({ id: "server-1" }));
+		const deleted = parseToolResult(await remove({ id: "server-1" }));
 		assert.equal(listed.total, 1);
 		assert.equal(updated.success, true);
 		assert.equal(tested.response_time_ms, 42);
@@ -1082,10 +1080,10 @@ describe("MCP server lifecycle callbacks", () => {
 
 		const capabilities = [{ name: "search", type: "tool", enabled: false }];
 		const users = [{ user_id: "user-1", enabled: true }];
-		const capsResult = parseResult(
+		const capsResult = parseToolResult(
 			await updateCapabilities({ id: "server-1", capabilities }),
 		);
-		const usersResult = parseResult(
+		const usersResult = parseToolResult(
 			await updateUsers({ id: "server-1", users }),
 		);
 		assert.equal(capsResult.success, true);
@@ -1136,14 +1134,14 @@ describe("integration model and workspace query callbacks", () => {
 		const removeModel = callbacks.get("delete_integration_model");
 		assert.ok(removeIntegration && listModels && removeModel);
 
-		const models = parseResult(
+		const models = parseToolResult(
 			await listModels({ slug: "openai", current_page: 1, page_size: 20 }),
 		);
 		const model = (models.models as Array<Record<string, unknown>>)[0];
-		const deletedModel = parseResult(
+		const deletedModel = parseToolResult(
 			await removeModel({ slug: "openai", model_slug: "custom-model" }),
 		);
-		const deletedIntegration = parseResult(
+		const deletedIntegration = parseToolResult(
 			await removeIntegration({ slug: "openai" }),
 		);
 		assert.equal(model?.slug, "custom-model");
@@ -1181,7 +1179,7 @@ describe("integration model and workspace query callbacks", () => {
 		}).get("list_integration_workspaces");
 		assert.ok(callback);
 
-		const payload = parseResult(
+		const payload = parseToolResult(
 			await callback({ slug: "openai", current_page: 2, page_size: 25 }),
 		);
 		assert.deepEqual(received, {
