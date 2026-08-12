@@ -257,6 +257,22 @@ describe("HTTP runtime facade", () => {
 		const first = serverModule.getHttpAppRuntime();
 		const second = serverModule.getHttpAppRuntime();
 		assert.equal(first, second);
+		const runtime = first as unknown as {
+			startHttpServer: () => unknown;
+		};
+		const originalStartHttpServer = runtime.startHttpServer;
+		const serverSentinel = { listening: false };
+		let startCalls = 0;
+		runtime.startHttpServer = () => {
+			startCalls += 1;
+			return serverSentinel;
+		};
+		try {
+			assert.equal(serverModule.startHttpServer(), serverSentinel);
+			assert.equal(startCalls, 1);
+		} finally {
+			runtime.startHttpServer = originalStartHttpServer;
+		}
 		serverModule.setServerReady();
 		serverModule.setServerReady(false);
 		await serverModule.closeHttpApp();

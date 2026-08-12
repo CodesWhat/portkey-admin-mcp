@@ -828,6 +828,7 @@ describe("ToolChoiceSchema", () => {
 	});
 
 	it("maps flat MCP tool_choice input back to the Portkey API shape", () => {
+		assert.equal(toPromptToolChoice(), undefined);
 		assert.equal(toPromptToolChoice({ mode: "auto" }), "auto");
 		assert.equal(toPromptToolChoice({ mode: "none" }), "none");
 		assert.deepEqual(
@@ -842,6 +843,26 @@ describe("ToolChoiceSchema", () => {
 				},
 			},
 		);
+	});
+
+	it("rejects missing or contradictory function selections", () => {
+		const missingName = ToolChoiceSchema.safeParse({ mode: "function" });
+		assert.equal(missingName.success, false);
+		if (!missingName.success) {
+			assert.match(missingName.error.issues[0]?.message ?? "", /is required/);
+		}
+
+		const unexpectedName = ToolChoiceSchema.safeParse({
+			mode: "auto",
+			function_name: "search_docs",
+		});
+		assert.equal(unexpectedName.success, false);
+		if (!unexpectedName.success) {
+			assert.match(
+				unexpectedName.error.issues[0]?.message ?? "",
+				/only allowed/,
+			);
+		}
 	});
 });
 

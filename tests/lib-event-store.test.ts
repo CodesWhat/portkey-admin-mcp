@@ -68,12 +68,28 @@ describe("event payload envelope validation", () => {
 			/Invalid encrypted event payload envelope/,
 		);
 		assert.throws(
+			() => decryptEventPayload(`v2.${iv}.${tag}.${ciphertext}`, key),
+			/Invalid encrypted event payload envelope/,
+		);
+		assert.throws(
+			() => decryptEventPayload(`${encrypted}.unexpected`, key),
+			/Invalid encrypted event payload envelope/,
+		);
+		assert.throws(
 			() =>
 				decryptEventPayload(
 					`${version}.${Buffer.alloc(8).toString("base64url")}.${tag}.${ciphertext}`,
 					key,
 				),
 			/12-byte nonce/,
+		);
+		assert.throws(
+			() =>
+				decryptEventPayload(
+					`${version}.${iv}.${Buffer.alloc(8).toString("base64url")}.${ciphertext}`,
+					key,
+				),
+			/16-byte authentication tag/,
 		);
 	});
 });
@@ -145,6 +161,78 @@ describe("managed event-store modes", () => {
 						send: async () => {},
 					}),
 				/Event not found for replay/,
+			);
+		} finally {
+			Date.now = originalDateNow;
+		}
+	});
+
+	it("removes individually expired events and rejects missing stream mappings", async () => {
+		const originalDateNow = Date.now;
+		let now = 31_000;
+		Date.now = () => now;
+
+		try {
+			const managedStore = createManagedEventStore(
+				eventStoreConfig({
+					mode: "memory",
+					ttlSeconds: 1,
+					redisKeyPrefix: "unused",
+				}),
+			);
+			const eventStore = managedStore.eventStoreForOwner(
+				"principal-a",
+			) as unknown as {
+				state: {
+					lastCleanupAt: number;
+					streamEvents: Map<string, string[]>;
+				};
+				storeEvent: (
+					streamId: string,
+					message: JSONRPCMessage,
+				) => Promise<string>;
+				getStreamIdForEventId: (eventId: string) => Promise<string | undefined>;
+				replayEventsAfter: (
+					eventId: string,
+					options: {
+						send: (eventId: string, message: JSONRPCMessage) => Promise<void>;
+					},
+				) => Promise<string>;
+			};
+			const firstEventId = await eventStore.storeEvent("stream-1", {
+				jsonrpc: "2.0",
+				method: "first",
+			});
+			now = 31_500;
+			const secondEventId = await eventStore.storeEvent("stream-1", {
+				jsonrpc: "2.0",
+				method: "second",
+			});
+
+			now = 32_100;
+			eventStore.state.lastCleanupAt = now;
+			assert.equal(
+				await eventStore.getStreamIdForEventId(firstEventId),
+				undefined,
+			);
+			assert.deepEqual(eventStore.state.streamEvents.get("stream-1"), [
+				secondEventId,
+			]);
+
+			eventStore.state.streamEvents.delete("stream-1");
+			await assert.rejects(
+				() =>
+					eventStore.replayEventsAfter(secondEventId, {
+						send: async () => {},
+					}),
+				/Stream mapping not found for replay event/,
+			);
+
+			now = 32_600;
+			eventStore.state.lastCleanupAt = now;
+			assert.equal(
+				await eventStore.getStreamIdForEventId(secondEventId),
+				undefined,
 			);
 		} finally {
 			Date.now = originalDateNow;
@@ -418,5 +506,114 @@ describe("Redis event-store behavior", () => {
 
 		await managedStore.close();
 		assert.equal(closeCalls, 1);
+	});
+
+	it("shares in-flight connections and retries after a failed connection", async () => {
+		const managedStore = createManagedEventStore(redisEventStoreConfig());
+		const eventStore = managedStore.eventStoreForOwner(
+			"principal-a",
+		) as unknown as {
+			client: unknown;
+			getStreamIdForEventId: (eventId: string) => Promise<string | undefined>;
+		};
+		let resolveConnection: (() => void) | undefined;
+		const connectionGate = new Promise<void>((resolve) => {
+			resolveConnection = resolve;
+		});
+		let connectCalls = 0;
+		const sharedClient = {
+			isOpen: false,
+			async connect() {
+				connectCalls += 1;
+				await connectionGate;
+				sharedClient.isOpen = true;
+			},
+			async hGetAll() {
+				return { streamId: "stream-1", ownerKey: "principal-a" };
+			},
+		};
+		eventStore.client = sharedClient;
+
+		const firstLookup = eventStore.getStreamIdForEventId("event-1");
+		const secondLookup = eventStore.getStreamIdForEventId("event-2");
+		await Promise.resolve();
+		assert.equal(connectCalls, 1);
+		resolveConnection?.();
+		assert.deepEqual(await Promise.all([firstLookup, secondLookup]), [
+			"stream-1",
+			"stream-1",
+		]);
+
+		const retryStore = createManagedEventStore(redisEventStoreConfig());
+		const retryEventStore = retryStore.eventStoreForOwner(
+			"principal-a",
+		) as unknown as {
+			client: unknown;
+			getStreamIdForEventId: (eventId: string) => Promise<string | undefined>;
+		};
+		let retryConnectCalls = 0;
+		const retryClient = {
+			isOpen: false,
+			async connect() {
+				retryConnectCalls += 1;
+				if (retryConnectCalls === 1) {
+					throw new Error("Redis unavailable");
+				}
+				retryClient.isOpen = true;
+			},
+			async hGetAll() {
+				return { streamId: "stream-2", ownerKey: "principal-a" };
+			},
+		};
+		retryEventStore.client = retryClient;
+
+		await assert.rejects(
+			retryEventStore.getStreamIdForEventId("event-1"),
+			/Redis unavailable/,
+		);
+		assert.equal(
+			await retryEventStore.getStreamIdForEventId("event-1"),
+			"stream-2",
+		);
+		assert.equal(retryConnectCalls, 2);
+	});
+
+	it("handles unopened and in-flight Redis clients during shutdown", async () => {
+		const unusedStore = createManagedEventStore(redisEventStoreConfig());
+		await unusedStore.close();
+
+		const managedStore = createManagedEventStore(redisEventStoreConfig());
+		const eventStore = managedStore.eventStoreForOwner(
+			"principal-a",
+		) as unknown as {
+			client: unknown;
+			connection: { connectPromise?: Promise<unknown> };
+		};
+		let closeCalls = 0;
+		const client = {
+			isOpen: false,
+			async close() {
+				closeCalls += 1;
+			},
+		};
+		eventStore.client = client;
+		eventStore.connection.connectPromise = Promise.resolve().then(() => {
+			client.isOpen = true;
+		});
+		await managedStore.close();
+		assert.equal(closeCalls, 1);
+
+		const failedStore = createManagedEventStore(redisEventStoreConfig());
+		const failedEventStore = failedStore.eventStoreForOwner(
+			"principal-a",
+		) as unknown as {
+			client: unknown;
+			connection: { connectPromise?: Promise<unknown> };
+		};
+		failedEventStore.client = { isOpen: false };
+		failedEventStore.connection.connectPromise = Promise.reject(
+			new Error("connection failed"),
+		);
+		await assert.doesNotReject(failedStore.close());
 	});
 });

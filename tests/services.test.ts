@@ -244,6 +244,10 @@ describe("PromptsService workflows", () => {
 		});
 		enqueue(undefined, 204);
 		assert.deepEqual(await service.deletePrompt("prompt/one"), {});
+		enqueue({ deleted: true });
+		assert.deepEqual(await service.deletePrompt("prompt/two"), {
+			deleted: true,
+		});
 		enqueue({ success: true });
 		await service.publishPrompt("prompt/one", {
 			version_id: "version-2",
@@ -279,11 +283,11 @@ describe("PromptsService workflows", () => {
 			patch: true,
 			prompt_metadata: { env: "prod" },
 		});
-		assert.deepEqual(capturedBody(9), {
+		assert.deepEqual(capturedBody(10), {
 			temperature: 0,
 			variables: { name: "Ada" },
 		});
-		assert.deepEqual(capturedBody(10), {
+		assert.deepEqual(capturedBody(11), {
 			temperature: 0,
 			variables: { name: "Ada" },
 			metadata: { client_id: "client", app: "support", env: "test" },
@@ -387,6 +391,13 @@ describe("PromptsService workflows", () => {
 		assert.match(
 			String(promptMetadata.migrated_at),
 			/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/,
+		);
+
+		enqueue({ object: "list", total: 1, data: [existing] });
+		enqueue({ ...rawPrompt, prompt_version_id: undefined });
+		await assert.rejects(
+			service.migratePrompt(migration as never),
+			/exists but has no active version/,
 		);
 	});
 
@@ -840,9 +851,13 @@ describe("Configuration and platform service contracts", () => {
 		assert.deepEqual(await service.deleteConfig("config/one"), {
 			success: true,
 		});
+		enqueue({ success: false });
+		assert.deepEqual(await service.deleteConfig("config/two"), {
+			success: false,
+		});
 		await service.listConfigVersions("config/one");
 		assert.equal(capturedUrl(1).pathname, "/v1/configs/config%2Fone");
-		assert.equal(capturedUrl(5).pathname, "/v1/configs/config%2Fone/versions");
+		assert.equal(capturedUrl(6).pathname, "/v1/configs/config%2Fone/versions");
 	});
 
 	it("routes organisation defaults, exclusions, and guardrail CRUD", async () => {
