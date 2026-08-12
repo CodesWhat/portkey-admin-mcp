@@ -96,9 +96,7 @@ async function loadSecurityModule() {
 }
 
 async function loadBaseService() {
-	return import(
-		`../src/services/base.service.js?test=${Date.now()}-${Math.random()}`
-	);
+	return import("../src/services/base.service.js");
 }
 
 async function loadOriginHelpers() {
