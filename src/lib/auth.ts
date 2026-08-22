@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import type { NextFunction, Request, Response } from "express";
 import { createRemoteJWKSet, type JWTPayload, jwtVerify } from "jose";
 import { Logger } from "./logger.js";
-import { isMcpRequestPath } from "./security.js";
+import { isMcpRequestPath } from "./request-path.js";
 
 export type HttpAuthMode = "none" | "bearer" | "clerk";
 

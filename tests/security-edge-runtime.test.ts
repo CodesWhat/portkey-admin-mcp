@@ -89,6 +89,7 @@ const moduleHooks = registerHooks({
 await import("./lib-security-runtime.suite.js");
 await import("./security-runtime.suite.js");
 const security = await import("../src/lib/security.js");
+const requestPath = await import("../src/lib/request-path.js");
 const rateLimitConfig = security.getRateLimitConfig();
 
 after(async () => {
@@ -218,14 +219,14 @@ describe("origin and Host edge validation", () => {
 			"/READY",
 		]) {
 			assert.equal(
-				security.isHealthOrReadyPath(path),
+				requestPath.isHealthOrReadyPath(path),
 				true,
 				`expected ${path} to match`,
 			);
 		}
 		for (const path of ["/health/foo", "/healthz", "/mcp", "/"]) {
 			assert.equal(
-				security.isHealthOrReadyPath(path),
+				requestPath.isHealthOrReadyPath(path),
 				false,
 				`expected ${path} not to match`,
 			);

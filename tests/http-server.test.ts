@@ -194,6 +194,21 @@ const CLERK_TEST_ISSUER = "https://clerk.example.com";
 const CLERK_TEST_AUDIENCE = "portkey-admin-mcp-tests";
 const CLERK_TEST_KID = "session-isolation-test-key";
 
+// The clerk isolation test shells out to `openssl` to mint a throwaway cert for
+// the local HTTPS JWKS server. openssl isn't guaranteed on every machine (or CI
+// image), so probe for it once and skip that single test where it's absent
+// rather than failing the suite on a missing system binary.
+function hasOpenssl(): boolean {
+	try {
+		execFileSync("openssl", ["version"], { stdio: "ignore" });
+		return true;
+	} catch {
+		return false;
+	}
+}
+
+const OPENSSL_AVAILABLE = hasOpenssl();
+
 function generateSelfSignedCert(): { key: string; cert: string } {
 	const dir = mkdtempSync(join(tmpdir(), "portkey-mcp-jwks-cert-"));
 	try {
@@ -1371,7 +1386,9 @@ describe("HTTP server integration", () => {
 	// MCP session isolation between distinct clerk principals
 	// ---------------------------------------------------------------------------
 
-	it("isolates MCP sessions between two distinct clerk principals on the same server", async () => {
+	it("isolates MCP sessions between two distinct clerk principals on the same server", {
+		skip: OPENSSL_AVAILABLE ? false : "openssl binary not available",
+	}, async () => {
 		await withJwksHttpsServer(async ({ jwksUrl, signToken }) => {
 			const tokenA = await signToken("user_a");
 			const tokenB = await signToken("user_b");

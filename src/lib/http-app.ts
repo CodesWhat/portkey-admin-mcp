@@ -47,12 +47,12 @@ import {
 } from "./event-store.js";
 import { Logger } from "./logger.js";
 import { createMcpServer, resolveToolDomains } from "./mcp-server.js";
+import { isMcpRequestPath } from "./request-path.js";
 import {
 	closeRateLimitStore,
 	getAllowedOrigins,
 	getRateLimitConfig,
 	hostValidationMiddleware,
-	isMcpRequestPath,
 	originValidationMiddleware,
 	principalRateLimitMiddleware,
 	rateLimitMiddleware,
