@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-08-22
+
+Security and correctness release from a multi-agent whole-application review, weighted to the streamable-HTTP transport. Tool inventory is unchanged at 171 and `tools/list` output is byte-identical to 0.9.0, so no client needs to re-sync schemas. The stdio transport most people use is unaffected except for a clearer error when `PORTKEY_API_KEY` is missing. Everything below was independently verified against the code before shipping; the review also found the rate-limiter overflow-bucket behaviour and per-session tool registration were already correct and left them alone.
+
+### Fixed
+
+- Stop leaking stateful session reservations when the MCP transport rejects an `initialize` request. The reservation that guards `MCP_MAX_SESSIONS` was released only in a `catch`, but the SDK transport *returns* a 406/415/400 for a bad `Accept` header, content-type, protocol version, or JSON-RPC body instead of throwing, so the release never ran. About `MCP_MAX_SESSIONS` malformed initializes from a single authenticated caller permanently exhausted stateful capacity for every tenant until restart. The release now runs in a `finally`, gated so a session that actually initialized is never double-released.
+- Rate-limit `/mcp/` and `/MCP` like `/mcp`. Express 5 routes those forms to the same handler, but the rate limiters compared the path with exact string equality while auth used a looser `startsWith`, so failed-credential requests to a trailing-slash or uppercase path consumed no rate-limit bucket, and `/MCP` skipped the auth gate entirely and then 500'd on an unset principal. A shared `isMcpRequestPath` matcher (case-insensitive, one trailing slash) now backs both rate limiters and the auth gate, matching the router. The same fix was applied to the `/health` and `/ready` skips, which had the identical exact-string pattern.
+- Rate-limit and authenticate before parsing the request body. `express.json` ran ahead of the rate limiters and auth, so a malformed or oversized POST error-skipped straight to the parse-error handler without being counted or authenticated. The parser now runs after host/origin validation, both rate limiters, and auth, and still before the route handler that needs the parsed body.
+- Bound Redis event-store commands with a command timeout. `storeEvent` and event replay sit on the request-critical path and waited on Redis with no deadline, so a stalled-but-connected Redis hung MCP requests indefinitely. Commands now honour `MCP_EVENT_STORE_COMMAND_TIMEOUT_MS` (default 5000; `0` restores the old unbounded behaviour).
+- Close two SSE replay races. The stateless replay concurrency cap checked capacity before an `await`, letting a concurrent burst slip past it; the slot is now reserved synchronously. The stateful replay path never took the managed replay lease the stateless path uses, so overlapping resumes for one session could double-replay and race the live stream mapping; it now acquires the lease before delegating to the transport.
+- Make CORS agree with the origin gate. `cors()` received the raw allow-list and matched origins by exact string, while the 403 origin gate treats a portless allow-list entry as any-port, so a browser client on a non-default port passed the gate but got no `Access-Control-Allow-Origin` header. CORS now reuses the same `validateOrigin` matcher, staying fail-closed.
+- Return an actionable error when `PORTKEY_API_KEY` is unset instead of an opaque upstream 401. The missing key is still replaced by a placeholder so tool discovery works without credentials, but an authenticated tool call now fails with "PORTKEY_API_KEY is not configured" before any network call, and the stdio server logs a one-line warning to stderr at startup.
+
+### Added
+
+- `MCP_EVENT_STORE_COMMAND_TIMEOUT_MS` — Redis command timeout for the event store, in milliseconds. Defaults to 5000; set to `0` for no timeout.
+- Regression tests for every fix above, including end-to-end session isolation between two distinct Clerk principals against a live server, reserved-capacity release after a rejected initialize, the trailing-slash and uppercase rate-limit paths, and concurrent SSE replay.
+
 ## [0.9.0] - 2026-08-10
 
 Cross-field argument validation now reads the same on every tool that has it. Tool inventory is unchanged at 171 and `tools/list` output is byte-identical to 0.8.0, so no client needs to re-sync schemas. The error *text* a client sees for these ten tools does change; anything matching on the old strings needs updating.
