@@ -226,6 +226,7 @@ For local-only HTTP use, leave `MCP_HOST` at its default `127.0.0.1`. Set `MCP_H
 | `MCP_MAX_SESSIONS` | `100` | Maximum concurrent stateful sessions or active stateless request handlers |
 | `MCP_EVENT_STORE` | `off` | `off`, `memory`, or `redis`; stateless `GET /mcp` replay requires `memory` or `redis` |
 | `MCP_EVENT_TTL_SECONDS` | `300` | Replay retention in seconds |
+| `MCP_EVENT_STORE_COMMAND_TIMEOUT_MS` | `5000` | Redis command timeout for the event store, in milliseconds; `0` disables the timeout (restores unbounded pre-v6 behavior) |
 | `MCP_REDIS_URL` | — | Redis URL for shared event store; production requires `rediss://` and ACL-scoped credentials |
 | `MCP_EVENT_ENCRYPTION_KEY` | — | Required 32-byte base64 AES key for Redis replay payloads; generate with `openssl rand -base64 32` |
 | `MCP_REDIS_KEY_PREFIX` | `mcp:event-store` | Dedicated Redis namespace for replay data |

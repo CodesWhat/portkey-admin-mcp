@@ -322,6 +322,7 @@ class RedisEventStore implements EventStore {
 	private readonly keyPrefix: string;
 	private readonly ownerKey: string;
 	private readonly encryptionKey: Buffer;
+	private readonly commandTimeoutMs: number;
 	private readonly connection: {
 		client?: RedisResp2Client;
 		connectPromise?: Promise<unknown>;
@@ -333,6 +334,7 @@ class RedisEventStore implements EventStore {
 		ttlSeconds: number,
 		ownerKey: string,
 		encryptionKey: Buffer,
+		commandTimeoutMs: number,
 		connection: {
 			client?: RedisResp2Client;
 			connectPromise?: Promise<unknown>;
@@ -343,6 +345,7 @@ class RedisEventStore implements EventStore {
 		this.keyPrefix = keyPrefix;
 		this.ownerKey = ownerKey;
 		this.encryptionKey = encryptionKey;
+		this.commandTimeoutMs = commandTimeoutMs;
 		this.connection = connection;
 	}
 
@@ -361,6 +364,7 @@ class RedisEventStore implements EventStore {
 			this.ttlSeconds,
 			ownerKey,
 			this.encryptionKey,
+			this.commandTimeoutMs,
 			this.connection,
 		);
 	}
@@ -387,11 +391,20 @@ class RedisEventStore implements EventStore {
 			this.connection.client = createClient({
 				url: this.redisUrl,
 				// node-redis v6 defaults to RESP3, a 5-second command timeout, and a
-				// 30-second keepalive delay. Keep the event store's v5 behavior stable
-				// while taking the v6 fixes and supported runtime baseline.
+				// 30-second keepalive delay. storeEvent/replayEventsAfter sit on the
+				// MCP request-critical path (SSE sends, GET replay), so an unbounded
+				// command wait here would hang requests indefinitely if Redis accepts
+				// TCP but stalls on replies. Keep RESP2 for v5-compatible replies, but
+				// use a bounded, configurable command timeout (default 5s, matching
+				// node-redis's own default) instead of disabling it. Set
+				// MCP_EVENT_STORE_COMMAND_TIMEOUT_MS=0 to restore the old unbounded
+				// (v5-compatible) behavior.
 				RESP: 2,
 				socket: { keepAliveInitialDelay: 5_000 },
-				commandOptions: { timeout: undefined },
+				commandOptions: {
+					timeout:
+						this.commandTimeoutMs === 0 ? undefined : this.commandTimeoutMs,
+				},
 			});
 			this.connection.client.on("error", (error) => {
 				Logger.error("Redis event store error", {
@@ -616,6 +629,7 @@ export function createManagedEventStore(
 		config.eventStore.ttlSeconds,
 		"internal",
 		encryptionKey,
+		config.eventStore.commandTimeoutMs,
 	);
 
 	return {

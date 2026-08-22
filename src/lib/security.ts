@@ -8,6 +8,7 @@ import type { NextFunction, Request, Response } from "express";
 import { ipKeyGenerator } from "express-rate-limit";
 import { type AuthPrincipal, getPrincipalOwnerKey } from "./auth.js";
 import { Logger } from "./logger.js";
+import { isHealthOrReadyPath, isMcpRequestPath } from "./request-path.js";
 
 // ============================================================================
 // Origin Validation
@@ -144,7 +145,7 @@ export function originValidationMiddleware(
 	next: NextFunction,
 ): void {
 	// Skip for health/ready endpoints
-	if (req.path === "/health" || req.path === "/ready") {
+	if (isHealthOrReadyPath(req.path)) {
 		next();
 		return;
 	}
@@ -175,7 +176,7 @@ export function hostValidationMiddleware(
 	res: Response,
 	next: NextFunction,
 ): void {
-	if (req.path === "/health" || req.path === "/ready") {
+	if (isHealthOrReadyPath(req.path)) {
 		next();
 		return;
 	}
@@ -601,11 +602,11 @@ function applyRateLimit(
 	}
 
 	// Skip for health/ready endpoints
-	if (req.path === "/health" || req.path === "/ready") {
+	if (isHealthOrReadyPath(req.path)) {
 		next();
 		return;
 	}
-	if (scope === "authentication" && req.path !== "/mcp") {
+	if (scope === "authentication" && !isMcpRequestPath(req.path)) {
 		next();
 		return;
 	}

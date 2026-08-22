@@ -1,15 +1,19 @@
 import assert from "node:assert/strict";
-import { type ChildProcess, spawn } from "node:child_process";
+import { type ChildProcess, execFileSync, spawn } from "node:child_process";
 import { EventEmitter, once } from "node:events";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import {
 	createServer as createHttpServer,
 	request as httpRequest,
 } from "node:http";
+import https, { type Server as HttpsServer } from "node:https";
 import net from "node:net";
-import { resolve } from "node:path";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 import { afterEach, describe, it } from "node:test";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import { exportJWK, generateKeyPair, SignJWT } from "jose";
 
 const TSX_CLI_PATH = resolve(process.cwd(), "node_modules/tsx/dist/cli.mjs");
 const AUTH_TOKEN = "test-secret";
@@ -171,6 +175,123 @@ async function requestJsonWithHeaders(
 		request.on("error", reject);
 		request.end();
 	});
+}
+
+// ---------------------------------------------------------------------------
+// Clerk-mode multi-principal test fixture
+//
+// A live server can only ever authenticate a second, distinct principal
+// (distinct ownerKey) via MCP_AUTH_MODE=clerk — bearer mode accepts exactly
+// one MCP_AUTH_TOKEN, so every authenticated bearer request maps to the same
+// ownerKey. Clerk config requires an https:// JWKS URL (auth.ts rejects
+// http://), so this stands up a real local HTTPS server, backed by an
+// openssl-generated self-signed cert, serving a JWKS document produced by a
+// jose-generated RSA keypair. The spawned server process trusts that cert via
+// NODE_TLS_REJECT_UNAUTHORIZED=0 for the duration of the test only.
+// ---------------------------------------------------------------------------
+
+const CLERK_TEST_ISSUER = "https://clerk.example.com";
+const CLERK_TEST_AUDIENCE = "portkey-admin-mcp-tests";
+const CLERK_TEST_KID = "session-isolation-test-key";
+
+// The clerk isolation test shells out to `openssl` to mint a throwaway cert for
+// the local HTTPS JWKS server. openssl isn't guaranteed on every machine (or CI
+// image), so probe for it once and skip that single test where it's absent
+// rather than failing the suite on a missing system binary.
+function hasOpenssl(): boolean {
+	try {
+		execFileSync("openssl", ["version"], { stdio: "ignore" });
+		return true;
+	} catch {
+		return false;
+	}
+}
+
+const OPENSSL_AVAILABLE = hasOpenssl();
+
+function generateSelfSignedCert(): { key: string; cert: string } {
+	const dir = mkdtempSync(join(tmpdir(), "portkey-mcp-jwks-cert-"));
+	try {
+		const keyPath = join(dir, "key.pem");
+		const certPath = join(dir, "cert.pem");
+		execFileSync("openssl", [
+			"req",
+			"-x509",
+			"-newkey",
+			"rsa:2048",
+			"-nodes",
+			"-keyout",
+			keyPath,
+			"-out",
+			certPath,
+			"-days",
+			"1",
+			"-subj",
+			"/CN=127.0.0.1",
+		]);
+		return {
+			key: readFileSync(keyPath, "utf8"),
+			cert: readFileSync(certPath, "utf8"),
+		};
+	} finally {
+		rmSync(dir, { recursive: true, force: true });
+	}
+}
+
+interface JwksTestContext {
+	jwksUrl: string;
+	signToken: (subject: string) => Promise<string>;
+}
+
+async function withJwksHttpsServer(
+	run: (context: JwksTestContext) => Promise<void>,
+): Promise<void> {
+	const { publicKey, privateKey } = await generateKeyPair("RS256", {
+		extractable: true,
+	});
+	const publicJwk = await exportJWK(publicKey);
+	publicJwk.kid = CLERK_TEST_KID;
+	publicJwk.alg = "RS256";
+	publicJwk.use = "sig";
+
+	const { key, cert } = generateSelfSignedCert();
+	const server: HttpsServer = https.createServer({ key, cert }, (_req, res) => {
+		res.writeHead(200, { "content-type": "application/json" });
+		res.end(JSON.stringify({ keys: [publicJwk] }));
+	});
+
+	const port = await new Promise<number>((resolveListen, reject) => {
+		server.once("error", reject);
+		server.listen(0, "127.0.0.1", () => {
+			const address = server.address();
+			if (!address || typeof address === "string") {
+				reject(new Error("Failed to determine JWKS server port"));
+				return;
+			}
+			resolveListen(address.port);
+		});
+	});
+
+	const signToken = (subject: string): Promise<string> =>
+		new SignJWT({})
+			.setProtectedHeader({ alg: "RS256", kid: CLERK_TEST_KID })
+			.setSubject(subject)
+			.setIssuer(CLERK_TEST_ISSUER)
+			.setAudience(CLERK_TEST_AUDIENCE)
+			.setIssuedAt()
+			.setExpirationTime("5m")
+			.sign(privateKey);
+
+	try {
+		await run({
+			jwksUrl: `https://127.0.0.1:${port}/.well-known/jwks.json`,
+			signToken,
+		});
+	} finally {
+		await new Promise<void>((resolveClose) =>
+			server.close(() => resolveClose()),
+		);
+	}
 }
 
 async function withHttpServer(
@@ -483,6 +604,137 @@ describe("HTTP server integration", () => {
 				assert.deepEqual(await response.json(), {
 					error: "Payload too large",
 				});
+			},
+		);
+	});
+
+	it("rate limits a trailing-slash /mcp/ request the same as /mcp", async () => {
+		await withHttpServer(
+			{
+				RATE_LIMIT_ENABLED: "true",
+				RATE_LIMIT_MAX: "2",
+				RATE_LIMIT_WINDOW_MS: "60000",
+				RATE_LIMIT_REFILL: "2",
+			},
+			async ({ baseUrl }) => {
+				const statuses: number[] = [];
+				for (let attempt = 0; attempt < 5; attempt += 1) {
+					const response = await fetch(`${baseUrl}/mcp/`, {
+						method: "POST",
+						headers: {
+							"content-type": "application/json",
+							accept: "application/json",
+						},
+						body: JSON.stringify(INIT_PAYLOAD),
+					});
+					statuses.push(response.status);
+					if (response.status === 429) {
+						break;
+					}
+				}
+
+				assert.ok(
+					statuses.includes(429),
+					`expected a 429 among repeated /mcp/ requests, got ${statuses.join(", ")}`,
+				);
+			},
+		);
+	});
+
+	it("rate limits an uppercase /MCP request the same as /mcp", async () => {
+		await withHttpServer(
+			{
+				RATE_LIMIT_ENABLED: "true",
+				RATE_LIMIT_MAX: "2",
+				RATE_LIMIT_WINDOW_MS: "60000",
+				RATE_LIMIT_REFILL: "2",
+			},
+			async ({ baseUrl }) => {
+				const statuses: number[] = [];
+				for (let attempt = 0; attempt < 5; attempt += 1) {
+					const response = await fetch(`${baseUrl}/MCP`, {
+						method: "POST",
+						headers: {
+							"content-type": "application/json",
+							accept: "application/json",
+						},
+						body: JSON.stringify(INIT_PAYLOAD),
+					});
+					statuses.push(response.status);
+					if (response.status === 429) {
+						break;
+					}
+				}
+
+				// Express 5 routes /MCP to the /mcp handler case-insensitively; the
+				// auth gate and rate limiters must recognize it too, so it never 500s
+				// on an unset authPrincipal and never escapes rate limiting.
+				assert.ok(
+					!statuses.includes(500),
+					`uppercase /MCP should not 500, got ${statuses.join(", ")}`,
+				);
+				assert.ok(
+					statuses.includes(429),
+					`expected a 429 among repeated /MCP requests, got ${statuses.join(", ")}`,
+				);
+			},
+		);
+	});
+
+	it("rejects a malformed-JSON /mcp request from an unauthenticated client before parsing its body", async () => {
+		await withHttpServer({}, async ({ baseUrl }) => {
+			const response = await fetch(`${baseUrl}/mcp`, {
+				method: "POST",
+				headers: {
+					"content-type": "application/json",
+					accept: "application/json",
+				},
+				body: '{"jsonrpc":',
+			});
+
+			// Auth (or rate limiting) must reject this request before it ever
+			// reaches the body parser's error handler; a 400 "Malformed JSON
+			// request body" here would mean the parser ran first.
+			assert.equal(response.status, 401);
+			assert.deepEqual(await response.json(), {
+				error: "Unauthorized: Missing or invalid Authorization Bearer token",
+			});
+		});
+	});
+
+	it("emits Access-Control-Allow-Origin for a portless allow-list entry on a non-default port", async () => {
+		await withHttpServer(
+			{ ALLOWED_ORIGINS: "http://localhost" },
+			async ({ baseUrl }) => {
+				const response = await fetch(`${baseUrl}/health`, {
+					headers: { origin: "http://localhost:5173" },
+				});
+
+				assert.equal(response.status, 200);
+				assert.equal(
+					response.headers.get("access-control-allow-origin"),
+					"http://localhost:5173",
+				);
+			},
+		);
+	});
+
+	it("skips origin/Host validation for case- and trailing-slash health/ready path variants", async () => {
+		await withHttpServer(
+			{ ALLOWED_ORIGINS: "http://localhost" },
+			async ({ baseUrl }) => {
+				for (const path of ["/health/", "/HEALTH", "/ready/", "/READY"]) {
+					const response = await requestJsonWithHeaders(`${baseUrl}${path}`, {
+						host: "attacker.example",
+						origin: "https://evil.example",
+					});
+
+					assert.equal(
+						response.statusCode,
+						200,
+						`expected ${path} with a disallowed Origin/Host to skip validation`,
+					);
+				}
 			},
 		);
 	});
@@ -1126,6 +1378,130 @@ describe("HTTP server integration", () => {
 				typeof error.message === "string" &&
 					error.message.includes("nonexistent-domain"),
 				`expected error message to mention "nonexistent-domain", got: ${error.message}`,
+			);
+		});
+	});
+
+	// ---------------------------------------------------------------------------
+	// MCP session isolation between distinct clerk principals
+	// ---------------------------------------------------------------------------
+
+	it("isolates MCP sessions between two distinct clerk principals on the same server", {
+		skip: OPENSSL_AVAILABLE ? false : "openssl binary not available",
+	}, async () => {
+		await withJwksHttpsServer(async ({ jwksUrl, signToken }) => {
+			const tokenA = await signToken("user_a");
+			const tokenB = await signToken("user_b");
+
+			await withHttpServer(
+				{
+					MCP_AUTH_MODE: "clerk",
+					CLERK_ISSUER: CLERK_TEST_ISSUER,
+					CLERK_AUDIENCE: CLERK_TEST_AUDIENCE,
+					CLERK_JWKS_URL: jwksUrl,
+					CLERK_ALLOWED_SUBJECTS: "user_a,user_b",
+					NODE_TLS_REJECT_UNAUTHORIZED: "0",
+				},
+				async ({ baseUrl }) => {
+					const headersFor = (token: string) => ({
+						authorization: `Bearer ${token}`,
+						"content-type": "application/json",
+						accept: "text/event-stream, application/json",
+					});
+					const notFoundBody = {
+						jsonrpc: "2.0",
+						error: {
+							code: -32000,
+							message: "Session not found",
+						},
+						id: null,
+					};
+
+					const initialize = await fetch(`${baseUrl}/mcp`, {
+						method: "POST",
+						headers: headersFor(tokenA),
+						body: JSON.stringify(INIT_PAYLOAD),
+					});
+					assert.equal(initialize.status, 200);
+
+					const sessionId = initialize.headers.get("mcp-session-id");
+					assert.ok(
+						sessionId,
+						"expected initialize response to include mcp-session-id",
+					);
+
+					const toolsListBody = JSON.stringify({
+						jsonrpc: "2.0",
+						id: 2,
+						method: "tools/list",
+						params: {},
+					});
+
+					// Principal B must not be able to reach principal A's session on
+					// any of the three /mcp verbs.
+					const postAsB = await fetch(`${baseUrl}/mcp`, {
+						method: "POST",
+						headers: { ...headersFor(tokenB), "mcp-session-id": sessionId },
+						body: toolsListBody,
+					});
+					assert.equal(postAsB.status, 404);
+					assert.deepEqual(await postAsB.json(), notFoundBody);
+
+					const getAsB = await fetch(`${baseUrl}/mcp`, {
+						method: "GET",
+						headers: {
+							authorization: `Bearer ${tokenB}`,
+							accept: "text/event-stream",
+							"mcp-session-id": sessionId,
+							"mcp-protocol-version": "2024-11-05",
+						},
+					});
+					assert.equal(getAsB.status, 404);
+					assert.deepEqual(await getAsB.json(), notFoundBody);
+
+					const deleteAsB = await fetch(`${baseUrl}/mcp`, {
+						method: "DELETE",
+						headers: {
+							authorization: `Bearer ${tokenB}`,
+							"mcp-session-id": sessionId,
+							"mcp-protocol-version": "2024-11-05",
+						},
+					});
+					assert.equal(deleteAsB.status, 404);
+					assert.deepEqual(await deleteAsB.json(), notFoundBody);
+
+					// Control: principal A still owns the session after B's rejected
+					// attempts, on all three verbs.
+					const postAsA = await fetch(`${baseUrl}/mcp`, {
+						method: "POST",
+						headers: { ...headersFor(tokenA), "mcp-session-id": sessionId },
+						body: toolsListBody,
+					});
+					assert.equal(postAsA.status, 200);
+					assert.match(await postAsA.text(), /"tools"/);
+
+					const getAsA = await fetch(`${baseUrl}/mcp`, {
+						method: "GET",
+						headers: {
+							authorization: `Bearer ${tokenA}`,
+							accept: "text/event-stream",
+							"mcp-session-id": sessionId,
+							"mcp-protocol-version": "2024-11-05",
+						},
+					});
+					assert.equal(getAsA.status, 200);
+					await getAsA.body?.cancel();
+
+					const deleteAsA = await fetch(`${baseUrl}/mcp`, {
+						method: "DELETE",
+						headers: {
+							authorization: `Bearer ${tokenA}`,
+							"mcp-session-id": sessionId,
+							"mcp-protocol-version": "2024-11-05",
+						},
+					});
+					assert.equal(deleteAsA.status, 200);
+				},
 			);
 		});
 	});

@@ -89,6 +89,7 @@ const moduleHooks = registerHooks({
 await import("./lib-security-runtime.suite.js");
 await import("./security-runtime.suite.js");
 const security = await import("../src/lib/security.js");
+const requestPath = await import("../src/lib/request-path.js");
 const rateLimitConfig = security.getRateLimitConfig();
 
 after(async () => {
@@ -208,27 +209,59 @@ describe("origin and Host edge validation", () => {
 		}
 	});
 
+	it("matches case-insensitive and trailing-slash variants of health/ready paths", () => {
+		for (const path of [
+			"/health",
+			"/health/",
+			"/HEALTH",
+			"/ready",
+			"/ready/",
+			"/READY",
+		]) {
+			assert.equal(
+				requestPath.isHealthOrReadyPath(path),
+				true,
+				`expected ${path} to match`,
+			);
+		}
+		for (const path of ["/health/foo", "/healthz", "/mcp", "/"]) {
+			assert.equal(
+				requestPath.isHealthOrReadyPath(path),
+				false,
+				`expected ${path} not to match`,
+			);
+		}
+	});
+
 	it("applies origin and Host rejection responses while exempting probes", () => {
 		for (const middleware of [
 			security.originValidationMiddleware,
 			security.hostValidationMiddleware,
 		]) {
-			const probe = createResponse();
-			let probeNext = 0;
-			middleware(
-				createRequest({
-					path: "/health",
-					headers: {
-						host: "evil.example",
-						origin: "https://evil.example",
+			for (const path of [
+				"/health",
+				"/health/",
+				"/HEALTH",
+				"/ready",
+				"/READY",
+			]) {
+				const probe = createResponse();
+				let probeNext = 0;
+				middleware(
+					createRequest({
+						path,
+						headers: {
+							host: "evil.example",
+							origin: "https://evil.example",
+						},
+					}) as never,
+					probe.response as never,
+					() => {
+						probeNext += 1;
 					},
-				}) as never,
-				probe.response as never,
-				() => {
-					probeNext += 1;
-				},
-			);
-			assert.equal(probeNext, 1);
+				);
+				assert.equal(probeNext, 1, `expected ${path} to be exempted`);
+			}
 		}
 
 		const originRejection = createResponse();
@@ -289,7 +322,15 @@ describe("in-memory rate-limit edge behavior", () => {
 		assert.equal(disabledNext, 1);
 
 		rateLimitConfig.enabled = true;
-		for (const path of ["/health", "/ready", "/status"]) {
+		for (const path of [
+			"/health",
+			"/health/",
+			"/HEALTH",
+			"/ready",
+			"/ready/",
+			"/READY",
+			"/status",
+		]) {
 			const skipped = createResponse();
 			let nextCalls = 0;
 			await security.rateLimitMiddleware(

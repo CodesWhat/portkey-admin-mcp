@@ -27,6 +27,7 @@ function eventStoreConfig(
 
 function redisEventStoreConfig(
 	encryptionKey: Buffer | undefined = Buffer.alloc(32, 7),
+	commandTimeoutMs = 5_000,
 ): ServerConfig {
 	return eventStoreConfig({
 		mode: "redis",
@@ -34,6 +35,7 @@ function redisEventStoreConfig(
 		redisUrl: "redis://127.0.0.1:6379",
 		redisKeyPrefix: "test-events",
 		encryptionKey,
+		commandTimeoutMs,
 	});
 }
 
@@ -101,6 +103,7 @@ describe("managed event-store modes", () => {
 				mode: "off",
 				ttlSeconds: 60,
 				redisKeyPrefix: "unused",
+				commandTimeoutMs: 5_000,
 			}),
 		);
 
@@ -115,6 +118,7 @@ describe("managed event-store modes", () => {
 						ttlSeconds: 60,
 						redisUrl: "redis://127.0.0.1:6379",
 						redisKeyPrefix: "test-events",
+						commandTimeoutMs: 5_000,
 					}),
 				),
 			/MCP_EVENT_ENCRYPTION_KEY/,
@@ -132,6 +136,7 @@ describe("managed event-store modes", () => {
 					mode: "memory",
 					ttlSeconds: 1,
 					redisKeyPrefix: "unused",
+					commandTimeoutMs: 5_000,
 				}),
 			);
 			const eventStore = managedStore.eventStoreForOwner("principal-a");
@@ -178,6 +183,7 @@ describe("managed event-store modes", () => {
 					mode: "memory",
 					ttlSeconds: 1,
 					redisKeyPrefix: "unused",
+					commandTimeoutMs: 5_000,
 				}),
 			);
 			const eventStore = managedStore.eventStoreForOwner(
@@ -241,6 +247,30 @@ describe("managed event-store modes", () => {
 });
 
 describe("Redis event-store behavior", () => {
+	it("reads the configured command timeout onto per-owner Redis event stores", () => {
+		const defaultStore = createManagedEventStore(redisEventStoreConfig());
+		const defaultEventStore = defaultStore.eventStoreForOwner(
+			"principal-a",
+		) as unknown as { commandTimeoutMs: number };
+		assert.equal(defaultEventStore.commandTimeoutMs, 5_000);
+
+		const customStore = createManagedEventStore(
+			redisEventStoreConfig(Buffer.alloc(32, 7), 1_500),
+		);
+		const customEventStore = customStore.eventStoreForOwner(
+			"principal-a",
+		) as unknown as { commandTimeoutMs: number };
+		assert.equal(customEventStore.commandTimeoutMs, 1_500);
+
+		const disabledStore = createManagedEventStore(
+			redisEventStoreConfig(Buffer.alloc(32, 7), 0),
+		);
+		const disabledEventStore = disabledStore.eventStoreForOwner(
+			"principal-a",
+		) as unknown as { commandTimeoutMs: number };
+		assert.equal(disabledEventStore.commandTimeoutMs, 0);
+	});
+
 	it("persists encrypted events and their stream index in one transaction", async () => {
 		const encryptionKey = Buffer.alloc(32, 7);
 		const managedStore = createManagedEventStore(
