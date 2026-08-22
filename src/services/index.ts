@@ -44,7 +44,7 @@ export { WorkspacesService } from "./workspaces.service.js";
 import { createHmac, randomBytes } from "node:crypto";
 import { AnalyticsService } from "./analytics.service.js";
 import { AuditService } from "./audit.service.js";
-import { validateUrl } from "./base.service.js";
+import { MISSING_API_KEY_PLACEHOLDER, validateUrl } from "./base.service.js";
 import { CollectionsService } from "./collections.service.js";
 import { ConfigsService } from "./configs.service.js";
 import { GuardrailsService } from "./guardrails.service.js";
@@ -64,7 +64,6 @@ import { TracingService } from "./tracing.service.js";
 import { UsersService } from "./users.service.js";
 import { WorkspacesService } from "./workspaces.service.js";
 
-const MISSING_API_KEY_PLACEHOLDER = "__PORTKEY_API_KEY_NOT_CONFIGURED__";
 const SERVICE_CACHE_HMAC_KEY = randomBytes(32);
 
 function resolvePortkeyApiKey(apiKey?: string): string {

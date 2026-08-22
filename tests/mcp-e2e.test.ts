@@ -760,5 +760,44 @@ describe("MCP E2E Protocol Tests", () => {
 			assert.equal(result.isError, true, "API error should set isError: true");
 			assert.ok(Array.isArray(result.content), "content should be an array");
 		});
+
+		it("returns an actionable error instead of calling upstream when PORTKEY_API_KEY is unset", async () => {
+			const { PORTKEY_API_KEY: _apiKey, ...envWithoutApiKey } = process.env;
+			const noKeyTransport = new StdioClientTransport({
+				command: "node",
+				args: ["build/index.js"],
+				env: envWithoutApiKey as Record<string, string>,
+				stderr: "pipe",
+			});
+			const noKeyClient = new Client({
+				name: "no-key-e2e-test-client",
+				version: "1.0.0",
+			});
+
+			try {
+				await noKeyClient.connect(noKeyTransport);
+				const result = await noKeyClient.callTool({
+					name: "list_configs",
+					arguments: {},
+				});
+
+				assert.equal(
+					result.isError,
+					true,
+					"missing credential should set isError: true",
+				);
+				const [first] = result.content as Array<{
+					type: string;
+					text?: string;
+				}>;
+				assert.ok(first && "text" in first, "content item should have text");
+				assert.match(
+					(first as { text: string }).text,
+					/PORTKEY_API_KEY is not configured/,
+				);
+			} finally {
+				await noKeyClient.close();
+			}
+		});
 	});
 });

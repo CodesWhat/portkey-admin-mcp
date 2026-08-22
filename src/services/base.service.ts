@@ -10,6 +10,15 @@ import { Logger } from "../lib/logger.js";
 const DEFAULT_BASE_URL = "https://api.portkey.ai/v1";
 const DEFAULT_PUBLIC_BASE_URL = "https://api.portkey.ai";
 
+/**
+ * Sentinel credential substituted by {@link getSharedPortkeyService} (see
+ * src/services/index.ts) when PORTKEY_API_KEY is unset, so the shared
+ * service can still complete `initialize`/`tools/list` without credentials.
+ * Defined here (rather than in services/index.ts, which imports from this
+ * module) so both files can share one constant without an import cycle.
+ */
+export const MISSING_API_KEY_PLACEHOLDER = "__PORTKEY_API_KEY_NOT_CONFIGURED__";
+
 const PRIVATE_BASE_URL_OVERRIDE_HINT =
 	"Set PORTKEY_ALLOW_PRIVATE_BASE_URL=true to allow self-hosted gateways on loopback or private networks.";
 const INSECURE_HTTP_OVERRIDE_HINT =
@@ -189,6 +198,21 @@ export class BaseService {
 		path: string,
 		options: ExecuteRequestOptions = {},
 	): Promise<T | NoContent> {
+		// The shared service substitutes this placeholder for a missing
+		// PORTKEY_API_KEY so startup (initialize/tools/list) can still
+		// succeed without credentials. Catch it here, on the first
+		// authenticated call, instead of sending it upstream as a real
+		// credential — that would just cost a doomed round-trip and surface
+		// an opaque 401 instead of telling the caller what to fix.
+		if (
+			(options.authenticate ?? true) &&
+			this.apiKey === MISSING_API_KEY_PLACEHOLDER
+		) {
+			throw new Error(
+				"PORTKEY_API_KEY is not configured. Set the PORTKEY_API_KEY environment variable to a valid Portkey Admin API key.",
+			);
+		}
+
 		const requestId = crypto.randomUUID();
 		const url = this.buildUrl(path, options.params, options.baseUrl);
 		const startTime = Date.now();

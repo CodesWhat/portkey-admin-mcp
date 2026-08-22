@@ -5,6 +5,7 @@ import {
 	BaseService,
 	isNoContent,
 	isPrivateOrLocalHost,
+	MISSING_API_KEY_PLACEHOLDER,
 	type NoContent,
 	validateUrl,
 } from "../src/services/base.service.js";
@@ -292,6 +293,24 @@ describe("BaseService HTTP lifecycle", () => {
 		assert.equal(rejection, "socket closed");
 	});
 
+	it("rejects the missing-credential placeholder before making a network call", async () => {
+		const service = new TestBaseService(MISSING_API_KEY_PLACEHOLDER, BASE_URL);
+
+		await assert.rejects(
+			service.read("/resources"),
+			/PORTKEY_API_KEY is not configured\. Set the PORTKEY_API_KEY environment variable to a valid Portkey Admin API key\./,
+		);
+		assert.equal(capturedFetches.length, 0);
+	});
+
+	it("still allows unauthenticated public-catalog reads with the placeholder credential", async () => {
+		const service = new TestBaseService(MISSING_API_KEY_PLACEHOLDER, BASE_URL);
+		await service.readPublic("/model-configs/pricing/openai/gpt-5");
+
+		assert.equal(capturedFetches.length, 1);
+		assert.deepEqual(capturedHeaders(0), { Accept: "application/json" });
+	});
+
 	it("surfaces structured HTTP failures with status and upstream details", async () => {
 		const service = new TestBaseService("test-key", BASE_URL);
 		enqueue(
@@ -422,5 +441,17 @@ describe("PortkeyService lifecycle", () => {
 
 		assert.equal(repeated, first);
 		assert.equal(first.health instanceof HealthService, true);
+	});
+
+	it("gives the first tool call an actionable error instead of sending the placeholder upstream", async () => {
+		delete process.env.PORTKEY_API_KEY;
+		delete process.env.PORTKEY_BASE_URL;
+		const service = getSharedPortkeyService();
+
+		await assert.rejects(
+			service.workspaces.listWorkspaces(),
+			/PORTKEY_API_KEY is not configured\. Set the PORTKEY_API_KEY environment variable to a valid Portkey Admin API key\./,
+		);
+		assert.equal(capturedFetches.length, 0);
 	});
 });
