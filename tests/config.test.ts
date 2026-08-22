@@ -20,6 +20,7 @@ describe("getServerConfig", () => {
 		delete process.env.MCP_HOST;
 		delete process.env.MCP_MAX_SESSIONS;
 		delete process.env.MCP_SESSION_TIMEOUT;
+		delete process.env.MCP_EVENT_STORE_COMMAND_TIMEOUT_MS;
 		delete process.env.MCP_TLS_KEY_PATH;
 		delete process.env.MCP_TLS_CERT_PATH;
 		delete process.env.MCP_TLS_CA_PATH;
@@ -29,6 +30,7 @@ describe("getServerConfig", () => {
 		assert.equal(config.sessionMode, "stateful");
 		assert.equal(config.eventStore.mode, "off");
 		assert.equal(config.eventStore.ttlSeconds, 300);
+		assert.equal(config.eventStore.commandTimeoutMs, 5_000);
 		assert.equal(config.protocol, "http");
 		assert.equal(config.port, 3000);
 		assert.equal(config.host, "127.0.0.1");
@@ -153,6 +155,31 @@ describe("getServerConfig", () => {
 		assert.throws(() => getServerConfig(), /Invalid MCP_MAX_SESSIONS value/);
 	});
 
+	it("allows overriding the event store command timeout", () => {
+		process.env.MCP_EVENT_STORE_COMMAND_TIMEOUT_MS = "2500";
+
+		const config = getServerConfig();
+
+		assert.equal(config.eventStore.commandTimeoutMs, 2_500);
+	});
+
+	it("allows 0 as a sentinel to disable the event store command timeout", () => {
+		process.env.MCP_EVENT_STORE_COMMAND_TIMEOUT_MS = "0";
+
+		const config = getServerConfig();
+
+		assert.equal(config.eventStore.commandTimeoutMs, 0);
+	});
+
+	it("throws on a negative event store command timeout", () => {
+		process.env.MCP_EVENT_STORE_COMMAND_TIMEOUT_MS = "-1";
+
+		assert.throws(
+			() => getServerConfig(),
+			/Invalid MCP_EVENT_STORE_COMMAND_TIMEOUT_MS value/,
+		);
+	});
+
 	it("rejects numeric environment values with trailing characters", () => {
 		const invalidValues = [
 			["PORT", "3000oops", /Invalid PORT value/],
@@ -162,6 +189,11 @@ describe("getServerConfig", () => {
 				"MCP_EVENT_TTL_SECONDS",
 				"60seconds",
 				/Invalid MCP_EVENT_TTL_SECONDS value/,
+			],
+			[
+				"MCP_EVENT_STORE_COMMAND_TIMEOUT_MS",
+				"5000ms",
+				/Invalid MCP_EVENT_STORE_COMMAND_TIMEOUT_MS value/,
 			],
 		] as const;
 

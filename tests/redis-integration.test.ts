@@ -23,7 +23,7 @@ async function redisIsAvailable(): Promise<boolean> {
 	}
 }
 
-test("Redis event store preserves v5 protocol and timeout defaults under node-redis v6", {
+test("Redis event store preserves v5 protocol and applies a bounded default command timeout under node-redis v6", {
 	skip: !(await redisIsAvailable()) && "Redis is unavailable",
 }, async () => {
 	const keyPrefix = `portkey-mcp:test:${randomUUID()}`;
@@ -36,6 +36,7 @@ test("Redis event store preserves v5 protocol and timeout defaults under node-re
 			redisUrl,
 			redisKeyPrefix: keyPrefix,
 			encryptionKey: Buffer.alloc(32, 7),
+			commandTimeoutMs: 5_000,
 		},
 		protocol: "http",
 		port: 3000,
@@ -118,7 +119,7 @@ test("Redis event store preserves v5 protocol and timeout defaults under node-re
 		assert.ok(
 			Object.hasOwn(eventStore.client?.options.commandOptions ?? {}, "timeout"),
 		);
-		assert.equal(eventStore.client?.options.commandOptions?.timeout, undefined);
+		assert.equal(eventStore.client?.options.commandOptions?.timeout, 5_000);
 
 		await eventStore.client?.del([
 			`${keyPrefix}:counter`,

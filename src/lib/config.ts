@@ -17,6 +17,8 @@ export interface ServerConfig {
 		redisUrl?: string;
 		redisKeyPrefix: string;
 		encryptionKey?: Buffer;
+		/** Per-command Redis timeout in ms for the event store (0 disables it) */
+		commandTimeoutMs: number;
 	};
 	/** Protocol for HTTP transport */
 	protocol: "http" | "https";
@@ -136,6 +138,21 @@ export function getServerConfig(): ServerConfig {
 		);
 	}
 
+	const eventStoreCommandTimeoutStr = (
+		process.env.MCP_EVENT_STORE_COMMAND_TIMEOUT_MS || "5000"
+	).trim();
+	const eventStoreCommandTimeoutMs = parseStrictInteger(
+		eventStoreCommandTimeoutStr,
+	);
+	if (
+		Number.isNaN(eventStoreCommandTimeoutMs) ||
+		eventStoreCommandTimeoutMs < 0
+	) {
+		throw new Error(
+			`Invalid MCP_EVENT_STORE_COMMAND_TIMEOUT_MS value: ${eventStoreCommandTimeoutStr}. Must be a non-negative integer (0 disables the timeout)`,
+		);
+	}
+
 	const redisUrl =
 		process.env.MCP_REDIS_URL?.trim() || process.env.REDIS_URL?.trim();
 	if (eventStoreMode === "redis" && !redisUrl) {
@@ -210,6 +227,7 @@ export function getServerConfig(): ServerConfig {
 			redisUrl,
 			redisKeyPrefix,
 			encryptionKey: eventEncryptionKey,
+			commandTimeoutMs: eventStoreCommandTimeoutMs,
 		},
 		protocol,
 		port,
