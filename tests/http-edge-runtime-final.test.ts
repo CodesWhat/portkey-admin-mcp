@@ -432,6 +432,27 @@ describe("final HTTP runtime edge behavior", { concurrency: false }, () => {
 		}
 	});
 
+	it("releases a leaked session reservation after a non-throwing initialize rejection", async () => {
+		// The SDK's transport returns a 406 response (rather than throwing) when
+		// the client's Accept header is missing "text/event-stream". Before the
+		// fix, hasReservedSessionSlot was only released from the catch block
+		// wrapping transport.handleRequest(), so this non-throwing rejection path
+		// leaked the reservation forever and could exhaust MCP_MAX_SESSIONS.
+		await withListeningApp({ MCP_MAX_SESSIONS: "2" }, async ({ baseUrl }) => {
+			for (let attempt = 0; attempt < 2; attempt += 1) {
+				const rejected = await fetch(`${baseUrl}/mcp`, {
+					method: "POST",
+					headers: jsonHeaders({ accept: "application/json" }),
+					body: initializeBody(),
+				});
+				assert.equal(rejected.status, 406);
+			}
+
+			const sessionId = await initializeSession(baseUrl);
+			assert.ok(sessionId);
+		});
+	});
+
 	it("preserves a response already sent by a failing stateless transport", async () => {
 		const originalHandleRequest =
 			StreamableHTTPServerTransport.prototype.handleRequest;
@@ -569,6 +590,267 @@ describe("final HTTP runtime edge behavior", { concurrency: false }, () => {
 			StreamableHTTPServerTransport.prototype.handleRequest =
 				originalHandleRequest;
 			Logger.error = originalLoggerError;
+		}
+	});
+
+	it("reserves stateless replay capacity synchronously before the async lease acquisition", async () => {
+		await withListeningApp(
+			{
+				MCP_EVENT_STORE: "memory",
+				MCP_MAX_SESSIONS: "1",
+				MCP_SESSION_MODE: "stateless",
+			},
+			async ({ baseUrl, runtime }) => {
+				const initResponse = await fetch(`${baseUrl}/mcp`, {
+					method: "POST",
+					headers: jsonHeaders(),
+					body: initializeBody(),
+				});
+				assert.equal(initResponse.status, 200);
+				// The priming SSE event (emitted for clients on protocol >=
+				// 2025-11-25) gives us a real, storable event id to replay from.
+				const primingMatch = (await initResponse.text()).match(/^id: (\S+)/m);
+				assert.ok(primingMatch);
+				const firstEventId = primingMatch[1] as string;
+
+				const prototypeProbe = createManagedEventStore(runtime.config);
+				const directEventStore =
+					prototypeProbe.eventStoreForOwner("prototype-probe");
+				assert.ok(directEventStore);
+				const eventStorePrototype = Object.getPrototypeOf(directEventStore) as {
+					acquireReplayLease: (
+						eventId: string,
+					) => Promise<{ status: string; release?: () => Promise<void> }>;
+					replayEventsAfter: (
+						eventId: string,
+						options: unknown,
+					) => Promise<string>;
+				};
+				const originalAcquire = eventStorePrototype.acquireReplayLease;
+				const originalReplay = eventStorePrototype.replayEventsAfter;
+
+				let releaseGate: (() => void) | undefined;
+				const gate = new Promise<void>((resolve) => {
+					releaseGate = resolve;
+				});
+				let signalEntered: (() => void) | undefined;
+				const entered = new Promise<void>((resolve) => {
+					signalEntered = resolve;
+				});
+				eventStorePrototype.acquireReplayLease = async function (eventId) {
+					// Stand in for the real network round-trip Redis mode performs
+					// here: block until the test explicitly lets this call proceed.
+					signalEntered?.();
+					await gate;
+					return originalAcquire.call(this, eventId);
+				};
+				// The concurrency cap, not replayed content, is under test: fail
+				// fast once the (delayed) lease is granted.
+				eventStorePrototype.replayEventsAfter = async () => {
+					throw new Error("replay content not needed for this test");
+				};
+
+				runtime.setServerReady();
+				try {
+					const firstReplay = fetch(`${baseUrl}/mcp`, {
+						headers: {
+							accept: "text/event-stream",
+							"last-event-id": firstEventId,
+							"mcp-protocol-version": "2025-11-25",
+						},
+					});
+					await entered;
+
+					// The first replay is parked inside acquireReplayLease. With
+					// MCP_MAX_SESSIONS=1, a second concurrent replay must be rejected
+					// by the synchronous capacity check rather than also being
+					// admitted into the same await gap before either has registered.
+					const secondReplay = await fetch(`${baseUrl}/mcp`, {
+						headers: {
+							accept: "text/event-stream",
+							"last-event-id": firstEventId,
+							"mcp-protocol-version": "2025-11-25",
+						},
+						signal: AbortSignal.timeout(5000),
+					});
+					assert.equal(secondReplay.status, 503);
+
+					releaseGate?.();
+					const firstResponse = await firstReplay;
+					assert.equal(firstResponse.status, 200);
+				} finally {
+					eventStorePrototype.acquireReplayLease = originalAcquire;
+					eventStorePrototype.replayEventsAfter = originalReplay;
+				}
+			},
+		);
+	});
+
+	it("acquires and releases the managed replay lease around a stateful GET replay", async () => {
+		const originalHandleRequest =
+			StreamableHTTPServerTransport.prototype.handleRequest;
+		const calls: string[] = [];
+
+		StreamableHTTPServerTransport.prototype.handleRequest = async function (
+			request,
+			response,
+			parsedBody,
+		) {
+			if (request.method === "GET") {
+				calls.push("handleRequest");
+				response.setHeader("content-type", "application/json");
+				response.end("{}");
+				return;
+			}
+			await originalHandleRequest.call(this, request, response, parsedBody);
+		};
+
+		try {
+			await withListeningApp(
+				{ MCP_EVENT_STORE: "memory", MCP_SESSION_MODE: "stateful" },
+				async ({ baseUrl, runtime }) => {
+					const initResponse = await fetch(`${baseUrl}/mcp`, {
+						method: "POST",
+						headers: jsonHeaders(),
+						body: initializeBody(),
+					});
+					assert.equal(initResponse.status, 200);
+					const sessionId = initResponse.headers.get("mcp-session-id");
+					assert.ok(sessionId);
+					const primingMatch = (await initResponse.text()).match(/^id: (\S+)/m);
+					assert.ok(primingMatch);
+					const firstEventId = primingMatch[1] as string;
+
+					const prototypeProbe = createManagedEventStore(runtime.config);
+					const directEventStore =
+						prototypeProbe.eventStoreForOwner("prototype-probe");
+					assert.ok(directEventStore);
+					const eventStorePrototype = Object.getPrototypeOf(
+						directEventStore,
+					) as {
+						acquireReplayLease: (
+							eventId: string,
+						) => Promise<{ status: string; release?: () => Promise<void> }>;
+					};
+					const originalAcquire = eventStorePrototype.acquireReplayLease;
+					eventStorePrototype.acquireReplayLease = async function (eventId) {
+						calls.push(`acquire:${eventId}`);
+						const lease = await originalAcquire.call(this, eventId);
+						if (lease.status !== "acquired" || !lease.release) {
+							return lease;
+						}
+						const originalRelease = lease.release;
+						return {
+							status: "acquired" as const,
+							release: async () => {
+								await originalRelease();
+								calls.push("release");
+							},
+						};
+					};
+
+					try {
+						const replay = await fetch(`${baseUrl}/mcp`, {
+							headers: {
+								accept: "text/event-stream",
+								"last-event-id": firstEventId,
+								"mcp-protocol-version": "2025-11-25",
+								"mcp-session-id": sessionId as string,
+							},
+						});
+						assert.equal(replay.status, 200);
+						assert.deepEqual(calls, [
+							`acquire:${firstEventId}`,
+							"handleRequest",
+							"release",
+						]);
+					} finally {
+						eventStorePrototype.acquireReplayLease = originalAcquire;
+					}
+				},
+			);
+		} finally {
+			StreamableHTTPServerTransport.prototype.handleRequest =
+				originalHandleRequest;
+		}
+	});
+
+	it("rejects a concurrent stateful replay before it reaches transport.handleRequest", async () => {
+		const originalHandleRequest =
+			StreamableHTTPServerTransport.prototype.handleRequest;
+		const calls: string[] = [];
+		StreamableHTTPServerTransport.prototype.handleRequest = async function (
+			request,
+			response,
+			parsedBody,
+		) {
+			if (request.method === "GET") {
+				calls.push("handleRequest");
+			}
+			await originalHandleRequest.call(this, request, response, parsedBody);
+		};
+
+		try {
+			await withListeningApp(
+				{ MCP_EVENT_STORE: "memory", MCP_SESSION_MODE: "stateful" },
+				async ({ baseUrl, runtime }) => {
+					const initResponse = await fetch(`${baseUrl}/mcp`, {
+						method: "POST",
+						headers: jsonHeaders(),
+						body: initializeBody(),
+					});
+					assert.equal(initResponse.status, 200);
+					const sessionId = initResponse.headers.get("mcp-session-id");
+					assert.ok(sessionId);
+					const primingMatch = (await initResponse.text()).match(/^id: (\S+)/m);
+					assert.ok(primingMatch);
+					const firstEventId = primingMatch[1] as string;
+
+					const replayHeaders = {
+						accept: "text/event-stream",
+						"last-event-id": firstEventId,
+						"mcp-protocol-version": "2025-11-25",
+						"mcp-session-id": sessionId as string,
+					};
+
+					// The first replay acquires the per-stream lease and its
+					// transport.handleRequest call opens a long-lived SSE stream that
+					// stays open (this fetch resolves once headers arrive, without
+					// draining the body). While that lease is still held, a second
+					// concurrent replay for the same session + Last-Event-ID must be
+					// rejected by the lease guard before it ever reaches
+					// transport.handleRequest, mirroring the stateless replay guard's
+					// TOCTOU-closing behavior for the stateful path.
+					const firstReplay = await fetch(`${baseUrl}/mcp`, {
+						headers: replayHeaders,
+					});
+					assert.equal(firstReplay.status, 200);
+
+					const conflictingReplay = await fetch(`${baseUrl}/mcp`, {
+						headers: replayHeaders,
+						signal: AbortSignal.timeout(5000),
+					});
+					assert.equal(conflictingReplay.status, 409);
+					assert.match(
+						(
+							(await conflictingReplay.json()) as {
+								error: { message: string };
+							}
+						).error.message,
+						/active replay connection/,
+					);
+					// Only the first replay's GET should have reached the transport;
+					// the rejected second one must never appear here.
+					assert.deepEqual(calls, ["handleRequest"]);
+
+					const closing = runtime.closeHttpApp();
+					await firstReplay.text();
+					await closing;
+				},
+			);
+		} finally {
+			StreamableHTTPServerTransport.prototype.handleRequest =
+				originalHandleRequest;
 		}
 	});
 

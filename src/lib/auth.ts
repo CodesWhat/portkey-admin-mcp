@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import type { NextFunction, Request, Response } from "express";
 import { createRemoteJWKSet, type JWTPayload, jwtVerify } from "jose";
 import { Logger } from "./logger.js";
+import { isMcpRequestPath } from "./security.js";
 
 export type HttpAuthMode = "none" | "bearer" | "clerk";
 
@@ -332,7 +333,10 @@ export async function mcpAuthMiddleware(
 	next: NextFunction,
 ): Promise<void> {
 	// Only protect MCP protocol endpoints; health probes remain unauthenticated.
-	if (!req.path.startsWith("/mcp")) {
+	// Uses the shared canonical matcher so the auth gate, the rate limiters, and
+	// the router agree on exactly which paths are the MCP endpoint (case- and
+	// trailing-slash-insensitive, matching Express 5's default routing).
+	if (!isMcpRequestPath(req.path)) {
 		next();
 		return;
 	}

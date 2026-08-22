@@ -52,9 +52,11 @@ import {
 	getAllowedOrigins,
 	getRateLimitConfig,
 	hostValidationMiddleware,
+	isMcpRequestPath,
 	originValidationMiddleware,
 	principalRateLimitMiddleware,
 	rateLimitMiddleware,
+	validateOrigin,
 } from "./security.js";
 import { SessionStore } from "./session-store.js";
 import { isRecord } from "./type-guards.js";
@@ -921,9 +923,6 @@ function createMcpPostHandler(
 		try {
 			await transport.handleRequest(req, res, req.body);
 		} catch (error) {
-			if (hasReservedSessionSlot) {
-				sessionStore.releaseReservation();
-			}
 			respondJsonRpcInternalError(
 				res,
 				sessionId
@@ -931,6 +930,18 @@ function createMcpPostHandler(
 					: "POST /mcp stateful initialize",
 				error,
 			);
+		} finally {
+			// The SDK's transport returns error responses (406/415/400/...) for a
+			// rejected initialize request instead of throwing, so the catch block
+			// above never fires for those. onsessioninitialized (which flips this
+			// flag off) runs synchronously inside handleRequest before it resolves,
+			// so if the slot is still marked reserved here the initialize was never
+			// completed and the reservation must be released to avoid leaking
+			// session capacity.
+			if (hasReservedSessionSlot) {
+				sessionStore.releaseReservation();
+				hasReservedSessionSlot = false;
+			}
 		}
 	};
 }
@@ -981,146 +992,161 @@ function createMcpGetHandler(deps: McpGetHandlerDeps): express.RequestHandler {
 				);
 				return;
 			}
-			const replayEventStore = managedEventStore.eventStoreForOwner(ownerKey);
-			if (!replayEventStore || !managedEventStore.acquireReplayLease) {
-				res.setHeader("Allow", "POST");
-				respondJsonRpcClientError(
-					res,
-					405,
-					"Stateless GET /mcp replay requires MCP_EVENT_STORE=memory or redis",
-					-32000,
-				);
-				return;
-			}
 
-			const lastEventId = req.headers["last-event-id"];
-			if (typeof lastEventId !== "string" || lastEventId.length === 0) {
-				res.setHeader("Allow", "POST");
-				respondJsonRpcClientError(
-					res,
-					405,
-					"Stateless GET /mcp only supports replay with Last-Event-ID",
-					-32000,
-				);
-				return;
-			}
-			if (!req.headers.accept?.includes("text/event-stream")) {
-				respondJsonRpcClientError(
-					res,
-					406,
-					"Not Acceptable: Client must accept text/event-stream",
-					-32000,
-				);
-				return;
-			}
+			// Reserve the slot synchronously, in the same tick as the capacity
+			// check above, so a concurrent GET can't observe stale capacity while
+			// this request is still awaiting the (network-bound, e.g. Redis)
+			// lease acquisition below. The reservation stays in the set for the
+			// full lifetime of this GET, released in the `finally` at the bottom.
+			let releaseReplaySlot!: () => void;
+			const replaySlot = new Promise<void>((resolve) => {
+				releaseReplaySlot = resolve;
+			});
+			activeReplayOperations.add(replaySlot);
 
-			const protocolError = validateRequiredProtocolVersion(
-				getMcpProtocolVersion(req),
-			);
-			if (protocolError) {
-				respondJsonRpcClientError(res, 400, protocolError, -32000);
-				return;
-			}
 			try {
-				const lease = await managedEventStore.acquireReplayLease(
-					lastEventId,
-					ownerKey,
-				);
-				if (lease.status !== "acquired") {
-					if (lease.status === "missing") {
-						respondJsonRpcClientError(
-							res,
-							400,
-							"Invalid event ID format",
-							-32000,
-						);
-						return;
-					}
+				const replayEventStore = managedEventStore.eventStoreForOwner(ownerKey);
+				if (!replayEventStore || !managedEventStore.acquireReplayLease) {
+					res.setHeader("Allow", "POST");
 					respondJsonRpcClientError(
 						res,
-						409,
-						"Conflict: Stream already has an active replay connection",
+						405,
+						"Stateless GET /mcp replay requires MCP_EVENT_STORE=memory or redis",
 						-32000,
 					);
 					return;
 				}
 
-				const replayOperation = (async () => {
-					try {
-						res.status(200);
-						res.setHeader("Content-Type", "text/event-stream");
-						res.setHeader("Cache-Control", "no-cache, no-transform");
-						res.flushHeaders();
+				const lastEventId = req.headers["last-event-id"];
+				if (typeof lastEventId !== "string" || lastEventId.length === 0) {
+					res.setHeader("Allow", "POST");
+					respondJsonRpcClientError(
+						res,
+						405,
+						"Stateless GET /mcp only supports replay with Last-Event-ID",
+						-32000,
+					);
+					return;
+				}
+				if (!req.headers.accept?.includes("text/event-stream")) {
+					respondJsonRpcClientError(
+						res,
+						406,
+						"Not Acceptable: Client must accept text/event-stream",
+						-32000,
+					);
+					return;
+				}
 
-						let cursor = lastEventId;
-						let finalResponseSeen = false;
-						const deadline = Date.now() + 25_000;
-						while (getIsReady() && !res.destroyed && !finalResponseSeen) {
-							await replayEventStore.replayEventsAfter(cursor, {
-								send: async (eventId, message) => {
-									cursor = eventId;
-									finalResponseSeen =
-										"id" in message &&
-										("result" in message || "error" in message);
-									if (
-										!res.write(
-											`event: message\nid: ${eventId}\ndata: ${JSON.stringify(message)}\n\n`,
-										)
-									) {
-										await waitForResponseWritable(res);
-									}
-								},
-							});
-							if (finalResponseSeen || res.destroyed) {
-								break;
-							}
-							if (Date.now() >= deadline) {
-								// Preserve the cursor across a quiet long-poll reconnect.
-								res.write(`id: ${cursor}\ndata: \n\n`);
-								break;
-							}
-							await new Promise((resolvePoll) => setTimeout(resolvePoll, 100));
-						}
-
-						if (!res.writableEnded && !res.destroyed) {
-							await new Promise<void>((resolveResponse) => {
-								const done = () => resolveResponse();
-								res.once("finish", done);
-								res.once("close", done);
-								res.end();
-							});
-						}
-					} finally {
-						try {
-							await lease.release();
-						} catch (error) {
-							Logger.error("Failed to release stateless replay lease", {
-								metadata: {
-									error: error instanceof Error ? error.message : String(error),
-								},
-							});
-						}
-					}
-				})();
-				activeReplayOperations.add(replayOperation);
+				const protocolError = validateRequiredProtocolVersion(
+					getMcpProtocolVersion(req),
+				);
+				if (protocolError) {
+					respondJsonRpcClientError(res, 400, protocolError, -32000);
+					return;
+				}
 				try {
-					await replayOperation;
-				} finally {
-					activeReplayOperations.delete(replayOperation);
-				}
-			} catch (error) {
-				if (res.headersSent) {
-					Logger.error("GET /mcp stateless replay failed", {
-						metadata: {
-							error: error instanceof Error ? error.message : String(error),
-						},
-					});
-					if (!res.writableEnded) {
-						res.end();
+					const lease = await managedEventStore.acquireReplayLease(
+						lastEventId,
+						ownerKey,
+					);
+					if (lease.status !== "acquired") {
+						if (lease.status === "missing") {
+							respondJsonRpcClientError(
+								res,
+								400,
+								"Invalid event ID format",
+								-32000,
+							);
+							return;
+						}
+						respondJsonRpcClientError(
+							res,
+							409,
+							"Conflict: Stream already has an active replay connection",
+							-32000,
+						);
+						return;
 					}
-				} else {
-					respondJsonRpcInternalError(res, "GET /mcp stateless", error);
+
+					const replayOperation = (async () => {
+						try {
+							res.status(200);
+							res.setHeader("Content-Type", "text/event-stream");
+							res.setHeader("Cache-Control", "no-cache, no-transform");
+							res.flushHeaders();
+
+							let cursor = lastEventId;
+							let finalResponseSeen = false;
+							const deadline = Date.now() + 25_000;
+							while (getIsReady() && !res.destroyed && !finalResponseSeen) {
+								await replayEventStore.replayEventsAfter(cursor, {
+									send: async (eventId, message) => {
+										cursor = eventId;
+										finalResponseSeen =
+											"id" in message &&
+											("result" in message || "error" in message);
+										if (
+											!res.write(
+												`event: message\nid: ${eventId}\ndata: ${JSON.stringify(message)}\n\n`,
+											)
+										) {
+											await waitForResponseWritable(res);
+										}
+									},
+								});
+								if (finalResponseSeen || res.destroyed) {
+									break;
+								}
+								if (Date.now() >= deadline) {
+									// Preserve the cursor across a quiet long-poll reconnect.
+									res.write(`id: ${cursor}\ndata: \n\n`);
+									break;
+								}
+								await new Promise((resolvePoll) =>
+									setTimeout(resolvePoll, 100),
+								);
+							}
+
+							if (!res.writableEnded && !res.destroyed) {
+								await new Promise<void>((resolveResponse) => {
+									const done = () => resolveResponse();
+									res.once("finish", done);
+									res.once("close", done);
+									res.end();
+								});
+							}
+						} finally {
+							try {
+								await lease.release();
+							} catch (error) {
+								Logger.error("Failed to release stateless replay lease", {
+									metadata: {
+										error:
+											error instanceof Error ? error.message : String(error),
+									},
+								});
+							}
+						}
+					})();
+					await replayOperation;
+				} catch (error) {
+					if (res.headersSent) {
+						Logger.error("GET /mcp stateless replay failed", {
+							metadata: {
+								error: error instanceof Error ? error.message : String(error),
+							},
+						});
+						if (!res.writableEnded) {
+							res.end();
+						}
+					} else {
+						respondJsonRpcInternalError(res, "GET /mcp stateless", error);
+					}
 				}
+			} finally {
+				activeReplayOperations.delete(replaySlot);
+				releaseReplaySlot();
 			}
 			return;
 		}
@@ -1167,6 +1193,59 @@ function createMcpGetHandler(deps: McpGetHandlerDeps): express.RequestHandler {
 				return;
 			}
 			sessionStore.touch(sessionId);
+
+			// Mirror the stateless replay guard: the SDK's replayEvents() checks
+			// _streamMapping for an existing stream BEFORE awaiting
+			// getStreamIdForEventId()/replayEventsAfter(), and only registers the
+			// new mapping afterward, which is an unguarded TOCTOU inside the SDK.
+			// Acquiring the same per-stream lease the stateless path uses here
+			// serializes replay attempts for this event id before the SDK's own
+			// racy check ever runs, since a losing concurrent request now gets
+			// rejected below instead of reaching transport.handleRequest at all.
+			const lastEventId = req.headers["last-event-id"];
+			if (
+				typeof lastEventId === "string" &&
+				lastEventId.length > 0 &&
+				managedEventStore.acquireReplayLease
+			) {
+				const lease = await managedEventStore.acquireReplayLease(
+					lastEventId,
+					ownerKey,
+				);
+				if (lease.status !== "acquired") {
+					if (lease.status === "missing") {
+						respondJsonRpcClientError(
+							res,
+							400,
+							"Invalid event ID format",
+							-32000,
+						);
+						return;
+					}
+					respondJsonRpcClientError(
+						res,
+						409,
+						"Conflict: Stream already has an active replay connection",
+						-32000,
+					);
+					return;
+				}
+				try {
+					await transport.handleRequest(req, res);
+				} finally {
+					try {
+						await lease.release();
+					} catch (error) {
+						Logger.error("Failed to release stateful replay lease", {
+							metadata: {
+								error: error instanceof Error ? error.message : String(error),
+							},
+						});
+					}
+				}
+				return;
+			}
+
 			await transport.handleRequest(req, res);
 		} else {
 			res.status(404).json({
@@ -1260,11 +1339,14 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 	const readyCheckMode = getReadyCheckMode();
 	const requestBodyLimit = process.env.MCP_MAX_REQUEST_SIZE?.trim() || "1mb";
 	const allowedOrigins = getAllowedOrigins();
-	const corsOriginConfig: cors.CorsOptions["origin"] = allowedOrigins.includes(
-		"*",
-	)
-		? true
-		: allowedOrigins;
+	// Reuse the same matcher the 403 origin gate (originValidationMiddleware)
+	// uses, so CORS emits Access-Control-Allow-Origin for exactly the origins
+	// the gate accepts, including its any-port semantics for a portless
+	// allow-list entry, which the `cors` package's own exact-string matching
+	// does not understand.
+	const corsOriginConfig: cors.CorsOptions["origin"] = (origin, callback) => {
+		callback(null, validateOrigin(origin));
+	};
 	if (allowedOrigins.includes("*") && authConfig.mode === "none") {
 		Logger.warn(
 			"CORS wildcard (ALLOWED_ORIGINS=*) combined with MCP_AUTH_MODE=none: all origins are accepted with no authentication. Do not expose this server publicly.",
@@ -1312,7 +1394,6 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 				: false,
 		}),
 	);
-	app.use(express.json({ limit: requestBodyLimit }));
 	// In unauthenticated (none) mode there is no bearer/JWT gate, so validate the
 	// Host header to block DNS-rebinding against local deployments. Authenticated
 	// modes rely on the token and skip this to avoid rejecting proxied Host headers.
@@ -1328,13 +1409,22 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 			standardHeaders: false,
 			legacyHeaders: false,
 			validate: false,
-			skip: (req) => !rateLimitConfig.enabled || req.path !== "/mcp",
+			skip: (req) => !rateLimitConfig.enabled || !isMcpRequestPath(req.path),
 			message: { error: "Too Many Requests" },
 		}),
 	);
 	app.use(rateLimitMiddleware);
 	app.use(mcpAuthMiddleware);
 	app.use(principalRateLimitMiddleware);
+
+	// Body parsing runs only after host/origin validation, both rate limiters,
+	// and auth. Registering it earlier let a malformed/oversized body trip the
+	// parser's error path, which Express routes straight to the error handler
+	// below, skipping every non-error middleware in between, including both
+	// rate limiters, so a request could evade rate limiting just by sending a
+	// broken body. None of the middleware between here and the /mcp route
+	// handlers reads req.body.
+	app.use(express.json({ limit: requestBodyLimit }));
 
 	// Parse/body-size errors need a controlled JSON response in HTTP mode.
 	app.use(

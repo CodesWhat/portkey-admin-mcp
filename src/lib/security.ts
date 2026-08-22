@@ -144,7 +144,7 @@ export function originValidationMiddleware(
 	next: NextFunction,
 ): void {
 	// Skip for health/ready endpoints
-	if (req.path === "/health" || req.path === "/ready") {
+	if (isHealthOrReadyPath(req.path)) {
 		next();
 		return;
 	}
@@ -175,7 +175,7 @@ export function hostValidationMiddleware(
 	res: Response,
 	next: NextFunction,
 ): void {
-	if (req.path === "/health" || req.path === "/ready") {
+	if (isHealthOrReadyPath(req.path)) {
 		next();
 		return;
 	}
@@ -192,6 +192,48 @@ export function hostValidationMiddleware(
 	}
 
 	next();
+}
+
+// ============================================================================
+// MCP Route Path Matching
+// ============================================================================
+
+/**
+ * Lower-cases a request path and strips a single trailing slash, matching how
+ * Express's default (non-strict, case-insensitive) router canonicalizes a path
+ * before dispatch. The route-matching predicates below compare against this so
+ * they stay in sync with the router instead of using exact string equality,
+ * which misses the trailing-slash and case forms Express routes to the same
+ * handler.
+ */
+function canonicalizeRequestPath(path: string): string {
+	const normalized = path.toLowerCase();
+	return normalized.length > 1 && normalized.endsWith("/")
+		? normalized.slice(0, -1)
+		: normalized;
+}
+
+/**
+ * Matches the set of request paths Express dispatches to the `/mcp` route
+ * handlers: "/mcp", "/mcp/", and any case variant of either. Used by both
+ * rate-limit skip predicates and the auth gate so they stay in sync with the
+ * router's actual matching behavior.
+ */
+export function isMcpRequestPath(path: string): boolean {
+	return canonicalizeRequestPath(path) === "/mcp";
+}
+
+/**
+ * Matches the health and readiness probe paths the same way isMcpRequestPath
+ * matches the MCP route: case-insensitive and tolerant of a single trailing
+ * slash, so the origin/host/rate-limit skips stay in sync with Express's
+ * default router, which dispatches "/health/" and "/HEALTH" to the same
+ * handler. Exact-string comparison would let those forms fall through into
+ * validation and rate limiting, causing spurious probe failures.
+ */
+export function isHealthOrReadyPath(path: string): boolean {
+	const canonical = canonicalizeRequestPath(path);
+	return canonical === "/health" || canonical === "/ready";
 }
 
 // ============================================================================
@@ -601,11 +643,11 @@ function applyRateLimit(
 	}
 
 	// Skip for health/ready endpoints
-	if (req.path === "/health" || req.path === "/ready") {
+	if (isHealthOrReadyPath(req.path)) {
 		next();
 		return;
 	}
-	if (scope === "authentication" && req.path !== "/mcp") {
+	if (scope === "authentication" && !isMcpRequestPath(req.path)) {
 		next();
 		return;
 	}
