@@ -35,13 +35,10 @@ jobs:
       # ci.yml's dependency-review job declares this; it skips on release runs
       # but the grant keeps the workflow_call permission check satisfied.
       pull-requests: read
-      # ci.yml's checks job declares id-token: write for its Qlty coverage
-      # upload (OIDC). GitHub validates a reusable workflow's requested
-      # permissions against the caller's grant at startup, before per-step `if`
-      # conditions are evaluated, so the caller must grant this even though the
-      # upload step is skipped on the release (workflow_call) path. Without it
-      # the whole Release run fails to start.
-      id-token: write
+      # No id-token here: ci.yml's reusable jobs (checks, actionlint) request no
+      # id-token, so the release gate doesn't need to grant it. The OIDC-bearing
+      # Qlty coverage job lives outside the reusable path and only runs on
+      # push/PR. See issue #60.
     secrets:
       PORTKEY_API_KEY_STAGING: ${{ secrets.PORTKEY_API_KEY_STAGING }}
 

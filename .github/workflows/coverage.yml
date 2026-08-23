@@ -1,0 +1,58 @@
+name: Coverage
+
+# Publishes test coverage to Qlty. Deliberately separate from ci.yml: it needs
+# id-token (OIDC) for Qlty's trusted upload, and ci.yml is reused by release.yml
+# via workflow_call, where reusable-workflow permission validation is a single
+# whole-workflow preflight — any id-token request inside ci.yml would be checked
+# against (and exceed) the release caller's grant and reject the whole Release
+# run at startup. Keeping the OIDC-bearing job in its own workflow that
+# release.yml never calls removes that coupling entirely. See issue #60.
+#
+# The OpenSSF Silver 80% line-coverage gate is enforced by ci.yml's required
+# `checks` job (npm run test:coverage:qlty); this workflow only uploads the
+# report, so a Qlty outage can never fail a required check.
+
+on:
+  push:
+    branches:
+      - main
+      - "codex/**"
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: coverage-${{ github.event_name }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  qlty:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Tests with coverage
+        run: npm run test:coverage:qlty
+
+      - name: Upload coverage to Qlty
+        uses: qltysh/qlty-action/coverage@08a0a862c159eae9b9003081da6663d96efef637 # v2.3.0
+        with:
+          oidc: true
+          files: coverage/lcov.info
