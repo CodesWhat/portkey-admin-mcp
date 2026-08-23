@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.1] - 2026-08-23
+
+Maintenance release: documentation, CI, and dependencies. No source changes, so tool inventory is unchanged at 171 and `tools/list` output is byte-identical to 0.10.0. Nothing about server behavior changes; no client needs to re-sync.
+
+### Changed
+
+- Reflow the README into the codified Product shape: a header stack (logo, title, one-line grabber, three-row badge wall), emoji removed throughout, and deep reference tables moved into collapsible `<details>` sections. Content is reorganized, not rewritten.
+- Move the Qlty coverage upload out of the reusable `ci.yml` into a standalone `coverage.yml`. The release workflow gates on `ci.yml` through `workflow_call`, and GitHub validates a reused workflow's requested permissions against the caller's grant in a single startup preflight, before any per-job condition. A coverage job's OIDC `id-token` request inside `ci.yml` therefore rejected the whole release run at startup once, silently. Keeping the OIDC-bearing job outside the reusable boundary removes that coupling. The 80% line-coverage gate stays enforced on the required CI check.
+- Update dependencies: non-major npm packages, Node.js to 24.19.0 in the Dockerfile, and non-major GitHub Actions. Lockfile refreshed.
+
+### Added
+
+- `AGENTS.md`, noting that `greptile.json` keeps Greptile on-demand: it reviews a pull request only when the `second-opinion` label is applied, while CodeRabbit reviews every PR automatically.
+- `greptile.yml`, a label-triggered workflow that summons Greptile for a second-opinion review.
+- A Community section in the README routing questions to Issues and Discussions.
+
 ## [0.10.0] - 2026-08-22
 
 Security and correctness release from a multi-agent whole-application review, weighted to the streamable-HTTP transport. Tool inventory is unchanged at 171 and `tools/list` output is byte-identical to 0.9.0, so no client needs to re-sync schemas. The stdio transport most people use is unaffected except for a clearer error when `PORTKEY_API_KEY` is missing. Everything below was independently verified against the code before shipping; the review also found the rate-limiter overflow-bucket behaviour and per-session tool registration were already correct and left them alone.
@@ -519,7 +535,9 @@ First stable release. Graduates from beta with 151 tools covering ~98% of the Po
 - Vercel deployment support
 - Contract tests, E2E tests, security tests
 
-[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.10.1...HEAD
+[0.10.1]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.10.0...v0.10.1
+[0.10.0]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.6.3...v0.7.0
