@@ -1,7 +1,7 @@
 {
 	"identifier": "codeswhat-portkey-admin-mcp",
 	"name": "Portkey Admin MCP Server",
-	"version": "0.10.0",
+	"version": "0.10.1",
 	"description": "Portkey Admin API MCP server with current control-plane coverage, 171 tools, and Prisma AIRS interoperability guidance.",
 	"author": "CodesWhat",
 	"authorUrl": "https://github.com/CodesWhat",

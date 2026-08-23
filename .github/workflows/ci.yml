@@ -71,9 +71,15 @@ jobs:
   checks:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # No id-token here. Reusable-workflow permission validation is a single
+    # whole-workflow preflight: release.yml gates on this file via
+    # workflow_call, and if ANY job in ci.yml requested a permission the release
+    # caller didn't grant, the entire Release run is rejected at startup (zero
+    # jobs, no logs) — the silent failure issue #60 exists to prevent. The Qlty
+    # coverage upload needs OIDC (id-token), so it lives entirely outside this
+    # file, in coverage.yml, which release.yml never calls.
     permissions:
       contents: read
-      id-token: write
     services:
       redis:
         image: redis:8.8-alpine@sha256:8096655e437712b07503796fb64d81359256cfcff0ab29d95a7da72863786efb
@@ -113,14 +119,11 @@ jobs:
         run: npm run typecheck:tests
 
       - name: Unit tests
+        # Enforces the OpenSSF Silver 80% line-coverage gate. The lcov report it
+        # produces is uploaded to Qlty by the separate coverage.yml workflow, not
+        # here — see issue #60 for why coverage publishing lives outside the
+        # reusable CI that release.yml gates on.
         run: npm run test:coverage:qlty
-
-      - name: Upload coverage to Qlty
-        if: github.event_name == 'push' || github.event_name == 'pull_request'
-        uses: qltysh/qlty-action/coverage@08a0a862c159eae9b9003081da6663d96efef637 # v2.3.0
-        with:
-          oidc: true
-          files: coverage/lcov.info
 
       - name: Redis event-store integration
         env:
