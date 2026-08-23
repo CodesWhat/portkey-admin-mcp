@@ -10,19 +10,23 @@
 
 <p align="center">
   <a href="https://www.npmjs.com/package/portkey-admin-mcp"><img src="https://img.shields.io/npm/v/portkey-admin-mcp.svg" alt="npm version"></a>
-  <a href="https://www.npmjs.com/package/portkey-admin-mcp"><img src="https://img.shields.io/npm/dm/portkey-admin-mcp.svg" alt="npm downloads"></a>
   <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/node-%3E%3D24-brightgreen.svg" alt="Node.js"></a>
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
-  <br>
-  <a href="https://github.com/CodesWhat/portkey-admin-mcp/actions/workflows/ci.yml"><img src="https://github.com/CodesWhat/portkey-admin-mcp/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="https://securityscorecards.dev/viewer/?uri=github.com/CodesWhat/portkey-admin-mcp"><img src="https://img.shields.io/ossf-scorecard/github.com/CodesWhat/portkey-admin-mcp?label=openssf+scorecard&style=flat" alt="OpenSSF Scorecard"></a>
-  <a href="https://www.bestpractices.dev/projects/14031"><img src="https://www.bestpractices.dev/projects/14031/badge" alt="OpenSSF Best Practices"></a>
-  <a href="https://github.com/punkpeye/awesome-mcp-servers"><img src="https://awesome.re/mentioned-badge.svg" alt="Mentioned in Awesome MCP Servers"></a>
-  <a href="https://lobehub.com/mcp/codeswhat-portkey-admin-mcp"><img src="https://lobehub.com/badge/mcp/codeswhat-portkey-admin-mcp" alt="LobeHub MCP"></a>
 </p>
 
 <p align="center">
-  <a href="https://glama.ai/mcp/servers/CodesWhat/portkey-admin-mcp"><img src="https://glama.ai/mcp/servers/CodesWhat/portkey-admin-mcp/badges/card.svg" alt="portkey-admin-mcp MCP server"></a>
+  <a href="https://github.com/CodesWhat/portkey-admin-mcp/actions/workflows/ci.yml"><img src="https://github.com/CodesWhat/portkey-admin-mcp/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://securityscorecards.dev/viewer/?uri=github.com/CodesWhat/portkey-admin-mcp"><img src="https://img.shields.io/ossf-scorecard/github.com/CodesWhat/portkey-admin-mcp?label=openssf+scorecard&style=flat" alt="OpenSSF Scorecard"></a>
+  <a href="https://www.bestpractices.dev/projects/14031"><img src="https://www.bestpractices.dev/projects/14031/badge" alt="OpenSSF Best Practices"></a>
+  <a href="https://qlty.sh/gh/CodesWhat/projects/portkey-admin-mcp"><img src="https://qlty.sh/gh/CodesWhat/projects/portkey-admin-mcp/maintainability.svg" alt="Maintainability"></a>
+  <a href="https://qlty.sh/gh/CodesWhat/projects/portkey-admin-mcp"><img src="https://qlty.sh/gh/CodesWhat/projects/portkey-admin-mcp/coverage.svg" alt="Code Coverage"></a>
+</p>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/portkey-admin-mcp"><img src="https://img.shields.io/npm/dm/portkey-admin-mcp.svg" alt="npm downloads"></a>
+  <a href="https://github.com/punkpeye/awesome-mcp-servers"><img src="https://awesome.re/mentioned-badge.svg" alt="Mentioned in Awesome MCP Servers"></a>
+  <a href="https://registry.modelcontextprotocol.io/v0/servers?search=io.github.CodesWhat/portkey-admin-mcp"><img src="https://img.shields.io/badge/MCP-Registry-blue" alt="MCP Registry"></a>
+  <a href="https://github.com/sponsors/CodesWhat"><img src="https://img.shields.io/badge/Sponsor-ea4aaa?logo=githubsponsors&logoColor=white" alt="Sponsor"></a>
 </p>
 
 <hr>
@@ -30,24 +34,25 @@
 > [!IMPORTANT]
 > **Active compatibility development.** Palo Alto Networks completed its Portkey acquisition on 2026‑05‑29 and now presents Portkey as the core of Prisma AIRS AI Gateway. The Portkey Admin API remains live, and its official OpenAPI and product changelog continued adding control-plane surfaces through August 2026; this project has therefore resumed API-coverage work. It targets the Portkey-compatible API (`x-portkey-api-key`), not Prisma AIRS/Strata Cloud Manager directly. Prisma AIRS AI Gateway currently has a different management and authentication surface, so it is not a `PORTKEY_BASE_URL` swap. See the short [Prisma AIRS interoperability guide](./docs/PRISMA_AIRS_INTEROPERABILITY.md) for the supported side-by-side model and adapter criteria.
 
-<h2 align="center">📑 Contents</h2>
+<h2 align="center">Contents</h2>
 
-- [🚀 Quick Start](#quick-start)
-- [🧰 What You Can Do](#what-you-can-do)
-- [🔑 API Key Scopes](#api-key-scopes)
-- [🌐 HTTP Server (Experimental)](#http-server)
-- [🏗️ Architecture](./docs/ARCHITECTURE.md)
-- [🔄 Prisma AIRS interoperability](./docs/PRISMA_AIRS_INTEROPERABILITY.md)
-- [🔏 Verify a release](./docs/VERIFY_RELEASE.md)
-- [🛠️ Development](#development)
-- [🤝 Contributing](./CONTRIBUTING.md)
-- [🏛️ Governance](./GOVERNANCE.md)
-- [🛡️ Security assurance](./SECURITY-ASSURANCE.md)
-- [🧾 Full tool list — ENDPOINTS.md](./ENDPOINTS.md)
+- [Quick Start](#quick-start)
+- [What You Can Do](#what-you-can-do)
+- [API Key Scopes](#api-key-scopes)
+- [HTTP Server (Experimental)](#http-server)
+- [Architecture](./docs/ARCHITECTURE.md)
+- [Prisma AIRS interoperability](./docs/PRISMA_AIRS_INTEROPERABILITY.md)
+- [Verify a release](./docs/VERIFY_RELEASE.md)
+- [Development](#development)
+- [Community](#community)
+- [Contributing](./CONTRIBUTING.md)
+- [Governance](./GOVERNANCE.md)
+- [Security assurance](./SECURITY-ASSURANCE.md)
+- [Full tool list — ENDPOINTS.md](./ENDPOINTS.md)
 
 <hr>
 
-<h2 align="center" id="quick-start">🚀 Quick Start</h2>
+<h2 align="center" id="quick-start">Quick Start</h2>
 
 You need a **Portkey API key** with appropriate scopes. Get one from your [Portkey dashboard](https://app.portkey.ai/) under API Keys.
 
@@ -122,7 +127,7 @@ Then use this config:
 
 <hr>
 
-<h2 align="center" id="what-you-can-do">🧰 What You Can Do</h2>
+<h2 align="center" id="what-you-can-do">What You Can Do</h2>
 
 | Category | Tools | Examples |
 |----------|-------|---------|
@@ -151,9 +156,14 @@ Then use this config:
 
 <hr>
 
-<h2 align="center" id="api-key-scopes">🔑 API Key Scopes</h2>
+<h2 align="center" id="api-key-scopes">API Key Scopes</h2>
 
 Most tools work with a **workspace-scoped service key** that has Select All permissions enabled. That covers prompts, configs, virtual/API keys, providers, guardrails, workspace integrations, MCP servers, rate/usage limits, logs, prompt completions, and workspace user management.
+
+If a tool returns a `403` with Portkey error `AB03`, it means missing scopes — not a broken endpoint.
+
+<details>
+<summary><strong>Enterprise-gated tools and other scope requirements</strong></summary>
 
 ### Enterprise-gated tools (40)
 
@@ -175,11 +185,11 @@ The following tools require an **organisation-level scope that is only available
 | Prompt completions (`run_prompt_completion`) | `completions.write` scope + billing metadata (`app`, `env`) |
 | Org-level service API key creation via `create_api_key` | `organisation_service_api_keys.create` (Enterprise) |
 
-If a tool returns a `403` with Portkey error `AB03`, it means missing scopes — not a broken endpoint.
+</details>
 
 <hr>
 
-<h2 align="center" id="http-server">🌐 HTTP Server (Experimental)</h2>
+<h2 align="center" id="http-server">HTTP Server (Experimental)</h2>
 
 > **Status**: The HTTP transport works locally and is covered by the integration test suite, but it is a proof of concept — there is **no hosted version** of this server, and hosted deployment is not currently a goal. Use stdio (npx) as the supported transport.
 
@@ -203,7 +213,8 @@ PORTKEY_API_KEY=your_key MCP_AUTH_MODE=bearer MCP_AUTH_TOKEN=your_secret \
 
 For local-only HTTP use, leave `MCP_HOST` at its default `127.0.0.1`. Set `MCP_HOST=0.0.0.0` only when you intentionally need to accept connections from outside the local machine, such as Docker or a reverse proxy on another interface.
 
-### Configuration
+<details>
+<summary><strong>Full environment variable reference</strong></summary>
 
 | Variable | Default | Description |
 |----------|---------|-------------|
@@ -242,6 +253,8 @@ For local-only HTTP use, leave `MCP_HOST` at its default `127.0.0.1`. Set `MCP_H
 Production containers must choose their rate-limit topology explicitly: set
 `RATE_LIMIT_STORE=redis` for multi-instance deployments, or set
 `RATE_LIMIT_SINGLE_PROCESS=true` only for a single long-lived process.
+
+</details>
 
 <details>
 <summary><strong>Vercel deployment</strong></summary>
@@ -285,7 +298,7 @@ docker run \
 
 <hr>
 
-<h2 align="center" id="development">🛠️ Development</h2>
+<h2 align="center" id="development">Development</h2>
 
 ```bash
 npm run dev           # stdio with hot reload
@@ -308,6 +321,12 @@ Contributions use pull requests and the checks documented in
 documented in [`GOVERNANCE.md`](GOVERNANCE.md). Report vulnerabilities through
 [`SECURITY.md`](SECURITY.md), and see [`SECURITY-ASSURANCE.md`](SECURITY-ASSURANCE.md)
 for the public threat model and assurance case.
+
+<hr>
+
+<h2 align="center" id="community">Community</h2>
+
+Questions and bug reports belong in [Issues](https://github.com/CodesWhat/portkey-admin-mcp/issues); broader discussion, ideas, and help using the server belong in [Discussions](https://github.com/CodesWhat/portkey-admin-mcp/discussions).
 
 ---
 
@@ -336,7 +355,11 @@ for the public threat model and assurance case.
   </picture>
 </a>
 
-[![Sponsor](https://img.shields.io/badge/Sponsor-ea4aaa?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/CodesWhat)
+Also listed on [LobeHub](https://lobehub.com/mcp/codeswhat-portkey-admin-mcp) and [Glama](https://glama.ai/mcp/servers/CodesWhat/portkey-admin-mcp):
+
+[![LobeHub MCP](https://lobehub.com/badge/mcp/codeswhat-portkey-admin-mcp)](https://lobehub.com/mcp/codeswhat-portkey-admin-mcp)
+
+<a href="https://glama.ai/mcp/servers/CodesWhat/portkey-admin-mcp"><img src="https://glama.ai/mcp/servers/CodesWhat/portkey-admin-mcp/badges/card.svg" alt="portkey-admin-mcp MCP server"></a>
 
 <a href="#portkey-admin-mcp-server">Back to top</a>
 
