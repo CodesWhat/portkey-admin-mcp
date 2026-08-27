@@ -13,11 +13,11 @@ provenance attestations:
 
 ```bash
 npm init -y
-npm install --ignore-scripts --save-exact portkey-admin-mcp@0.9.0
+npm install --ignore-scripts --save-exact portkey-admin-mcp@0.10.1
 npm audit signatures
 ```
 
-Replace `0.9.0` with the intended version. A successful audit reports verified
+Replace `0.10.1` with the intended version. A successful audit reports verified
 registry signatures and provenance for the installed dependency tree. Treat a
 missing or invalid signature or attestation as a failed verification and do not
 run that installation.
@@ -38,10 +38,12 @@ Release source archives are byte-for-byte identical to the npm tarball.
 
 Confirm that the selected version agrees across these public records:
 
-- the package version shown by `npm view portkey-admin-mcp@0.9.0 version`;
-- the matching `v0.9.0` tag and GitHub Release; and
+- the package version shown by `npm view portkey-admin-mcp@0.10.1 version`;
+- the matching `v0.10.1` tag and GitHub Release; and
 - the version in `package.json` and `server.json` at that tag.
 
-The release workflow checks these version relationships before publication.
+Before publication, the release workflow checks these version relationships,
+installs its exact packed archive into a fresh prefix, verifies both executable
+links, initializes stdio, and starts the HTTP executable on loopback.
 See [the release process](./RELEASE.md) for the maintainer workflow and failure
 handling.

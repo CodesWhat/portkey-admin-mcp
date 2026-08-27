@@ -2,7 +2,7 @@
 	"identifier": "codeswhat-portkey-admin-mcp",
 	"name": "Portkey Admin MCP Server",
 	"version": "0.10.1",
-	"description": "Portkey Admin API MCP server with current control-plane coverage, 171 tools, and Prisma AIRS interoperability guidance.",
+	"description": "Portkey Admin API MCP server with current control-plane coverage, 178 tools, and Prisma AIRS interoperability guidance.",
 	"author": "CodesWhat",
 	"authorUrl": "https://github.com/CodesWhat",
 	"category": "development",
@@ -59,14 +59,25 @@
 					"current_page": {
 						"description": "Page number for pagination",
 						"type": "integer",
-						"exclusiveMinimum": 0,
+						"minimum": 0,
 						"maximum": 9007199254740991
 					},
 					"page_size": {
 						"description": "Number of results per page (max 100)",
 						"type": "integer",
-						"exclusiveMinimum": 0,
+						"minimum": 0,
 						"maximum": 100
+					},
+					"role": {
+						"description": "Filter by organisation role",
+						"type": "string",
+						"enum": ["admin", "member", "owner"]
+					},
+					"email": {
+						"description": "Filter by exact email",
+						"type": "string",
+						"format": "email",
+						"pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
 					}
 				},
 				"$schema": "http://json-schema.org/draft-07/schema#"
@@ -317,6 +328,22 @@
 						"type": "integer",
 						"exclusiveMinimum": 0,
 						"maximum": 100
+					},
+					"role": {
+						"description": "Filter invitations by organisation role",
+						"type": "string",
+						"enum": ["admin", "member"]
+					},
+					"email": {
+						"description": "Filter by invited email",
+						"type": "string",
+						"format": "email",
+						"pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+					},
+					"status": {
+						"description": "Filter invitations by lifecycle status",
+						"type": "string",
+						"enum": ["pending", "cancelled", "accepted", "expired"]
 					}
 				},
 				"$schema": "http://json-schema.org/draft-07/schema#"
@@ -540,8 +567,21 @@
 					"current_page": {
 						"description": "Page number to retrieve when results are paginated",
 						"type": "integer",
-						"exclusiveMinimum": 0,
+						"minimum": 0,
 						"maximum": 9007199254740991
+					},
+					"name": {
+						"description": "Case-sensitive name filter",
+						"type": "string"
+					},
+					"exact_name": {
+						"description": "Exact workspace name filter",
+						"type": "string"
+					},
+					"status": {
+						"description": "Filter by workspace lifecycle status",
+						"type": "string",
+						"enum": ["active", "archived"]
 					}
 				},
 				"$schema": "http://json-schema.org/draft-07/schema#"
@@ -605,6 +645,98 @@
 						"additionalProperties": {
 							"type": "string"
 						}
+					},
+					"users": {
+						"description": "Existing user IDs to add",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"usage_limits": {
+						"description": "Initial workspace usage-limit settings",
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"credit_limit": {
+									"description": "Maximum cost or token usage for the workspace",
+									"type": "number",
+									"exclusiveMinimum": 0
+								},
+								"type": {
+									"description": "Whether the limit measures cost or tokens",
+									"type": "string",
+									"enum": ["cost", "tokens"]
+								},
+								"alert_threshold": {
+									"description": "Percentage of the limit that triggers an alert",
+									"type": "number",
+									"exclusiveMinimum": 0
+								},
+								"periodic_reset": {
+									"description": "Built-in weekly or monthly reset cadence",
+									"anyOf": [
+										{
+											"type": "string",
+											"enum": ["monthly", "weekly"]
+										},
+										{
+											"type": "null"
+										}
+									]
+								},
+								"periodic_reset_days": {
+									"description": "Custom reset cadence in days, from 1 through 365",
+									"anyOf": [
+										{
+											"type": "integer",
+											"minimum": 1,
+											"maximum": 365
+										},
+										{
+											"type": "null"
+										}
+									]
+								},
+								"next_usage_reset_at": {
+									"description": "Next reset timestamp in ISO 8601 format",
+									"anyOf": [
+										{
+											"type": "string"
+										},
+										{
+											"type": "null"
+										}
+									]
+								}
+							}
+						}
+					},
+					"rate_limits": {
+						"description": "Initial workspace rate-limit settings",
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"type": {
+									"description": "Whether the limit counts requests or tokens",
+									"type": "string",
+									"enum": ["requests", "tokens"]
+								},
+								"unit": {
+									"description": "Rate window: requests per day, hour, or minute",
+									"type": "string",
+									"enum": ["rpd", "rph", "rpm"]
+								},
+								"value": {
+									"description": "Maximum count in the selected rate window",
+									"type": "integer",
+									"minimum": 0,
+									"maximum": 9007199254740991
+								}
+							}
+						}
 					}
 				},
 				"required": ["name"],
@@ -651,6 +783,116 @@
 						},
 						"additionalProperties": {
 							"type": "string"
+						}
+					},
+					"input_guardrails": {
+						"description": "Guardrail IDs applied to workspace model inputs",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"output_guardrails": {
+						"description": "Guardrail IDs applied to workspace model outputs",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"user_api_key_config": {
+						"description": "Default config slug for workspace-user API keys, or null to clear",
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"usage_limits": {
+						"description": "Replacement workspace usage-limit settings",
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"credit_limit": {
+									"description": "Maximum cost or token usage for the workspace",
+									"type": "number",
+									"exclusiveMinimum": 0
+								},
+								"type": {
+									"description": "Whether the limit measures cost or tokens",
+									"type": "string",
+									"enum": ["cost", "tokens"]
+								},
+								"alert_threshold": {
+									"description": "Percentage of the limit that triggers an alert",
+									"type": "number",
+									"exclusiveMinimum": 0
+								},
+								"periodic_reset": {
+									"description": "Built-in weekly or monthly reset cadence",
+									"anyOf": [
+										{
+											"type": "string",
+											"enum": ["monthly", "weekly"]
+										},
+										{
+											"type": "null"
+										}
+									]
+								},
+								"periodic_reset_days": {
+									"description": "Custom reset cadence in days, from 1 through 365",
+									"anyOf": [
+										{
+											"type": "integer",
+											"minimum": 1,
+											"maximum": 365
+										},
+										{
+											"type": "null"
+										}
+									]
+								},
+								"next_usage_reset_at": {
+									"description": "Next reset timestamp in ISO 8601 format",
+									"anyOf": [
+										{
+											"type": "string"
+										},
+										{
+											"type": "null"
+										}
+									]
+								}
+							}
+						}
+					},
+					"rate_limits": {
+						"description": "Replacement workspace rate-limit settings",
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"type": {
+									"description": "Whether the limit counts requests or tokens",
+									"type": "string",
+									"enum": ["requests", "tokens"]
+								},
+								"unit": {
+									"description": "Rate window: requests per day, hour, or minute",
+									"type": "string",
+									"enum": ["rpd", "rph", "rpm"]
+								},
+								"value": {
+									"description": "Maximum count in the selected rate window",
+									"type": "integer",
+									"minimum": 0,
+									"maximum": 9007199254740991
+								}
+							}
 						}
 					}
 				},
@@ -726,6 +968,29 @@
 					"workspace_id": {
 						"type": "string",
 						"description": "The workspace ID to list members for"
+					},
+					"current_page": {
+						"description": "Zero-based page number",
+						"type": "integer",
+						"minimum": 0,
+						"maximum": 9007199254740991
+					},
+					"page_size": {
+						"description": "Number of members per page",
+						"type": "integer",
+						"exclusiveMinimum": 0,
+						"maximum": 9007199254740991
+					},
+					"role": {
+						"description": "Filter by workspace role",
+						"type": "string",
+						"enum": ["admin", "manager", "member"]
+					},
+					"email": {
+						"description": "Filter by member email",
+						"type": "string",
+						"format": "email",
+						"pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
 					}
 				},
 				"required": ["workspace_id"],
@@ -945,7 +1210,7 @@
 		},
 		{
 			"name": "update_config",
-			"description": "Update a config by slug; every call creates a new config version rather than overwriting, so earlier versions stay recoverable via list_config_versions. Only provided fields change: name, status, and all routing/cache/retry settings (cache_mode, cache_max_age, retry_attempts, retry_on_status_codes, strategy_mode, targets) are editable, while the slug stays fixed. Changes apply immediately to every API key and prompt referencing the config; get the slug from list_configs and review current settings with get_config before editing. Returns the config id, slug, and updated config payload.",
+			"description": "Update a config by slug; every call creates a new config version rather than overwriting, so earlier versions stay recoverable via list_config_versions. Only provided fields change: name, status, and all routing/cache/retry settings (cache_mode, cache_max_age, retry_attempts, retry_on_status_codes, strategy_mode, targets) are editable, while the slug stays fixed. Changes apply immediately to every API key and prompt referencing the config. Returns the update acknowledgement and new version_id.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
@@ -1041,7 +1306,7 @@
 		},
 		{
 			"name": "list_config_versions",
-			"description": "List every version of a config with version number, config payload, creator, and timestamp. Use this to audit history or compare revisions before update_config or delete_config.",
+			"description": "List every version of a config with version_id, structured config payload, updater, and timestamp. Use this to audit history or compare revisions before update_config or delete_config.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
@@ -1057,6 +1322,345 @@
 				"readOnlyHint": true,
 				"destructiveHint": false,
 				"idempotentHint": true,
+				"openWorldHint": true
+			}
+		},
+		{
+			"name": "list_deployments",
+			"description": "Enterprise-gated. List registered self-hosted Gateway deployments with status, type, default state, and connection health. Use this before get_deployment, update_deployment, or archive_deployment to resolve a deployment ID. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
+			"inputSchema": {
+				"type": "object",
+				"properties": {
+					"organisation_id": {
+						"description": "Filter by organisation UUID",
+						"type": "string"
+					},
+					"status": {
+						"description": "Filter by deployment status",
+						"type": "string",
+						"enum": ["active", "archived"]
+					},
+					"type": {
+						"description": "Filter by deployment type",
+						"type": "string",
+						"enum": ["production", "non_production"]
+					},
+					"workspace_slug": {
+						"description": "Filter by one or more workspace slugs",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"search": {
+						"description": "Search deployment names",
+						"type": "string"
+					}
+				},
+				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
+			}
+		},
+		{
+			"name": "register_deployment",
+			"description": "Enterprise-gated. Register a self-hosted Gateway deployment when onboarding a new control-plane target; use list_deployments for existing registrations. The response can contain authentication and registry credentials exactly once, exposed to this MCP transcript, so store them securely immediately and never log them. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
+			"inputSchema": {
+				"type": "object",
+				"properties": {
+					"name": {
+						"type": "string",
+						"minLength": 1,
+						"description": "Deployment display name"
+					},
+					"organisation_id": {
+						"description": "Owning organisation UUID",
+						"type": "string"
+					},
+					"slug": {
+						"description": "Optional deployment slug",
+						"type": "string",
+						"minLength": 1,
+						"maxLength": 50
+					},
+					"type": {
+						"description": "Production or non-production deployment type",
+						"type": "string",
+						"enum": ["production", "non_production"]
+					},
+					"deployment_config": {
+						"description": "Gateway deployment configuration",
+						"type": "object",
+						"propertyNames": {
+							"type": "string"
+						},
+						"additionalProperties": {}
+					},
+					"is_default": {
+						"description": "Make this the default deployment",
+						"type": "boolean"
+					},
+					"gateway_base_url": {
+						"description": "Self-hosted Gateway base URL",
+						"type": "string",
+						"format": "uri"
+					},
+					"mcp_gateway_base_url": {
+						"description": "MCP Gateway base URL",
+						"type": "string",
+						"format": "uri"
+					},
+					"is_dataservice_hosted": {
+						"description": "Whether the deployment hosts its own data service",
+						"anyOf": [
+							{
+								"type": "number",
+								"const": 0
+							},
+							{
+								"type": "number",
+								"const": 1
+							}
+						]
+					},
+					"is_playground_proxy_allowed": {
+						"description": "Whether Playground proxy traffic is allowed",
+						"anyOf": [
+							{
+								"type": "number",
+								"const": 0
+							},
+							{
+								"type": "number",
+								"const": 1
+							}
+						]
+					},
+					"workspaces_allowed": {
+						"description": "Workspace slugs this deployment may serve; empty allows all",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"jwt_subs_allowed": {
+						"description": "JWT subject values allowed to use the deployment",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"jwt_sub_workspace_mapping": {
+						"description": "JWT subject to workspace-slug mapping",
+						"type": "object",
+						"propertyNames": {
+							"type": "string"
+						},
+						"additionalProperties": {
+							"type": "string"
+						}
+					}
+				},
+				"required": ["name"],
+				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
+			}
+		},
+		{
+			"name": "get_deployment",
+			"description": "Enterprise-gated. Get one registered Gateway deployment by UUID, or use self when authenticating as that deployment. Use list_deployments to resolve an ID; read responses contain only masked authentication and registry credential values. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
+			"inputSchema": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string",
+						"minLength": 1,
+						"description": "Deployment UUID or self"
+					},
+					"organisation_id": {
+						"description": "Organisation UUID scope",
+						"type": "string"
+					}
+				},
+				"required": ["id"],
+				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
+			}
+		},
+		{
+			"name": "update_deployment",
+			"description": "Enterprise-gated. Update a registered Gateway deployment, its workspace or JWT-sub access, or rotate its authentication secret. Use get_deployment first to inspect current settings. Rotation returns the new secret once in this MCP transcript, so store it securely immediately. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
+			"inputSchema": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string",
+						"minLength": 1,
+						"description": "Deployment UUID"
+					},
+					"name": {
+						"description": "Replacement display name",
+						"type": "string"
+					},
+					"type": {
+						"description": "Replacement deployment type",
+						"type": "string",
+						"enum": ["production", "non_production"]
+					},
+					"status": {
+						"description": "Replacement deployment status",
+						"type": "string",
+						"enum": ["active", "archived"]
+					},
+					"deployment_config": {
+						"description": "Replacement Gateway configuration, or null to clear it",
+						"anyOf": [
+							{
+								"type": "object",
+								"propertyNames": {
+									"type": "string"
+								},
+								"additionalProperties": {}
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"is_default": {
+						"description": "Whether this is the default deployment",
+						"type": "boolean"
+					},
+					"rotate_auth": {
+						"description": "Rotate the one-time deployment authentication secret",
+						"type": "boolean"
+					},
+					"override_existing": {
+						"description": "Allow replacement of existing deployment settings",
+						"type": "boolean"
+					},
+					"gateway_base_url": {
+						"description": "Self-hosted Gateway base URL",
+						"type": "string",
+						"format": "uri"
+					},
+					"mcp_gateway_base_url": {
+						"description": "MCP Gateway base URL",
+						"type": "string",
+						"format": "uri"
+					},
+					"is_dataservice_hosted": {
+						"description": "Whether the deployment hosts its own data service",
+						"anyOf": [
+							{
+								"type": "number",
+								"const": 0
+							},
+							{
+								"type": "number",
+								"const": 1
+							}
+						]
+					},
+					"is_playground_proxy_allowed": {
+						"description": "Whether Playground proxy traffic is allowed",
+						"anyOf": [
+							{
+								"type": "number",
+								"const": 0
+							},
+							{
+								"type": "number",
+								"const": 1
+							}
+						]
+					},
+					"workspaces_allowed": {
+						"description": "Workspace slugs this deployment may serve; empty allows all",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"jwt_subs_allowed": {
+						"description": "JWT subject values allowed to use the deployment",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"jwt_sub_workspace_mapping": {
+						"description": "JWT subject to workspace-slug mapping",
+						"type": "object",
+						"propertyNames": {
+							"type": "string"
+						},
+						"additionalProperties": {
+							"type": "string"
+						}
+					},
+					"allow_all_workspaces": {
+						"description": "Clear workspace restrictions and allow every workspace",
+						"type": "boolean"
+					},
+					"remove_workspaces_allowed": {
+						"description": "Workspace slugs to remove from the allowlist",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"remove_subs_allowed": {
+						"description": "JWT subject values to remove from the allowlist",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					}
+				},
+				"required": ["id"],
+				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
+			}
+		},
+		{
+			"name": "archive_deployment",
+			"description": "Enterprise-gated. Archive a registered Gateway deployment by UUID. Use get_deployment first to confirm the target. Portkey soft-deletes the record; this stops treating it as active but does not permanently remove its history. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
+			"inputSchema": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string",
+						"minLength": 1,
+						"description": "Deployment UUID to archive"
+					}
+				},
+				"required": ["id"],
+				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
 				"openWorldHint": true
 			}
 		},
@@ -1103,8 +1707,8 @@
 						"description": "Provider slug (e.g., 'openai', 'anthropic', 'azure-openai', 'google')"
 					},
 					"key": {
-						"type": "string",
-						"description": "The actual provider API key to store"
+						"description": "Provider API key; omit when secret_mappings supplies key",
+						"type": "string"
 					},
 					"note": {
 						"description": "Optional note or description for this key",
@@ -1126,6 +1730,79 @@
 						"description": "Deployment name (for Azure OpenAI)",
 						"type": "string"
 					},
+					"deployment_configurations": {
+						"description": "Azure deployment configurations with API versions and aliases",
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"api_version": {
+									"type": "string",
+									"minLength": 1,
+									"description": "Azure OpenAI API version"
+								},
+								"deployment_name": {
+									"type": "string",
+									"minLength": 1,
+									"description": "Azure deployment name"
+								},
+								"alias": {
+									"description": "Optional model alias for the deployment",
+									"type": "string"
+								},
+								"is_default": {
+									"description": "Whether this is the default Azure deployment",
+									"type": "boolean"
+								}
+							},
+							"required": ["api_version", "deployment_name"]
+						}
+					},
+					"expires_at": {
+						"description": "Expiration in ISO 8601 format",
+						"type": "string"
+					},
+					"secret_mappings": {
+						"description": "Secret Reference mappings for key or model_config fields",
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"target_field": {
+									"type": "string",
+									"description": "Virtual Key field populated from the Secret Reference"
+								},
+								"secret_reference_id": {
+									"type": "string",
+									"description": "Secret Reference ID that owns the external secret"
+								},
+								"secret_key": {
+									"description": "Optional key selected from a structured external secret",
+									"anyOf": [
+										{
+											"type": "string"
+										},
+										{
+											"type": "null"
+										}
+									]
+								},
+								"value_format": {
+									"description": "Whether Portkey reads the mapped value as JSON or a string",
+									"anyOf": [
+										{
+											"type": "string",
+											"enum": ["json", "string"]
+										},
+										{
+											"type": "null"
+										}
+									]
+								}
+							},
+							"required": ["target_field", "secret_reference_id"]
+						}
+					},
 					"credit_limit": {
 						"description": "Maximum usage cost threshold",
 						"type": "number",
@@ -1143,7 +1820,7 @@
 						"exclusiveMinimum": 0
 					}
 				},
-				"required": ["name", "provider", "key"],
+				"required": ["name", "provider"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
 			},
 			"annotations": {
@@ -1211,6 +1888,75 @@
 						"description": "New rate limit in requests per minute",
 						"type": "number",
 						"exclusiveMinimum": 0
+					},
+					"deployment_configurations": {
+						"description": "Replacement Azure deployment configurations",
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"api_version": {
+									"type": "string",
+									"minLength": 1,
+									"description": "Azure OpenAI API version"
+								},
+								"deployment_name": {
+									"type": "string",
+									"minLength": 1,
+									"description": "Azure deployment name"
+								},
+								"alias": {
+									"description": "Optional model alias for the deployment",
+									"type": "string"
+								},
+								"is_default": {
+									"description": "Whether this is the default Azure deployment",
+									"type": "boolean"
+								}
+							},
+							"required": ["api_version", "deployment_name"]
+						}
+					},
+					"secret_mappings": {
+						"description": "Replacement Secret Reference mappings",
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"target_field": {
+									"type": "string",
+									"description": "Virtual Key field populated from the Secret Reference"
+								},
+								"secret_reference_id": {
+									"type": "string",
+									"description": "Secret Reference ID that owns the external secret"
+								},
+								"secret_key": {
+									"description": "Optional key selected from a structured external secret",
+									"anyOf": [
+										{
+											"type": "string"
+										},
+										{
+											"type": "null"
+										}
+									]
+								},
+								"value_format": {
+									"description": "Whether Portkey reads the mapped value as JSON or a string",
+									"anyOf": [
+										{
+											"type": "string",
+											"enum": ["json", "string"]
+										},
+										{
+											"type": "null"
+										}
+									]
+								}
+							},
+							"required": ["target_field", "secret_reference_id"]
+						}
 					}
 				},
 				"required": ["slug"],
@@ -1268,6 +2014,10 @@
 						"description": "Optional description for the key",
 						"type": "string"
 					},
+					"organisation_id": {
+						"description": "Organisation UUID",
+						"type": "string"
+					},
 					"workspace_id": {
 						"description": "Workspace ID (required for workspace-type keys)",
 						"type": "string"
@@ -1299,6 +2049,39 @@
 						"type": "number",
 						"exclusiveMinimum": 0
 					},
+					"rate_limits": {
+						"description": "Request or token rate limits, or null to clear them",
+						"anyOf": [
+							{
+								"type": "array",
+								"items": {
+									"type": "object",
+									"properties": {
+										"type": {
+											"type": "string",
+											"enum": ["requests", "tokens"],
+											"description": "Whether the limit counts requests or tokens"
+										},
+										"unit": {
+											"type": "string",
+											"enum": ["rpd", "rph", "rpm", "rps", "rpw"],
+											"description": "Rate window unit for the request or token count"
+										},
+										"value": {
+											"type": "integer",
+											"minimum": 0,
+											"maximum": 9007199254740991,
+											"description": "Maximum count in the selected rate window"
+										}
+									},
+									"required": ["type", "unit", "value"]
+								}
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
 					"default_config_id": {
 						"description": "Default configuration ID to use with this key",
 						"type": "string"
@@ -1313,6 +2096,10 @@
 							"type": "string"
 						}
 					},
+					"default_allow_config_override": {
+						"description": "Allow callers to override the default config",
+						"type": "boolean"
+					},
 					"alert_emails": {
 						"description": "Email addresses for alerts",
 						"type": "array",
@@ -1323,6 +2110,49 @@
 					"expires_at": {
 						"description": "Expiration date in ISO 8601 format",
 						"type": "string"
+					},
+					"rotation_policy": {
+						"description": "Automatic API-key rotation policy, or null to disable it",
+						"anyOf": [
+							{
+								"type": "object",
+								"properties": {
+									"rotation_period": {
+										"description": "Built-in weekly or monthly automatic rotation cadence",
+										"anyOf": [
+											{
+												"type": "string",
+												"enum": ["weekly", "monthly"]
+											},
+											{
+												"type": "null"
+											}
+										]
+									},
+									"next_rotation_at": {
+										"description": "Explicit next rotation timestamp in ISO 8601 format",
+										"anyOf": [
+											{
+												"type": "string"
+											},
+											{
+												"type": "null"
+											}
+										]
+									},
+									"key_transition_period_ms": {
+										"description": "Overlap in milliseconds before the previous key expires",
+										"type": "integer",
+										"minimum": 1800000,
+										"maximum": 9007199254740991
+									}
+								},
+								"description": "Automatic API-key rotation policy, or null to remove it"
+							},
+							{
+								"type": "null"
+							}
+						]
 					}
 				},
 				"required": ["type", "sub_type", "name", "scopes"],
@@ -1433,6 +2263,44 @@
 						"type": "number",
 						"exclusiveMinimum": 0
 					},
+					"rate_limits": {
+						"description": "Replacement request or token rate limits, or null to clear",
+						"anyOf": [
+							{
+								"type": "array",
+								"items": {
+									"type": "object",
+									"properties": {
+										"type": {
+											"type": "string",
+											"enum": ["requests", "tokens"],
+											"description": "Whether the limit counts requests or tokens"
+										},
+										"unit": {
+											"type": "string",
+											"enum": ["rpd", "rph", "rpm", "rps", "rpw"],
+											"description": "Rate window unit for the request or token count"
+										},
+										"value": {
+											"type": "integer",
+											"minimum": 0,
+											"maximum": 9007199254740991,
+											"description": "Maximum count in the selected rate window"
+										}
+									},
+									"required": ["type", "unit", "value"]
+								}
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"reset_usage": {
+						"description": "Set to a nonnegative acknowledgement value to reset usage",
+						"type": "number",
+						"minimum": 0
+					},
 					"default_config_id": {
 						"description": "New default configuration ID",
 						"type": "string"
@@ -1447,6 +2315,10 @@
 							"type": "string"
 						}
 					},
+					"default_allow_config_override": {
+						"description": "Whether callers may override the key's default config",
+						"type": "boolean"
+					},
 					"alert_emails": {
 						"description": "New email addresses for alerts",
 						"type": "array",
@@ -1459,6 +2331,49 @@
 						"anyOf": [
 							{
 								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"rotation_policy": {
+						"description": "Replacement rotation policy, or null to disable it",
+						"anyOf": [
+							{
+								"type": "object",
+								"properties": {
+									"rotation_period": {
+										"description": "Built-in weekly or monthly automatic rotation cadence",
+										"anyOf": [
+											{
+												"type": "string",
+												"enum": ["weekly", "monthly"]
+											},
+											{
+												"type": "null"
+											}
+										]
+									},
+									"next_rotation_at": {
+										"description": "Explicit next rotation timestamp in ISO 8601 format",
+										"anyOf": [
+											{
+												"type": "string"
+											},
+											{
+												"type": "null"
+											}
+										]
+									},
+									"key_transition_period_ms": {
+										"description": "Overlap in milliseconds before the previous key expires",
+										"type": "integer",
+										"minimum": 1800000,
+										"maximum": 9007199254740991
+									}
+								},
+								"description": "Automatic API-key rotation policy, or null to remove it"
 							},
 							{
 								"type": "null"
@@ -1832,6 +2747,10 @@
 						},
 						"required": ["mode"]
 					},
+					"is_raw_template": {
+						"description": "Render the stored template as a raw structural template",
+						"type": "boolean"
+					},
 					"dry_run": {
 						"description": "When true, validate without creating",
 						"type": "boolean"
@@ -2074,6 +2993,10 @@
 							}
 						},
 						"required": ["mode"]
+					},
+					"is_raw_template": {
+						"description": "Enable or disable raw structural-template rendering",
+						"type": "boolean"
 					},
 					"dry_run": {
 						"description": "When true, validate without updating",
@@ -2536,6 +3459,10 @@
 						},
 						"required": ["mode"]
 					},
+					"is_raw_template": {
+						"description": "Preserve raw structural-template rendering semantics",
+						"type": "boolean"
+					},
 					"dry_run": {
 						"description": "When true, only check what action would be taken without making changes",
 						"type": "boolean"
@@ -2712,42 +3639,42 @@
 					"total_units_min": {
 						"description": "Minimum number of total tokens to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"total_units_max": {
 						"description": "Maximum number of total tokens to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"cost_min": {
 						"description": "Minimum cost in cents to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"cost_max": {
 						"description": "Maximum cost in cents to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"prompt_token_min": {
 						"description": "Minimum number of prompt tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"prompt_token_max": {
 						"description": "Maximum number of prompt tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"completion_token_min": {
 						"description": "Minimum number of completion tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"completion_token_max": {
 						"description": "Maximum number of completion tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"status_code": {
 						"description": "Legacy Portkey query param for HTTP status codes. Comma-separated string; prefer status_codes for structured inputs.",
@@ -2879,42 +3806,42 @@
 					"total_units_min": {
 						"description": "Minimum number of total tokens to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"total_units_max": {
 						"description": "Maximum number of total tokens to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"cost_min": {
 						"description": "Minimum cost in cents to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"cost_max": {
 						"description": "Maximum cost in cents to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"prompt_token_min": {
 						"description": "Minimum number of prompt tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"prompt_token_max": {
 						"description": "Maximum number of prompt tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"completion_token_min": {
 						"description": "Minimum number of completion tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"completion_token_max": {
 						"description": "Maximum number of completion tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"status_code": {
 						"description": "Legacy Portkey query param for HTTP status codes. Comma-separated string; prefer status_codes for structured inputs.",
@@ -3046,42 +3973,42 @@
 					"total_units_min": {
 						"description": "Minimum number of total tokens to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"total_units_max": {
 						"description": "Maximum number of total tokens to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"cost_min": {
 						"description": "Minimum cost in cents to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"cost_max": {
 						"description": "Maximum cost in cents to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"prompt_token_min": {
 						"description": "Minimum number of prompt tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"prompt_token_max": {
 						"description": "Maximum number of prompt tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"completion_token_min": {
 						"description": "Minimum number of completion tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"completion_token_max": {
 						"description": "Maximum number of completion tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"status_code": {
 						"description": "Legacy Portkey query param for HTTP status codes. Comma-separated string; prefer status_codes for structured inputs.",
@@ -3213,42 +4140,42 @@
 					"total_units_min": {
 						"description": "Minimum number of total tokens to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"total_units_max": {
 						"description": "Maximum number of total tokens to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"cost_min": {
 						"description": "Minimum cost in cents to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"cost_max": {
 						"description": "Maximum cost in cents to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"prompt_token_min": {
 						"description": "Minimum number of prompt tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"prompt_token_max": {
 						"description": "Maximum number of prompt tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"completion_token_min": {
 						"description": "Minimum number of completion tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"completion_token_max": {
 						"description": "Maximum number of completion tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"status_code": {
 						"description": "Legacy Portkey query param for HTTP status codes. Comma-separated string; prefer status_codes for structured inputs.",
@@ -3380,42 +4307,42 @@
 					"total_units_min": {
 						"description": "Minimum number of total tokens to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"total_units_max": {
 						"description": "Maximum number of total tokens to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"cost_min": {
 						"description": "Minimum cost in cents to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"cost_max": {
 						"description": "Maximum cost in cents to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"prompt_token_min": {
 						"description": "Minimum number of prompt tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"prompt_token_max": {
 						"description": "Maximum number of prompt tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"completion_token_min": {
 						"description": "Minimum number of completion tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"completion_token_max": {
 						"description": "Maximum number of completion tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"status_code": {
 						"description": "Legacy Portkey query param for HTTP status codes. Comma-separated string; prefer status_codes for structured inputs.",
@@ -3547,42 +4474,42 @@
 					"total_units_min": {
 						"description": "Minimum number of total tokens to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"total_units_max": {
 						"description": "Maximum number of total tokens to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"cost_min": {
 						"description": "Minimum cost in cents to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"cost_max": {
 						"description": "Maximum cost in cents to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"prompt_token_min": {
 						"description": "Minimum number of prompt tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"prompt_token_max": {
 						"description": "Maximum number of prompt tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"completion_token_min": {
 						"description": "Minimum number of completion tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"completion_token_max": {
 						"description": "Maximum number of completion tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"status_code": {
 						"description": "Legacy Portkey query param for HTTP status codes. Comma-separated string; prefer status_codes for structured inputs.",
@@ -3714,42 +4641,42 @@
 					"total_units_min": {
 						"description": "Minimum number of total tokens to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"total_units_max": {
 						"description": "Maximum number of total tokens to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"cost_min": {
 						"description": "Minimum cost in cents to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"cost_max": {
 						"description": "Maximum cost in cents to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"prompt_token_min": {
 						"description": "Minimum number of prompt tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"prompt_token_max": {
 						"description": "Maximum number of prompt tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"completion_token_min": {
 						"description": "Minimum number of completion tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"completion_token_max": {
 						"description": "Maximum number of completion tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"status_code": {
 						"description": "Legacy Portkey query param for HTTP status codes. Comma-separated string; prefer status_codes for structured inputs.",
@@ -3881,42 +4808,42 @@
 					"total_units_min": {
 						"description": "Minimum number of total tokens to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"total_units_max": {
 						"description": "Maximum number of total tokens to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"cost_min": {
 						"description": "Minimum cost in cents to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"cost_max": {
 						"description": "Maximum cost in cents to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"prompt_token_min": {
 						"description": "Minimum number of prompt tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"prompt_token_max": {
 						"description": "Maximum number of prompt tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"completion_token_min": {
 						"description": "Minimum number of completion tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"completion_token_max": {
 						"description": "Maximum number of completion tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"status_code": {
 						"description": "Legacy Portkey query param for HTTP status codes. Comma-separated string; prefer status_codes for structured inputs.",
@@ -4032,6 +4959,178 @@
 			}
 		},
 		{
+			"name": "get_cache_summary",
+			"description": "Enterprise-gated. Get cache summary metrics for one workspace and time range: hits, average cache-hit latency, total requests, and percentage speedup. Use the graph cache tools when you need changes over time instead of one aggregate. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
+			"inputSchema": {
+				"type": "object",
+				"properties": {
+					"time_of_generation_min": {
+						"type": "string",
+						"description": "Start time for the analytics period (ISO8601 format, e.g., '2024-01-01T00:00:00Z')"
+					},
+					"time_of_generation_max": {
+						"type": "string",
+						"description": "End time for the analytics period (ISO8601 format, e.g., '2024-02-01T00:00:00Z')"
+					},
+					"total_units_min": {
+						"description": "Minimum number of total tokens to filter by",
+						"type": "number",
+						"minimum": 0
+					},
+					"total_units_max": {
+						"description": "Maximum number of total tokens to filter by",
+						"type": "number",
+						"minimum": 0
+					},
+					"cost_min": {
+						"description": "Minimum cost in cents to filter by",
+						"type": "number",
+						"minimum": 0
+					},
+					"cost_max": {
+						"description": "Maximum cost in cents to filter by",
+						"type": "number",
+						"minimum": 0
+					},
+					"prompt_token_min": {
+						"description": "Minimum number of prompt tokens",
+						"type": "number",
+						"minimum": 0
+					},
+					"prompt_token_max": {
+						"description": "Maximum number of prompt tokens",
+						"type": "number",
+						"minimum": 0
+					},
+					"completion_token_min": {
+						"description": "Minimum number of completion tokens",
+						"type": "number",
+						"minimum": 0
+					},
+					"completion_token_max": {
+						"description": "Maximum number of completion tokens",
+						"type": "number",
+						"minimum": 0
+					},
+					"status_code": {
+						"description": "Legacy Portkey query param for HTTP status codes. Comma-separated string; prefer status_codes for structured inputs.",
+						"type": "string"
+					},
+					"weighted_feedback_min": {
+						"description": "Minimum weighted feedback score (-10 to 10)",
+						"type": "number",
+						"minimum": -10,
+						"maximum": 10
+					},
+					"weighted_feedback_max": {
+						"description": "Maximum weighted feedback score (-10 to 10)",
+						"type": "number",
+						"minimum": -10,
+						"maximum": 10
+					},
+					"virtual_keys": {
+						"description": "Legacy Portkey query param for virtual key slugs. Comma-separated string; prefer virtual_key_slugs for structured inputs.",
+						"type": "string"
+					},
+					"configs": {
+						"description": "Legacy Portkey query param for config slugs. Comma-separated string; prefer config_slugs for structured inputs.",
+						"type": "string"
+					},
+					"status_codes": {
+						"description": "Structured alias for status_code. Use an array of HTTP status codes; normalized to the legacy comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"virtual_key_slugs": {
+						"description": "Structured alias for virtual_keys. Use an array of virtual key slugs; normalized to the legacy comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"config_slugs": {
+						"description": "Structured alias for configs. Use an array of config slugs; normalized to the legacy comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"workspace_slug": {
+						"type": "string",
+						"minLength": 1,
+						"description": "Workspace slug to analyze"
+					},
+					"api_key_ids": {
+						"description": "Legacy Portkey query param for API key UUIDs. Comma-separated string; request_analytics also accepts an array and normalizes it to this form.",
+						"type": "string"
+					},
+					"metadata": {
+						"description": "Legacy Portkey query param for metadata filtering. Stringified JSON object, e.g. '{\"env\":\"prod\",\"app\":\"myapp\"}'; prefer metadata_filter for structured inputs.",
+						"type": "string"
+					},
+					"ai_org_model": {
+						"description": "Legacy Portkey query param for provider/model pairs. Format: 'provider__model' with double underscore, e.g. 'openai__gpt-4' or 'anthropic__claude-3-opus'. Comma-separated string; prefer provider_models for structured inputs.",
+						"type": "string"
+					},
+					"provider_models": {
+						"description": "Structured alias for ai_org_model. Use provider__model strings in an array; normalized to the legacy comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"trace_id": {
+						"description": "Legacy Portkey query param for trace IDs. Comma-separated string; prefer trace_ids for structured inputs.",
+						"type": "string"
+					},
+					"trace_ids": {
+						"description": "Structured alias for trace_id. Use an array of trace IDs; normalized to the legacy comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"span_id": {
+						"description": "Legacy Portkey query param for span IDs. Comma-separated string; prefer span_ids for structured inputs.",
+						"type": "string"
+					},
+					"span_ids": {
+						"description": "Structured alias for span_id. Use an array of span IDs; normalized to the legacy comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"metadata_filter": {
+						"description": "Structured alias for metadata. Use an object such as { env: 'prod' }; normalized to a JSON string before the request is sent.",
+						"type": "object",
+						"propertyNames": {
+							"type": "string"
+						},
+						"additionalProperties": {}
+					},
+					"prompt_slug": {
+						"description": "Filter by prompt slug",
+						"type": "string"
+					}
+				},
+				"required": [
+					"time_of_generation_min",
+					"time_of_generation_max",
+					"workspace_slug"
+				],
+				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
+			}
+		},
+		{
 			"name": "get_users_analytics",
 			"description": "Get user-growth time-series data with summary.total_active_users, summary.total_new_users, and per-bucket active/new user counts. Use this for growth and adoption trends; use get_user_requests_analytics for per-user traffic or get_analytics_group_users for per-user cost and token detail. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
 			"inputSchema": {
@@ -4048,42 +5147,42 @@
 					"total_units_min": {
 						"description": "Minimum number of total tokens to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"total_units_max": {
 						"description": "Maximum number of total tokens to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"cost_min": {
 						"description": "Minimum cost in cents to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"cost_max": {
 						"description": "Maximum cost in cents to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"prompt_token_min": {
 						"description": "Minimum number of prompt tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"prompt_token_max": {
 						"description": "Maximum number of prompt tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"completion_token_min": {
 						"description": "Minimum number of completion tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"completion_token_max": {
 						"description": "Maximum number of completion tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"status_code": {
 						"description": "Legacy Portkey query param for HTTP status codes. Comma-separated string; prefer status_codes for structured inputs.",
@@ -4215,42 +5314,42 @@
 					"total_units_min": {
 						"description": "Minimum number of total tokens to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"total_units_max": {
 						"description": "Maximum number of total tokens to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"cost_min": {
 						"description": "Minimum cost in cents to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"cost_max": {
 						"description": "Maximum cost in cents to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"prompt_token_min": {
 						"description": "Minimum number of prompt tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"prompt_token_max": {
 						"description": "Maximum number of prompt tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"completion_token_min": {
 						"description": "Minimum number of completion tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"completion_token_max": {
 						"description": "Maximum number of completion tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"status_code": {
 						"description": "Legacy Portkey query param for HTTP status codes. Comma-separated string; prefer status_codes for structured inputs.",
@@ -4382,42 +5481,42 @@
 					"total_units_min": {
 						"description": "Minimum number of total tokens to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"total_units_max": {
 						"description": "Maximum number of total tokens to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"cost_min": {
 						"description": "Minimum cost in cents to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"cost_max": {
 						"description": "Maximum cost in cents to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"prompt_token_min": {
 						"description": "Minimum number of prompt tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"prompt_token_max": {
 						"description": "Maximum number of prompt tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"completion_token_min": {
 						"description": "Minimum number of completion tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"completion_token_max": {
 						"description": "Maximum number of completion tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"status_code": {
 						"description": "Legacy Portkey query param for HTTP status codes. Comma-separated string; prefer status_codes for structured inputs.",
@@ -4549,42 +5648,42 @@
 					"total_units_min": {
 						"description": "Minimum number of total tokens to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"total_units_max": {
 						"description": "Maximum number of total tokens to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"cost_min": {
 						"description": "Minimum cost in cents to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"cost_max": {
 						"description": "Maximum cost in cents to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"prompt_token_min": {
 						"description": "Minimum number of prompt tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"prompt_token_max": {
 						"description": "Maximum number of prompt tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"completion_token_min": {
 						"description": "Minimum number of completion tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"completion_token_max": {
 						"description": "Maximum number of completion tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"status_code": {
 						"description": "Legacy Portkey query param for HTTP status codes. Comma-separated string; prefer status_codes for structured inputs.",
@@ -4716,42 +5815,42 @@
 					"total_units_min": {
 						"description": "Minimum number of total tokens to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"total_units_max": {
 						"description": "Maximum number of total tokens to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"cost_min": {
 						"description": "Minimum cost in cents to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"cost_max": {
 						"description": "Maximum cost in cents to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"prompt_token_min": {
 						"description": "Minimum number of prompt tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"prompt_token_max": {
 						"description": "Maximum number of prompt tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"completion_token_min": {
 						"description": "Minimum number of completion tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"completion_token_max": {
 						"description": "Maximum number of completion tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"status_code": {
 						"description": "Legacy Portkey query param for HTTP status codes. Comma-separated string; prefer status_codes for structured inputs.",
@@ -4883,42 +5982,42 @@
 					"total_units_min": {
 						"description": "Minimum number of total tokens to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"total_units_max": {
 						"description": "Maximum number of total tokens to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"cost_min": {
 						"description": "Minimum cost in cents to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"cost_max": {
 						"description": "Maximum cost in cents to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"prompt_token_min": {
 						"description": "Minimum number of prompt tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"prompt_token_max": {
 						"description": "Maximum number of prompt tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"completion_token_min": {
 						"description": "Minimum number of completion tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"completion_token_max": {
 						"description": "Maximum number of completion tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"status_code": {
 						"description": "Legacy Portkey query param for HTTP status codes. Comma-separated string; prefer status_codes for structured inputs.",
@@ -5050,42 +6149,42 @@
 					"total_units_min": {
 						"description": "Minimum number of total tokens to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"total_units_max": {
 						"description": "Maximum number of total tokens to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"cost_min": {
 						"description": "Minimum cost in cents to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"cost_max": {
 						"description": "Maximum cost in cents to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"prompt_token_min": {
 						"description": "Minimum number of prompt tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"prompt_token_max": {
 						"description": "Maximum number of prompt tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"completion_token_min": {
 						"description": "Minimum number of completion tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"completion_token_max": {
 						"description": "Maximum number of completion tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"status_code": {
 						"description": "Legacy Portkey query param for HTTP status codes. Comma-separated string; prefer status_codes for structured inputs.",
@@ -5217,42 +6316,42 @@
 					"total_units_min": {
 						"description": "Minimum number of total tokens to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"total_units_max": {
 						"description": "Maximum number of total tokens to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"cost_min": {
 						"description": "Minimum cost in cents to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"cost_max": {
 						"description": "Maximum cost in cents to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"prompt_token_min": {
 						"description": "Minimum number of prompt tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"prompt_token_max": {
 						"description": "Maximum number of prompt tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"completion_token_min": {
 						"description": "Minimum number of completion tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"completion_token_max": {
 						"description": "Maximum number of completion tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"status_code": {
 						"description": "Legacy Portkey query param for HTTP status codes. Comma-separated string; prefer status_codes for structured inputs.",
@@ -5384,42 +6483,42 @@
 					"total_units_min": {
 						"description": "Minimum number of total tokens to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"total_units_max": {
 						"description": "Maximum number of total tokens to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"cost_min": {
 						"description": "Minimum cost in cents to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"cost_max": {
 						"description": "Maximum cost in cents to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"prompt_token_min": {
 						"description": "Minimum number of prompt tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"prompt_token_max": {
 						"description": "Maximum number of prompt tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"completion_token_min": {
 						"description": "Minimum number of completion tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"completion_token_max": {
 						"description": "Maximum number of completion tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"status_code": {
 						"description": "Legacy Portkey query param for HTTP status codes. Comma-separated string; prefer status_codes for structured inputs.",
@@ -5551,42 +6650,42 @@
 					"total_units_min": {
 						"description": "Minimum number of total tokens to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"total_units_max": {
 						"description": "Maximum number of total tokens to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"cost_min": {
 						"description": "Minimum cost in cents to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"cost_max": {
 						"description": "Maximum cost in cents to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"prompt_token_min": {
 						"description": "Minimum number of prompt tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"prompt_token_max": {
 						"description": "Maximum number of prompt tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"completion_token_min": {
 						"description": "Minimum number of completion tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"completion_token_max": {
 						"description": "Maximum number of completion tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"status_code": {
 						"description": "Legacy Portkey query param for HTTP status codes. Comma-separated string; prefer status_codes for structured inputs.",
@@ -5693,7 +6792,7 @@
 					"current_page": {
 						"description": "Page number for pagination",
 						"type": "integer",
-						"exclusiveMinimum": 0,
+						"minimum": 0,
 						"maximum": 9007199254740991
 					},
 					"page_size": {
@@ -5730,42 +6829,42 @@
 					"total_units_min": {
 						"description": "Minimum number of total tokens to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"total_units_max": {
 						"description": "Maximum number of total tokens to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"cost_min": {
 						"description": "Minimum cost in cents to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"cost_max": {
 						"description": "Maximum cost in cents to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"prompt_token_min": {
 						"description": "Minimum number of prompt tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"prompt_token_max": {
 						"description": "Maximum number of prompt tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"completion_token_min": {
 						"description": "Minimum number of completion tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"completion_token_max": {
 						"description": "Maximum number of completion tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"status_code": {
 						"description": "Legacy Portkey query param for HTTP status codes. Comma-separated string; prefer status_codes for structured inputs.",
@@ -5872,7 +6971,7 @@
 					"current_page": {
 						"description": "Page number for pagination",
 						"type": "integer",
-						"exclusiveMinimum": 0,
+						"minimum": 0,
 						"maximum": 9007199254740991
 					},
 					"page_size": {
@@ -5883,6 +6982,225 @@
 					}
 				},
 				"required": ["time_of_generation_min", "time_of_generation_max"],
+				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
+			}
+		},
+		{
+			"name": "get_analytics_group_providers",
+			"description": "Enterprise-gated. Get provider-grouped analytics for one workspace and time range with selectable metrics, ordering, pagination, and optional total count. Use this when comparing provider traffic or reliability; requested metric fields are preserved in each provider row. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
+			"inputSchema": {
+				"type": "object",
+				"properties": {
+					"time_of_generation_min": {
+						"type": "string",
+						"description": "Start time for the analytics period (ISO8601 format, e.g., '2024-01-01T00:00:00Z')"
+					},
+					"time_of_generation_max": {
+						"type": "string",
+						"description": "End time for the analytics period (ISO8601 format, e.g., '2024-02-01T00:00:00Z')"
+					},
+					"total_units_min": {
+						"description": "Minimum number of total tokens to filter by",
+						"type": "number",
+						"minimum": 0
+					},
+					"total_units_max": {
+						"description": "Maximum number of total tokens to filter by",
+						"type": "number",
+						"minimum": 0
+					},
+					"cost_min": {
+						"description": "Minimum cost in cents to filter by",
+						"type": "number",
+						"minimum": 0
+					},
+					"cost_max": {
+						"description": "Maximum cost in cents to filter by",
+						"type": "number",
+						"minimum": 0
+					},
+					"prompt_token_min": {
+						"description": "Minimum number of prompt tokens",
+						"type": "number",
+						"minimum": 0
+					},
+					"prompt_token_max": {
+						"description": "Maximum number of prompt tokens",
+						"type": "number",
+						"minimum": 0
+					},
+					"completion_token_min": {
+						"description": "Minimum number of completion tokens",
+						"type": "number",
+						"minimum": 0
+					},
+					"completion_token_max": {
+						"description": "Maximum number of completion tokens",
+						"type": "number",
+						"minimum": 0
+					},
+					"status_code": {
+						"description": "Legacy Portkey query param for HTTP status codes. Comma-separated string; prefer status_codes for structured inputs.",
+						"type": "string"
+					},
+					"weighted_feedback_min": {
+						"description": "Minimum weighted feedback score (-10 to 10)",
+						"type": "number",
+						"minimum": -10,
+						"maximum": 10
+					},
+					"weighted_feedback_max": {
+						"description": "Maximum weighted feedback score (-10 to 10)",
+						"type": "number",
+						"minimum": -10,
+						"maximum": 10
+					},
+					"virtual_keys": {
+						"description": "Legacy Portkey query param for virtual key slugs. Comma-separated string; prefer virtual_key_slugs for structured inputs.",
+						"type": "string"
+					},
+					"configs": {
+						"description": "Legacy Portkey query param for config slugs. Comma-separated string; prefer config_slugs for structured inputs.",
+						"type": "string"
+					},
+					"status_codes": {
+						"description": "Structured alias for status_code. Use an array of HTTP status codes; normalized to the legacy comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"virtual_key_slugs": {
+						"description": "Structured alias for virtual_keys. Use an array of virtual key slugs; normalized to the legacy comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"config_slugs": {
+						"description": "Structured alias for configs. Use an array of config slugs; normalized to the legacy comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"workspace_slug": {
+						"type": "string",
+						"minLength": 1,
+						"description": "Workspace slug to analyze"
+					},
+					"api_key_ids": {
+						"description": "Legacy Portkey query param for API key UUIDs. Comma-separated string; request_analytics also accepts an array and normalizes it to this form.",
+						"type": "string"
+					},
+					"metadata": {
+						"description": "Legacy Portkey query param for metadata filtering. Stringified JSON object, e.g. '{\"env\":\"prod\",\"app\":\"myapp\"}'; prefer metadata_filter for structured inputs.",
+						"type": "string"
+					},
+					"ai_org_model": {
+						"description": "Legacy Portkey query param for provider/model pairs. Format: 'provider__model' with double underscore, e.g. 'openai__gpt-4' or 'anthropic__claude-3-opus'. Comma-separated string; prefer provider_models for structured inputs.",
+						"type": "string"
+					},
+					"provider_models": {
+						"description": "Structured alias for ai_org_model. Use provider__model strings in an array; normalized to the legacy comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"trace_id": {
+						"description": "Legacy Portkey query param for trace IDs. Comma-separated string; prefer trace_ids for structured inputs.",
+						"type": "string"
+					},
+					"trace_ids": {
+						"description": "Structured alias for trace_id. Use an array of trace IDs; normalized to the legacy comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"span_id": {
+						"description": "Legacy Portkey query param for span IDs. Comma-separated string; prefer span_ids for structured inputs.",
+						"type": "string"
+					},
+					"span_ids": {
+						"description": "Structured alias for span_id. Use an array of span IDs; normalized to the legacy comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"metadata_filter": {
+						"description": "Structured alias for metadata. Use an object such as { env: 'prod' }; normalized to a JSON string before the request is sent.",
+						"type": "object",
+						"propertyNames": {
+							"type": "string"
+						},
+						"additionalProperties": {}
+					},
+					"prompt_slug": {
+						"description": "Filter by prompt slug",
+						"type": "string"
+					},
+					"current_page": {
+						"description": "Zero-based result page",
+						"type": "integer",
+						"minimum": 0,
+						"maximum": 9007199254740991
+					},
+					"page_size": {
+						"description": "Number of provider groups per page",
+						"type": "integer",
+						"minimum": 0,
+						"maximum": 9007199254740991
+					},
+					"order_by": {
+						"description": "Metric or field used to order groups",
+						"type": "string"
+					},
+					"order_by_type": {
+						"description": "Sort direction accepted by Portkey, such as asc or desc",
+						"type": "string"
+					},
+					"columns": {
+						"description": "Provider metrics to include in each grouped row",
+						"type": "array",
+						"items": {
+							"type": "string",
+							"enum": [
+								"requests",
+								"cost",
+								"total_tokens",
+								"avg_tokens",
+								"avg_input_tokens",
+								"avg_output_tokens",
+								"avg_latency",
+								"p95_latency",
+								"p99_latency",
+								"success_rate",
+								"error_count",
+								"cache_hit_rate",
+								"last_seen",
+								"first_seen"
+							]
+						}
+					},
+					"include_total": {
+						"description": "Request the total provider-group count",
+						"type": "boolean"
+					}
+				},
+				"required": [
+					"time_of_generation_min",
+					"time_of_generation_max",
+					"workspace_slug"
+				],
 				"$schema": "http://json-schema.org/draft-07/schema#"
 			},
 			"annotations": {
@@ -5909,42 +7227,42 @@
 					"total_units_min": {
 						"description": "Minimum number of total tokens to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"total_units_max": {
 						"description": "Maximum number of total tokens to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"cost_min": {
 						"description": "Minimum cost in cents to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"cost_max": {
 						"description": "Maximum cost in cents to filter by",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"prompt_token_min": {
 						"description": "Minimum number of prompt tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"prompt_token_max": {
 						"description": "Maximum number of prompt tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"completion_token_min": {
 						"description": "Minimum number of completion tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"completion_token_max": {
 						"description": "Maximum number of completion tokens",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"status_code": {
 						"description": "Legacy Portkey query param for HTTP status codes. Comma-separated string; prefer status_codes for structured inputs.",
@@ -6051,7 +7369,7 @@
 					"current_page": {
 						"description": "Page number for pagination",
 						"type": "integer",
-						"exclusiveMinimum": 0,
+						"minimum": 0,
 						"maximum": 9007199254740991
 					},
 					"page_size": {
@@ -6283,7 +7601,7 @@
 					"current_page": {
 						"description": "Page number for pagination",
 						"type": "integer",
-						"exclusiveMinimum": 0,
+						"minimum": 0,
 						"maximum": 9007199254740991
 					}
 				},
@@ -6346,7 +7664,7 @@
 									"type": "boolean"
 								},
 								"parameters": {
-									"description": "Check-specific configuration parameters",
+									"description": "Check-specific configuration. Supported examples include requestParametersCheck and parameters.forwardHeaders; forwarded headers can expose sensitive values, so allow only the minimum required names.",
 									"type": "object",
 									"propertyNames": {
 										"type": "string"
@@ -6477,7 +7795,7 @@
 									"type": "boolean"
 								},
 								"parameters": {
-									"description": "Check-specific configuration parameters",
+									"description": "Check-specific configuration. Supported examples include requestParametersCheck and parameters.forwardHeaders; forwarded headers can expose sensitive values, so allow only the minimum required names.",
 									"type": "object",
 									"propertyNames": {
 										"type": "string"
@@ -6588,13 +7906,45 @@
 		},
 		{
 			"name": "list_rate_limits",
-			"description": "List rate limits in the org with id, type, unit, value, status, scope, conditions, and grouping. Use this to find an existing policy before get_rate_limit, update_rate_limit, or delete_rate_limit.",
+			"description": "List rate-limit policies with their current condition, grouping, rate unit, target, status, and scope. Filter before retrieving or changing one policy, especially when archived policies should be included.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
 					"workspace_id": {
-						"description": "Filter rate limits by workspace ID",
+						"description": "Filter by workspace UUID",
 						"type": "string"
+					},
+					"status": {
+						"description": "Filter by active or archived status",
+						"type": "string",
+						"enum": ["active", "archived"]
+					},
+					"type": {
+						"description": "Filter by counter type",
+						"type": "string",
+						"enum": ["requests", "tokens"]
+					},
+					"unit": {
+						"description": "Filter by reset interval",
+						"type": "string",
+						"enum": ["rpm", "rph", "rpd", "rpw"]
+					},
+					"target": {
+						"description": "Filter by LLM or MCP-tool target",
+						"type": "string",
+						"enum": ["llm", "mcp_tools"]
+					},
+					"page_size": {
+						"description": "Number of policies to return per page",
+						"type": "integer",
+						"exclusiveMinimum": 0,
+						"maximum": 9007199254740991
+					},
+					"current_page": {
+						"description": "Zero-based page number",
+						"type": "integer",
+						"minimum": 0,
+						"maximum": 9007199254740991
 					}
 				},
 				"$schema": "http://json-schema.org/draft-07/schema#"
@@ -6608,13 +7958,19 @@
 		},
 		{
 			"name": "get_rate_limit",
-			"description": "Get one rate limit by id and return its full conditions and grouping definition. Use list_rate_limits to discover ids or compare policies first.",
+			"description": "Get one rate-limit policy by id, including current conditions, grouping, unit, value, target, scope, and status. Pass archived status when retrieving a soft-deleted policy.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
 					"id": {
 						"type": "string",
-						"description": "The unique identifier of the rate limit"
+						"minLength": 1,
+						"description": "Rate-limit policy UUID"
+					},
+					"status": {
+						"description": "Include an archived policy by status",
+						"type": "string",
+						"enum": ["active", "archived"]
 					}
 				},
 				"required": ["id"],
@@ -6629,64 +7985,102 @@
 		},
 		{
 			"name": "create_rate_limit",
-			"description": "Create a request or token throttle with conditions, group_by, type, unit, and value. conditions and group_by are required; use usage limits when you need a cumulative budget instead.",
+			"description": "Create a request or token rate-limit policy. Conditions and grouping must be non-empty; target llm uses model/provider keys, while target mcp_tools uses MCP server and tool keys.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
 					"conditions": {
+						"minItems": 1,
 						"type": "array",
 						"items": {
 							"type": "object",
 							"properties": {
-								"field": {
+								"key": {
 									"type": "string",
-									"description": "The field to match on (e.g., 'virtual_key', 'api_key', 'user_id', 'metadata.key')"
-								},
-								"operator": {
-									"type": "string",
-									"description": "The comparison operator (e.g., 'is', 'contains', 'is_not')"
+									"minLength": 1,
+									"description": "Match key such as api_key, virtual_key, provider, config, prompt, model, endpoint_type, mcp_server, mcp_tool, workspace_id, or metadata.*"
 								},
 								"value": {
-									"type": "string",
-									"description": "The value to match against"
+									"anyOf": [
+										{
+											"type": "string"
+										},
+										{
+											"minItems": 1,
+											"type": "array",
+											"items": {
+												"type": "string"
+											}
+										}
+									],
+									"description": "One value or several OR-matched values; use * for wildcard matching"
+								},
+								"excludes": {
+									"description": "Values to exclude",
+									"anyOf": [
+										{
+											"type": "string"
+										},
+										{
+											"minItems": 1,
+											"type": "array",
+											"items": {
+												"type": "string"
+											}
+										}
+									]
 								}
 							},
-							"required": ["field", "operator", "value"]
+							"required": ["key", "value"]
 						},
-						"description": "Array of conditions that determine which requests this rate limit applies to"
+						"description": "Policy match conditions"
 					},
 					"group_by": {
+						"minItems": 1,
 						"type": "array",
 						"items": {
-							"type": "string"
+							"type": "object",
+							"properties": {
+								"key": {
+									"type": "string",
+									"minLength": 1,
+									"description": "Counter grouping key such as api_key, workspace_id, virtual_key, provider, config, prompt, model, mcp_server, mcp_tool, or metadata.*"
+								}
+							},
+							"required": ["key"]
 						},
-						"description": "Array of fields to group the rate limit by (e.g., ['virtual_key'], ['api_key', 'user_id'])"
+						"description": "Counter grouping dimensions"
 					},
 					"type": {
 						"type": "string",
 						"enum": ["requests", "tokens"],
-						"description": "What to rate limit: 'requests' or 'tokens'"
+						"description": "Counter type"
 					},
 					"unit": {
 						"type": "string",
-						"enum": ["rpm", "rph", "rpd"],
-						"description": "Time unit: 'rpm' (per minute), 'rph' (per hour), or 'rpd' (per day)"
+						"enum": ["rpm", "rph", "rpd", "rpw"],
+						"description": "Counter reset interval"
 					},
 					"value": {
 						"type": "number",
-						"exclusiveMinimum": 0,
-						"description": "The maximum allowed value per unit (e.g., 100 rpm)"
+						"minimum": 0,
+						"description": "Maximum requests or tokens"
 					},
 					"name": {
-						"description": "Optional name for the rate limit",
+						"description": "Optional policy display name",
 						"type": "string"
 					},
+					"target": {
+						"description": "LLM or MCP-tool enforcement target",
+						"type": "string",
+						"enum": ["llm", "mcp_tools"]
+					},
 					"workspace_id": {
-						"description": "Workspace ID to scope the limit to",
+						"description": "Workspace UUID scope",
 						"type": "string"
 					},
 					"organisation_id": {
-						"description": "Organisation ID to scope the limit to",
+						"description": "Organisation UUID scope",
 						"type": "string"
 					}
 				},
@@ -6702,27 +8096,74 @@
 		},
 		{
 			"name": "update_rate_limit",
-			"description": "Update a rate limit's name, unit, or value by id. Conditions and group_by are immutable after creation; use get_rate_limit first if you need the full policy.",
+			"description": "Update a rate-limit policy's name, unit, value, or non-empty conditions by id. The public contract does not allow changing its type, target, or grouping after creation.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
 					"id": {
 						"type": "string",
-						"description": "The unique identifier of the rate limit"
+						"minLength": 1,
+						"description": "Rate-limit policy UUID"
 					},
 					"name": {
-						"description": "New name for the rate limit",
+						"description": "Replacement display name",
 						"type": "string"
 					},
 					"unit": {
-						"description": "New time unit: 'rpm' (per minute), 'rph' (per hour), or 'rpd' (per day)",
+						"description": "Replacement reset interval",
 						"type": "string",
-						"enum": ["rpm", "rph", "rpd"]
+						"enum": ["rpm", "rph", "rpd", "rpw"]
 					},
 					"value": {
-						"description": "New maximum allowed value per unit",
+						"description": "Replacement maximum",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
+					},
+					"conditions": {
+						"description": "Replacement conditions",
+						"minItems": 1,
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"key": {
+									"type": "string",
+									"minLength": 1,
+									"description": "Match key such as api_key, virtual_key, provider, config, prompt, model, endpoint_type, mcp_server, mcp_tool, workspace_id, or metadata.*"
+								},
+								"value": {
+									"anyOf": [
+										{
+											"type": "string"
+										},
+										{
+											"minItems": 1,
+											"type": "array",
+											"items": {
+												"type": "string"
+											}
+										}
+									],
+									"description": "One value or several OR-matched values; use * for wildcard matching"
+								},
+								"excludes": {
+									"description": "Values to exclude",
+									"anyOf": [
+										{
+											"type": "string"
+										},
+										{
+											"minItems": 1,
+											"type": "array",
+											"items": {
+												"type": "string"
+											}
+										}
+									]
+								}
+							},
+							"required": ["key", "value"]
+						}
 					}
 				},
 				"required": ["id"],
@@ -6737,13 +8178,14 @@
 		},
 		{
 			"name": "delete_rate_limit",
-			"description": "Delete a rate limit by id. This is permanent and removes throttling immediately; review dependent configs and virtual keys before deleting.",
+			"description": "Delete a rate-limit policy by id. Portkey removes the active throttling policy immediately, so inspect dependent callers and the full policy before deleting it.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
 					"id": {
 						"type": "string",
-						"description": "The unique identifier of the rate limit"
+						"minLength": 1,
+						"description": "Rate-limit policy UUID to delete"
 					}
 				},
 				"required": ["id"],
@@ -6758,13 +8200,35 @@
 		},
 		{
 			"name": "list_usage_limits",
-			"description": "List usage limits in the org with id, type, credit_limit, status, reset schedule, scope, conditions, and grouping. Use this before get_usage_limit, update_usage_limit, or delete_usage_limit.",
+			"description": "List cumulative cost or token usage-limit policies with current conditions, grouping, reset schedule, status, and scope. Filter by workspace, policy type, status, and pagination.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
 					"workspace_id": {
-						"description": "Filter usage limits by workspace ID",
+						"description": "Filter by workspace UUID",
 						"type": "string"
+					},
+					"status": {
+						"description": "Filter by active or archived status",
+						"type": "string",
+						"enum": ["active", "archived"]
+					},
+					"type": {
+						"description": "Filter by budget type",
+						"type": "string",
+						"enum": ["cost", "tokens"]
+					},
+					"page_size": {
+						"description": "Number of policies to return per page",
+						"type": "integer",
+						"exclusiveMinimum": 0,
+						"maximum": 9007199254740991
+					},
+					"current_page": {
+						"description": "Zero-based page number",
+						"type": "integer",
+						"minimum": 0,
+						"maximum": 9007199254740991
 					}
 				},
 				"$schema": "http://json-schema.org/draft-07/schema#"
@@ -6778,13 +8242,23 @@
 		},
 		{
 			"name": "get_usage_limit",
-			"description": "Get one usage limit by id and return its full budget, threshold, grouping, and reset details. Use list_usage_limits to discover ids or compare policies first.",
+			"description": "Get one cumulative usage-limit policy by id. Use list_usage_limits first when the id is unknown. Optionally include per-value usage counters and retrieve archived policies; scheduled reset timestamps are returned when present.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
 					"id": {
 						"type": "string",
-						"description": "The unique identifier of the usage limit"
+						"minLength": 1,
+						"description": "Usage-limit policy UUID"
+					},
+					"status": {
+						"description": "Include an archived policy by status",
+						"type": "string",
+						"enum": ["active", "archived"]
+					},
+					"include_usage": {
+						"description": "Include per-value usage counters",
+						"type": "boolean"
 					}
 				},
 				"required": ["id"],
@@ -6799,68 +8273,116 @@
 		},
 		{
 			"name": "create_usage_limit",
-			"description": "Create a cumulative budget for cost or tokens with optional alerts and weekly or monthly resets. conditions and group_by are required; use rate limits when you need request throttling.",
+			"description": "Create a cumulative cost or token usage-limit policy with non-empty conditions and grouping. A periodic reset can be weekly, monthly, or omitted for a cumulative lifetime limit.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
 					"conditions": {
+						"minItems": 1,
 						"type": "array",
 						"items": {
 							"type": "object",
 							"properties": {
-								"field": {
+								"key": {
 									"type": "string",
-									"description": "The field to match on (e.g., 'virtual_key', 'api_key', 'user_id', 'metadata.key')"
-								},
-								"operator": {
-									"type": "string",
-									"description": "The comparison operator (e.g., 'is', 'contains', 'is_not')"
+									"minLength": 1,
+									"description": "Match key such as api_key, virtual_key, provider, config, prompt, model, endpoint_type, mcp_server, mcp_tool, workspace_id, or metadata.*"
 								},
 								"value": {
-									"type": "string",
-									"description": "The value to match against"
+									"anyOf": [
+										{
+											"type": "string"
+										},
+										{
+											"minItems": 1,
+											"type": "array",
+											"items": {
+												"type": "string"
+											}
+										}
+									],
+									"description": "One value or several OR-matched values; use * for wildcard matching"
+								},
+								"excludes": {
+									"description": "Values to exclude",
+									"anyOf": [
+										{
+											"type": "string"
+										},
+										{
+											"minItems": 1,
+											"type": "array",
+											"items": {
+												"type": "string"
+											}
+										}
+									]
 								}
 							},
-							"required": ["field", "operator", "value"]
+							"required": ["key", "value"]
 						},
-						"description": "Array of conditions that determine which requests this usage limit applies to"
+						"description": "Policy match conditions"
 					},
 					"group_by": {
+						"minItems": 1,
 						"type": "array",
 						"items": {
-							"type": "string"
+							"type": "object",
+							"properties": {
+								"key": {
+									"type": "string",
+									"minLength": 1,
+									"description": "Counter grouping key such as api_key, workspace_id, virtual_key, provider, config, prompt, model, mcp_server, mcp_tool, or metadata.*"
+								}
+							},
+							"required": ["key"]
 						},
-						"description": "Array of fields to group the usage limit by (e.g., ['virtual_key'], ['api_key', 'user_id'])"
+						"description": "Usage grouping dimensions"
 					},
 					"type": {
 						"type": "string",
 						"enum": ["cost", "tokens"],
-						"description": "What to limit: 'cost' (in dollars) or 'tokens'"
+						"description": "Budget type"
 					},
 					"credit_limit": {
 						"type": "number",
-						"exclusiveMinimum": 0,
-						"description": "The maximum allowed usage (cost in dollars or token count)"
+						"minimum": 0,
+						"description": "Maximum cumulative usage"
 					},
 					"name": {
-						"description": "Optional name for the usage limit",
+						"description": "Optional policy display name",
 						"type": "string"
 					},
 					"alert_threshold": {
-						"description": "Percentage threshold (0-100) at which to send an alert",
-						"type": "number"
+						"description": "Optional alert threshold",
+						"anyOf": [
+							{
+								"type": "number",
+								"minimum": 0
+							},
+							{
+								"type": "null"
+							}
+						]
 					},
 					"periodic_reset": {
-						"description": "Automatically reset usage counters on this schedule",
-						"type": "string",
-						"enum": ["monthly", "weekly"]
+						"description": "Optional reset schedule",
+						"anyOf": [
+							{
+								"type": "string",
+								"enum": ["monthly", "weekly"]
+							},
+							{
+								"type": "null"
+							}
+						]
 					},
 					"workspace_id": {
-						"description": "Workspace ID to scope the limit to",
+						"description": "Workspace UUID scope",
 						"type": "string"
 					},
 					"organisation_id": {
-						"description": "Organisation ID to scope the limit to",
+						"description": "Organisation UUID scope",
 						"type": "string"
 					}
 				},
@@ -6876,34 +8398,50 @@
 		},
 		{
 			"name": "update_usage_limit",
-			"description": "Update a usage limit's name, credit_limit, alert_threshold, reset schedule, or reset target by id, unlike update_rate_limit which tunes request throttling. New values apply immediately to tracked usage, conditions and group_by are immutable after creation, and the call returns the updated id without clearing accumulated usage (use reset_usage_limit_entity for that).",
+			"description": "Update a cumulative usage-limit policy's name, credit limit, alert threshold, reset schedule, or one grouped value's usage. Conditions and grouping aren't mutable in the public contract.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
 					"id": {
 						"type": "string",
-						"description": "The unique identifier of the usage limit"
+						"minLength": 1,
+						"description": "Usage-limit policy UUID"
 					},
 					"name": {
-						"description": "New name for the usage limit",
+						"description": "Replacement display name",
 						"type": "string"
 					},
 					"credit_limit": {
-						"description": "New maximum allowed usage value",
+						"description": "Replacement cumulative maximum",
 						"type": "number",
-						"exclusiveMinimum": 0
+						"minimum": 0
 					},
 					"alert_threshold": {
-						"description": "New alert threshold percentage (0-100)",
-						"type": "number"
+						"description": "Replacement alert threshold",
+						"anyOf": [
+							{
+								"type": "number",
+								"minimum": 0
+							},
+							{
+								"type": "null"
+							}
+						]
 					},
 					"periodic_reset": {
-						"description": "New periodic reset schedule",
-						"type": "string",
-						"enum": ["monthly", "weekly"]
+						"description": "Replacement reset schedule",
+						"anyOf": [
+							{
+								"type": "string",
+								"enum": ["monthly", "weekly"]
+							},
+							{
+								"type": "null"
+							}
+						]
 					},
 					"reset_usage_for_value": {
-						"description": "Reset usage counters for a specific group_by value",
+						"description": "Grouped value whose usage should reset",
 						"type": "string"
 					}
 				},
@@ -6919,13 +8457,14 @@
 		},
 		{
 			"name": "delete_usage_limit",
-			"description": "Delete a usage limit by id. This is permanent, removes the budget immediately, and clears tracked usage state; check list_usage_limit_entities first if you need impact.",
+			"description": "Archive a cumulative usage-limit policy by id. The policy stops enforcing its budget but its historical record remains available through archived-status reads.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
 					"id": {
 						"type": "string",
-						"description": "The unique identifier of the usage limit"
+						"minLength": 1,
+						"description": "Usage-limit policy UUID to archive"
 					}
 				},
 				"required": ["id"],
@@ -6940,13 +8479,35 @@
 		},
 		{
 			"name": "list_usage_limit_entities",
-			"description": "List the entities currently tracked against a usage limit, including current usage. Use this to see who is near or over budget before reset_usage_limit_entity or delete_usage_limit.",
+			"description": "List the values currently tracked by one usage-limit policy with each value key and current usage. Filter by active or exhausted state, search text, and pagination before resetting one counter.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
 					"limit_id": {
 						"type": "string",
-						"description": "Usage limit policy ID"
+						"minLength": 1,
+						"description": "Usage-limit policy UUID"
+					},
+					"status": {
+						"description": "Filter by enforcement state",
+						"type": "string",
+						"enum": ["active", "exhausted"]
+					},
+					"search": {
+						"description": "Search tracked values",
+						"type": "string"
+					},
+					"page_size": {
+						"description": "Number of entities per page",
+						"type": "integer",
+						"exclusiveMinimum": 0,
+						"maximum": 100
+					},
+					"current_page": {
+						"description": "Zero-based page number",
+						"type": "integer",
+						"minimum": 0,
+						"maximum": 9007199254740991
 					}
 				},
 				"required": ["limit_id"],
@@ -6961,17 +8522,19 @@
 		},
 		{
 			"name": "reset_usage_limit_entity",
-			"description": "Reset tracked usage for one entity under a usage limit. This changes accumulated usage for that entity only; use list_usage_limit_entities to confirm the target first.",
+			"description": "Reset the current usage counter for one tracked usage-limit entity. This changes enforcement immediately for that exact policy and entity, so use the entity id returned by list_usage_limit_entities.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
 					"limit_id": {
 						"type": "string",
-						"description": "Usage limit policy ID"
+						"minLength": 1,
+						"description": "Usage-limit policy UUID"
 					},
 					"entity_id": {
 						"type": "string",
-						"description": "Entity ID to reset usage for"
+						"minLength": 1,
+						"description": "Tracked entity UUID to reset"
 					}
 				},
 				"required": ["limit_id", "entity_id"],
@@ -10024,17 +11587,30 @@
 					"current_page": {
 						"description": "Page number for pagination",
 						"type": "integer",
-						"exclusiveMinimum": 0,
+						"minimum": 0,
 						"maximum": 9007199254740991
 					},
 					"page_size": {
 						"description": "Number of results per page (max 100)",
 						"type": "integer",
 						"exclusiveMinimum": 0,
-						"maximum": 100
+						"maximum": 1000
 					},
 					"workspace_id": {
 						"description": "Filter by workspace ID",
+						"type": "string"
+					},
+					"organisation_id": {
+						"description": "Filter by organisation UUID",
+						"type": "string"
+					},
+					"type": {
+						"description": "Filter by workspace, organisation, or all integration ownership",
+						"type": "string",
+						"enum": ["workspace", "organisation", "all"]
+					},
+					"search": {
+						"description": "Search integrations by name",
 						"type": "string"
 					}
 				},
@@ -10063,7 +11639,7 @@
 					},
 					"auth_type": {
 						"type": "string",
-						"enum": ["oauth_auto", "headers", "none"],
+						"minLength": 1,
 						"description": "Authentication type: 'none', 'headers' (custom headers), or 'oauth_auto' (OAuth)"
 					},
 					"transport": {
@@ -10088,6 +11664,14 @@
 						"additionalProperties": {
 							"type": "string"
 						}
+					},
+					"configurations": {
+						"description": "Additional documented or forward-compatible configuration fields",
+						"type": "object",
+						"propertyNames": {
+							"type": "string"
+						},
+						"additionalProperties": {}
 					},
 					"workspace_id": {
 						"description": "Workspace ID — required when using organization admin API keys",
@@ -10192,7 +11776,7 @@
 					"auth_type": {
 						"description": "New authentication type",
 						"type": "string",
-						"enum": ["oauth_auto", "headers", "none"]
+						"minLength": 1
 					},
 					"transport": {
 						"description": "New transport protocol",
@@ -10208,6 +11792,14 @@
 						"additionalProperties": {
 							"type": "string"
 						}
+					},
+					"configurations": {
+						"description": "Replacement documented or forward-compatible configuration fields",
+						"type": "object",
+						"propertyNames": {
+							"type": "string"
+						},
+						"additionalProperties": {}
 					},
 					"secret_mappings": {
 						"description": "Replacement runtime Secret Reference mappings; each target_field must be unique",

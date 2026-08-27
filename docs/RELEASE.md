@@ -30,8 +30,10 @@ Everything after the merge is automatic:
 - **`Release`** (`release.yml`) re-runs the full CI suite against the tagged
   commit, then runs the publish jobs:
   - **`package-npm`** installs with lifecycle scripts disabled, builds the
-    package without OIDC permission, and uploads the exact tarball as a
-    one-day workflow artifact.
+    package without OIDC permission, installs that exact tarball into a fresh
+    prefix with lifecycle scripts disabled, verifies both executable links,
+    initializes stdio, starts the HTTP binary on loopback, and only then uploads
+    it as a one-day workflow artifact.
   - **`publish-npm`** downloads and verifies that tarball, then publishes it via
     OIDC trusted publishing with provenance and lifecycle scripts disabled. No
     checkout, dependency install, long-lived npm token, or build step occurs in
@@ -82,7 +84,7 @@ tool schemas, and scores after the release tag reaches GitHub. No source file
 should be uploaded through the Glama UI.
 
 After release, verify that the indexed commit, active-development notice,
-171-tool inventory, and TDQS score breakdown have refreshed at:
+178-tool inventory, and TDQS score breakdown have refreshed at:
 
 ```text
 https://glama.ai/mcp/servers/CodesWhat/portkey-admin-mcp
@@ -111,17 +113,14 @@ tagged commit.
 `publish-npm` requires a Trusted Publisher configured on npmjs.com for the
 `portkey-admin-mcp` package: Package Settings → Trusted Publisher → GitHub
 Actions, with organization `CodesWhat`, repository `portkey-admin-mcp`, and
-workflow filename `release.yml` (no environment). Without it the npm publish
-step fails with an auth error and the manual fallback below applies.
-
-## Manual Fallback
-
-If the automation is unavailable, the old flow still works: `npm publish
---access public` locally from the release commit, then `git tag vX.Y.Z &&
-git push origin vX.Y.Z` — the `Release` workflow picks the tag up from there
-(`publish-npm` skips because the version already exists on npm).
+workflow filename `release.yml` and environment `release`. Without it the npm
+publish step fails with an auth error. Fix the trusted-publisher configuration,
+then rerun the failed workflow jobs. Do not publish locally or create a
+replacement tag outside the automated release path.
 
 ## Backfill an Existing Tag
 
 Use the `Release` workflow's manual dispatch and pass the existing tag name.
-The workflow verifies that the tag exists before publishing a GitHub Release.
+The workflow verifies that the tag exists and is reachable from protected
+`main` before publishing. An optional `manifest_ref` may point to a corrected
+`server.json`, but that ref must also be reachable from protected `main`.

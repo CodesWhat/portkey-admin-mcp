@@ -1,6 +1,6 @@
 # Prisma AIRS interoperability
 
-Last verified: 2026-08-09
+Last verified: 2026-08-27
 
 ## Short answer
 
@@ -12,7 +12,7 @@ Changing `PORTKEY_BASE_URL` to a Prisma AIRS or Strata Cloud Manager URL will no
 
 | Surface | Management interface | Authentication | What this project supports |
 |---|---|---|---|
-| Portkey Admin API | `https://api.portkey.ai/v1` or a compatible self-hosted control plane | `x-portkey-api-key` | Full support through the 19 existing tool domains |
+| Portkey Admin API | `https://api.portkey.ai/v1` or a compatible self-hosted control plane | `x-portkey-api-key` | Full support through the 20 existing tool domains |
 | Portkey public model catalog | `https://api.portkey.ai/model-configs/...` | None | `get_model_pricing` |
 | Prisma AIRS AI Gateway | AI Security in Strata Cloud Manager | Prisma AIRS / SCM tenant credentials | No direct admin adapter yet |
 | Prisma AIRS security MCP server | Regional Palo Alto Networks `/mcp` endpoint | `x-pan-token`, OAuth, and optional `x-pan-profile` | Works as a separate MCP server; it scans and secures AI interactions rather than managing Portkey resources |

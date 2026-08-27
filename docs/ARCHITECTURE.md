@@ -21,7 +21,7 @@ transport policy in separate layers.
 ## Request flow
 
 1. An MCP client connects through `StdioServerTransport` or the HTTP runtime.
-2. `createMcpServer()` registers all 19 tool domains, or the subset allowed by
+2. `createMcpServer()` registers all 20 tool domains, or the subset allowed by
    `PORTKEY_TOOL_DOMAINS`.
 3. The MCP SDK validates a tool call against its Zod input schema. The shared
    tool wrapper adds the standard success/error envelope and annotations.
