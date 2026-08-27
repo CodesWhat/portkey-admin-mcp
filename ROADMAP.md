@@ -45,6 +45,9 @@ README, endpoint catalog, domain counts, and Enterprise-gated inventory together
 - Release tags and corrected manifests must be reachable from protected `main`.
   Publish jobs use the protected `release` environment, and the npm archive is
   installed and smoke-tested before OIDC publication.
+- Manual release backfills never execute dependencies from a dispatch-supplied
+  ref. New archives build only from GitHub's selected tag commit, existing npm
+  versions skip packaging, and hosted Qlty uses the repository's Biome version.
 - Workspace-member, prompt migration/promotion, config update/version, user
   pagination, analytics-bound, prompt-variable, and integration-delete contracts
   now match current behavior.

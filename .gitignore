@@ -30,6 +30,10 @@ coverage/
 .claude/
 .playwright-mcp/
 .vercel/
+.qlty/logs
+.qlty/out
+.qlty/plugin_cachedir
+.qlty/results
 
 # OS specific
 .DS_Store

@@ -68,6 +68,95 @@ describe("supply-chain configuration", () => {
 		assert.match(publishJob, /npm publish "\$TARBALL"[\s\S]*--ignore-scripts/);
 	});
 
+	it("builds release packages only from the trusted workflow commit", () => {
+		const workflow = readFileSync(
+			new URL("../.github/workflows/release.yml", import.meta.url),
+			"utf8",
+		);
+		const packageJob = workflow.match(
+			/\n {2}package-npm:[\s\S]*?(?=\n {2}publish-npm:)/,
+		)?.[0];
+
+		assert.ok(packageJob, "expected an isolated package-npm job");
+		assert.match(packageJob, /ref: \$\{\{ github\.sha \}\}/);
+		assert.doesNotMatch(
+			packageJob,
+			/ref: \$\{\{ needs\.release-ref\.outputs\.tag \}\}/,
+		);
+		assert.match(packageJob, /git rev-parse "\$\{GITHUB_SHA\}\^\{commit\}"/);
+		assert.match(packageJob, /tag_commit.*trusted_commit/);
+	});
+
+	it("skips package execution when a backfilled version already exists", () => {
+		const workflow = readFileSync(
+			new URL("../.github/workflows/release.yml", import.meta.url),
+			"utf8",
+		);
+		const packageJob = workflow.match(
+			/\n {2}package-npm:[\s\S]*?(?=\n {2}publish-npm:)/,
+		)?.[0];
+		const publishJob = workflow.match(
+			/\n {2}publish-npm:[\s\S]*?(?=\n {2}publish-registry:)/,
+		)?.[0];
+
+		assert.ok(packageJob);
+		assert.match(packageJob, /already_published:/);
+		assert.match(packageJob, /npm view "portkey-admin-mcp@\$\{VERSION\}"/);
+		for (const step of [
+			"Verify release source",
+			"Install dependencies without lifecycle scripts",
+			"Build package",
+			"Pack package without lifecycle scripts",
+			"Smoke-test packed package",
+			"Upload package artifact",
+		]) {
+			assert.match(
+				packageJob,
+				new RegExp(
+					`- name: ${step}\\n\\s+if: steps\\.publication\\.outputs\\.already_published != 'true'`,
+				),
+			);
+		}
+
+		assert.ok(publishJob);
+		assert.match(
+			publishJob,
+			/if: needs\.package-npm\.outputs\.already_published != 'true'/,
+		);
+	});
+
+	it("passes packed artifact paths through the environment before shell use", () => {
+		const workflow = readFileSync(
+			new URL("../.github/workflows/release.yml", import.meta.url),
+			"utf8",
+		);
+		const packageJob = workflow.match(
+			/\n {2}package-npm:[\s\S]*?(?=\n {2}publish-npm:)/,
+		)?.[0];
+
+		assert.ok(packageJob);
+		assert.doesNotMatch(
+			packageJob,
+			/run:.*\$\{\{ steps\.pack\.outputs\.tarball \}\}/,
+		);
+		assert.match(
+			packageJob,
+			/env:\s+TARBALL: \$\{\{ steps\.pack\.outputs\.tarball \}\}\s+run: node scripts\/smoke-package\.mjs "\$TARBALL"/,
+		);
+	});
+
+	it("dispatches the release workflow at the new tag", () => {
+		const workflow = readFileSync(
+			new URL("../.github/workflows/auto-tag.yml", import.meta.url),
+			"utf8",
+		);
+
+		assert.match(
+			workflow,
+			/gh workflow run release\.yml --ref "\$tag" -f tag="\$tag"/,
+		);
+	});
+
 	it("smoke-tests the exact packed artifact before upload", () => {
 		const workflow = readFileSync(
 			new URL("../.github/workflows/release.yml", import.meta.url),

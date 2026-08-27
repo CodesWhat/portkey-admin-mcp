@@ -29,11 +29,13 @@ Everything after the merge is automatic:
   creates and pushes `vX.Y.Z` and dispatches the `Release` workflow.
 - **`Release`** (`release.yml`) re-runs the full CI suite against the tagged
   commit, then runs the publish jobs:
-  - **`package-npm`** installs with lifecycle scripts disabled, builds the
-    package without OIDC permission, installs that exact tarball into a fresh
-    prefix with lifecycle scripts disabled, verifies both executable links,
-    initializes stdio, starts the HTTP binary on loopback, and only then uploads
-    it as a one-day workflow artifact.
+  - **`package-npm`** first checks whether the immutable npm version already
+    exists. New versions must run at the exact tag commit GitHub selected for
+    the workflow; only then does the job install with lifecycle scripts disabled,
+    build without OIDC permission, install that exact tarball into a fresh prefix
+    with lifecycle scripts disabled, verify both executable links, initialize
+    stdio, start the HTTP binary on loopback, and upload a one-day artifact.
+    Existing-version backfills skip dependency execution and packaging entirely.
   - **`publish-npm`** downloads and verifies that tarball, then publishes it via
     OIDC trusted publishing with provenance and lifecycle scripts disabled. No
     checkout, dependency install, long-lived npm token, or build step occurs in
@@ -120,7 +122,12 @@ replacement tag outside the automated release path.
 
 ## Backfill an Existing Tag
 
-Use the `Release` workflow's manual dispatch and pass the existing tag name.
-The workflow verifies that the tag exists and is reachable from protected
-`main` before publishing. An optional `manifest_ref` may point to a corrected
-`server.json`, but that ref must also be reachable from protected `main`.
+Use the `Release` workflow's manual dispatch at the existing tag ref and pass
+the same tag name, for example `gh workflow run release.yml --ref vX.Y.Z -f
+tag=vX.Y.Z`. The workflow verifies that the tag exists and is reachable from
+protected `main` before publishing. It never executes dependencies from a
+dispatch-supplied ref: an npm version that already exists skips packaging, while
+an unpublished version is built only when the requested tag equals the commit
+GitHub selected through `--ref`. An optional `manifest_ref` may point to a
+corrected `server.json`, but that ref must also be reachable from protected
+`main`.

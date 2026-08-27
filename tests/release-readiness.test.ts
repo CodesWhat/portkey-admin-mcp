@@ -53,6 +53,28 @@ test("an existing release can republish a corrected MCP Registry manifest", () =
 	);
 });
 
+test("Qlty pins Biome and leaves Knip to the locked CI install", () => {
+	const packageJson = readJson("package.json");
+	const devDependencies = packageJson.devDependencies as Record<string, string>;
+	const scripts = packageJson.scripts as Record<string, string>;
+	const biomeVersion = devDependencies["@biomejs/biome"];
+	const biomeConfig = readJson("biome.json");
+	const qltyConfig = readFileSync(`${root}.qlty/qlty.toml`, "utf8");
+
+	assert.equal(
+		biomeConfig.$schema,
+		`https://biomejs.dev/schemas/${biomeVersion}/schema.json`,
+	);
+	assert.match(
+		qltyConfig,
+		new RegExp(
+			`\\[\\[plugin\\]\\]\\s+name = "biome"\\s+version = "${biomeVersion}"`,
+		),
+	);
+	assert.doesNotMatch(qltyConfig, /\[\[plugin\]\]\s+name = "knip"/);
+	assert.match(scripts.ci, /npm run knip/);
+});
+
 test("every publishing job uses the protected release environment", () => {
 	const workflowSource = readFileSync(
 		`${root}.github/workflows/release.yml`,

@@ -178,11 +178,16 @@ jobs:
     timeout-minutes: 20
     permissions:
       contents: read
+    outputs:
+      already_published: ${{ steps.publication.outputs.already_published }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ needs.release-ref.outputs.tag }}
+          # workflow_dispatch inputs are untrusted to the runner. Execute
+          # dependencies only from the commit GitHub selected for this run.
+          ref: ${{ github.sha }}
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Setup Node.js
@@ -209,13 +214,46 @@ jobs:
             exit 1
           fi
 
-          echo "version=${tag#v}" >>"$GITHUB_OUTPUT"
+          {
+            echo "tag=$tag"
+            echo "version=${tag#v}"
+          } >>"$GITHUB_OUTPUT"
 
-      - name: Verify package.json matches tag
+      - name: Check npm publication state
+        id: publication
         env:
           VERSION: ${{ steps.tag.outputs.version }}
         run: |
           set -euo pipefail
+
+          view_error="$(mktemp)"
+          if npm view "portkey-admin-mcp@${VERSION}" version >/dev/null 2>"$view_error"; then
+            echo "portkey-admin-mcp@${VERSION} is already on npm; skipping package execution."
+            echo "already_published=true" >>"$GITHUB_OUTPUT"
+          elif grep -Eq 'E404|404 Not Found' "$view_error"; then
+            echo "already_published=false" >>"$GITHUB_OUTPUT"
+          else
+            cat "$view_error" >&2
+            echo "Unable to determine whether portkey-admin-mcp@${VERSION} exists" >&2
+            exit 1
+          fi
+
+      - name: Verify release source
+        if: steps.publication.outputs.already_published != 'true'
+        env:
+          RELEASE_TAG: ${{ steps.tag.outputs.tag }}
+          VERSION: ${{ steps.tag.outputs.version }}
+        run: |
+          set -euo pipefail
+
+          git fetch origin "refs/tags/${RELEASE_TAG}:refs/tags/${RELEASE_TAG}" --force
+          tag_commit="$(git rev-parse "refs/tags/${RELEASE_TAG}^{commit}")"
+          trusted_commit="$(git rev-parse "${GITHUB_SHA}^{commit}")"
+          if [[ "$tag_commit" != "$trusted_commit" ]]; then
+            echo "Refusing to build $RELEASE_TAG because it does not match the trusted workflow commit $GITHUB_SHA" >&2
+            echo "Dispatch an unpublished release with --ref $RELEASE_TAG so GitHub supplies the tagged commit." >&2
+            exit 1
+          fi
 
           package_version="$(node -p "require('./package.json').version")"
           if [[ "$package_version" != "$VERSION" ]]; then
@@ -224,12 +262,15 @@ jobs:
           fi
 
       - name: Install dependencies without lifecycle scripts
+        if: steps.publication.outputs.already_published != 'true'
         run: npm ci --ignore-scripts
 
       - name: Build package
+        if: steps.publication.outputs.already_published != 'true'
         run: npm run build
 
       - name: Pack package without lifecycle scripts
+        if: steps.publication.outputs.already_published != 'true'
         id: pack
         run: |
           set -euo pipefail
@@ -241,9 +282,13 @@ jobs:
           echo "tarball=$tarball" >>"$GITHUB_OUTPUT"
 
       - name: Smoke-test packed package
-        run: node scripts/smoke-package.mjs "${{ steps.pack.outputs.tarball }}"
+        if: steps.publication.outputs.already_published != 'true'
+        env:
+          TARBALL: ${{ steps.pack.outputs.tarball }}
+        run: node scripts/smoke-package.mjs "$TARBALL"
 
       - name: Upload package artifact
+        if: steps.publication.outputs.already_published != 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: npm-package
@@ -290,12 +335,14 @@ jobs:
           echo "version=${tag#v}" >>"$GITHUB_OUTPUT"
 
       - name: Download package artifact
+        if: needs.package-npm.outputs.already_published != 'true'
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: npm-package
           path: package
 
       - name: Verify package artifact
+        if: needs.package-npm.outputs.already_published != 'true'
         id: artifact
         env:
           VERSION: ${{ steps.tag.outputs.version }}
@@ -320,6 +367,7 @@ jobs:
           echo "tarball=$tarball" >>"$GITHUB_OUTPUT"
 
       - name: Publish to npm
+        if: needs.package-npm.outputs.already_published != 'true'
         env:
           VERSION: ${{ steps.tag.outputs.version }}
           TARBALL: ${{ steps.artifact.outputs.tarball }}
