@@ -499,7 +499,7 @@ describe("HTTP server integration", () => {
 	it("omits HSTS when TLS is not configured in app (even with x-forwarded-proto: https)", async () => {
 		await withHttpServer(
 			{
-				MCP_TRUST_PROXY: "true",
+				MCP_TRUST_PROXY: "1",
 			},
 			async ({ baseUrl }) => {
 				const authInfo = await fetch(`${baseUrl}/auth/info`, {

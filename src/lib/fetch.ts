@@ -44,14 +44,15 @@ export async function fetchWithTimeout(
  */
 export function buildQueryString(params?: object): string {
 	if (!params) return "";
-	const entries = Object.entries(params).filter(
-		([_, v]) => v !== undefined && v !== null,
-	);
+	const entries = Object.entries(params).flatMap(([key, value]) => {
+		if (value === undefined || value === null) return [];
+		if (Array.isArray(value)) {
+			return value.map((item) => [key, String(item)] as [string, string]);
+		}
+		return [[key, String(value)] as [string, string]];
+	});
 	if (entries.length === 0) return "";
-	return (
-		"?" +
-		new URLSearchParams(entries.map(([k, v]) => [k, String(v)])).toString()
-	);
+	return `?${new URLSearchParams(entries).toString()}`;
 }
 
 /**

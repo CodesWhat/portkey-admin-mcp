@@ -24,6 +24,70 @@ const PRIVATE_BASE_URL_OVERRIDE_HINT =
 const INSECURE_HTTP_OVERRIDE_HINT =
 	"Set PORTKEY_ALLOW_INSECURE_HTTP=true only for a trusted self-hosted gateway when TLS is unavailable.";
 
+function parseIpv4(host: string): [number, number, number, number] | null {
+	const match = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+	if (!match) {
+		return null;
+	}
+	const parts = match.slice(1).map(Number);
+	if (parts.some((part) => part > 255)) {
+		return null;
+	}
+	return parts as [number, number, number, number];
+}
+
+function isPrivateIpv4([a, b]: readonly number[]): boolean {
+	return (
+		a === 0 ||
+		a === 10 ||
+		a === 127 ||
+		(a === 169 && b === 254) ||
+		(a === 172 && b >= 16 && b <= 31) ||
+		(a === 192 && b === 168) ||
+		(a === 100 && b >= 64 && b <= 127)
+	);
+}
+
+function parseIpv6(host: string): number[] | null {
+	let normalized = host;
+	if (normalized.includes(".")) {
+		const separator = normalized.lastIndexOf(":");
+		const ipv4 = parseIpv4(normalized.slice(separator + 1));
+		if (separator < 0 || !ipv4) {
+			return null;
+		}
+		normalized = `${normalized.slice(0, separator)}:${((ipv4[0] << 8) | ipv4[1]).toString(16)}:${((ipv4[2] << 8) | ipv4[3]).toString(16)}`;
+	}
+
+	const halves = normalized.split("::");
+	if (halves.length > 2) {
+		return null;
+	}
+	const parseHalf = (half: string): number[] | null => {
+		if (!half) {
+			return [];
+		}
+		const values = half.split(":");
+		if (values.some((value) => !/^[0-9a-f]{1,4}$/.test(value))) {
+			return null;
+		}
+		return values.map((value) => Number.parseInt(value, 16));
+	};
+	const left = parseHalf(halves[0] ?? "");
+	const right = parseHalf(halves[1] ?? "");
+	if (!left || !right) {
+		return null;
+	}
+	if (halves.length === 1) {
+		return left.length === 8 ? left : null;
+	}
+	const omitted = 8 - left.length - right.length;
+	if (omitted < 1) {
+		return null;
+	}
+	return [...left, ...Array.from({ length: omitted }, () => 0), ...right];
+}
+
 /**
  * Detect literal loopback / private / link-local hosts so a malicious or
  * misconfigured PORTKEY_BASE_URL cannot turn the outbound client into an SSRF
@@ -41,45 +105,31 @@ export function isPrivateOrLocalHost(hostname: string): boolean {
 		return true;
 	}
 
-	let ipv4 = host;
-	if (host.includes(":")) {
-		// IPv6 literal (URL hostnames never contain ':' for real domains)
-		if (host === "::1") {
-			return true; // loopback
-		}
-		if (host.startsWith("fe80:")) {
-			return true; // link-local
-		}
-		if (host.startsWith("fc") || host.startsWith("fd")) {
-			return true; // unique local fc00::/7
-		}
-		if (host.startsWith("::ffff:")) {
-			ipv4 = host.slice("::ffff:".length); // IPv4-mapped IPv6
-		} else {
-			return false;
-		}
+	const ipv4 = parseIpv4(host);
+	if (ipv4) {
+		return isPrivateIpv4(ipv4);
 	}
 
-	const match = ipv4.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
-	if (!match) {
+	const ipv6 = parseIpv6(host);
+	if (!ipv6) {
 		return false;
 	}
-	const a = Number(match[1]);
-	const b = Number(match[2]);
-	if (a === 0 || a === 10 || a === 127) {
-		return true; // this-network, private 10/8, loopback 127/8
+	if (ipv6.every((part) => part === 0)) {
+		return true;
 	}
-	if (a === 169 && b === 254) {
-		return true; // link-local incl. cloud metadata 169.254.169.254
+	if (ipv6.slice(0, 7).every((part) => part === 0) && ipv6[7] === 1) {
+		return true;
 	}
-	if (a === 172 && b >= 16 && b <= 31) {
-		return true; // private 172.16/12
+	if ((ipv6[0] & 0xfe00) === 0xfc00 || (ipv6[0] & 0xffc0) === 0xfe80) {
+		return true;
 	}
-	if (a === 192 && b === 168) {
-		return true; // private 192.168/16
-	}
-	if (a === 100 && b >= 64 && b <= 127) {
-		return true; // CGNAT 100.64/10
+	if (ipv6.slice(0, 5).every((part) => part === 0) && ipv6[5] === 0xffff) {
+		return isPrivateIpv4([
+			ipv6[6] >> 8,
+			ipv6[6] & 0xff,
+			ipv6[7] >> 8,
+			ipv6[7] & 0xff,
+		]);
 	}
 	return false;
 }

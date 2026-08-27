@@ -45,9 +45,28 @@ test("an existing release can republish a corrected MCP Registry manifest", () =
 	);
 
 	assert.match(workflowSource, /manifest_ref:/);
+	assert.match(workflowSource, /needs\.release-ref\.outputs\.manifest_ref/);
+	assert.match(workflowSource, /needs\.release-ref\.outputs\.tag/);
 	assert.match(
 		workflowSource,
-		/github\.event\.inputs\.manifest_ref \|\| github\.event\.inputs\.tag/,
+		/git merge-base --is-ancestor "\$manifest_commit" origin\/main/,
+	);
+});
+
+test("every publishing job uses the protected release environment", () => {
+	const workflowSource = readFileSync(
+		`${root}.github/workflows/release.yml`,
+		"utf8",
+	);
+
+	assert.match(
+		workflowSource,
+		/git merge-base --is-ancestor "\$tag_commit" origin\/main/,
+	);
+	assert.equal(
+		workflowSource.match(/^\s{4}environment: release$/gm)?.length,
+		3,
+		"GitHub Release, npm publish, and MCP Registry publish must all use the release environment",
 	);
 });
 
@@ -82,9 +101,31 @@ test("the live smoke suite covers new read-only compatibility surfaces", () => {
 		"listMcpServers",
 		"listMcpServerConnections",
 		"getModelPricing",
+		"listDeployments",
+		"getDeployment",
+		"listMcpIntegrations",
+		"getMcpIntegration",
+		"listUsageLimitEntities",
+		"getCacheSummary",
+		"getAnalyticsGroupProviders",
 	]) {
 		assert.match(smokeSource, new RegExp(`\\.${method}\\(`));
 	}
+});
+
+test("README verification checks categories, domains, and gated inventory", () => {
+	const verifierSource = readFileSync(
+		`${root}scripts/verify-readme-tools.mjs`,
+		"utf8",
+	);
+
+	assert.match(verifierSource, /README_CATEGORY_SOURCES/);
+	assert.match(verifierSource, /TOOL_DOMAIN_REGISTRARS/);
+	assert.match(verifierSource, /ENTERPRISE_GATED_TOOL_NAMES/);
+	assert.match(
+		verifierSource,
+		/ENDPOINTS\.md must contain exactly one catalog row/,
+	);
 });
 
 test("the release guide covers every published catalog", () => {

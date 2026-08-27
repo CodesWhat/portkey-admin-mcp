@@ -21,6 +21,8 @@ describe("getServerConfig", () => {
 		delete process.env.MCP_MAX_SESSIONS;
 		delete process.env.MCP_SESSION_TIMEOUT;
 		delete process.env.MCP_EVENT_STORE_COMMAND_TIMEOUT_MS;
+		delete process.env.MCP_EVENT_STORE_MAX_EVENTS;
+		delete process.env.MCP_EVENT_STORE_MAX_BYTES;
 		delete process.env.MCP_TLS_KEY_PATH;
 		delete process.env.MCP_TLS_CERT_PATH;
 		delete process.env.MCP_TLS_CA_PATH;
@@ -31,6 +33,8 @@ describe("getServerConfig", () => {
 		assert.equal(config.eventStore.mode, "off");
 		assert.equal(config.eventStore.ttlSeconds, 300);
 		assert.equal(config.eventStore.commandTimeoutMs, 5_000);
+		assert.equal(config.eventStore.maxEvents, 10_000);
+		assert.equal(config.eventStore.maxBytes, 64 * 1024 * 1024);
 		assert.equal(config.protocol, "http");
 		assert.equal(config.port, 3000);
 		assert.equal(config.host, "127.0.0.1");
@@ -180,6 +184,23 @@ describe("getServerConfig", () => {
 		);
 	});
 
+	it("configures positive in-memory event count and byte caps", () => {
+		process.env.MCP_EVENT_STORE_MAX_EVENTS = "25";
+		process.env.MCP_EVENT_STORE_MAX_BYTES = "4096";
+		const config = getServerConfig();
+		assert.equal(config.eventStore.maxEvents, 25);
+		assert.equal(config.eventStore.maxBytes, 4096);
+
+		for (const [name, value] of [
+			["MCP_EVENT_STORE_MAX_EVENTS", "0"],
+			["MCP_EVENT_STORE_MAX_BYTES", "1.5"],
+		] as const) {
+			resetEnv();
+			process.env[name] = value;
+			assert.throws(() => getServerConfig(), new RegExp(`Invalid ${name}`));
+		}
+	});
+
 	it("rejects numeric environment values with trailing characters", () => {
 		const invalidValues = [
 			["PORT", "3000oops", /Invalid PORT value/],
@@ -194,6 +215,11 @@ describe("getServerConfig", () => {
 				"MCP_EVENT_STORE_COMMAND_TIMEOUT_MS",
 				"5000ms",
 				/Invalid MCP_EVENT_STORE_COMMAND_TIMEOUT_MS value/,
+			],
+			[
+				"MCP_EVENT_STORE_MAX_EVENTS",
+				"100events",
+				/Invalid MCP_EVENT_STORE_MAX_EVENTS value/,
 			],
 		] as const;
 

@@ -24,12 +24,72 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  release-ref:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      tag: ${{ steps.resolve.outputs.tag }}
+      ci_ref: ${{ steps.resolve.outputs.ci_ref }}
+      manifest_ref: ${{ steps.resolve.outputs.manifest_ref }}
+    steps:
+      - name: Checkout release metadata
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Require protected-main ancestry
+        id: resolve
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_TAG: ${{ github.event.inputs.tag }}
+          MANIFEST_REF: ${{ github.event.inputs.manifest_ref }}
+        run: |
+          set -euo pipefail
+
+          tag="${GITHUB_REF_NAME}"
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            tag="$INPUT_TAG"
+          fi
+          if [[ ! "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "Refusing to publish non-semver tag: $tag" >&2
+            exit 1
+          fi
+
+          git fetch origin main --tags --force
+          tag_commit="$(git rev-list -n 1 "refs/tags/$tag")"
+          if [[ -z "$tag_commit" ]] || ! git merge-base --is-ancestor "$tag_commit" origin/main; then
+            echo "Release tag $tag is not reachable from protected main" >&2
+            exit 1
+          fi
+
+          ci_ref="$tag"
+          manifest_ref="$MANIFEST_REF"
+          if [[ -n "$manifest_ref" ]]; then
+            git fetch origin "$manifest_ref"
+            manifest_commit="$(git rev-parse 'FETCH_HEAD^{commit}')"
+            if ! git merge-base --is-ancestor "$manifest_commit" origin/main; then
+              echo "Manifest ref is not reachable from protected main: $manifest_ref" >&2
+              exit 1
+            fi
+            ci_ref="$manifest_ref"
+          fi
+
+          {
+            echo "tag=$tag"
+            echo "ci_ref=$ci_ref"
+            echo "manifest_ref=$manifest_ref"
+          } >>"$GITHUB_OUTPUT"
+
   ci:
+    needs: release-ref
     # Gate the release on the full CI suite for the tagged commit, so a broken
     # tag never produces a GitHub Release or an MCP Registry entry.
     uses: ./.github/workflows/ci.yml
     with:
-      ref: ${{ github.event.inputs.tag || github.ref }}
+      ref: ${{ needs.release-ref.outputs.ci_ref }}
     permissions:
       contents: read
       # ci.yml's dependency-review job declares this; it skips on release runs
@@ -43,9 +103,10 @@ jobs:
       PORTKEY_API_KEY_STAGING: ${{ secrets.PORTKEY_API_KEY_STAGING }}
 
   github-release:
-    needs: ci
+    needs: [release-ref, ci]
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    environment: release
     permissions:
       contents: write # gh release create
     steps:
@@ -112,7 +173,7 @@ jobs:
           gh release create "$tag" "${args[@]}"
 
   package-npm:
-    needs: ci
+    needs: [release-ref, ci]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -121,7 +182,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.inputs.tag || github.ref }}
+          ref: ${{ needs.release-ref.outputs.tag }}
           persist-credentials: false
 
       - name: Setup Node.js
@@ -179,6 +240,9 @@ jobs:
           fi
           echo "tarball=$tarball" >>"$GITHUB_OUTPUT"
 
+      - name: Smoke-test packed package
+        run: node scripts/smoke-package.mjs "${{ steps.pack.outputs.tarball }}"
+
       - name: Upload package artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -188,9 +252,10 @@ jobs:
           retention-days: 1
 
   publish-npm:
-    needs: [ci, package-npm]
+    needs: [release-ref, ci, package-npm]
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    environment: release
     permissions:
       contents: read
       # This job receives OIDC only after dependency execution and packaging
@@ -283,9 +348,10 @@ jobs:
             --tag "$dist_tag"
 
   publish-registry:
-    needs: [ci, publish-npm]
+    needs: [release-ref, ci, publish-npm]
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    environment: release
     permissions:
       contents: read
       id-token: write
@@ -295,7 +361,7 @@ jobs:
         with:
           # A manifest-only correction can republish an existing version without
           # moving its immutable release tag or republishing its npm artifact.
-          ref: ${{ github.event.inputs.manifest_ref || github.event.inputs.tag || github.ref }}
+          ref: ${{ needs.release-ref.outputs.manifest_ref || needs.release-ref.outputs.tag }}
           persist-credentials: false
 
       - name: Setup Node.js

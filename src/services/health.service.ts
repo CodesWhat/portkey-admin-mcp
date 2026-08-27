@@ -13,10 +13,13 @@ interface CachedHealth {
 }
 
 const CACHE_TTL_MS = 10000; // 10 seconds
+const FAILURE_RETRY_MS = 1000;
 
 export class HealthService extends BaseService {
 	protected override readonly timeout = 5000;
 	private cachedHealth: CachedHealth | null = null;
+	private cachedFailure: { error: Error; timestamp: number } | null = null;
+	private inFlight: Promise<HealthCheckResult> | null = null;
 
 	/**
 	 * Ping the Portkey API to check health
@@ -24,7 +27,6 @@ export class HealthService extends BaseService {
 	 * Results are cached for 10 seconds
 	 */
 	async ping(): Promise<HealthCheckResult> {
-		// Check cache
 		if (this.cachedHealth) {
 			const age = Date.now() - this.cachedHealth.timestamp;
 			if (age < CACHE_TTL_MS) {
@@ -34,7 +36,28 @@ export class HealthService extends BaseService {
 				};
 			}
 		}
+		if (
+			this.cachedFailure &&
+			Date.now() - this.cachedFailure.timestamp < FAILURE_RETRY_MS
+		) {
+			throw this.cachedFailure.error;
+		}
+		if (this.inFlight) {
+			return this.inFlight;
+		}
 
+		const probe = this.probe();
+		this.inFlight = probe;
+		try {
+			return await probe;
+		} finally {
+			if (this.inFlight === probe) {
+				this.inFlight = null;
+			}
+		}
+	}
+
+	private async probe(): Promise<HealthCheckResult> {
 		const startTime = Date.now();
 
 		try {
@@ -46,11 +69,11 @@ export class HealthService extends BaseService {
 				latency_ms,
 			};
 
-			// Cache successful result
 			this.cachedHealth = {
 				result,
 				timestamp: Date.now(),
 			};
+			this.cachedFailure = null;
 
 			return result;
 		} catch (error) {
@@ -58,8 +81,14 @@ export class HealthService extends BaseService {
 			const errorMessage =
 				error instanceof Error ? error.message : "Unknown error";
 
-			// Don't cache errors
-			throw new Error(`Health check failed: ${errorMessage} (${latency_ms}ms)`);
+			const healthError = new Error(
+				`Health check failed: ${errorMessage} (${latency_ms}ms)`,
+			);
+			this.cachedFailure = {
+				error: healthError,
+				timestamp: Date.now(),
+			};
+			throw healthError;
 		}
 	}
 }

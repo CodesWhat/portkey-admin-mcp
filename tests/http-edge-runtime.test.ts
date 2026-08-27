@@ -59,7 +59,9 @@ const moduleLoadEnvironment = new Map(
 );
 process.env.MCP_AUTH_MODE = "bearer";
 process.env.MCP_AUTH_TOKEN = AUTH_TOKEN;
-const { createHttpAppRuntime } = await import("../src/lib/http-app.js");
+const httpAppModule = await import("../src/lib/http-app.js");
+const { createHttpAppRuntime } = httpAppModule;
+const { resetSecurityStateForTest } = await import("../src/lib/security.js");
 for (const [key, value] of moduleLoadEnvironment) {
 	if (value === undefined) {
 		delete process.env[key];
@@ -193,7 +195,23 @@ function replaceProcessExit(
 }
 
 describe("HTTP runtime edge behavior", { concurrency: false }, () => {
-	it("rejects invalid runtime-only configuration and accepts trust proxy variants", async () => {
+	it("backs off idle replay polling and resets after delivery", () => {
+		const getNextReplayPollDelay = (
+			httpAppModule as typeof httpAppModule & {
+				getNextReplayPollDelay?: (
+					currentDelayMs: number,
+					deliveredEvent: boolean,
+				) => number;
+			}
+		).getNextReplayPollDelay;
+		assert.equal(typeof getNextReplayPollDelay, "function");
+		assert.equal(getNextReplayPollDelay?.(100, false), 200);
+		assert.equal(getNextReplayPollDelay?.(800, false), 1000);
+		assert.equal(getNextReplayPollDelay?.(1000, false), 1000);
+		assert.equal(getNextReplayPollDelay?.(1000, true), 100);
+	});
+
+	it("rejects unsafe runtime configuration and accepts bounded trust proxy variants", async () => {
 		await withEnvironment({ MCP_READY_CHECK_MODE: "remote" }, () => {
 			assert.throws(
 				() => createHttpAppRuntime(),
@@ -210,8 +228,14 @@ describe("HTTP runtime edge behavior", { concurrency: false }, () => {
 			});
 		}
 
+		await withEnvironment({ MCP_TRUST_PROXY: "true" }, () => {
+			assert.throws(
+				() => createHttpAppRuntime(),
+				/MCP_TRUST_PROXY=true is unsafe/,
+			);
+		});
+
 		for (const [raw, expected] of [
-			["true", true],
 			["false", false],
 			["2", 2],
 			["uniquelocal", "uniquelocal"],
@@ -225,6 +249,33 @@ describe("HTTP runtime edge behavior", { concurrency: false }, () => {
 				}
 			});
 		}
+	});
+
+	it("logs the effective rate-limit configuration", async () => {
+		const port = await getFreePort();
+		await withEnvironment(
+			{ PORT: String(port), RATE_LIMIT_ENABLED: " FALSE " },
+			async () => {
+				await resetSecurityStateForTest();
+				const originalInfo = Logger.info;
+				let metadata: Record<string, unknown> | undefined;
+				Logger.info = ((message, extra) => {
+					if (message === "HTTP(S) server configuration") {
+						metadata = extra?.metadata;
+					}
+				}) as typeof Logger.info;
+				const runtime = createHttpAppRuntime();
+				const server = runtime.startHttpServer();
+				try {
+					await waitUntilListening(server);
+					assert.equal(metadata?.rateLimitEnabled, false);
+				} finally {
+					Logger.info = originalInfo;
+					await closeServer(server);
+					await runtime.closeHttpApp();
+				}
+			},
+		);
 	});
 
 	it("serves explicit readiness, health, root, and auth metadata states", async () => {

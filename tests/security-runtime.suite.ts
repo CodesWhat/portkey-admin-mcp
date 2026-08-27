@@ -68,6 +68,61 @@ describe("supply-chain configuration", () => {
 		assert.match(publishJob, /npm publish "\$TARBALL"[\s\S]*--ignore-scripts/);
 	});
 
+	it("smoke-tests the exact packed artifact before upload", () => {
+		const workflow = readFileSync(
+			new URL("../.github/workflows/release.yml", import.meta.url),
+			"utf8",
+		);
+		const packageJob = workflow.match(
+			/\n {2}package-npm:[\s\S]*?(?=\n {2}publish-npm:)/,
+		)?.[0];
+		assert.ok(packageJob);
+		assert.match(packageJob, /Smoke-test packed package/);
+		assert.match(packageJob, /node scripts\/smoke-package\.mjs/);
+
+		const smokeScript = readFileSync(
+			new URL("../scripts/smoke-package.mjs", import.meta.url),
+			"utf8",
+		);
+		assert.match(smokeScript, /npm[\s\S]*install[\s\S]*--ignore-scripts/);
+		assert.match(smokeScript, /portkey-admin-mcp-http/);
+		assert.match(smokeScript, /portkey-admin-mcp/);
+		assert.match(smokeScript, /initialize/);
+		assert.match(smokeScript, /\/health/);
+	});
+
+	it("gates every release ref on protected-main ancestry before publishing", () => {
+		const workflow = readFileSync(
+			new URL("../.github/workflows/release.yml", import.meta.url),
+			"utf8",
+		);
+		const gateJob = workflow.match(/\n {2}release-ref:[\s\S]*?\n {2}ci:/)?.[0];
+
+		assert.ok(gateJob, "expected a release-ref job before CI");
+		assert.match(gateJob, /git fetch origin main/);
+		assert.match(gateJob, /git merge-base --is-ancestor/);
+		assert.match(gateJob, /MANIFEST_REF/);
+		for (const job of [
+			"ci",
+			"github-release",
+			"package-npm",
+			"publish-npm",
+			"publish-registry",
+		]) {
+			const block = workflow.match(
+				new RegExp(`\\n {2}${job}:[\\s\\S]*?(?=\\n {2}[a-z][a-z-]+:|$)`),
+			)?.[0];
+			assert.ok(block, `expected ${job} job`);
+			assert.match(block, /needs:.*release-ref/);
+		}
+		for (const job of ["publish-npm", "publish-registry"]) {
+			const block = workflow.match(
+				new RegExp(`\\n {2}${job}:[\\s\\S]*?(?=\\n {2}[a-z][a-z-]+:|$)`),
+			)?.[0];
+			assert.match(block ?? "", /environment:\s*release/);
+		}
+	});
+
 	it("removes npm tooling from the production container", () => {
 		const dockerfile = readFileSync(
 			new URL("../Dockerfile", import.meta.url),
@@ -466,42 +521,26 @@ describe("origin security configuration", () => {
 		assert.equal(outcome, "rejected");
 	});
 
-	it("rate-limits authentication before applying the principal-aware limit", () => {
+	it("uses one refillable limiter before auth and a principal limiter after auth", () => {
 		const httpApp = readFileSync(
 			new URL("../src/lib/http-app.ts", import.meta.url),
 			"utf8",
 		);
-		const packageJson = JSON.parse(
-			readFileSync(new URL("../package.json", import.meta.url), "utf8"),
-		) as { dependencies?: Record<string, string> };
-		const modeledLimiterIndex = httpApp.indexOf("expressRateLimit({");
 		const preAuthIndex = httpApp.indexOf("app.use(rateLimitMiddleware);");
 		const authIndex = httpApp.indexOf("app.use(mcpAuthMiddleware);");
 		const principalIndex = httpApp.indexOf(
 			"app.use(principalRateLimitMiddleware);",
 		);
 
-		assert.equal(
-			typeof packageJson.dependencies?.["express-rate-limit"],
-			"string",
-			"expected express-rate-limit to be a direct runtime dependency",
-		);
-		assert.ok(
-			modeledLimiterIndex >= 0,
-			"expected a CodeQL-modeled Express limiter",
-		);
+		assert.doesNotMatch(httpApp, /expressRateLimit\(|express-rate-limit/);
 		assert.ok(preAuthIndex >= 0, "expected a pre-authentication limiter");
-		assert.ok(
-			modeledLimiterIndex < preAuthIndex,
-			"modeled IP limiter must run before the distributed limiter",
-		);
 		assert.ok(
 			preAuthIndex < authIndex,
 			"pre-auth limiter must run before auth",
 		);
 		assert.ok(
 			authIndex < principalIndex,
-			"principal-aware limiter must run after auth",
+			"principal limiter must run after auth",
 		);
 	});
 
