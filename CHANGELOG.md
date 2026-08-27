@@ -7,6 +7,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-08-27
+
+Whole-application remediation and Portkey Admin API compatibility release. The
+inventory grows from 171 to 178 tools across 20 domains, so MCP clients should
+refresh `tools/list`. Existing tool names remain available, but several schemas
+and response envelopes now match Portkey's current published contracts.
+
+**HTTP operator action:** `MCP_TRUST_PROXY=true` is no longer accepted because
+it trusts forwarding headers from every peer. Configure an exact nonnegative hop
+count or a trusted proxy subnet instead. In-memory replay now also defaults to
+10,000 events and 64 MiB; override the documented caps only after sizing the
+single-process deployment.
+
+### Added
+
+- Add five Enterprise/self-hosted deployment-management tools for registration,
+  reads, updates, and archival, including warnings around one-time credentials.
+- Add cache-summary and provider-grouped analytics with current filters,
+  ordering, columns, totals, and pagination.
+- Add fixture-backed contracts for deployments, analytics, rate and usage
+  limits, and MCP integrations, plus an expanded credentialed read-only smoke
+  suite that distinguishes expected permission/hosted-route skips from failures.
+- Generate and verify the complete endpoint matrix, README categories,
+  Enterprise-gated inventory, and LobeHub capability manifest from the tool
+  registry.
+
+### Changed
+
+- Align rate and usage policies, Virtual Keys, API keys, users, invitations,
+  workspaces, members, and MCP integrations with the current public OpenAPI.
+- Preserve raw-template state and typed prompt variables through create, update,
+  version history, migration, and promotion workflows.
+- Return truthful config and workspace-member acknowledgements, parse serialized
+  config versions, and load real prompt version history.
+- Gate every publication job on protected-main ancestry and the protected
+  `release` environment. npm publication uses the environment-bound OIDC trusted
+  publisher and never needs a long-lived GitHub secret.
+
+### Fixed
+
+- Compare every supplied prompt execution field during migration, honor explicit
+  promotion overrides, and page exact-name searches until the target is found.
+- Coalesce concurrent readiness probes, cache brief failures, add adaptive replay
+  polling backoff, and bound the indexed in-memory event store by count and bytes.
+- Return JSON-RPC internal errors for stateful replay failures, release replay
+  leases on every failure path, and remove the duplicate fixed-window limiter.
+- Parse IPv6 private, mapped IPv4, link-local, and unspecified addresses
+  numerically; validate trust-proxy settings before starting HTTP.
+- Preserve zero analytics bounds, map user pagination correctly, move integration
+  slugs into query data, and log the resolved rate-limit configuration.
+- Start the HTTP executable correctly through installed package symlinks and
+  smoke-test the exact packed archive before granting OIDC publication access.
+
 ## [0.10.1] - 2026-08-23
 
 Maintenance release: documentation, CI, and dependencies. No source changes, so tool inventory is unchanged at 171 and `tools/list` output is byte-identical to 0.10.0. Nothing about server behavior changes; no client needs to re-sync.
@@ -535,7 +588,8 @@ First stable release. Graduates from beta with 151 tools covering ~98% of the Po
 - Vercel deployment support
 - Contract tests, E2E tests, security tests
 
-[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.10.1...HEAD
+[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.11.0...HEAD
+[0.11.0]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.10.1...v0.11.0
 [0.10.1]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.10.0...v0.10.1
 [0.10.0]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.8.0...v0.9.0
