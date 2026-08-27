@@ -247,16 +247,6 @@ const INVITE = {
 	expires_at: "2026-01-08T00:00:00.000Z",
 };
 
-const WORKSPACE = {
-	id: "workspace-1",
-	name: "Production",
-	slug: "production",
-	description: "Production workloads",
-	created_at: "2026-01-01T00:00:00.000Z",
-	last_updated_at: "2026-01-02T00:00:00.000Z",
-	defaults: { is_default: 1, metadata: { env: "prod" } },
-};
-
 const MEMBER = {
 	id: "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
 	first_name: "Grace",
@@ -274,9 +264,10 @@ const RATE_LIMIT = {
 	type: "requests",
 	unit: "rpm",
 	value: 100,
+	target: "llm",
 	status: "active",
-	conditions: [{ field: "virtual_key", operator: "is", value: "vk-1" }],
-	group_by: ["virtual_key"],
+	conditions: [{ key: "virtual_key", value: "vk-1" }],
+	group_by: [{ key: "virtual_key" }],
 	workspace_id: "workspace-1",
 	organisation_id: "org-1",
 	created_at: "2026-01-01T00:00:00.000Z",
@@ -290,9 +281,12 @@ const USAGE_LIMIT = {
 	credit_limit: 500,
 	alert_threshold: 80,
 	periodic_reset: "monthly",
+	periodic_reset_days: null,
+	next_usage_reset_at: null,
+	last_reset_at: "2026-01-01T00:00:00.000Z",
 	status: "active",
-	conditions: [{ field: "user_id", operator: "is", value: "user-1" }],
-	group_by: ["user_id"],
+	conditions: [{ key: "metadata._user", value: "user-1" }],
+	group_by: [{ key: "metadata._user" }],
 	workspace_id: "workspace-1",
 	organisation_id: "org-1",
 	created_at: "2026-01-01T00:00:00.000Z",
@@ -616,7 +610,7 @@ describe("workspace mutation callbacks", () => {
 		const callback = callbacksFor(registerWorkspacesTools, "workspaces", {
 			updateWorkspace: async (id: string, params: unknown) => {
 				calls.push([id, params]);
-				return WORKSPACE;
+				return { success: true };
 			},
 		}).get("update_workspace");
 		assert.ok(callback);
@@ -628,6 +622,11 @@ describe("workspace mutation callbacks", () => {
 			description: "Updated",
 			is_default: 0,
 			metadata: { env: "prod-v2" },
+			input_guardrails: ["guardrail-in"],
+			output_guardrails: ["guardrail-out"],
+			user_api_key_config: "pc-default",
+			usage_limits: [],
+			rate_limits: [],
 		});
 		await callback({ workspace_id: "workspace-1", name: "Production" });
 
@@ -638,7 +637,15 @@ describe("workspace mutation callbacks", () => {
 					name: "Production v2",
 					slug: "production-v2",
 					description: "Updated",
-					defaults: { is_default: 0, metadata: { env: "prod-v2" } },
+					defaults: {
+						is_default: 0,
+						metadata: { env: "prod-v2" },
+						input_guardrails: ["guardrail-in"],
+						output_guardrails: ["guardrail-out"],
+						user_api_key_config: "pc-default",
+					},
+					usage_limits: [],
+					rate_limits: [],
 				},
 			],
 			["workspace-1", { name: "Production" }],
@@ -771,13 +778,13 @@ describe("rate and usage limit lifecycle callbacks", () => {
 	it("lists, updates, and deletes rate limits", async () => {
 		const calls: unknown[] = [];
 		const callbacks = callbacksFor(registerLimitsTools, "limits", {
-			listRateLimits: async (workspaceId: string) => {
-				calls.push(["list", workspaceId]);
+			listRateLimits: async (params: unknown) => {
+				calls.push(["list", params]);
 				return { total: 1, data: [RATE_LIMIT] };
 			},
 			updateRateLimit: async (id: string, params: unknown) => {
 				calls.push(["update", id, params]);
-				return { ...RATE_LIMIT, name: "Updated", unit: "rph", value: 200 };
+				return {};
 			},
 			deleteRateLimit: async (id: string) => {
 				calls.push(["delete", id]);
@@ -788,16 +795,31 @@ describe("rate and usage limit lifecycle callbacks", () => {
 		const remove = callbacks.get("delete_rate_limit");
 		assert.ok(list && update && remove);
 
-		const listed = parseToolResult(await list({ workspace_id: "workspace-1" }));
+		const listed = parseToolResult(
+			await list({
+				workspace_id: "workspace-1",
+				status: "active",
+				target: "llm",
+				current_page: 0,
+			}),
+		);
 		const updated = parseToolResult(
 			await update({ id: "rate-1", name: "Updated", unit: "rph", value: 200 }),
 		);
 		const deleted = parseToolResult(await remove({ id: "rate-1" }));
 		assert.equal(listed.total, 1);
-		assert.equal((updated.rate_limit as Record<string, unknown>).value, 200);
+		assert.equal(updated.success, true);
 		assert.equal(deleted.success, true);
 		assert.deepEqual(calls, [
-			["list", "workspace-1"],
+			[
+				"list",
+				{
+					workspace_id: "workspace-1",
+					status: "active",
+					target: "llm",
+					current_page: 0,
+				},
+			],
 			["update", "rate-1", { name: "Updated", unit: "rph", value: 200 }],
 			["delete", "rate-1"],
 		]);
@@ -812,7 +834,7 @@ describe("rate and usage limit lifecycle callbacks", () => {
 			},
 			updateUsageLimit: async (id: string, params: unknown) => {
 				calls.push(["update", id, params]);
-				return { ...USAGE_LIMIT, credit_limit: 750 };
+				return {};
 			},
 			deleteUsageLimit: async (id: string) => {
 				calls.push(["delete", id]);
@@ -836,10 +858,7 @@ describe("rate and usage limit lifecycle callbacks", () => {
 		);
 		const deleted = parseToolResult(await remove({ id: "usage-1" }));
 		assert.equal(usage.credit_limit, 500);
-		assert.equal(
-			(updated.usage_limit as Record<string, unknown>).credit_limit,
-			750,
-		);
+		assert.equal(updated.success, true);
 		assert.equal(deleted.success, true);
 		assert.deepEqual(calls, [
 			["get", "usage-1"],
@@ -861,18 +880,15 @@ describe("rate and usage limit lifecycle callbacks", () => {
 	it("lists tracked entities and resets only the selected entity", async () => {
 		const calls: unknown[] = [];
 		const callbacks = callbacksFor(registerLimitsTools, "limits", {
-			listUsageLimitEntities: async (limitId: string) => {
-				calls.push(["list", limitId]);
+			listUsageLimitEntities: async (limitId: string, params: unknown) => {
+				calls.push(["list", limitId, params]);
 				return {
 					total: 1,
 					data: [
 						{
 							id: "entity-1",
-							entity_id: "user-1",
-							entity_type: "user",
-							usage: 42,
-							limit_id: limitId,
-							last_reset_at: "2026-01-01T00:00:00.000Z",
+							value_key: "metadata._user:user-1",
+							current_usage: 42,
 						},
 					],
 				};
@@ -885,14 +901,31 @@ describe("rate and usage limit lifecycle callbacks", () => {
 		const reset = callbacks.get("reset_usage_limit_entity");
 		assert.ok(list && reset);
 
-		const listed = parseToolResult(await list({ limit_id: "usage-1" }));
+		const listed = parseToolResult(
+			await list({
+				limit_id: "usage-1",
+				status: "exhausted",
+				search: "user-1",
+				page_size: 100,
+				current_page: 0,
+			}),
+		);
 		const result = parseToolResult(
 			await reset({ limit_id: "usage-1", entity_id: "user-1" }),
 		);
 		assert.equal(listed.total, 1);
 		assert.equal(result.success, true);
 		assert.deepEqual(calls, [
-			["list", "usage-1"],
+			[
+				"list",
+				"usage-1",
+				{
+					status: "exhausted",
+					search: "user-1",
+					page_size: 100,
+					current_page: 0,
+				},
+			],
 			["reset", "usage-1", "user-1"],
 		]);
 	});

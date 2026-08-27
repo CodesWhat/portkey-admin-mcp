@@ -126,7 +126,7 @@ async function captureServiceRequest(
 		get: (path: string, params?: object) => Promise<unknown>;
 		post: (path: string, body?: unknown) => Promise<unknown>;
 		put: (path: string, body?: unknown) => Promise<unknown>;
-		delete: (path: string) => Promise<unknown>;
+		delete: (path: string, params?: object) => Promise<unknown>;
 	};
 	const originalMethods = {
 		get: basePrototype.get,
@@ -138,7 +138,7 @@ async function captureServiceRequest(
 
 	basePrototype.get = async (path: string, params?: object) => {
 		captured = { method: "GET", path, params };
-		return {};
+		return path.endsWith("/versions") ? { data: [] } : {};
 	};
 	basePrototype.post = async (path: string, body?: unknown) => {
 		captured = { method: "POST", path, body };
@@ -148,8 +148,8 @@ async function captureServiceRequest(
 		captured = { method: "PUT", path, body };
 		return {};
 	};
-	basePrototype.delete = async (path: string) => {
-		captured = { method: "DELETE", path };
+	basePrototype.delete = async (path: string, params?: object) => {
+		captured = { method: "DELETE", path, params };
 		return {};
 	};
 
@@ -766,22 +766,8 @@ describe("ConfigsService response parsing", () => {
 			object: "config",
 		});
 		basePrototype.put = async () => ({
-			id: "cfg_123",
-			name: "Support Config",
-			workspace_id: "ws_123",
-			slug: "support-config",
-			organisation_id: "org_123",
-			is_default: 0,
-			status: "active",
-			owner_id: "user_123",
-			updated_by: "user_456",
-			created_at: "2026-01-01T00:00:00.000Z",
-			last_updated_at: "2026-01-02T00:00:00.000Z",
-			config: '{"retry":{"attempts":2,"on_status_codes":[429]}}',
-			format: "json",
-			type: "router",
-			version_id: "ver_124",
-			object: "config",
+			success: true,
+			data: { version_id: "ver_124" },
 		});
 
 		try {
@@ -794,11 +780,9 @@ describe("ConfigsService response parsing", () => {
 				cache: { mode: "simple", max_age: 300 },
 				targets: [{ provider: "openai" }],
 			});
-			assert.deepEqual(updated.config, {
-				retry: {
-					attempts: 2,
-					on_status_codes: [429],
-				},
+			assert.deepEqual(updated, {
+				success: true,
+				version_id: "ver_124",
 			});
 		} finally {
 			basePrototype.get = originalGet;
@@ -1017,6 +1001,7 @@ describe("get_prompt tool formatting", () => {
 				server as never,
 				{
 					prompts: {
+						listPromptVersions: async () => [],
 						getPrompt: async () => ({
 							id: "prompt-1",
 							name: "Support Prompt",
@@ -1110,6 +1095,7 @@ describe("get_prompt tool formatting", () => {
 					server as never,
 					{
 						prompts: {
+							listPromptVersions: async () => [],
 							getPrompt: async () => ({
 								id: "prompt-1",
 								name: "Support Prompt",
@@ -1166,6 +1152,7 @@ describe("get_prompt tool formatting", () => {
 				server as never,
 				{
 					prompts: {
+						listPromptVersions: async () => [],
 						getPrompt: async () => ({
 							id: "prompt-1",
 							name: "Support Prompt",
@@ -2143,8 +2130,7 @@ describe("Service path param encoding", () => {
 						),
 					),
 				expectedMethod: "DELETE",
-				expectedPath:
-					"/integrations/integration%2Fone%20two/models?slugs=model%2Fthree%3F",
+				expectedPath: "/integrations/integration%2Fone%20two/models",
 			},
 			{
 				description: "api key ids in direct resource paths",

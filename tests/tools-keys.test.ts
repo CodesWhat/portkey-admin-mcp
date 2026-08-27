@@ -143,6 +143,18 @@ describe("create_virtual_key", () => {
 			api_version: "2024-02-01",
 			resource_name: "my-resource",
 			deployment_name: "gpt4",
+			deployment_configurations: [
+				{
+					api_version: "2024-10-01",
+					deployment_name: "gpt-5",
+					alias: "primary",
+					is_default: true,
+				},
+			],
+			expires_at: "2027-01-01T00:00:00Z",
+			secret_mappings: [
+				{ target_field: "key", secret_reference_id: "secret-1" },
+			],
 			credit_limit: 500,
 			alert_threshold: 90,
 			rate_limit_rpm: 120,
@@ -157,6 +169,18 @@ describe("create_virtual_key", () => {
 			apiVersion: "2024-02-01",
 			resourceName: "my-resource",
 			deploymentName: "gpt4",
+			deploymentConfig: [
+				{
+					apiVersion: "2024-10-01",
+					deploymentName: "gpt-5",
+					alias: "primary",
+					is_default: true,
+				},
+			],
+			expires_at: "2027-01-01T00:00:00Z",
+			secret_mappings: [
+				{ target_field: "key", secret_reference_id: "secret-1" },
+			],
 			usage_limits: {
 				type: "cost",
 				periodic_reset: "monthly",
@@ -302,11 +326,7 @@ describe("update_virtual_key", () => {
 						updateVirtualKey: async (slug: string, payload: unknown) => {
 							capturedSlug = slug;
 							capturedPayload = payload;
-							return {
-								name: "Renamed",
-								slug: "openai-prod",
-								status: "active" as const,
-							};
+							return { success: true };
 						},
 					},
 				} as never,
@@ -322,6 +342,12 @@ describe("update_virtual_key", () => {
 			credit_limit: 200,
 			alert_threshold: 75,
 			rate_limit_rpm: 30,
+			deployment_configurations: [
+				{ api_version: "2024-10-01", deployment_name: "gpt-5-mini" },
+			],
+			secret_mappings: [
+				{ target_field: "key", secret_reference_id: "secret-2" },
+			],
 		})) as { content: Array<{ text: string }> };
 
 		assert.equal(capturedSlug, "openai-prod");
@@ -336,16 +362,18 @@ describe("update_virtual_key", () => {
 				alert_threshold: 75,
 			},
 			rate_limits: [{ type: "requests", unit: "rpm", value: 30 }],
+			deploymentConfig: [
+				{ apiVersion: "2024-10-01", deploymentName: "gpt-5-mini" },
+			],
+			secret_mappings: [
+				{ target_field: "key", secret_reference_id: "secret-2" },
+			],
 		});
 
 		const payload = JSON.parse(result.content[0]?.text ?? "{}") as {
-			name?: string;
-			slug?: string;
-			status?: string;
+			success?: boolean;
 		};
-		assert.equal(payload.name, "Renamed");
-		assert.equal(payload.slug, "openai-prod");
-		assert.equal(payload.status, "active");
+		assert.equal(payload.success, true);
 	});
 });
 
@@ -429,6 +457,13 @@ describe("create_api_key", () => {
 			default_metadata: { env: "prod" },
 			alert_emails: ["ops@example.com"],
 			expires_at: "2027-01-01T00:00:00.000Z",
+			organisation_id: "org-1",
+			rate_limits: [{ type: "tokens", unit: "rps", value: 20 }],
+			default_allow_config_override: false,
+			rotation_policy: {
+				rotation_period: "weekly",
+				key_transition_period_ms: 1_800_000,
+			},
 		})) as { content: Array<{ text: string }> };
 
 		assert.deepEqual(capturedArgs[0], "workspace");
@@ -445,10 +480,19 @@ describe("create_api_key", () => {
 				credit_limit: 50,
 				alert_threshold: 90,
 			},
-			rate_limits: [{ type: "requests", unit: "rpm", value: 10 }],
-			defaults: { config_id: "cfg_1", metadata: { env: "prod" } },
+			rate_limits: [{ type: "tokens", unit: "rps", value: 20 }],
+			defaults: {
+				config_id: "cfg_1",
+				metadata: { env: "prod" },
+				allow_config_override: false,
+			},
 			alert_emails: ["ops@example.com"],
 			expires_at: "2027-01-01T00:00:00.000Z",
+			organisation_id: "org-1",
+			rotation_policy: {
+				rotation_period: "weekly",
+				key_transition_period_ms: 1_800_000,
+			},
 		});
 
 		const payload = JSON.parse(result.content[0]?.text ?? "{}") as {

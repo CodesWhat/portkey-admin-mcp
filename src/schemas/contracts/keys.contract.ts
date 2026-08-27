@@ -7,10 +7,28 @@ import { z } from "zod";
 // ===== Virtual Keys =====
 
 const VirtualKeyRateLimitSchema = z.object({
-	type: z.literal("requests"),
-	unit: z.literal("rpm"),
+	type: z.enum(["requests", "tokens"]),
+	unit: z.enum(["rps", "rpm", "rph", "rpd", "rpw"]),
 	value: z.number(),
 });
+
+const SecretMappingSchema = z
+	.object({
+		target_field: z.string(),
+		secret_reference_id: z.string(),
+		secret_key: z.string().nullable().optional(),
+		value_format: z.enum(["json", "string"]).nullable().optional(),
+	})
+	.passthrough();
+
+const DeploymentConfigSchema = z
+	.object({
+		apiVersion: z.string(),
+		deploymentName: z.string(),
+		alias: z.string().optional(),
+		is_default: z.boolean().optional(),
+	})
+	.passthrough();
 
 const VirtualKeyUsageLimitsSchema = z.object({
 	type: z.enum(["cost", "tokens"]),
@@ -38,6 +56,8 @@ export const VirtualKeySchema = z.object({
 	tags: z.unknown().nullable().optional(),
 	workspace_name: z.string().optional(),
 	provider: z.string().optional(),
+	deploymentConfig: z.array(DeploymentConfigSchema).optional(),
+	secret_mappings: z.array(SecretMappingSchema).optional(),
 	object: z.literal("virtual-key"),
 });
 
@@ -59,8 +79,8 @@ export const CreateVirtualKeyResponseSchema = z.object({
 // ===== API Keys =====
 
 const ApiKeyRateLimitSchema = z.object({
-	type: z.literal("requests"),
-	unit: z.literal("rpm"),
+	type: z.enum(["requests", "tokens"]),
+	unit: z.enum(["rps", "rpm", "rph", "rpd", "rpw"]),
 	value: z.number(),
 });
 
@@ -74,9 +94,18 @@ const ApiKeyUsageLimitsSchema = z
 	.passthrough();
 
 const ApiKeyDefaultsSchema = z.object({
-	metadata: z.record(z.string(), z.string()).nullable(),
-	config_id: z.string().nullable(),
+	metadata: z.record(z.string(), z.string()).nullable().optional(),
+	config_id: z.string().nullable().optional(),
+	allow_config_override: z.boolean().optional(),
 });
+
+const ApiKeyRotationPolicySchema = z
+	.object({
+		rotation_period: z.enum(["weekly", "monthly"]).nullable().optional(),
+		next_rotation_at: z.string().nullable().optional(),
+		key_transition_period_ms: z.number().int().nonnegative().optional(),
+	})
+	.passthrough();
 
 export const ApiKeySchema = z.object({
 	id: z.string(),
@@ -102,6 +131,7 @@ export const ApiKeySchema = z.object({
 	expiry_enforced: z.number().optional(),
 	allow_config_override: z.number().nullable().optional(),
 	api_key_defaults_id: z.string().nullable().optional(),
+	rotation_policy: ApiKeyRotationPolicySchema.nullable().optional(),
 	object: z.literal("api-key"),
 });
 

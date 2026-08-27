@@ -33,7 +33,10 @@ export interface ListMcpIntegrationsResponse {
 export interface ListMcpIntegrationsParams {
 	current_page?: number;
 	page_size?: number;
+	organisation_id?: string;
+	type?: "workspace" | "organisation" | "all";
 	workspace_id?: string;
+	search?: string;
 }
 
 export interface CreateMcpIntegrationRequest {
@@ -44,7 +47,7 @@ export interface CreateMcpIntegrationRequest {
 	slug?: string;
 	description?: string;
 	workspace_id?: string;
-	configurations?: {
+	configurations?: Record<string, unknown> & {
 		custom_headers?: Record<string, string>;
 	};
 	secret_mappings?: SecretMapping[];
@@ -61,7 +64,7 @@ export interface UpdateMcpIntegrationRequest {
 	url?: string;
 	auth_type?: string;
 	transport?: string;
-	configurations?: {
+	configurations?: Record<string, unknown> & {
 		custom_headers?: Record<string, string>;
 	};
 	secret_mappings?: SecretMapping[];
@@ -148,7 +151,10 @@ export class McpIntegrationsService extends BaseService {
 		return this.get<ListMcpIntegrationsResponse>("/mcp-integrations", {
 			current_page: params?.current_page,
 			page_size: params?.page_size,
+			organisation_id: params?.organisation_id,
+			type: params?.type,
 			workspace_id: params?.workspace_id,
+			search: params?.search,
 		});
 	}
 

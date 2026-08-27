@@ -43,7 +43,7 @@ async function captureServiceRequest(
 		get: (path: string, params?: object) => Promise<unknown>;
 		post: (path: string, body?: unknown) => Promise<unknown>;
 		put: (path: string, body?: unknown) => Promise<unknown>;
-		delete: (path: string) => Promise<unknown>;
+		delete: (path: string, params?: object) => Promise<unknown>;
 	};
 	const originalMethods = {
 		get: basePrototype.get,
@@ -65,8 +65,8 @@ async function captureServiceRequest(
 		captured = { method: "PUT", path, body };
 		return {};
 	};
-	basePrototype.delete = async (path: string) => {
-		captured = { method: "DELETE", path };
+	basePrototype.delete = async (path: string, params?: object) => {
+		captured = { method: "DELETE", path, params };
 		return {};
 	};
 
@@ -1105,10 +1105,8 @@ describe("integrations tools — path encoding", () => {
 			),
 		);
 		assert.equal(req.method, "DELETE");
-		assert.equal(
-			req.path,
-			"/integrations/int%2Fone%20two/models?slugs=model-slug",
-		);
+		assert.equal(req.path, "/integrations/int%2Fone%20two/models");
+		assert.deepEqual(req.params, { slugs: "model-slug" });
 	});
 
 	it("encodes model slug with special characters in deleteIntegrationModel path", async () => {
@@ -1119,9 +1117,7 @@ describe("integrations tools — path encoding", () => {
 			),
 		);
 		assert.equal(req.method, "DELETE");
-		assert.equal(
-			req.path,
-			"/integrations/my-integration/models?slugs=model%2Fthree%3F",
-		);
+		assert.equal(req.path, "/integrations/my-integration/models");
+		assert.deepEqual(req.params, { slugs: "model/three?" });
 	});
 });

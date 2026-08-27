@@ -1,0 +1,12 @@
+{
+	"object": "list",
+	"total": 1,
+	"data": [
+		{
+			"provider": "openai",
+			"requests": 100,
+			"cost": 12.34,
+			"success_rate": 99.5
+		}
+	]
+}

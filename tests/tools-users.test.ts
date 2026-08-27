@@ -12,6 +12,65 @@ import { describe, it } from "node:test";
 import { registerUsersTools } from "../src/tools/users.tools.js";
 import { registerToolCallbacks } from "./helpers/tool-registry.js";
 
+describe("user and invitation list filters", () => {
+	it("forwards current role, email, status, and zero-based pagination", async () => {
+		const calls: unknown[] = [];
+		const callbacks = registerToolCallbacks((server) => {
+			registerUsersTools(
+				server as never,
+				{
+					users: {
+						listUsers: async (params: unknown) => {
+							calls.push(["users", params]);
+							return { total: 0, data: [] };
+						},
+						listUserInvites: async (params: unknown) => {
+							calls.push(["invites", params]);
+							return { total: 0, data: [] };
+						},
+					},
+				} as never,
+			);
+		});
+
+		await callbacks.get("list_all_users")?.({
+			current_page: 0,
+			page_size: 50,
+			role: "owner",
+			email: "ada@example.com",
+		});
+		await callbacks.get("list_user_invites")?.({
+			current_page: 0,
+			page_size: 50,
+			role: "member",
+			email: "grace@example.com",
+			status: "pending",
+		});
+
+		assert.deepEqual(calls, [
+			[
+				"users",
+				{
+					current_page: 0,
+					page_size: 50,
+					role: "owner",
+					email: "ada@example.com",
+				},
+			],
+			[
+				"invites",
+				{
+					current_page: 0,
+					page_size: 50,
+					role: "member",
+					email: "grace@example.com",
+					status: "pending",
+				},
+			],
+		]);
+	});
+});
+
 // ---------------------------------------------------------------------------
 // invite_user
 // ---------------------------------------------------------------------------

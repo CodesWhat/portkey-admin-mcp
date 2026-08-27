@@ -1,0 +1,21 @@
+{
+	"object": "list",
+	"total": 1,
+	"data": [
+		{
+			"id": "deployment-001",
+			"name": "Primary Gateway",
+			"slug": "primary-gateway",
+			"type": "production",
+			"status": "active",
+			"is_default": 1,
+			"connection_status": "healthy",
+			"created_by": "user-001",
+			"created_at": "2026-08-01T00:00:00.000Z",
+			"last_updated_at": "2026-08-20T00:00:00.000Z",
+			"last_synced_at": "2026-08-27T12:00:00.000Z",
+			"last_resynced_at": null,
+			"object": "deployment"
+		}
+	]
+}

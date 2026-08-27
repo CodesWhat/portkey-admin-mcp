@@ -31,23 +31,35 @@ const MCP_INTEGRATIONS_TOOL_SCHEMAS = {
 		current_page: z.coerce
 			.number()
 			.int()
-			.positive()
+			.nonnegative()
 			.optional()
 			.describe("Page number for pagination"),
 		page_size: z.coerce
 			.number()
 			.int()
 			.positive()
-			.max(100)
+			.max(1000)
 			.optional()
 			.describe("Number of results per page (max 100)"),
 		workspace_id: z.string().optional().describe("Filter by workspace ID"),
+		organisation_id: z
+			.string()
+			.optional()
+			.describe("Filter by organisation UUID"),
+		type: z
+			.enum(["workspace", "organisation", "all"])
+			.optional()
+			.describe(
+				"Filter by workspace, organisation, or all integration ownership",
+			),
+		search: z.string().optional().describe("Search integrations by name"),
 	},
 	createMcpIntegration: {
 		name: z.string().describe("Display name for the MCP integration"),
 		url: z.string().describe("URL endpoint of the MCP server to integrate"),
 		auth_type: z
-			.enum(["oauth_auto", "headers", "none"])
+			.string()
+			.min(1)
 			.describe(
 				"Authentication type: 'none', 'headers' (custom headers), or 'oauth_auto' (OAuth)",
 			),
@@ -70,6 +82,12 @@ const MCP_INTEGRATIONS_TOOL_SCHEMAS = {
 			.describe(
 				'Custom headers for authentication (e.g. { "Authorization": "Bearer xxx" }). Sent via configurations.custom_headers',
 			),
+		configurations: z
+			.record(z.string(), z.unknown())
+			.optional()
+			.describe(
+				"Additional documented or forward-compatible configuration fields",
+			),
 		workspace_id: z
 			.string()
 			.optional()
@@ -90,10 +108,7 @@ const MCP_INTEGRATIONS_TOOL_SCHEMAS = {
 		name: z.string().optional().describe("New display name"),
 		description: z.string().optional().describe("New description"),
 		url: z.string().optional().describe("New URL endpoint"),
-		auth_type: z
-			.enum(["oauth_auto", "headers", "none"])
-			.optional()
-			.describe("New authentication type"),
+		auth_type: z.string().min(1).optional().describe("New authentication type"),
 		transport: z
 			.enum(["http", "sse"])
 			.optional()
@@ -103,6 +118,12 @@ const MCP_INTEGRATIONS_TOOL_SCHEMAS = {
 			.optional()
 			.describe(
 				"New custom headers for authentication. Sent via configurations.custom_headers",
+			),
+		configurations: z
+			.record(z.string(), z.unknown())
+			.optional()
+			.describe(
+				"Replacement documented or forward-compatible configuration fields",
 			),
 		secret_mappings: mcpSecretMappingsSchema
 			.optional()
@@ -301,10 +322,17 @@ export function registerMcpIntegrationsTools(
 		},
 		async (rawParams) => {
 			const params = createMcpIntegrationSchema.parse(rawParams);
-			const { custom_headers, ...rest } = params;
+			const { custom_headers, configurations, ...rest } = params;
 			const result = await service.mcpIntegrations.createMcpIntegration({
 				...rest,
-				...(custom_headers ? { configurations: { custom_headers } } : {}),
+				...(configurations !== undefined || custom_headers !== undefined
+					? {
+							configurations: {
+								...configurations,
+								...(custom_headers !== undefined ? { custom_headers } : {}),
+							},
+						}
+					: {}),
 			});
 			return jsonResult({
 				message: `Successfully created MCP integration "${params.name}"`,
@@ -338,10 +366,17 @@ export function registerMcpIntegrationsTools(
 			openWorldHint: true,
 		},
 		async (params) => {
-			const { id, custom_headers, ...rest } = params;
+			const { id, custom_headers, configurations, ...rest } = params;
 			await service.mcpIntegrations.updateMcpIntegration(id, {
 				...rest,
-				...(custom_headers ? { configurations: { custom_headers } } : {}),
+				...(configurations !== undefined || custom_headers !== undefined
+					? {
+							configurations: {
+								...configurations,
+								...(custom_headers !== undefined ? { custom_headers } : {}),
+							},
+						}
+					: {}),
 			});
 			return jsonResult({
 				message: `Successfully updated MCP integration "${id}"`,

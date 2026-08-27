@@ -107,18 +107,25 @@ export interface UserGroupedData {
 export interface ListUsersParams {
 	page_size?: number;
 	current_page?: number;
+	role?: "admin" | "member" | "owner";
+	email?: string;
 }
 
 export interface ListUserInvitesParams {
 	page_size?: number;
 	current_page?: number;
+	role?: "admin" | "member";
+	email?: string;
+	status?: "pending" | "cancelled" | "accepted" | "expired";
 }
 
 export class UsersService extends BaseService {
 	async listUsers(params?: ListUsersParams): Promise<PortkeyUsersResponse> {
 		return this.get<PortkeyUsersResponse>("/admin/users", {
-			page_size: params?.page_size,
-			current_page: params?.current_page,
+			pageSize: params?.page_size,
+			currentPage: params?.current_page,
+			role: params?.role,
+			email: params?.email,
 		});
 	}
 
@@ -183,8 +190,11 @@ export class UsersService extends BaseService {
 		params?: ListUserInvitesParams,
 	): Promise<UserInvitesResponse> {
 		return this.get<UserInvitesResponse>("/admin/users/invites", {
-			page_size: params?.page_size,
-			current_page: params?.current_page,
+			pageSize: params?.page_size,
+			currentPage: params?.current_page,
+			role: params?.role,
+			email: params?.email,
+			status: params?.status,
 		});
 	}
 

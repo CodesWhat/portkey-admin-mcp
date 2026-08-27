@@ -26,11 +26,126 @@ const TIME_RANGE = {
 	time_of_generation_max: "2024-02-01T00:00:00Z",
 };
 
+describe("current summary and provider analytics", () => {
+	it("normalizes provider columns and total selection without stripping metrics", async () => {
+		let cacheParams: unknown;
+		let providerParams: unknown;
+		const callbacks = registerToolCallbacks((server) => {
+			registerAnalyticsTools(
+				server as never,
+				{
+					analytics: {
+						getCacheSummary: async (params: unknown) => {
+							cacheParams = params;
+							return {
+								object: "analytics-summary",
+								summary: {
+									hits: 10,
+									avg_latency: 20,
+									total_requests: 25,
+									cache_speedup: 80,
+								},
+							};
+						},
+						getAnalyticsGroupProviders: async (params: unknown) => {
+							providerParams = params;
+							return {
+								object: "list",
+								total: 1,
+								data: [
+									{
+										provider: "openai",
+										requests: 12,
+										cost: 4.5,
+										p95_latency: 90,
+									},
+								],
+							};
+						},
+					},
+				} as never,
+			);
+		});
+
+		const required = { ...TIME_RANGE, workspace_slug: "workspace" };
+		const cacheResult = (await callbacks.get("get_cache_summary")?.(
+			required,
+		)) as {
+			content: Array<{ text: string }>;
+		};
+		const providerResult = (await callbacks.get(
+			"get_analytics_group_providers",
+		)?.({
+			...required,
+			columns: ["requests", "cost", "p95_latency"],
+			include_total: false,
+			page_size: 0,
+		})) as { content: Array<{ text: string }> };
+
+		assert.deepEqual(cacheParams, required);
+		assert.deepEqual(providerParams, {
+			...required,
+			columns: "requests,cost,p95_latency",
+			include_total: "false",
+			page_size: 0,
+		});
+		assert.deepEqual(JSON.parse(cacheResult.content[0]?.text ?? "{}"), {
+			hits: 10,
+			avg_latency: 20,
+			total_requests: 25,
+			cache_speedup: 80,
+		});
+		assert.deepEqual(JSON.parse(providerResult.content[0]?.text ?? "{}"), {
+			total: 1,
+			providers: [
+				{ provider: "openai", requests: 12, cost: 4.5, p95_latency: 90 },
+			],
+		});
+	});
+});
+
 // ---------------------------------------------------------------------------
 // get_cost_analytics — structured-alias query-param normalization
 // ---------------------------------------------------------------------------
 
 describe("get_cost_analytics", () => {
+	it("accepts zero-valued bounds", async () => {
+		let capturedParams: unknown;
+		const callbacks = registerToolCallbacks((server) => {
+			registerAnalyticsTools(
+				server as never,
+				{
+					analytics: {
+						getCostAnalytics: async (params: unknown) => {
+							capturedParams = params;
+							return {
+								object: "analytics-graph",
+								summary: {},
+								data_points: [],
+							};
+						},
+					},
+				} as never,
+			);
+		});
+		const callback = callbacks.get("get_cost_analytics");
+		assert.ok(callback);
+		await callback({
+			...TIME_RANGE,
+			total_units_min: 0,
+			cost_min: 0,
+			prompt_token_min: 0,
+			completion_token_min: 0,
+		});
+		assert.deepEqual(capturedParams, {
+			...TIME_RANGE,
+			total_units_min: 0,
+			cost_min: 0,
+			prompt_token_min: 0,
+			completion_token_min: 0,
+		});
+	});
+
 	it("normalizes structured aliases into the legacy comma-separated/JSON params", async () => {
 		let capturedParams: unknown;
 		const callbacks = registerToolCallbacks((server) => {

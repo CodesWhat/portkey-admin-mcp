@@ -1,0 +1,9 @@
+{
+	"object": "analytics-summary",
+	"summary": {
+		"hits": 42,
+		"avg_latency": 18.5,
+		"total_requests": 100,
+		"cache_speedup": 61.2
+	}
+}

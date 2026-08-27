@@ -579,28 +579,75 @@ describe("prompt history and dry-run edge cases", () => {
 						functions: [],
 						created_at: "2026-01-02T00:00:00.000Z",
 					},
-					versions: [
-						{
-							id: "version-1",
-							version_number: 1,
-							version_description: "Initial",
-							created_at: "2026-01-01T00:00:00.000Z",
-						},
-					],
-					object: "prompt",
 				}),
+				listPromptVersions: async () => [
+					{
+						id: "version-1",
+						prompt_id: "prompt-1",
+						prompt_template: "Initial",
+						prompt_version: 1,
+						prompt_description: "Initial",
+						created_at: "2026-01-01T00:00:00.000Z",
+						status: "archived",
+						object: "prompt",
+					},
+					{
+						id: "version-2",
+						prompt_id: "prompt-1",
+						prompt_template: "Current",
+						prompt_version: 2,
+						prompt_description: "Current",
+						created_at: "2026-01-02T00:00:00.000Z",
+						status: "active",
+						object: "prompt",
+					},
+					{
+						id: "version-3",
+						prompt_id: "prompt-1",
+						prompt_template: "Third",
+						prompt_version: 3,
+						created_at: "2026-01-03T00:00:00.000Z",
+						status: "archived",
+						object: "prompt",
+					},
+					{
+						id: "version-4",
+						prompt_id: "prompt-1",
+						prompt_template: "Fourth",
+						prompt_version: 4,
+						created_at: "2026-01-04T00:00:00.000Z",
+						status: "archived",
+						object: "prompt",
+					},
+				],
 			},
 		}).get("get_prompt");
 		assert.ok(callback);
 
 		const payload = parseEnvelope(await callback({ prompt_id: "prompt-1" }));
-		assert.equal(payload.version_count, 1);
+		assert.equal(payload.version_count, 4);
 		assert.deepEqual(payload.versions, [
 			{
 				id: "version-1",
 				version_number: 1,
 				description: "Initial",
 				created_at: "2026-01-01T00:00:00.000Z",
+			},
+			{
+				id: "version-2",
+				version_number: 2,
+				description: "Current",
+				created_at: "2026-01-02T00:00:00.000Z",
+			},
+			{
+				id: "version-3",
+				version_number: 3,
+				created_at: "2026-01-03T00:00:00.000Z",
+			},
+			{
+				id: "version-4",
+				version_number: 4,
+				created_at: "2026-01-04T00:00:00.000Z",
 			},
 		]);
 	});

@@ -1,4 +1,6 @@
 #!/usr/bin/env tsx
+import "dotenv/config";
+
 /**
  * Fixture Recorder — Records live Portkey API responses for contract testing.
  *
@@ -25,26 +27,37 @@ const RESPONSES_DIR = join(__dirname, "responses");
 const MANIFEST_PATH = join(__dirname, "manifest.json");
 
 const recordedFixtures = new Set<string>();
+type CaptureOutcome = {
+	status: "recorded" | "permission-blocked" | "failed";
+	httpStatus?: number;
+	lastAttemptedAt: string;
+};
+const captureOutcomes: Record<string, CaptureOutcome> = {};
+const captureDate = new Date().toISOString().slice(0, 10);
 
 function saveFixture(name: string, data: unknown): void {
 	const filePath = join(RESPONSES_DIR, `${name}.json`);
 	writeFileSync(filePath, JSON.stringify(data, null, 2) + "\n");
 	recordedFixtures.add(name);
+	captureOutcomes[name] = { status: "recorded", lastAttemptedAt: captureDate };
 	console.log(`  Saved ${filePath}`);
 }
 
 function writeManifest(): void {
 	let documentationDerivedFixtures: string[] = [];
 	let liveCaptureStatus: string | undefined;
+	let previousCaptureOutcomes: Record<string, CaptureOutcome> = {};
 	try {
 		const previous = JSON.parse(readFileSync(MANIFEST_PATH, "utf8")) as {
 			documentationDerivedFixtures?: string[];
 			liveCaptureStatus?: string;
+			captureOutcomes?: Record<string, CaptureOutcome>;
 		};
 		documentationDerivedFixtures = (
 			previous.documentationDerivedFixtures ?? []
 		).filter((name) => !recordedFixtures.has(name));
 		liveCaptureStatus = previous.liveCaptureStatus;
+		previousCaptureOutcomes = previous.captureOutcomes ?? {};
 	} catch {
 		// The first capture has no prior provenance to preserve.
 	}
@@ -57,6 +70,7 @@ function writeManifest(): void {
 		...(documentationDerivedFixtures.length > 0
 			? { documentationDerivedFixtures, liveCaptureStatus }
 			: {}),
+		captureOutcomes: { ...previousCaptureOutcomes, ...captureOutcomes },
 		fixtures: readdirSync(RESPONSES_DIR)
 			.filter((file) => file.endsWith(".json"))
 			.map((file) => file.replace(/\.json$/, ""))
@@ -89,6 +103,10 @@ const ENDPOINTS: Endpoint[] = [
 	{ name: "workspaces-list", path: "/admin/workspaces" },
 	{ name: "users-list", path: "/admin/users" },
 	{ name: "secret-references-list", path: "/secret-references" },
+	{ name: "deployments-list", path: "/deployments" },
+	{ name: "rate-limits-list", path: "/policies/rate-limits" },
+	{ name: "usage-limits-list", path: "/policies/usage-limits" },
+	{ name: "mcp-integrations-list", path: "/mcp-integrations" },
 ];
 
 async function requestJson(
@@ -210,6 +228,14 @@ async function fetchEndpoint(endpoint: Endpoint): Promise<void> {
 	});
 
 	if (!response.ok) {
+		captureOutcomes[endpoint.name] = {
+			status:
+				response.status === 401 || response.status === 403
+					? "permission-blocked"
+					: "failed",
+			httpStatus: response.status,
+			lastAttemptedAt: captureDate,
+		};
 		console.error(`  FAILED ${endpoint.name}: HTTP ${response.status}`);
 		const body = await response.text();
 		console.error(`  ${body.slice(0, 200)}`);

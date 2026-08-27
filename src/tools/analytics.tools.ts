@@ -3,6 +3,7 @@ import { z } from "zod";
 import type {
 	AnalyticsService,
 	BaseAnalyticsParams,
+	CacheSummaryParams,
 	GenericGraphAnalyticsResponse,
 	GroupAnalyticsResponse,
 } from "../services/analytics.service.js";
@@ -27,42 +28,42 @@ const baseAnalyticsSchema = {
 		),
 	total_units_min: z.coerce
 		.number()
-		.positive()
+		.nonnegative()
 		.optional()
 		.describe("Minimum number of total tokens to filter by"),
 	total_units_max: z.coerce
 		.number()
-		.positive()
+		.nonnegative()
 		.optional()
 		.describe("Maximum number of total tokens to filter by"),
 	cost_min: z.coerce
 		.number()
-		.positive()
+		.nonnegative()
 		.optional()
 		.describe("Minimum cost in cents to filter by"),
 	cost_max: z.coerce
 		.number()
-		.positive()
+		.nonnegative()
 		.optional()
 		.describe("Maximum cost in cents to filter by"),
 	prompt_token_min: z.coerce
 		.number()
-		.positive()
+		.nonnegative()
 		.optional()
 		.describe("Minimum number of prompt tokens"),
 	prompt_token_max: z.coerce
 		.number()
-		.positive()
+		.nonnegative()
 		.optional()
 		.describe("Maximum number of prompt tokens"),
 	completion_token_min: z.coerce
 		.number()
-		.positive()
+		.nonnegative()
 		.optional()
 		.describe("Minimum number of completion tokens"),
 	completion_token_max: z.coerce
 		.number()
-		.positive()
+		.nonnegative()
 		.optional()
 		.describe("Maximum number of completion tokens"),
 	status_code: z
@@ -186,7 +187,7 @@ const paginatedAnalyticsSchema = {
 	current_page: z.coerce
 		.number()
 		.int()
-		.positive()
+		.nonnegative()
 		.optional()
 		.describe("Page number for pagination"),
 	page_size: z.coerce
@@ -196,6 +197,60 @@ const paginatedAnalyticsSchema = {
 		.max(100)
 		.optional()
 		.describe("Results per page (max 100)"),
+};
+
+const cacheSummarySchema = {
+	...baseAnalyticsSchema,
+	workspace_slug: z.string().min(1).describe("Workspace slug to analyze"),
+};
+
+const providerMetricSchema = z.enum([
+	"requests",
+	"cost",
+	"total_tokens",
+	"avg_tokens",
+	"avg_input_tokens",
+	"avg_output_tokens",
+	"avg_latency",
+	"p95_latency",
+	"p99_latency",
+	"success_rate",
+	"error_count",
+	"cache_hit_rate",
+	"last_seen",
+	"first_seen",
+]);
+
+const providerGroupAnalyticsSchema = {
+	...cacheSummarySchema,
+	current_page: z.coerce
+		.number()
+		.int()
+		.nonnegative()
+		.optional()
+		.describe("Zero-based result page"),
+	page_size: z.coerce
+		.number()
+		.int()
+		.nonnegative()
+		.optional()
+		.describe("Number of provider groups per page"),
+	order_by: z
+		.string()
+		.optional()
+		.describe("Metric or field used to order groups"),
+	order_by_type: z
+		.string()
+		.optional()
+		.describe("Sort direction accepted by Portkey, such as asc or desc"),
+	columns: z
+		.array(providerMetricSchema)
+		.optional()
+		.describe("Provider metrics to include in each grouped row"),
+	include_total: z
+		.boolean()
+		.optional()
+		.describe("Request the total provider-group count"),
 };
 
 const analyticsGroupMetadataSchema = {
@@ -629,6 +684,18 @@ export function registerAnalyticsTools(
 		},
 	);
 
+	server.tool(
+		"get_cache_summary",
+		"Enterprise-gated. Get cache summary metrics for one workspace and time range: hits, average cache-hit latency, total requests, and percentage speedup. Use the graph cache tools when you need changes over time instead of one aggregate.",
+		cacheSummarySchema,
+		async (params) => {
+			const analytics = await service.analytics.getCacheSummary(
+				normalizeAnalyticsParams(params) as CacheSummaryParams,
+			);
+			return jsonResult(analytics.summary);
+		},
+	);
+
 	// ==================== User Analytics ====================
 
 	server.tool(
@@ -696,6 +763,26 @@ export function registerAnalyticsTools(
 				normalizeAnalyticsParams(params),
 			);
 			return jsonResult(formatGroupedAnalytics(analytics, "models"));
+		},
+	);
+
+	server.tool(
+		"get_analytics_group_providers",
+		"Enterprise-gated. Get provider-grouped analytics for one workspace and time range with selectable metrics, ordering, pagination, and optional total count. Use this when comparing provider traffic or reliability; requested metric fields are preserved in each provider row.",
+		providerGroupAnalyticsSchema,
+		async (params) => {
+			const normalized = normalizeAnalyticsParams({
+				...params,
+				columns: params.columns?.join(","),
+				include_total:
+					params.include_total === undefined
+						? undefined
+						: String(params.include_total),
+			});
+			const analytics = await service.analytics.getAnalyticsGroupProviders(
+				normalized as never,
+			);
+			return jsonResult({ total: analytics.total, providers: analytics.data });
 		},
 	);
 

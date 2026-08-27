@@ -1,27 +1,71 @@
 {
 	"_comment": "Provenance for the recorded Portkey Admin API fixtures used by contract tests. Regenerate with `PORTKEY_API_KEY=... npm run record:fixtures`, which rewrites this file and stamps recordedAt. The contract suite asserts this list stays in sync with tests/fixtures/responses/.",
-	"recordedAt": "2026-06-11",
-	"lastReviewedAt": "2026-07-14",
+	"recordedAt": "2026-08-27",
 	"source": "https://api.portkey.ai/v1",
 	"recorderScript": "tests/fixtures/record.ts",
 	"documentationDerivedFixtures": [
 		"api-keys-rotate",
-		"secret-references-create",
-		"secret-references-get",
-		"secret-references-list"
-	],
-	"liveCaptureStatus": "The configured credential returned HTTP 403 for API-key creation and Secret Reference list/create on 2026-07-14. Re-run the recorder with a credential holding the documented create/rotate/delete and Secret Reference scopes to replace these documentation-derived fixtures.",
-	"fixtures": [
-		"api-keys-rotate",
-		"api-keys-get",
-		"api-keys-list",
-		"configs-get",
-		"configs-list",
-		"prompts-get",
-		"prompts-list",
+		"analytics-cache-summary",
+		"analytics-providers-group",
+		"deployments-list",
 		"secret-references-create",
 		"secret-references-get",
 		"secret-references-list",
+		"usage-limit-entities-list"
+	],
+	"liveCaptureStatus": "The configured credential returned HTTP 403 for organisation users, API-key creation, and Secret Reference list/create on 2026-07-14. On 2026-08-27, rate-limit, usage-limit, and MCP-integration lists were captured successfully; the hosted deployments route returned the data-plane HTTP 400 missing-provider response, while analytics and usage-limit-entity fixtures remain documentation-derived.",
+	"captureOutcomes": {
+		"api-key-rotation": {
+			"status": "permission-blocked",
+			"httpStatus": 403,
+			"lastAttemptedAt": "2026-07-14"
+		},
+		"secret-references": {
+			"status": "permission-blocked",
+			"httpStatus": 403,
+			"lastAttemptedAt": "2026-07-14"
+		},
+		"users-list": {
+			"status": "permission-blocked",
+			"httpStatus": 403,
+			"lastAttemptedAt": "2026-07-14"
+		},
+		"deployments-list": {
+			"status": "failed",
+			"httpStatus": 400,
+			"lastAttemptedAt": "2026-08-27"
+		},
+		"rate-limits-list": {
+			"status": "recorded",
+			"lastAttemptedAt": "2026-08-27"
+		},
+		"usage-limits-list": {
+			"status": "recorded",
+			"lastAttemptedAt": "2026-08-27"
+		},
+		"mcp-integrations-list": {
+			"status": "recorded",
+			"lastAttemptedAt": "2026-08-27"
+		}
+	},
+	"fixtures": [
+		"analytics-cache-summary",
+		"analytics-providers-group",
+		"api-keys-get",
+		"api-keys-list",
+		"api-keys-rotate",
+		"configs-get",
+		"configs-list",
+		"deployments-list",
+		"mcp-integrations-list",
+		"prompts-get",
+		"prompts-list",
+		"rate-limits-list",
+		"secret-references-create",
+		"secret-references-get",
+		"secret-references-list",
+		"usage-limit-entities-list",
+		"usage-limits-list",
 		"virtual-keys-get",
 		"virtual-keys-list",
 		"workspaces-get",

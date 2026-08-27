@@ -13,11 +13,13 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { BaseService } from "../src/services/base.service.js";
+import { DeploymentsService } from "../src/services/deployments.service.js";
 import { KeysService } from "../src/services/keys.service.js";
 import { McpIntegrationsService } from "../src/services/mcp-integrations.service.js";
 import { McpServersService } from "../src/services/mcp-servers.service.js";
 import { SecretReferencesService } from "../src/services/secret-references.service.js";
 import { WorkspacesService } from "../src/services/workspaces.service.js";
+import { registerDeploymentsTools } from "../src/tools/deployments.tools.js";
 import { TOOL_DOMAIN_NAMES } from "../src/tools/index.js";
 import { registerKeysTools } from "../src/tools/keys.tools.js";
 import { registerMcpIntegrationsTools } from "../src/tools/mcp-integrations.tools.js";
@@ -105,6 +107,77 @@ function registerToolSchemas(
 // ---------------------------------------------------------------------------
 // Newly documented control-plane surfaces
 // ---------------------------------------------------------------------------
+
+describe("Gateway deployments", () => {
+	it("registers all stable operations and preserves one-time credentials with handling guidance", async () => {
+		let registration: unknown;
+		const callbacks = registerToolCallbacks((server) => {
+			registerDeploymentsTools(
+				server as never,
+				{
+					deployments: {
+						listDeployments: async () => ({
+							object: "list",
+							total: 0,
+							data: [],
+						}),
+						registerDeployment: async (data: unknown) => {
+							registration = data;
+							return {
+								id: "dep-1",
+								client_auth: "one-time-secret",
+								credentials: {
+									username: "registry",
+									password: "one-time-password",
+								},
+							};
+						},
+						getDeployment: async () => ({ id: "dep-1" }),
+						updateDeployment: async () => ({ client_auth: "rotated-secret" }),
+						archiveDeployment: async () => ({}),
+					},
+				} as never,
+			);
+		});
+
+		assert.deepEqual(
+			[...callbacks.keys()],
+			[
+				"list_deployments",
+				"register_deployment",
+				"get_deployment",
+				"update_deployment",
+				"archive_deployment",
+			],
+		);
+		const result = (await callbacks.get("register_deployment")?.({
+			name: "Edge",
+			gateway_base_url: "https://edge.example.com",
+		})) as { content: Array<{ text: string }> };
+		assert.deepEqual(registration, {
+			name: "Edge",
+			auth_settings: { gateway_base_url: "https://edge.example.com" },
+		});
+		const payload = JSON.parse(result.content[0]?.text ?? "{}") as Record<
+			string,
+			unknown
+		>;
+		assert.equal(payload.client_auth, "one-time-secret");
+		assert.match(String(payload.handling), /Store.*immediately/i);
+	});
+
+	it("routes encoded service ids and calls DELETE for archival", async () => {
+		const getRequest = await captureServiceRequest(() =>
+			new DeploymentsService("test-dummy-key").getDeployment("dep/one"),
+		);
+		const archiveRequest = await captureServiceRequest(() =>
+			new DeploymentsService("test-dummy-key").archiveDeployment("dep/one"),
+		);
+		assert.equal(getRequest.path, "/deployments/dep%2Fone");
+		assert.equal(archiveRequest.method, "DELETE");
+		assert.equal(archiveRequest.path, "/deployments/dep%2Fone");
+	});
+});
 
 describe("API key rotation", () => {
 	it("POSTs the documented transition period to the encoded rotate endpoint", async () => {
@@ -1231,6 +1304,11 @@ describe("create_workspace tool payload assembly", () => {
 			description: "Engineering",
 			is_default: 1,
 			metadata: { team: "eng" },
+			users: ["user-1"],
+			usage_limits: [
+				{ type: "cost", credit_limit: 100, periodic_reset: "monthly" },
+			],
+			rate_limits: [{ type: "requests", unit: "rpm", value: 50 }],
 		});
 
 		assert.deepEqual(capturedPayload, {
@@ -1241,6 +1319,11 @@ describe("create_workspace tool payload assembly", () => {
 				is_default: 1,
 				metadata: { team: "eng" },
 			},
+			users: ["user-1"],
+			usage_limits: [
+				{ type: "cost", credit_limit: 100, periodic_reset: "monthly" },
+			],
+			rate_limits: [{ type: "requests", unit: "rpm", value: 50 }],
 		});
 	});
 
@@ -1460,15 +1543,10 @@ describe("Workspace membership tool payloads", () => {
 							capturedWorkspaceId = workspaceId;
 							capturedPayload = payload;
 							return {
-								object: "workspace-user" as const,
-								id: "user-1",
-								first_name: "Ada",
-								last_name: "Lovelace",
-								org_role: "admin" as const,
+								success: true,
+								workspace_id: workspaceId,
+								user_id: "00000000-0000-0000-0000-000000000001",
 								role: "admin" as const,
-								status: "active" as const,
-								created_at: "2026-01-01T00:00:00.000Z",
-								last_updated_at: "2026-01-01T00:00:00.000Z",
 							};
 						},
 					},
@@ -1479,14 +1557,21 @@ describe("Workspace membership tool payloads", () => {
 		const addCallback = callbacks.get("add_workspace_member");
 		assert.ok(addCallback, "expected add_workspace_member to be registered");
 
-		await addCallback({
+		const result = (await addCallback({
 			workspace_id: "ws-1",
 			user_id: "00000000-0000-0000-0000-000000000001",
 			role: "admin",
-		});
+		})) as { content: Array<{ text: string }> };
 
 		assert.equal(capturedWorkspaceId, "ws-1");
 		assert.deepEqual(capturedPayload, {
+			user_id: "00000000-0000-0000-0000-000000000001",
+			role: "admin",
+		});
+		assert.deepEqual(JSON.parse(result.content[0]?.text ?? "{}"), {
+			message: "Successfully added user to workspace as admin",
+			success: true,
+			workspace_id: "ws-1",
 			user_id: "00000000-0000-0000-0000-000000000001",
 			role: "admin",
 		});
