@@ -53,8 +53,10 @@ describe("supply-chain configuration", () => {
 			actionlintJob,
 			/ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8/,
 		);
-		assert.match(actionlintJob, /sha256sum --check --strict/);
-		assert.match(actionlintJob, /tar -xzf "\$archive"/);
+		assert.match(
+			actionlintJob,
+			/sha256sum --check --strict[\s\S]*tar -xzf "\$archive" -C "\$RUNNER_TEMP" actionlint/,
+		);
 		assert.doesNotMatch(actionlintJob, /download-actionlint\.bash/);
 	});
 
@@ -69,12 +71,16 @@ describe("supply-chain configuration", () => {
 
 		assert.match(workflowHeader, /permissions: \{\}/);
 		assert.ok(tagJob, "expected an isolated tag job");
-		assert.match(tagJob, /permissions:\s+contents: write/);
-		assert.doesNotMatch(tagJob, /actions: write/);
+		assert.equal(
+			tagJob.match(/\n {4}permissions:\n((?: {6}.+\n)+)/)?.[1],
+			"      contents: write\n",
+		);
 		assert.ok(dispatchJob, "expected an isolated dispatch job");
 		assert.match(dispatchJob, /needs: tag/);
-		assert.match(dispatchJob, /permissions:\s+actions: write/);
-		assert.doesNotMatch(dispatchJob, /contents: write/);
+		assert.equal(
+			dispatchJob.match(/\n {4}permissions:\n((?: {6}.+\n)+)/)?.[1],
+			"      actions: write\n",
+		);
 	});
 
 	it("keeps dependency execution out of the OIDC npm publishing job", () => {
