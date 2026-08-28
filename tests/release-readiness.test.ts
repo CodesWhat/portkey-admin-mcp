@@ -80,6 +80,7 @@ test("every publishing job uses the protected release environment", () => {
 		`${root}.github/workflows/release.yml`,
 		"utf8",
 	);
+	const releaseGuide = readFileSync(`${root}docs/RELEASE.md`, "utf8");
 
 	assert.match(
 		workflowSource,
@@ -90,6 +91,14 @@ test("every publishing job uses the protected release environment", () => {
 		3,
 		"GitHub Release, npm publish, and MCP Registry publish must all use the release environment",
 	);
+	assert.match(
+		releaseGuide,
+		/Do not configure required reviewers or a wait timer/i,
+		"release publishing must run without a manual deployment approval",
+	);
+	assert.match(releaseGuide, /branch policy `main`/i);
+	assert.match(releaseGuide, /tag policy `v\*`/i);
+	assert.doesNotMatch(releaseGuide, /Prevent self-review/i);
 });
 
 test("the npm artifact includes every local document linked from README", () => {
