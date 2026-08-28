@@ -1,7 +1,7 @@
 # Portkey Admin API endpoints and MCP tools
 
 Generated from the registered tool catalog by `npm run generate:endpoints`.
-Route mappings were reviewed against the official Portkey OpenAPI on 2026-08-27.
+Route mappings were reviewed against the official Portkey OpenAPI on 2026-08-28.
 
 - Base URL: `https://api.portkey.ai/v1`
 - Authentication: `x-portkey-api-key`
@@ -139,7 +139,7 @@ Routes:
 | `list_virtual_keys` | List provider API keys stored as virtual keys in your Portkey org. Use this to find slugs before wiring prompts/configs or auditing limits. Returns total plus name, slug, status, usage limits, rate limits, reset state, and model config. |
 | `create_virtual_key` | Store a provider API key as a virtual key. The raw key is encrypted and only returned at creation time, so save the returned slug and use it in prompts/configs. Optional usage and rate limits apply immediately, and the tool returns the new slug. |
 | `get_virtual_key` | Fetch one virtual key by slug, including metadata, a masked secret, limits, status, and model config. Use this before updating or to inspect the current configuration. |
-| `update_virtual_key` | Update a virtual key's name, secret, note, or limits. Rotating the key takes effect immediately, and limit changes apply to downstream prompts and configs using this slug. Returns the updated name, slug, and status. |
+| `update_virtual_key` | Update a virtual key's name, secret, note, or limits. Rotating the key takes effect immediately, and limit changes apply to downstream prompts and configs using this slug. Returns success when Portkey accepts the update. |
 | `delete_virtual_key` | Delete a virtual key by slug. This is irreversible and will break prompts and configs that reference the slug, so confirm no active dependencies first. Returns success after removal. |
 | `create_api_key` | Create a Portkey API key for auth. Org keys grant broader access; workspace keys are scoped. WARNING: The key secret is returned ONCE in the tool result and will be visible in MCP transcripts and LLM context — store it securely immediately. Using the key grants access immediately according to its scopes, defaults, and limits. Workspace keys require workspace_id and user keys require user_id. |
 | `list_api_keys` | List Portkey API keys for auditing access, scopes, defaults, limits, and expiration. Use this for API keys only; use list_virtual_keys for provider keys. Returns total plus id, type, status, workspace/user scope, limits, defaults, alert emails, and creation mode. |

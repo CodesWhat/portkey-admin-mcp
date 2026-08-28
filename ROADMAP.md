@@ -1,6 +1,6 @@
 # Portkey Admin MCP roadmap
 
-> Last reviewed: 2026-08-27
+> Last reviewed: 2026-08-28
 > Status: active compatibility maintenance
 > Current catalog: 178 tools across 20 domains, including 53 Enterprise-gated tools
 
@@ -37,6 +37,21 @@ track and is not treated as a compatible `PORTKEY_BASE_URL`.
 The complete generated tool catalog and route matrix lives in
 [ENDPOINTS.md](./ENDPOINTS.md). `npm run verify:readme-tools` checks the source,
 README, endpoint catalog, domain counts, and Enterprise-gated inventory together.
+
+## Completed 2026-08-28
+
+- Revalidated the catalog against the latest official Portkey OpenAPI commit.
+  The upstream specification has not changed since 2026-08-21, so there are no
+  new stable Admin API routes to expose and the validation watchlist remains
+  intentionally deferred.
+- Rechecked Prisma AIRS' August 2026 additions. They extend runtime, model,
+  skill, discovery, and red-team security rather than publishing a
+  Portkey-compatible AI Gateway administration contract.
+- Hardened CI's actionlint installation with the upstream release SHA-256 and
+  split automatic tag creation from release dispatch so their write grants are
+  isolated to separate jobs.
+- Submitted [awesome-mcp-servers #13074](https://github.com/punkpeye/awesome-mcp-servers/pull/13074)
+  to update the moved repository, Glama badge, and 178-tool inventory.
 
 ## Completed 2026-08-27
 

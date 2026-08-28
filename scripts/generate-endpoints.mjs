@@ -238,7 +238,7 @@ const analyticsRows = ANALYTICS.map(
 const output = `# Portkey Admin API endpoints and MCP tools
 
 Generated from the registered tool catalog by \`npm run generate:endpoints\`.
-Route mappings were reviewed against the official Portkey OpenAPI on 2026-08-27.
+Route mappings were reviewed against the official Portkey OpenAPI on 2026-08-28.
 
 - Base URL: \`https://api.portkey.ai/v1\`
 - Authentication: \`x-portkey-api-key\`
