@@ -1,6 +1,6 @@
 # Prisma AIRS interoperability
 
-Last verified: 2026-08-27
+Last verified: 2026-08-28
 
 ## Short answer
 
@@ -18,6 +18,10 @@ Changing `PORTKEY_BASE_URL` to a Prisma AIRS or Strata Cloud Manager URL will no
 | Prisma AIRS security MCP server | Regional Palo Alto Networks `/mcp` endpoint | `x-pan-token`, OAuth, and optional `x-pan-profile` | Works as a separate MCP server; it scans and secures AI interactions rather than managing Portkey resources |
 
 Palo Alto Networks says the Portkey acquisition makes Portkey the core AI Gateway for Prisma AIRS. Its current AI Gateway instructions direct administrators to Strata Cloud Manager, while the documented Prisma AIRS MCP endpoint is for centralized AI-agent security. No public Prisma AIRS admin contract equivalent to Portkey's users, workspaces, prompts, configs, integrations, or keys is documented today. That last sentence is an inference from the currently published product and API documentation, not a promise that such an API will never exist.
+
+The August 2026 Prisma AIRS additions cover runtime, model, skill, discovery, and
+red-team security capabilities. They do not publish a Portkey-compatible AI
+Gateway administration contract, so they do not change this boundary.
 
 ## Recommended coexistence
 
