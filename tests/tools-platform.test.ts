@@ -766,6 +766,48 @@ describe("create_mcp_integration tool payload assembly", () => {
 		);
 	});
 
+	it("rejects malformed configured headers even with a Secret Reference mapping", async () => {
+		const callbacks = registerToolCallbacks((server) => {
+			registerMcpIntegrationsTools(
+				server as never,
+				{
+					mcpIntegrations: {
+						createMcpIntegration: async () => {
+							throw new Error("should not be called");
+						},
+					},
+				} as never,
+			);
+		});
+		const createCallback = callbacks.get("create_mcp_integration");
+		assert.ok(createCallback);
+
+		await assert.rejects(
+			() =>
+				createCallback({
+					name: "Invalid Mapped Headers",
+					url: "https://mcp.example.com/v1",
+					auth_type: "headers",
+					transport: "http",
+					configurations: {
+						custom_headers: { Authorization: 42 },
+					},
+					secret_mappings: [
+						{
+							target_field: "configurations.custom_headers",
+							secret_reference_id: "secret-1",
+							value_format: "json",
+						},
+					],
+				}),
+			(error: Error) => {
+				assert.doesNotMatch(error.message, /should not be called/);
+				assert.match(error.message, /custom_headers/);
+				return true;
+			},
+		);
+	});
+
 	it("returns an isError result when auth_type is headers but custom_headers are missing", async () => {
 		const callbacks = registerToolCallbacks((server) => {
 			registerMcpIntegrationsTools(server as never, {} as never);
@@ -967,6 +1009,39 @@ describe("update_mcp_integration tool payload assembly", () => {
 			name: "Renamed Integration",
 			configurations: { custom_headers: { "X-Api-Key": "new-key" } },
 		});
+	});
+
+	it("rejects malformed configurations.custom_headers before forwarding", async () => {
+		const callbacks = registerToolCallbacks((server) => {
+			registerMcpIntegrationsTools(
+				server as never,
+				{
+					mcpIntegrations: {
+						updateMcpIntegration: async () => {
+							throw new Error("should not be called");
+						},
+					},
+				} as never,
+			);
+		});
+
+		const updateCallback = callbacks.get("update_mcp_integration");
+		assert.ok(updateCallback);
+
+		await assert.rejects(
+			() =>
+				updateCallback({
+					id: "int-1",
+					configurations: {
+						custom_headers: ["not", "a", "record"],
+					},
+				}),
+			(error: Error) => {
+				assert.doesNotMatch(error.message, /should not be called/);
+				assert.match(error.message, /custom_headers/);
+				return true;
+			},
+		);
 	});
 });
 

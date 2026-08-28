@@ -26,6 +26,19 @@ const mcpSecretMappingsSchema = uniqueSecretMappingsSchema(
 	mcpSecretMappingSchema,
 );
 
+const mcpConfigurationsSchema = z
+	.record(z.string(), z.unknown())
+	.superRefine((value, ctx) => {
+		if ("custom_headers" in value && !isStringRecord(value.custom_headers)) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["custom_headers"],
+				message:
+					"configurations.custom_headers must be a string-to-string record",
+			});
+		}
+	});
+
 const MCP_INTEGRATIONS_TOOL_SCHEMAS = {
 	listMcpIntegrations: {
 		current_page: z.coerce
@@ -82,8 +95,7 @@ const MCP_INTEGRATIONS_TOOL_SCHEMAS = {
 			.describe(
 				'Custom headers for authentication (e.g. { "Authorization": "Bearer xxx" }). Sent via configurations.custom_headers',
 			),
-		configurations: z
-			.record(z.string(), z.unknown())
+		configurations: mcpConfigurationsSchema
 			.optional()
 			.describe(
 				"Additional documented or forward-compatible configuration fields. For headers auth, configurations.custom_headers is a string-to-string header map.",
@@ -125,11 +137,10 @@ const MCP_INTEGRATIONS_TOOL_SCHEMAS = {
 			.describe(
 				"New custom headers for authentication. Sent via configurations.custom_headers",
 			),
-		configurations: z
-			.record(z.string(), z.unknown())
+		configurations: mcpConfigurationsSchema
 			.optional()
 			.describe(
-				"Replacement documented or forward-compatible configuration fields",
+				"Replacement documented or forward-compatible configuration fields. configurations.custom_headers must be a string-to-string header map when present.",
 			),
 		secret_mappings: mcpSecretMappingsSchema
 			.optional()
@@ -199,6 +210,10 @@ const createMcpIntegrationSchema = z
 			});
 		}
 	});
+
+const updateMcpIntegrationSchema = z.object(
+	MCP_INTEGRATIONS_TOOL_SCHEMAS.updateMcpIntegration,
+);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -381,7 +396,8 @@ export function registerMcpIntegrationsTools(
 			idempotentHint: true,
 			openWorldHint: true,
 		},
-		async (params) => {
+		async (rawParams) => {
+			const params = updateMcpIntegrationSchema.parse(rawParams);
 			const { id, custom_headers, configurations, ...rest } = params;
 			await service.mcpIntegrations.updateMcpIntegration(id, {
 				...rest,

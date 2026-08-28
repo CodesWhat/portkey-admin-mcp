@@ -11808,7 +11808,7 @@
 						}
 					},
 					"configurations": {
-						"description": "Replacement documented or forward-compatible configuration fields",
+						"description": "Replacement documented or forward-compatible configuration fields. configurations.custom_headers must be a string-to-string header map when present.",
 						"type": "object",
 						"propertyNames": {
 							"type": "string"
