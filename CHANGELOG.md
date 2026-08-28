@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.2] - 2026-08-28
+
+Bug-fix release. Eight tools were calling Portkey admin routes that have moved
+to `/v2`, and paginated `list_*` tools could not reach their first page. MCP
+clients should refresh `tools/list` to pick up the corrected `current_page`
+schemas.
+
+### Fixed
+
+- Route deployments, organisation guardrail defaults, and SCIM groups to the
+  `/v2` admin base. On `/v1` these paths fall through to the gateway's generic
+  "x-portkey-config or x-portkey-provider header is required" response, which
+  is indistinguishable from a nonexistent route, so `list_deployments`,
+  `register_deployment`, `get_deployment`, `update_deployment`,
+  `archive_deployment`, `get_organisation_defaults`,
+  `update_organisation_defaults`, and `list_scim_groups` were all dead. The
+  `/v2` base is derived from the configured base URL, so a self-hosted
+  `PORTKEY_BASE_URL` keeps working.
+- Accept `current_page: 0` on the 15 `list_*` schemas that required a positive
+  integer. The Portkey API pages from 0, so the documented minimum of 1
+  silently returned the second page and made the first page unreachable.
+- Start `migrate_prompt` and `promote_prompt` exact-name lookups at page 0
+  instead of page 1, which skipped the first page of candidate matches.
+- Stop `list_prompts` reporting `has_more`, `next_page`, and `next_offset` when
+  no `current_page` was supplied. The API returns every record in one payload
+  in that case, so the advertised next page did not exist.
+
+### Changed
+
+- Describe every `current_page` parameter as zero-based. One schema documented
+  "starts at 1", which was wrong in the opposite direction.
+- Stop treating the gateway catch-all for deployments, SCIM groups, and
+  organisation defaults as an expected smoke-test skip. It masked the wrong
+  base URL rather than a genuinely unavailable route.
+
 ## [0.11.1] - 2026-08-28
 
 Maintenance release for repository automation, dependency locks, and current
@@ -605,7 +640,8 @@ First stable release. Graduates from beta with 151 tools covering ~98% of the Po
 - Vercel deployment support
 - Contract tests, E2E tests, security tests
 
-[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.11.1...HEAD
+[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.11.2...HEAD
+[0.11.2]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.11.1...v0.11.2
 [0.11.1]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.11.0...v0.11.1
 [0.11.0]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.10.1...v0.11.0
 [0.10.1]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.10.0...v0.10.1
