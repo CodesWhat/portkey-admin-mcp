@@ -260,7 +260,7 @@ describe("supply-chain configuration", () => {
 
 		assert.match(
 			workflow,
-			/gh workflow run release\.yml --ref "\$tag" -f tag="\$tag"/,
+			/gh workflow run release\.yml --repo "\$GITHUB_REPOSITORY" --ref "\$tag" -f tag="\$tag"/,
 		);
 	});
 
