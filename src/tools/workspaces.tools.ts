@@ -37,6 +37,58 @@ const createScimWorkspaceMappingShape = {
 		),
 };
 
+const workspaceUsageLimitSchema = z.object({
+	credit_limit: z.coerce
+		.number()
+		.positive()
+		.optional()
+		.describe("Maximum cost or token usage for the workspace"),
+	type: z
+		.enum(["cost", "tokens"])
+		.optional()
+		.describe("Whether the limit measures cost or tokens"),
+	alert_threshold: z.coerce
+		.number()
+		.positive()
+		.optional()
+		.describe("Percentage of the limit that triggers an alert"),
+	periodic_reset: z
+		.enum(["monthly", "weekly"])
+		.nullable()
+		.optional()
+		.describe("Built-in weekly or monthly reset cadence"),
+	periodic_reset_days: z.coerce
+		.number()
+		.int()
+		.min(1)
+		.max(365)
+		.nullable()
+		.optional()
+		.describe("Custom reset cadence in days, from 1 through 365"),
+	next_usage_reset_at: z.iso
+		.datetime({ offset: true })
+		.nullable()
+		.optional()
+		.describe("Next reset timestamp in ISO 8601 format"),
+});
+
+const workspaceRateLimitSchema = z.object({
+	type: z
+		.enum(["requests", "tokens"])
+		.optional()
+		.describe("Whether the limit counts requests or tokens"),
+	unit: z
+		.enum(["rpd", "rph", "rpm"])
+		.optional()
+		.describe("Rate window: requests per day, hour, or minute"),
+	value: z.coerce
+		.number()
+		.int()
+		.nonnegative()
+		.optional()
+		.describe("Maximum count in the selected rate window"),
+});
+
 // Registered as the raw shape so the cross-field rule runs inside the handler,
 // where wrapToolCallback can turn the ZodError into the same message shape every
 // other tool returns. Registering the refined schema instead hands validation to
@@ -65,9 +117,15 @@ const WORKSPACES_TOOL_SCHEMAS = {
 		current_page: z.coerce
 			.number()
 			.int()
-			.positive()
+			.nonnegative()
 			.optional()
 			.describe("Page number to retrieve when results are paginated"),
+		name: z.string().optional().describe("Case-sensitive name filter"),
+		exact_name: z.string().optional().describe("Exact workspace name filter"),
+		status: z
+			.enum(["active", "archived"])
+			.optional()
+			.describe("Filter by workspace lifecycle status"),
 	},
 	getWorkspace: {
 		workspace_id: z
@@ -92,6 +150,15 @@ const WORKSPACES_TOOL_SCHEMAS = {
 			.record(z.string(), z.string())
 			.optional()
 			.describe("Custom metadata key-value pairs"),
+		users: z.array(z.string()).optional().describe("Existing user IDs to add"),
+		usage_limits: z
+			.array(workspaceUsageLimitSchema)
+			.optional()
+			.describe("Initial workspace usage-limit settings"),
+		rate_limits: z
+			.array(workspaceRateLimitSchema)
+			.optional()
+			.describe("Initial workspace rate-limit settings"),
 	},
 	updateWorkspace: {
 		workspace_id: z.string().describe("The workspace ID to update"),
@@ -106,6 +173,29 @@ const WORKSPACES_TOOL_SCHEMAS = {
 			.record(z.string(), z.string())
 			.optional()
 			.describe("New metadata key-value pairs"),
+		input_guardrails: z
+			.array(z.string())
+			.optional()
+			.describe("Guardrail IDs applied to workspace model inputs"),
+		output_guardrails: z
+			.array(z.string())
+			.optional()
+			.describe("Guardrail IDs applied to workspace model outputs"),
+		user_api_key_config: z
+			.string()
+			.nullable()
+			.optional()
+			.describe(
+				"Default config slug for workspace-user API keys, or null to clear",
+			),
+		usage_limits: z
+			.array(workspaceUsageLimitSchema)
+			.optional()
+			.describe("Replacement workspace usage-limit settings"),
+		rate_limits: z
+			.array(workspaceRateLimitSchema)
+			.optional()
+			.describe("Replacement workspace rate-limit settings"),
 	},
 	deleteWorkspace: {
 		workspace_id: z.string().describe("The workspace ID to delete"),
@@ -126,6 +216,23 @@ const WORKSPACES_TOOL_SCHEMAS = {
 	},
 	listWorkspaceMembers: {
 		workspace_id: z.string().describe("The workspace ID to list members for"),
+		current_page: z.coerce
+			.number()
+			.int()
+			.nonnegative()
+			.optional()
+			.describe("Zero-based page number"),
+		page_size: z.coerce
+			.number()
+			.int()
+			.positive()
+			.optional()
+			.describe("Number of members per page"),
+		role: z
+			.enum(["admin", "manager", "member"])
+			.optional()
+			.describe("Filter by workspace role"),
+		email: z.string().email().optional().describe("Filter by member email"),
 	},
 	getWorkspaceMember: {
 		workspace_id: z.string().describe("The workspace ID"),
@@ -435,6 +542,13 @@ export function registerWorkspacesTools(
 								metadata: params.metadata,
 							}
 						: undefined,
+				...(params.users !== undefined ? { users: params.users } : {}),
+				...(params.usage_limits !== undefined
+					? { usage_limits: params.usage_limits }
+					: {}),
+				...(params.rate_limits !== undefined
+					? { rate_limits: params.rate_limits }
+					: {}),
 			});
 			return jsonResult({
 				message: `Successfully created workspace "${params.name}"`,
@@ -449,19 +563,34 @@ export function registerWorkspacesTools(
 		"Update a workspace's name, slug, description, default flag, or metadata by id, unlike update_workspace_member which changes role assignments within a workspace. Only provided fields change and updates take effect immediately; changing the slug can break URLs, API key references, and other external links, so confirm no dependencies first.",
 		WORKSPACES_TOOL_SCHEMAS.updateWorkspace,
 		async (params) => {
-			const { workspace_id, is_default, metadata, ...rest } = params;
+			const {
+				workspace_id,
+				is_default,
+				metadata,
+				input_guardrails,
+				output_guardrails,
+				user_api_key_config,
+				...rest
+			} = params;
 			// Build defaults object with only defined fields
 			const defaults: Record<string, unknown> = {};
 			if (is_default !== undefined) defaults.is_default = is_default;
 			if (metadata !== undefined) defaults.metadata = metadata;
+			if (input_guardrails !== undefined)
+				defaults.input_guardrails = input_guardrails;
+			if (output_guardrails !== undefined)
+				defaults.output_guardrails = output_guardrails;
+			if (user_api_key_config !== undefined)
+				defaults.user_api_key_config = user_api_key_config;
 
-			const workspace = await service.workspaces.updateWorkspace(workspace_id, {
+			const result = await service.workspaces.updateWorkspace(workspace_id, {
 				...rest,
 				...(Object.keys(defaults).length > 0 ? { defaults } : {}),
 			});
 			return jsonResult({
 				message: "Successfully updated workspace",
-				workspace: formatWorkspaceSummary(workspace),
+				success: result.success,
+				workspace_id,
 			});
 		},
 	);
@@ -486,7 +615,7 @@ export function registerWorkspacesTools(
 		"Add an existing org user to a workspace with a role. Requires a UUID user_id; use list_all_users to find it, and invite_user first if the person is not yet in the org.",
 		WORKSPACES_TOOL_SCHEMAS.addWorkspaceMember,
 		async (params) => {
-			const member = await service.workspaces.addWorkspaceMember(
+			const result = await service.workspaces.addWorkspaceMember(
 				params.workspace_id,
 				{
 					user_id: params.user_id,
@@ -495,7 +624,10 @@ export function registerWorkspacesTools(
 			);
 			return jsonResult({
 				message: `Successfully added user to workspace as ${params.role}`,
-				member: formatWorkspaceMember(member),
+				success: result.success,
+				workspace_id: result.workspace_id,
+				user_id: result.user_id,
+				role: result.role,
 			});
 		},
 	);
@@ -506,8 +638,10 @@ export function registerWorkspacesTools(
 		"List every member in a workspace with organization role, workspace role, status, and timestamps. Use this to find a user_id before get_workspace_member, update_workspace_member, or remove_workspace_member.",
 		WORKSPACES_TOOL_SCHEMAS.listWorkspaceMembers,
 		async (params) => {
+			const { workspace_id, ...filters } = params;
 			const members = await service.workspaces.listWorkspaceMembers(
-				params.workspace_id,
+				workspace_id,
+				filters,
 			);
 			return jsonResult({
 				total: members.total,

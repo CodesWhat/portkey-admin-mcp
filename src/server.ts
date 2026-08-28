@@ -2,7 +2,8 @@
 /**
  * Portkey MCP Server - HTTP transport entry point
  */
-import { pathToFileURL } from "node:url";
+import { realpathSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { createHttpAppRuntime, type HttpAppRuntime } from "./lib/http-app.js";
 
 let sharedRuntime: HttpAppRuntime | undefined;
@@ -39,7 +40,9 @@ function isMainModule(): boolean {
 	if (!entrypoint) {
 		return false;
 	}
-	return import.meta.url === pathToFileURL(entrypoint).href;
+	return (
+		realpathSync(entrypoint) === realpathSync(fileURLToPath(import.meta.url))
+	);
 }
 
 if (isMainModule()) {

@@ -220,12 +220,43 @@ export interface GroupAnalyticsResponse {
 	total: number;
 }
 
+export interface CacheSummaryParams extends BaseAnalyticsParams {
+	workspace_slug: string;
+}
+
+export interface CacheSummaryResponse {
+	object: "analytics-summary";
+	summary: {
+		hits: number;
+		avg_latency: number;
+		total_requests: number;
+		cache_speedup: number;
+	};
+}
+
+export interface ProviderGroupAnalyticsParams extends PaginatedAnalyticsParams {
+	workspace_slug: string;
+	order_by?: string;
+	order_by_type?: string;
+	columns?: string;
+	include_total?: "true" | "false";
+}
+
+export interface ProviderGroupAnalyticsResponse {
+	object: "list";
+	data: Array<{ provider: string; requests: number } & Record<string, unknown>>;
+	total?: number;
+}
+
 export class AnalyticsService extends BaseService {
 	/**
 	 * Helper method to build query params from analytics parameters
 	 */
 	private buildAnalyticsParams(
-		params: BaseAnalyticsParams | PaginatedAnalyticsParams,
+		params:
+			| BaseAnalyticsParams
+			| PaginatedAnalyticsParams
+			| ProviderGroupAnalyticsParams,
 	): Record<string, string | number | undefined> {
 		const baseParams: Record<string, string | number | undefined> = {
 			time_of_generation_min: params.time_of_generation_min,
@@ -259,6 +290,12 @@ export class AnalyticsService extends BaseService {
 		if ("page_size" in params) {
 			baseParams.page_size = params.page_size;
 		}
+		if ("order_by" in params) baseParams.order_by = params.order_by;
+		if ("order_by_type" in params)
+			baseParams.order_by_type = params.order_by_type;
+		if ("columns" in params) baseParams.columns = params.columns;
+		if ("include_total" in params)
+			baseParams.include_total = params.include_total;
 
 		return baseParams;
 	}
@@ -343,6 +380,15 @@ export class AnalyticsService extends BaseService {
 	): Promise<CacheHitRateResponse> {
 		return this.get<CacheHitRateResponse>(
 			"/analytics/graphs/cache/hit-rate",
+			this.buildAnalyticsParams(params),
+		);
+	}
+
+	async getCacheSummary(
+		params: CacheSummaryParams,
+	): Promise<CacheSummaryResponse> {
+		return this.get<CacheSummaryResponse>(
+			"/analytics/summary/cache",
 			this.buildAnalyticsParams(params),
 		);
 	}
@@ -450,6 +496,15 @@ export class AnalyticsService extends BaseService {
 	): Promise<GroupAnalyticsResponse> {
 		return this.get<GroupAnalyticsResponse>(
 			"/analytics/groups/ai-models",
+			this.buildAnalyticsParams(params),
+		);
+	}
+
+	async getAnalyticsGroupProviders(
+		params: ProviderGroupAnalyticsParams,
+	): Promise<ProviderGroupAnalyticsResponse> {
+		return this.get<ProviderGroupAnalyticsResponse>(
+			"/analytics/groups/provider",
 			this.buildAnalyticsParams(params),
 		);
 	}

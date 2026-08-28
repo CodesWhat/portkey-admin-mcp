@@ -8,6 +8,7 @@ import {
 } from "../src/services/base.service.js";
 import { CollectionsService } from "../src/services/collections.service.js";
 import { ConfigsService } from "../src/services/configs.service.js";
+import { DeploymentsService } from "../src/services/deployments.service.js";
 import { GuardrailsService } from "../src/services/guardrails.service.js";
 import { HealthService } from "../src/services/health.service.js";
 import { IntegrationsService } from "../src/services/integrations.service.js";
@@ -192,6 +193,85 @@ describe("AnalyticsService request routing", () => {
 		);
 		assert.equal(capturedFetches.length, 3);
 	});
+
+	it("routes cache summary and provider grouped analytics with current options", async () => {
+		const service = new AnalyticsService("test-key", BASE_URL);
+		const base = {
+			workspace_slug: "workspace",
+			time_of_generation_min: "2026-08-01T00:00:00Z",
+			time_of_generation_max: "2026-08-02T00:00:00Z",
+		};
+
+		await service.getCacheSummary({ ...base, trace_id: "trace-1" });
+		await service.getAnalyticsGroupProviders({
+			...base,
+			current_page: 0,
+			page_size: 0,
+			order_by: "requests",
+			order_by_type: "desc",
+			columns: "requests,cost,p95_latency",
+			include_total: "false",
+		});
+
+		assert.equal(capturedUrl(0).pathname, "/v1/analytics/summary/cache");
+		assert.equal(capturedUrl(0).searchParams.get("trace_id"), "trace-1");
+		assert.equal(capturedUrl(1).pathname, "/v1/analytics/groups/provider");
+		assert.equal(capturedUrl(1).searchParams.get("current_page"), "0");
+		assert.equal(capturedUrl(1).searchParams.get("page_size"), "0");
+		assert.equal(
+			capturedUrl(1).searchParams.get("columns"),
+			"requests,cost,p95_latency",
+		);
+		assert.equal(capturedUrl(1).searchParams.get("include_total"), "false");
+	});
+});
+
+describe("DeploymentsService request routing", () => {
+	it("uses current deployment filters, request bodies, encoded ids, and archival delete", async () => {
+		const service = new DeploymentsService("test-key", BASE_URL);
+
+		enqueue({ object: "list", total: 0, data: [] });
+		await service.listDeployments({
+			organisation_id: "org-1",
+			status: "active",
+			type: "production",
+			workspace_slug: ["primary", "secondary"],
+			search: "edge",
+		});
+		enqueue({ id: "dep-1", client_auth: "one-time-secret" });
+		await service.registerDeployment({
+			name: "Edge",
+			type: "production",
+			auth_settings: { gateway_base_url: "https://edge.example.com" },
+		});
+		enqueue({ id: "dep-1" });
+		await service.getDeployment("dep/one", "org-1");
+		enqueue({ client_auth: "rotated-secret" });
+		await service.updateDeployment("dep/one", { rotate_auth: true });
+		enqueue({});
+		await service.archiveDeployment("dep/one");
+
+		const listUrl = capturedUrl(0);
+		assert.equal(listUrl.pathname, "/v1/deployments");
+		assert.deepEqual(listUrl.searchParams.getAll("workspace_slug"), [
+			"primary",
+			"secondary",
+		]);
+		assert.equal(listUrl.searchParams.get("organisation_id"), "org-1");
+		assert.equal(listUrl.searchParams.get("status"), "active");
+		assert.equal(listUrl.searchParams.get("type"), "production");
+		assert.equal(listUrl.searchParams.get("search"), "edge");
+		assert.deepEqual(capturedBody(1), {
+			name: "Edge",
+			type: "production",
+			auth_settings: { gateway_base_url: "https://edge.example.com" },
+		});
+		assert.equal(capturedUrl(2).pathname, "/v1/deployments/dep%2Fone");
+		assert.equal(capturedUrl(2).searchParams.get("organisation_id"), "org-1");
+		assert.equal(capturedFetches[3]?.init?.method, "PUT");
+		assert.deepEqual(capturedBody(3), { rotate_auth: true });
+		assert.equal(capturedFetches[4]?.init?.method, "DELETE");
+	});
 });
 
 describe("PromptsService workflows", () => {
@@ -232,7 +312,6 @@ describe("PromptsService workflows", () => {
 		enqueue(rawPrompt);
 		const prompt = await service.getPrompt("prompt/one");
 		assert.equal(prompt.current_version?.version_number, 3);
-		assert.deepEqual(prompt.versions, []);
 		enqueue({
 			id: "prompt-1",
 			slug: "support-dev",
@@ -310,6 +389,52 @@ describe("PromptsService workflows", () => {
 		assert.equal(capturedFetches.length, 0);
 	});
 
+	it("preserves raw-template semantics across prompt writes and reads", async () => {
+		const service = new PromptsService("test-key", BASE_URL);
+		enqueue({ id: "prompt-1", slug: "prompt-1", version_id: "version-1" });
+		await service.createPrompt({
+			name: "Structural",
+			collection_id: "collection-1",
+			string: '{"role":"{{role}}"}',
+			parameters: {},
+			virtual_key: "vk-1",
+			is_raw_template: true,
+		} as never);
+		assert.equal(
+			(capturedBody(0) as Record<string, unknown>).is_raw_template,
+			1,
+		);
+
+		enqueue({
+			id: "prompt-1",
+			name: "Structural",
+			slug: "structural",
+			collection_id: "collection-1",
+			created_at: "2026-08-01T00:00:00Z",
+			last_updated_at: "2026-08-01T00:00:00Z",
+			prompt_version_id: "version-1",
+			prompt_version: 1,
+			string: '{"role":"{{role}}"}',
+			parameters: {},
+			is_raw_template: 1,
+		});
+		assert.equal(
+			(await service.getPrompt("prompt-1")).current_version?.is_raw_template,
+			true,
+		);
+
+		enqueue({
+			id: "prompt-1",
+			slug: "structural",
+			prompt_version_id: "version-2",
+		});
+		await service.updatePrompt("prompt-1", { is_raw_template: false } as never);
+		assert.equal(
+			(capturedBody(2) as Record<string, unknown>).is_raw_template,
+			0,
+		);
+	});
+
 	it("handles dry-run, unchanged, update, and create migrations", async () => {
 		const service = new PromptsService("test-key", BASE_URL);
 		const migration = {
@@ -337,6 +462,7 @@ describe("PromptsService workflows", () => {
 			string: "Hello",
 			parameters: { locale: "en" },
 			virtual_key: "vk-1",
+			template_metadata: { app: "support", env: "dev" },
 		};
 
 		enqueue({ object: "list", total: 0, data: [] });
@@ -398,6 +524,51 @@ describe("PromptsService workflows", () => {
 		await assert.rejects(
 			service.migratePrompt(migration as never),
 			/exists but has no active version/,
+		);
+	});
+
+	it("pages exact-name prompt migration lookups", async () => {
+		const service = new PromptsService("test-key", BASE_URL);
+		const filler = Array.from({ length: 100 }, (_, index) => ({
+			id: `other-${index}`,
+			name: `Other ${index}`,
+			slug: `other-${index}`,
+		}));
+		enqueue({ object: "list", total: 101, data: filler });
+		enqueue({
+			object: "list",
+			total: 101,
+			data: [{ id: "prompt-1", name: "Support dev", slug: "support-dev" }],
+		});
+		enqueue({
+			id: "prompt-1",
+			name: "Support dev",
+			slug: "support-dev",
+			collection_id: "collection-1",
+			created_at: "2026-08-01T00:00:00Z",
+			last_updated_at: "2026-08-02T00:00:00Z",
+			prompt_version_id: "version-1",
+			prompt_version: 1,
+			string: "Hello",
+			parameters: {},
+			virtual_key: "vk-1",
+			template_metadata: { app: "support", env: "dev" },
+		});
+		const result = await service.migratePrompt({
+			name: "Support dev",
+			collection_id: "collection-1",
+			string: "Hello",
+			parameters: {},
+			virtual_key: "vk-1",
+			app: "support",
+			env: "dev",
+		} as never);
+		assert.equal(result.action, "unchanged");
+		assert.equal(capturedUrl(0).searchParams.get("page_size"), "100");
+		assert.equal(capturedUrl(1).searchParams.get("current_page"), "2");
+		assert.equal(
+			capturedFetches.some((call) => call.init?.method === "POST"),
+			false,
 		);
 	});
 
@@ -470,10 +641,221 @@ describe("PromptsService workflows", () => {
 	});
 });
 
+describe("deep-review service regressions", () => {
+	it("translates one workspace member into the current users-array contract", async () => {
+		enqueue({});
+		const service = new WorkspacesService("test-key", BASE_URL);
+
+		const result = await service.addWorkspaceMember("workspace-1", {
+			user_id: "00000000-0000-0000-0000-000000000001",
+			role: "member",
+		});
+
+		assert.deepEqual(capturedBody(0), {
+			users: [
+				{
+					id: "00000000-0000-0000-0000-000000000001",
+					role: "member",
+				},
+			],
+		});
+		assert.deepEqual(result, {
+			success: true,
+			workspace_id: "workspace-1",
+			user_id: "00000000-0000-0000-0000-000000000001",
+			role: "member",
+		});
+	});
+
+	it("updates a migrated prompt for every supplied execution field", async () => {
+		const desired = {
+			name: "Support dev",
+			collection_id: "collection-1",
+			string: "Hello",
+			parameters: { locale: "en" },
+			virtual_key: "vk-new",
+			model: "openai/gpt-5",
+			version_description: "Desired version",
+			template_metadata: { source_file: "prompts/support.json" },
+			functions: [{ name: "lookup", description: "Look up a customer" }],
+			tools: [
+				{
+					type: "function" as const,
+					function: { name: "lookup", description: "Look up a customer" },
+				},
+			],
+			tool_choice: { type: "function" as const, function: { name: "lookup" } },
+			app: "support",
+			env: "dev",
+		};
+		const existing = {
+			id: "prompt-1",
+			name: desired.name,
+			slug: "support-dev",
+		};
+		const current = {
+			...existing,
+			collection_id: desired.collection_id,
+			workspace_id: "workspace-1",
+			created_at: "2026-08-01T00:00:00Z",
+			last_updated_at: "2026-08-02T00:00:00Z",
+			prompt_version_id: "version-1",
+			prompt_version: 1,
+			prompt_version_description: desired.version_description,
+			string: desired.string,
+			parameters: desired.parameters,
+			virtual_key: desired.virtual_key,
+			model: desired.model,
+			functions: desired.functions,
+			tools: desired.tools,
+			tool_choice: desired.tool_choice,
+			template_metadata: {
+				...desired.template_metadata,
+				app: desired.app,
+				env: desired.env,
+				migrated_at: "2026-08-01T00:00:00Z",
+			},
+		};
+		const cases: Array<[string, Record<string, unknown>]> = [
+			["virtual_key", { virtual_key: "vk-old" }],
+			["version_description", { prompt_version_description: "Old version" }],
+			["functions", { functions: [{ name: "old" }] }],
+			["tools", { tools: [{ type: "function", function: { name: "old" } }] }],
+			["tool_choice", { tool_choice: "auto" }],
+			[
+				"template_metadata",
+				{
+					template_metadata: {
+						...current.template_metadata,
+						source_file: "prompts/old.json",
+					},
+				},
+			],
+			[
+				"app/env metadata",
+				{
+					template_metadata: {
+						...current.template_metadata,
+						app: "old-app",
+						env: "old-env",
+					},
+				},
+			],
+		];
+
+		for (const [field, difference] of cases) {
+			const start = capturedFetches.length;
+			enqueue({ object: "list", total: 1, data: [existing] });
+			enqueue({ ...current, ...difference });
+			enqueue({
+				id: "prompt-1",
+				slug: "support-dev",
+				prompt_version_id: "version-2",
+			});
+
+			const result = await new PromptsService(
+				"test-key",
+				BASE_URL,
+			).migratePrompt(desired);
+
+			assert.equal(result.action, "updated", `${field} must trigger an update`);
+			assert.equal(
+				(capturedBody(start + 2) as Record<string, unknown>).virtual_key,
+				"vk-new",
+			);
+		}
+	});
+
+	it("uses an explicit virtual key while promoting to an existing target", async () => {
+		enqueue({
+			id: "source-1",
+			name: "support-dev",
+			slug: "support-dev",
+			collection_id: "collection-1",
+			workspace_id: "workspace-1",
+			created_at: "2026-08-01T00:00:00Z",
+			last_updated_at: "2026-08-02T00:00:00Z",
+			prompt_version_id: "source-version",
+			prompt_version: 4,
+			string: "Hello",
+			parameters: {},
+			virtual_key: "vk-staging",
+			template_metadata: { app: "support", env: "dev" },
+		});
+		enqueue({
+			object: "list",
+			total: 1,
+			data: [{ id: "target-1", name: "support-prod", slug: "support-prod" }],
+		});
+		enqueue({
+			id: "target-1",
+			slug: "support-prod",
+			prompt_version_id: "target-v2",
+		});
+
+		await new PromptsService("test-key", BASE_URL).promotePrompt({
+			source_prompt_id: "source-1",
+			target_collection_id: "collection-2",
+			target_env: "prod",
+			virtual_key: "vk-production",
+		});
+
+		assert.equal(
+			(capturedBody(2) as Record<string, unknown>).virtual_key,
+			"vk-production",
+		);
+	});
+
+	it("falls back to the source virtual key for an empty promotion override", async () => {
+		enqueue({
+			id: "source-1",
+			name: "support-dev",
+			slug: "support-dev",
+			collection_id: "collection-1",
+			workspace_id: "workspace-1",
+			created_at: "2026-08-01T00:00:00Z",
+			last_updated_at: "2026-08-02T00:00:00Z",
+			prompt_version_id: "source-version",
+			prompt_version: 4,
+			string: "Hello",
+			parameters: {},
+			virtual_key: "vk-staging",
+			template_metadata: { app: "support", env: "dev" },
+		});
+		enqueue({
+			object: "list",
+			total: 1,
+			data: [{ id: "target-1", name: "support-prod", slug: "support-prod" }],
+		});
+		enqueue({
+			id: "target-1",
+			slug: "support-prod",
+			prompt_version_id: "target-v2",
+		});
+
+		await new PromptsService("test-key", BASE_URL).promotePrompt({
+			source_prompt_id: "source-1",
+			target_collection_id: "collection-2",
+			target_env: "prod",
+			virtual_key: "",
+		});
+
+		assert.equal(
+			(capturedBody(2) as Record<string, unknown>).virtual_key,
+			"vk-staging",
+		);
+	});
+});
+
 describe("UsersService request contracts", () => {
 	it("routes user, invite, and grouped analytics operations", async () => {
 		const service = new UsersService("test-key", BASE_URL);
-		await service.listUsers({ page_size: 25, current_page: 2 });
+		await service.listUsers({
+			page_size: 25,
+			current_page: 0,
+			role: "owner",
+			email: "ada@example.com",
+		});
 		await service.inviteUser({
 			email: "ada@example.com",
 			role: "member",
@@ -490,7 +872,13 @@ describe("UsersService request contracts", () => {
 		await service.updateUser("user/one", { first_name: "Ada" });
 		enqueue(undefined, 204);
 		assert.deepEqual(await service.deleteUser("user/one"), { success: true });
-		await service.listUserInvites({ page_size: 10, current_page: 1 });
+		await service.listUserInvites({
+			page_size: 10,
+			current_page: 0,
+			role: "member",
+			email: "grace@example.com",
+			status: "pending",
+		});
 		await service.getUserInvite("invite/one");
 		enqueue(undefined, 204);
 		assert.deepEqual(await service.deleteUserInvite("invite/one"), {
@@ -516,6 +904,15 @@ describe("UsersService request contracts", () => {
 			],
 		);
 		assert.equal(capturedUrl(2).searchParams.get("total_units_min"), "0");
+		assert.equal(capturedUrl(0).searchParams.get("pageSize"), "25");
+		assert.equal(capturedUrl(0).searchParams.get("currentPage"), "0");
+		assert.equal(capturedUrl(0).searchParams.has("page_size"), false);
+		assert.equal(capturedUrl(0).searchParams.get("role"), "owner");
+		assert.equal(capturedUrl(0).searchParams.get("email"), "ada@example.com");
+		assert.equal(capturedUrl(6).searchParams.get("pageSize"), "10");
+		assert.equal(capturedUrl(6).searchParams.get("currentPage"), "0");
+		assert.equal(capturedUrl(6).searchParams.get("role"), "member");
+		assert.equal(capturedUrl(6).searchParams.get("status"), "pending");
 		assert.deepEqual(capturedBody(4), { first_name: "Ada" });
 	});
 });
@@ -523,35 +920,61 @@ describe("UsersService request contracts", () => {
 describe("LimitsService validation and routing", () => {
 	it("routes rate and usage limit lifecycles", async () => {
 		const service = new LimitsService("test-key", BASE_URL);
-		const condition = { field: "model", operator: "equals", value: "gpt-5" };
-		await service.listRateLimits("workspace-1");
-		await service.getRateLimit("rate/one");
+		const condition = { key: "model", value: ["gpt-5", "gpt-5-mini"] };
+		await service.listRateLimits({
+			workspace_id: "workspace-1",
+			status: "active",
+			type: "requests",
+			unit: "rpw",
+			target: "mcp_tools",
+			page_size: 25,
+			current_page: 0,
+		});
+		await service.getRateLimit("rate/one", "archived");
 		await service.createRateLimit({
 			conditions: [condition],
-			group_by: ["model"],
+			group_by: [{ key: "mcp_tool" }],
 			type: "requests",
-			unit: "rpm",
+			unit: "rpw",
 			value: 10,
+			target: "mcp_tools",
 		});
-		await service.updateRateLimit("rate/one", { value: 20 });
+		await service.updateRateLimit("rate/one", {
+			value: 20,
+			conditions: [{ key: "mcp_server", value: "server-1" }],
+		});
 		enqueue(undefined, 204);
 		assert.deepEqual(await service.deleteRateLimit("rate/one"), {
 			success: true,
 		});
-		await service.listUsageLimits("workspace-1");
-		await service.getUsageLimit("usage/one");
+		await service.listUsageLimits({
+			workspace_id: "workspace-1",
+			status: "active",
+			type: "cost",
+			page_size: 25,
+			current_page: 0,
+		});
+		await service.getUsageLimit("usage/one", {
+			status: "active",
+			include_usage: true,
+		});
 		await service.createUsageLimit({
 			conditions: [condition],
-			group_by: ["model"],
+			group_by: [{ key: "model" }],
 			type: "cost",
 			credit_limit: 100,
 		});
 		await service.updateUsageLimit("usage/one", { credit_limit: 200 });
-		enqueue({ success: false });
+		enqueue({});
 		assert.deepEqual(await service.deleteUsageLimit("usage/one"), {
-			success: false,
+			success: true,
 		});
-		await service.listUsageLimitEntities("usage/one");
+		await service.listUsageLimitEntities("usage/one", {
+			status: "exhausted",
+			search: "metadata._user:ada",
+			page_size: 100,
+			current_page: 0,
+		});
 		await service.resetUsageLimitEntity("usage/one", "entity-1");
 
 		assert.equal(
@@ -562,7 +985,16 @@ describe("LimitsService validation and routing", () => {
 			capturedUrl(10).pathname,
 			"/v1/policies/usage-limits/usage%2Fone/entities",
 		);
-		assert.deepEqual(capturedBody(11), { entity_id: "entity-1" });
+		assert.equal(capturedUrl(0).searchParams.get("target"), "mcp_tools");
+		assert.equal(capturedUrl(1).searchParams.get("status"), "archived");
+		assert.equal(capturedUrl(6).searchParams.get("include_usage"), "true");
+		assert.equal(capturedUrl(10).searchParams.get("status"), "exhausted");
+		assert.equal(
+			capturedUrl(11).pathname,
+			"/v1/policies/usage-limits/usage%2Fone/entities/entity-1/reset",
+		);
+		assert.equal(capturedFetches[11]?.init?.method, "PUT");
+		assert.equal(capturedBody(11), undefined);
 	});
 
 	it("rejects blank resource identifiers before issuing a request", async () => {
@@ -692,10 +1124,30 @@ describe("KeysService request contracts", () => {
 		await service.listVirtualKeys({ page_size: 25, current_page: 2 });
 		await service.createVirtualKey({
 			name: "Primary",
-			integrations: [],
-		} as never);
+			provider: "azure-openai",
+			deploymentConfig: [
+				{
+					apiVersion: "2024-10-01",
+					deploymentName: "gpt-5",
+					alias: "primary",
+					is_default: true,
+				},
+			],
+			expires_at: "2027-01-01T00:00:00Z",
+			secret_mappings: [
+				{ target_field: "key", secret_reference_id: "secret-1" },
+			],
+		});
 		await service.getVirtualKey("virtual/key");
-		await service.updateVirtualKey("virtual/key", { name: "Updated" } as never);
+		await service.updateVirtualKey("virtual/key", {
+			name: "Updated",
+			deploymentConfig: [
+				{ apiVersion: "2024-10-01", deploymentName: "gpt-5-mini" },
+			],
+			secret_mappings: [
+				{ target_field: "key", secret_reference_id: "secret-2" },
+			],
+		});
 		enqueue(undefined, 204);
 		assert.deepEqual(await service.deleteVirtualKey("virtual/key"), {
 			success: true,
@@ -703,17 +1155,66 @@ describe("KeysService request contracts", () => {
 		await service.createApiKey("workspace", "service", {
 			name: "Automation",
 			workspace_id: "workspace-1",
-		} as never);
+			scopes: ["logs.read"],
+			organisation_id: "org-1",
+			rate_limits: [{ type: "tokens", unit: "rps", value: 5 }],
+			defaults: { allow_config_override: false },
+			rotation_policy: {
+				rotation_period: "weekly",
+				key_transition_period_ms: 1_800_000,
+			},
+		});
 		await service.listApiKeys({ workspace_id: "workspace-1", page_size: 10 });
 		await service.getApiKey("api/key");
-		await service.updateApiKey("api/key", { name: "Renamed" } as never);
-		await service.rotateApiKey("api/key", { key_transition_period_ms: 60000 });
+		await service.updateApiKey("api/key", {
+			name: "Renamed",
+			reset_usage: 0,
+			rate_limits: [{ type: "requests", unit: "rpw", value: 500 }],
+			rotation_policy: null,
+		});
+		await service.rotateApiKey("api/key", {
+			key_transition_period_ms: 1_800_000,
+		});
 		enqueue(undefined, 204);
 		assert.deepEqual(await service.deleteApiKey("api/key"), { success: true });
 
 		assert.equal(capturedUrl(2).pathname, "/v1/virtual-keys/virtual%2Fkey");
 		assert.equal(capturedUrl(5).pathname, "/v1/api-keys/workspace/service");
 		assert.equal(capturedUrl(9).pathname, "/v1/api-keys/api%2Fkey/rotate");
+		assert.deepEqual(capturedBody(1), {
+			name: "Primary",
+			provider: "azure-openai",
+			deploymentConfig: [
+				{
+					apiVersion: "2024-10-01",
+					deploymentName: "gpt-5",
+					alias: "primary",
+					is_default: true,
+				},
+			],
+			expires_at: "2027-01-01T00:00:00Z",
+			secret_mappings: [
+				{ target_field: "key", secret_reference_id: "secret-1" },
+			],
+		});
+		assert.deepEqual(capturedBody(5), {
+			name: "Automation",
+			workspace_id: "workspace-1",
+			scopes: ["logs.read"],
+			organisation_id: "org-1",
+			rate_limits: [{ type: "tokens", unit: "rps", value: 5 }],
+			defaults: { allow_config_override: false },
+			rotation_policy: {
+				rotation_period: "weekly",
+				key_transition_period_ms: 1_800_000,
+			},
+		});
+		assert.deepEqual(capturedBody(8), {
+			name: "Renamed",
+			reset_usage: 0,
+			rate_limits: [{ type: "requests", unit: "rpw", value: 500 }],
+			rotation_policy: null,
+		});
 	});
 });
 
@@ -731,16 +1232,45 @@ describe("HealthService cache behavior", () => {
 		assert.equal(capturedFetches.length, 1);
 	});
 
-	it("does not cache upstream failures", async () => {
+	it("briefly caches upstream failures before retrying", async () => {
+		const originalNow = Date.now;
+		let now = 1_000;
+		Date.now = () => now;
 		const service = new HealthService("test-key", BASE_URL);
-		enqueueError(new Error("network unavailable"));
-		await assert.rejects(
-			service.ping(),
-			/Health check failed: network unavailable/,
-		);
+		try {
+			enqueueError(new Error("network unavailable"));
+			await assert.rejects(
+				service.ping(),
+				/Health check failed: network unavailable/,
+			);
+			enqueue({ object: "list", data: [] });
+			await assert.rejects(
+				service.ping(),
+				/Health check failed: network unavailable/,
+			);
+			assert.equal(capturedFetches.length, 1);
+
+			now += 1_001;
+			assert.equal((await service.ping()).status, "ok");
+			assert.equal(capturedFetches.length, 2);
+		} finally {
+			Date.now = originalNow;
+		}
+	});
+
+	it("coalesces concurrent cache misses into one upstream probe", async () => {
+		const service = new HealthService("test-key", BASE_URL);
 		enqueue({ object: "list", data: [] });
-		assert.equal((await service.ping()).status, "ok");
-		assert.equal(capturedFetches.length, 2);
+
+		const results = await Promise.all(
+			Array.from({ length: 20 }, () => service.ping()),
+		);
+
+		assert.equal(
+			results.every((result) => result.status === "ok"),
+			true,
+		);
+		assert.equal(capturedFetches.length, 1);
 	});
 });
 
@@ -750,10 +1280,16 @@ describe("BaseService URL and client safety", () => {
 			"localhost",
 			"api.localhost",
 			"::1",
+			"::",
 			"fe80::1",
+			"fe9f::1",
+			"febf::1",
 			"fc00::1",
 			"fd00::1",
 			"::ffff:192.168.1.1",
+			"::ffff:c0a8:101",
+			"::ffff:a9fe:a9fe",
+			"::ffff:7f00:1",
 			"0.1.2.3",
 			"10.1.2.3",
 			"127.0.0.2",
@@ -836,16 +1372,15 @@ describe("Configuration and platform service contracts", () => {
 		assert.deepEqual((await service.getConfig("config/one")).config, {
 			strategy: { mode: "fallback" },
 		});
-		enqueue({ data: { id: "config-2", slug: "config-two" } });
+		enqueue({ data: { id: "config-2", version_id: "version-1" } });
 		assert.deepEqual(
 			await service.createConfig({ name: "Config two", config: {} } as never),
-			{ id: "config-2", slug: "config-two" },
+			{ id: "config-2", version_id: "version-1" },
 		);
-		enqueue({ id: "config-1", slug: "config-one", config: "" });
+		enqueue({ success: true, data: { version_id: "version-2" } });
 		assert.deepEqual(
-			(await service.updateConfig("config/one", { name: "Renamed" } as never))
-				.config,
-			{},
+			await service.updateConfig("config/one", { name: "Renamed" } as never),
+			{ success: true, version_id: "version-2" },
 		);
 		enqueue(undefined, 204);
 		assert.deepEqual(await service.deleteConfig("config/one"), {
@@ -855,7 +1390,26 @@ describe("Configuration and platform service contracts", () => {
 		assert.deepEqual(await service.deleteConfig("config/two"), {
 			success: false,
 		});
-		await service.listConfigVersions("config/one");
+		enqueue({
+			object: "list",
+			total: 1,
+			data: [
+				{
+					version_id: "version-2",
+					config: '{"strategy":{"mode":"fallback"}}',
+					created_at: "2026-08-01T00:00:00Z",
+					updated_by: "user-1",
+				},
+			],
+		});
+		assert.deepEqual((await service.listConfigVersions("config/one")).data, [
+			{
+				version_id: "version-2",
+				config: { strategy: { mode: "fallback" } },
+				created_at: "2026-08-01T00:00:00Z",
+				updated_by: "user-1",
+			},
+		]);
 		assert.equal(capturedUrl(1).pathname, "/v1/configs/config%2Fone");
 		assert.equal(capturedUrl(6).pathname, "/v1/configs/config%2Fone/versions");
 	});
@@ -970,6 +1524,17 @@ describe("Integration service contracts", () => {
 		);
 		assert.equal(capturedUrl(7).searchParams.get("slugs"), "model/one");
 	});
+
+	it("passes integration model deletion as an encoded query parameter", async () => {
+		const service = new IntegrationsService("test-key", BASE_URL);
+		enqueue(undefined, 204);
+		await service.deleteIntegrationModel("integration/one", "model & secret");
+		assert.equal(
+			capturedUrl(0).pathname,
+			"/v1/integrations/integration%2Fone/models",
+		);
+		assert.equal(capturedUrl(0).searchParams.get("slugs"), "model & secret");
+	});
 });
 
 describe("MCP administration service contracts", () => {
@@ -978,6 +1543,10 @@ describe("MCP administration service contracts", () => {
 		await service.listMcpIntegrations({
 			workspace_id: "workspace-1",
 			page_size: 10,
+			current_page: 0,
+			organisation_id: "org-1",
+			type: "all",
+			search: "github",
 		});
 		await service.createMcpIntegration({ name: "GitHub" } as never);
 		await service.getMcpIntegration("integration/one");
@@ -1010,6 +1579,9 @@ describe("MCP administration service contracts", () => {
 			capturedUrl(9).pathname,
 			"/v1/mcp-integrations/integration%2Fone/workspaces",
 		);
+		assert.equal(capturedUrl(0).searchParams.get("organisation_id"), "org-1");
+		assert.equal(capturedUrl(0).searchParams.get("type"), "all");
+		assert.equal(capturedUrl(0).searchParams.get("search"), "github");
 	});
 
 	it("routes MCP server lifecycle, connections, capabilities, and access", async () => {
@@ -1096,10 +1668,32 @@ describe("Observability and workspace service contracts", () => {
 			success: true,
 		});
 		await service.listScimGroups({ page_size: 10 });
-		await service.listWorkspaces({ page_size: 10 });
+		await service.listWorkspaces({
+			page_size: 10,
+			current_page: 0,
+			name: "Platform",
+			exact_name: "Platform Production",
+			status: "active",
+		});
 		await service.getWorkspace("workspace/one");
-		await service.createWorkspace({ name: "Platform" });
-		await service.updateWorkspace("workspace/one", { name: "Platform 2" });
+		await service.createWorkspace({
+			name: "Platform",
+			users: ["user-1"],
+			usage_limits: [
+				{ type: "cost", credit_limit: 100, periodic_reset: "monthly" },
+			],
+			rate_limits: [{ type: "requests", unit: "rpm", value: 50 }],
+		});
+		await service.updateWorkspace("workspace/one", {
+			name: "Platform 2",
+			defaults: {
+				input_guardrails: ["guardrail-in"],
+				output_guardrails: ["guardrail-out"],
+				user_api_key_config: "pc-default",
+			},
+			usage_limits: [],
+			rate_limits: [],
+		});
 		assert.deepEqual(await service.deleteWorkspace("workspace/one"), {
 			success: true,
 		});
@@ -1107,7 +1701,12 @@ describe("Observability and workspace service contracts", () => {
 			user_id: "user-1",
 			role: "member",
 		});
-		await service.listWorkspaceMembers("workspace/one");
+		await service.listWorkspaceMembers("workspace/one", {
+			current_page: 0,
+			page_size: 50,
+			role: "manager",
+			email: "ada@example.com",
+		});
 		await service.getWorkspaceMember("workspace/one", "user/one");
 		await service.updateWorkspaceMember("workspace/one", "user/one", {
 			role: "admin",
@@ -1124,6 +1723,20 @@ describe("Observability and workspace service contracts", () => {
 			capturedUrl(11).pathname,
 			"/v1/admin/workspaces/workspace%2Fone/users/user%2Fone",
 		);
+		assert.equal(
+			capturedUrl(4).searchParams.get("exact_name"),
+			"Platform Production",
+		);
+		assert.equal(capturedUrl(4).searchParams.get("status"), "active");
+		assert.equal(capturedUrl(10).searchParams.get("role"), "manager");
+		assert.deepEqual(capturedBody(6), {
+			name: "Platform",
+			users: ["user-1"],
+			usage_limits: [
+				{ type: "cost", credit_limit: 100, periodic_reset: "monthly" },
+			],
+			rate_limits: [{ type: "requests", unit: "rpm", value: 50 }],
+		});
 	});
 
 	it("routes secret references and trace feedback", async () => {

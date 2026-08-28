@@ -236,6 +236,7 @@ describe("prompt update and lifecycle tools", () => {
 				string: "New template",
 				parameters: { locale: "en" },
 				model: "gpt-4.1",
+				is_raw_template: true,
 				virtual_key: "vk-support",
 				version_description: "Second version",
 				template_metadata: { env: "prod" },
@@ -253,6 +254,7 @@ describe("prompt update and lifecycle tools", () => {
 				string: "New template",
 				parameters: { locale: "en" },
 				model: "gpt-4.1",
+				is_raw_template: true,
 				virtual_key: "vk-support",
 				version_description: "Second version",
 				template_metadata: { env: "prod" },
@@ -352,14 +354,14 @@ describe("prompt rendering and execution tools", () => {
 		const payload = parseToolResult(
 			await callback({
 				prompt_id: "prompt-1",
-				variables: { name: "Ada" },
+				variables: { name: "Ada", active: true, retries: 2 },
 				hyperparameters: { max_tokens: 300, temperature: 0.2 },
 			}),
 		);
 		assert.deepEqual(received, {
 			promptId: "prompt-1",
 			payload: {
-				variables: { name: "Ada" },
+				variables: { name: "Ada", active: true, retries: 2 },
 				hyperparameters: { max_tokens: 300, temperature: 0.2 },
 			},
 		});
@@ -518,6 +520,7 @@ describe("prompt workflow tools", () => {
 				parameters: {},
 				virtual_key: "vk-support",
 				model: "gpt-4.1",
+				is_raw_template: true,
 				version_description: "Release",
 				template_metadata: { owner: "support-team" },
 				functions: [fn],
@@ -536,6 +539,7 @@ describe("prompt workflow tools", () => {
 			parameters: {},
 			virtual_key: "vk-support",
 			model: "gpt-4.1",
+			is_raw_template: true,
 			version_description: "Release",
 			template_metadata: { owner: "support-team" },
 			functions: [fn],
@@ -757,9 +761,8 @@ describe("configuration mutation tools", () => {
 			updateConfig: async (slug: string, payload: unknown) => {
 				received = { slug, payload };
 				return {
-					id: "config-1",
-					slug,
-					config: { cache: { mode: "semantic" } },
+					success: true,
+					version_id: "version-2",
 				};
 			},
 		}).get("update_config");
@@ -776,7 +779,8 @@ describe("configuration mutation tools", () => {
 			slug: "production",
 			payload: { name: "Production v2", status: "inactive" },
 		});
-		assert.deepEqual(payload.config, { cache: { mode: "semantic" } });
+		assert.equal(payload.success, true);
+		assert.equal(payload.version_id, "version-2");
 	});
 
 	it("deletes a configuration and preserves the service success flag", async () => {
@@ -800,11 +804,10 @@ describe("configuration mutation tools", () => {
 				total: 1,
 				data: [
 					{
-						id: "version-1",
-						version: 1,
+						version_id: "version-1",
 						config: { strategy: { mode: "fallback" } },
 						created_at: "2026-01-01T00:00:00.000Z",
-						created_by: "user-1",
+						updated_by: "user-1",
 					},
 				],
 			}),
@@ -815,11 +818,10 @@ describe("configuration mutation tools", () => {
 		assert.equal(payload.total, 1);
 		assert.deepEqual(payload.versions, [
 			{
-				id: "version-1",
-				version: 1,
+				version_id: "version-1",
 				config: { strategy: { mode: "fallback" } },
 				created_at: "2026-01-01T00:00:00.000Z",
-				created_by: "user-1",
+				updated_by: "user-1",
 			},
 		]);
 	});

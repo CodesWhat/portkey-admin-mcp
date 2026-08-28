@@ -1,10 +1,18 @@
 import { BaseService } from "./base.service.js";
+import type { SecretMapping } from "./shared.types.js";
 
 // Virtual Key Types
 export interface VirtualKeyRateLimit {
-	type: "requests";
-	unit: "rpm";
+	type: "requests" | "tokens";
+	unit: "rpd" | "rph" | "rpm" | "rps" | "rpw";
 	value: number;
+}
+
+export interface VirtualKeyDeploymentConfig {
+	apiVersion: string;
+	deploymentName: string;
+	alias?: string;
+	is_default?: boolean;
 }
 
 export interface VirtualKeyUsageLimits {
@@ -24,6 +32,8 @@ export interface VirtualKey {
 	slug: string;
 	model_config: Record<string, unknown>;
 	rate_limits: VirtualKeyRateLimit[] | null;
+	expires_at?: string | null;
+	secret_mappings?: SecretMapping[];
 	object: "virtual-key";
 }
 
@@ -37,14 +47,17 @@ export interface ListVirtualKeysResponse {
 export interface CreateVirtualKeyRequest {
 	name: string;
 	provider: string;
-	key: string;
+	key?: string;
 	note?: string | null;
 	workspace_id?: string;
 	apiVersion?: string | null;
 	resourceName?: string | null;
 	deploymentName?: string | null;
+	deploymentConfig?: VirtualKeyDeploymentConfig[];
 	usage_limits?: Partial<VirtualKeyUsageLimits>;
 	rate_limits?: VirtualKeyRateLimit[];
+	expires_at?: string;
+	secret_mappings?: SecretMapping[];
 }
 
 export interface CreateVirtualKeyResponse {
@@ -58,14 +71,16 @@ export interface UpdateVirtualKeyRequest {
 	name?: string;
 	key?: string;
 	note?: string | null;
+	deploymentConfig?: VirtualKeyDeploymentConfig[];
 	usage_limits?: Partial<VirtualKeyUsageLimits>;
 	rate_limits?: VirtualKeyRateLimit[];
+	secret_mappings?: SecretMapping[];
 }
 
 // Phase 2: API Key Types
 export interface ApiKeyRateLimit {
-	type: "requests";
-	unit: "rpm";
+	type: "requests" | "tokens";
+	unit: "rpd" | "rph" | "rpm" | "rps" | "rpw";
 	value: number;
 }
 
@@ -79,6 +94,13 @@ export interface ApiKeyUsageLimits {
 export interface ApiKeyDefaults {
 	metadata?: Record<string, string>;
 	config_id?: string;
+	allow_config_override?: boolean;
+}
+
+export interface ApiKeyRotationPolicy {
+	rotation_period?: "weekly" | "monthly" | null;
+	next_rotation_at?: string | null;
+	key_transition_period_ms?: number;
 }
 
 export interface ApiKey {
@@ -119,14 +141,16 @@ export interface ListApiKeysParams {
 export interface CreateApiKeyRequest {
 	name: string;
 	description?: string;
+	organisation_id?: string;
 	workspace_id?: string;
 	user_id?: string;
-	rate_limits?: ApiKeyRateLimit[];
+	rate_limits?: ApiKeyRateLimit[] | null;
 	usage_limits?: Partial<ApiKeyUsageLimits>;
 	scopes?: string[];
 	defaults?: ApiKeyDefaults;
 	alert_emails?: string[];
 	expires_at?: string;
+	rotation_policy?: ApiKeyRotationPolicy | null;
 }
 
 export interface CreateApiKeyResponse {
@@ -138,12 +162,14 @@ export interface CreateApiKeyResponse {
 export interface UpdateApiKeyRequest {
 	name?: string;
 	description?: string;
-	rate_limits?: ApiKeyRateLimit[];
+	rate_limits?: ApiKeyRateLimit[] | null;
 	usage_limits?: Partial<ApiKeyUsageLimits>;
+	reset_usage?: number;
 	scopes?: string[];
 	defaults?: ApiKeyDefaults;
 	alert_emails?: string[];
 	expires_at?: string | null;
+	rotation_policy?: ApiKeyRotationPolicy | null;
 }
 
 export interface RotateApiKeyRequest {
@@ -188,11 +214,12 @@ export class KeysService extends BaseService {
 	async updateVirtualKey(
 		slug: string,
 		data: UpdateVirtualKeyRequest,
-	): Promise<VirtualKey> {
-		return this.put<VirtualKey>(
+	): Promise<{ success: true }> {
+		await this.put<Record<string, never>>(
 			`/virtual-keys/${this.encodePathSegment(slug)}`,
 			data,
 		);
+		return { success: true };
 	}
 
 	async deleteVirtualKey(slug: string): Promise<{ success: boolean }> {

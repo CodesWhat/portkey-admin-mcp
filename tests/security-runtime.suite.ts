@@ -68,6 +68,213 @@ describe("supply-chain configuration", () => {
 		assert.match(publishJob, /npm publish "\$TARBALL"[\s\S]*--ignore-scripts/);
 	});
 
+	it("builds release packages only from the trusted workflow commit", () => {
+		const workflow = readFileSync(
+			new URL("../.github/workflows/release.yml", import.meta.url),
+			"utf8",
+		);
+		const packageJob = workflow.match(
+			/\n {2}package-npm:[\s\S]*?(?=\n {2}publish-npm:)/,
+		)?.[0];
+
+		assert.ok(packageJob, "expected an isolated package-npm job");
+		assert.match(packageJob, /ref: \$\{\{ github\.sha \}\}/);
+		assert.doesNotMatch(
+			packageJob,
+			/ref: \$\{\{ needs\.release-ref\.outputs\.tag \}\}/,
+		);
+		assert.match(packageJob, /git rev-parse "\$\{GITHUB_SHA\}\^\{commit\}"/);
+		assert.match(packageJob, /tag_commit.*trusted_commit/);
+	});
+
+	it("pins validated release refs to commits and rechecks the tag before publishing", () => {
+		const workflow = readFileSync(
+			new URL("../.github/workflows/release.yml", import.meta.url),
+			"utf8",
+		);
+		const gateJob = workflow.match(
+			/\n {2}release-ref:[\s\S]*?(?=\n {2}ci:)/,
+		)?.[0];
+		const ciJob = workflow.match(
+			/\n {2}ci:[\s\S]*?(?=\n {2}github-release:)/,
+		)?.[0];
+		const githubJob = workflow.match(
+			/\n {2}github-release:[\s\S]*?(?=\n {2}package-npm:)/,
+		)?.[0];
+		const publishJob = workflow.match(
+			/\n {2}publish-npm:[\s\S]*?(?=\n {2}publish-registry:)/,
+		)?.[0];
+		const registryJob = workflow.match(/\n {2}publish-registry:[\s\S]*$/)?.[0];
+
+		assert.ok(gateJob);
+		assert.match(
+			gateJob,
+			/dispatch_commit="\$\(git rev-parse "\$\{GITHUB_SHA\}\^\{commit\}"\)"/,
+		);
+		assert.match(gateJob, /dispatch_commit.*tag_commit/);
+		for (const output of ["tag_commit", "manifest_commit", "ci_commit"]) {
+			assert.match(
+				gateJob,
+				new RegExp(
+					`${output}: \\$\\{\\{ steps\\.resolve\\.outputs\\.${output} \\}\\}`,
+				),
+			);
+			assert.match(gateJob, new RegExp(`echo "${output}=\\$${output}"`));
+		}
+
+		assert.match(
+			ciJob ?? "",
+			/ref: \$\{\{ needs\.release-ref\.outputs\.ci_commit \}\}/,
+		);
+		assert.match(
+			registryJob ?? "",
+			/ref: \$\{\{ needs\.release-ref\.outputs\.manifest_commit \|\| needs\.release-ref\.outputs\.tag_commit \}\}/,
+		);
+		assert.doesNotMatch(
+			registryJob ?? "",
+			/ref: \$\{\{ needs\.release-ref\.outputs\.(?:manifest_ref|tag) /,
+		);
+
+		for (const [name, job] of [
+			["github-release", githubJob],
+			["publish-npm", publishJob],
+			["publish-registry", registryJob],
+		] as const) {
+			assert.ok(job, `expected ${name} job`);
+			assert.match(
+				job,
+				/TAG_COMMIT: \$\{\{ needs\.release-ref\.outputs\.tag_commit \}\}/,
+			);
+			assert.match(job, /current_tag_commit/);
+			assert.match(job, /current_tag_commit.*TAG_COMMIT/);
+		}
+	});
+
+	it("skips package execution when a backfilled version already exists", () => {
+		const workflow = readFileSync(
+			new URL("../.github/workflows/release.yml", import.meta.url),
+			"utf8",
+		);
+		const packageJob = workflow.match(
+			/\n {2}package-npm:[\s\S]*?(?=\n {2}publish-npm:)/,
+		)?.[0];
+		const publishJob = workflow.match(
+			/\n {2}publish-npm:[\s\S]*?(?=\n {2}publish-registry:)/,
+		)?.[0];
+
+		assert.ok(packageJob);
+		assert.match(packageJob, /already_published:/);
+		assert.match(packageJob, /npm view "portkey-admin-mcp@\$\{VERSION\}"/);
+		for (const step of [
+			"Verify release source",
+			"Install dependencies without lifecycle scripts",
+			"Build package",
+			"Pack package without lifecycle scripts",
+			"Smoke-test packed package",
+			"Upload package artifact",
+		]) {
+			assert.match(
+				packageJob,
+				new RegExp(
+					`- name: ${step}\\n\\s+if: steps\\.publication\\.outputs\\.already_published != 'true'`,
+				),
+			);
+		}
+
+		assert.ok(publishJob);
+		assert.match(
+			publishJob,
+			/if: needs\.package-npm\.outputs\.already_published != 'true'/,
+		);
+	});
+
+	it("passes packed artifact paths through the environment before shell use", () => {
+		const workflow = readFileSync(
+			new URL("../.github/workflows/release.yml", import.meta.url),
+			"utf8",
+		);
+		const packageJob = workflow.match(
+			/\n {2}package-npm:[\s\S]*?(?=\n {2}publish-npm:)/,
+		)?.[0];
+
+		assert.ok(packageJob);
+		assert.doesNotMatch(
+			packageJob,
+			/run:.*\$\{\{ steps\.pack\.outputs\.tarball \}\}/,
+		);
+		assert.match(
+			packageJob,
+			/env:\s+TARBALL: \$\{\{ steps\.pack\.outputs\.tarball \}\}\s+run: node scripts\/smoke-package\.mjs "\$TARBALL"/,
+		);
+	});
+
+	it("dispatches the release workflow at the new tag", () => {
+		const workflow = readFileSync(
+			new URL("../.github/workflows/auto-tag.yml", import.meta.url),
+			"utf8",
+		);
+
+		assert.match(
+			workflow,
+			/gh workflow run release\.yml --ref "\$tag" -f tag="\$tag"/,
+		);
+	});
+
+	it("smoke-tests the exact packed artifact before upload", () => {
+		const workflow = readFileSync(
+			new URL("../.github/workflows/release.yml", import.meta.url),
+			"utf8",
+		);
+		const packageJob = workflow.match(
+			/\n {2}package-npm:[\s\S]*?(?=\n {2}publish-npm:)/,
+		)?.[0];
+		assert.ok(packageJob);
+		assert.match(packageJob, /Smoke-test packed package/);
+		assert.match(packageJob, /node scripts\/smoke-package\.mjs/);
+
+		const smokeScript = readFileSync(
+			new URL("../scripts/smoke-package.mjs", import.meta.url),
+			"utf8",
+		);
+		assert.match(smokeScript, /npm[\s\S]*install[\s\S]*--ignore-scripts/);
+		assert.match(smokeScript, /portkey-admin-mcp-http/);
+		assert.match(smokeScript, /portkey-admin-mcp/);
+		assert.match(smokeScript, /initialize/);
+		assert.match(smokeScript, /\/health/);
+	});
+
+	it("gates every release ref on protected-main ancestry before publishing", () => {
+		const workflow = readFileSync(
+			new URL("../.github/workflows/release.yml", import.meta.url),
+			"utf8",
+		);
+		const gateJob = workflow.match(/\n {2}release-ref:[\s\S]*?\n {2}ci:/)?.[0];
+
+		assert.ok(gateJob, "expected a release-ref job before CI");
+		assert.match(gateJob, /git fetch origin main/);
+		assert.match(gateJob, /git merge-base --is-ancestor/);
+		assert.match(gateJob, /MANIFEST_REF/);
+		for (const job of [
+			"ci",
+			"github-release",
+			"package-npm",
+			"publish-npm",
+			"publish-registry",
+		]) {
+			const block = workflow.match(
+				new RegExp(`\\n {2}${job}:[\\s\\S]*?(?=\\n {2}[a-z][a-z-]+:|$)`),
+			)?.[0];
+			assert.ok(block, `expected ${job} job`);
+			assert.match(block, /needs:.*release-ref/);
+		}
+		for (const job of ["publish-npm", "publish-registry"]) {
+			const block = workflow.match(
+				new RegExp(`\\n {2}${job}:[\\s\\S]*?(?=\\n {2}[a-z][a-z-]+:|$)`),
+			)?.[0];
+			assert.match(block ?? "", /environment:\s*release/);
+		}
+	});
+
 	it("removes npm tooling from the production container", () => {
 		const dockerfile = readFileSync(
 			new URL("../Dockerfile", import.meta.url),
@@ -466,42 +673,26 @@ describe("origin security configuration", () => {
 		assert.equal(outcome, "rejected");
 	});
 
-	it("rate-limits authentication before applying the principal-aware limit", () => {
+	it("uses one refillable limiter before auth and a principal limiter after auth", () => {
 		const httpApp = readFileSync(
 			new URL("../src/lib/http-app.ts", import.meta.url),
 			"utf8",
 		);
-		const packageJson = JSON.parse(
-			readFileSync(new URL("../package.json", import.meta.url), "utf8"),
-		) as { dependencies?: Record<string, string> };
-		const modeledLimiterIndex = httpApp.indexOf("expressRateLimit({");
 		const preAuthIndex = httpApp.indexOf("app.use(rateLimitMiddleware);");
 		const authIndex = httpApp.indexOf("app.use(mcpAuthMiddleware);");
 		const principalIndex = httpApp.indexOf(
 			"app.use(principalRateLimitMiddleware);",
 		);
 
-		assert.equal(
-			typeof packageJson.dependencies?.["express-rate-limit"],
-			"string",
-			"expected express-rate-limit to be a direct runtime dependency",
-		);
-		assert.ok(
-			modeledLimiterIndex >= 0,
-			"expected a CodeQL-modeled Express limiter",
-		);
+		assert.doesNotMatch(httpApp, /expressRateLimit\(|express-rate-limit/);
 		assert.ok(preAuthIndex >= 0, "expected a pre-authentication limiter");
-		assert.ok(
-			modeledLimiterIndex < preAuthIndex,
-			"modeled IP limiter must run before the distributed limiter",
-		);
 		assert.ok(
 			preAuthIndex < authIndex,
 			"pre-auth limiter must run before auth",
 		);
 		assert.ok(
 			authIndex < principalIndex,
-			"principal-aware limiter must run after auth",
+			"principal limiter must run after auth",
 		);
 	});
 

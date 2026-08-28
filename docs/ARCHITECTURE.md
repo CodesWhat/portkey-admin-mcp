@@ -21,7 +21,7 @@ transport policy in separate layers.
 ## Request flow
 
 1. An MCP client connects through `StdioServerTransport` or the HTTP runtime.
-2. `createMcpServer()` registers all 19 tool domains, or the subset allowed by
+2. `createMcpServer()` registers all 20 tool domains, or the subset allowed by
    `PORTKEY_TOOL_DOMAINS`.
 3. The MCP SDK validates a tool call against its Zod input schema. The shared
    tool wrapper adds the standard success/error envelope and annotations.
@@ -47,6 +47,12 @@ separate policy boundary:
 - stateful sessions with principal ownership, or fresh stateless servers;
 - optional encrypted Redis event storage for resumable delivery; and
 - readiness and graceful-shutdown handling.
+
+HTTP authentication is a server access gate, not Portkey tenant
+impersonation. All authenticated principals use the same configured
+`PORTKEY_API_KEY` and can invoke any enabled tool and scope that credential
+grants. Different trust levels require separate instances or deployments with
+separately scoped Portkey credentials and `PORTKEY_TOOL_DOMAINS` allowlists.
 
 The upstream `PORTKEY_BASE_URL` must be HTTPS unless both development-only
 private-network opt-ins are set. Public model-pricing requests use Portkey's

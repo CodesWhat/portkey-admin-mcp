@@ -45,9 +45,50 @@ test("an existing release can republish a corrected MCP Registry manifest", () =
 	);
 
 	assert.match(workflowSource, /manifest_ref:/);
+	assert.match(workflowSource, /needs\.release-ref\.outputs\.manifest_commit/);
+	assert.match(workflowSource, /needs\.release-ref\.outputs\.tag_commit/);
 	assert.match(
 		workflowSource,
-		/github\.event\.inputs\.manifest_ref \|\| github\.event\.inputs\.tag/,
+		/git merge-base --is-ancestor "\$manifest_commit" origin\/main/,
+	);
+});
+
+test("Qlty pins Biome and leaves Knip to the locked CI install", () => {
+	const packageJson = readJson("package.json");
+	const devDependencies = packageJson.devDependencies as Record<string, string>;
+	const scripts = packageJson.scripts as Record<string, string>;
+	const biomeVersion = devDependencies["@biomejs/biome"];
+	const biomeConfig = readJson("biome.json");
+	const qltyConfig = readFileSync(`${root}.qlty/qlty.toml`, "utf8");
+
+	assert.equal(
+		biomeConfig.$schema,
+		`https://biomejs.dev/schemas/${biomeVersion}/schema.json`,
+	);
+	assert.match(
+		qltyConfig,
+		new RegExp(
+			`\\[\\[plugin\\]\\]\\s+name = "biome"\\s+version = "${biomeVersion}"`,
+		),
+	);
+	assert.doesNotMatch(qltyConfig, /\[\[plugin\]\]\s+name = "knip"/);
+	assert.match(scripts.ci, /npm run knip/);
+});
+
+test("every publishing job uses the protected release environment", () => {
+	const workflowSource = readFileSync(
+		`${root}.github/workflows/release.yml`,
+		"utf8",
+	);
+
+	assert.match(
+		workflowSource,
+		/git merge-base --is-ancestor "\$tag_commit" origin\/main/,
+	);
+	assert.equal(
+		workflowSource.match(/^\s{4}environment: release$/gm)?.length,
+		3,
+		"GitHub Release, npm publish, and MCP Registry publish must all use the release environment",
 	);
 });
 
@@ -82,9 +123,31 @@ test("the live smoke suite covers new read-only compatibility surfaces", () => {
 		"listMcpServers",
 		"listMcpServerConnections",
 		"getModelPricing",
+		"listDeployments",
+		"getDeployment",
+		"listMcpIntegrations",
+		"getMcpIntegration",
+		"listUsageLimitEntities",
+		"getCacheSummary",
+		"getAnalyticsGroupProviders",
 	]) {
 		assert.match(smokeSource, new RegExp(`\\.${method}\\(`));
 	}
+});
+
+test("README verification checks categories, domains, and gated inventory", () => {
+	const verifierSource = readFileSync(
+		`${root}scripts/verify-readme-tools.mjs`,
+		"utf8",
+	);
+
+	assert.match(verifierSource, /README_CATEGORY_SOURCES/);
+	assert.match(verifierSource, /TOOL_DOMAIN_REGISTRARS/);
+	assert.match(verifierSource, /ENTERPRISE_GATED_TOOL_NAMES/);
+	assert.match(
+		verifierSource,
+		/ENDPOINTS\.md must contain exactly one catalog row/,
+	);
 });
 
 test("the release guide covers every published catalog", () => {
@@ -96,6 +159,17 @@ test("the release guide covers every published catalog", () => {
 			new RegExp(`^#{2,3} .*${catalog}`, "im"),
 			`RELEASE.md needs a ${catalog} section`,
 		);
+	}
+});
+
+test("HTTP deployment docs disclose the shared Portkey credential boundary", () => {
+	const readme = readFileSync(`${root}README.md`, "utf8");
+	const architecture = readFileSync(`${root}docs/ARCHITECTURE.md`, "utf8");
+
+	for (const source of [readme, architecture]) {
+		assert.match(source, /all authenticated principals/i);
+		assert.match(source, /PORTKEY_API_KEY/);
+		assert.match(source, /separate (?:instance|deployment)/i);
 	}
 });
 

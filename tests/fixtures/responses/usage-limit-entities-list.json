@@ -1,0 +1,11 @@
+{
+	"object": "list",
+	"total": 1,
+	"data": [
+		{
+			"id": "entity-001",
+			"value_key": "api-key-001",
+			"current_usage": 37.5
+		}
+	]
+}

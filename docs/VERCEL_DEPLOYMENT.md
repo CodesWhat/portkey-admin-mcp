@@ -48,7 +48,7 @@ Required:
 - `MCP_REDIS_URL=rediss://<ACL-user>:<password>@...`
 - `MCP_EVENT_ENCRYPTION_KEY=<base64-encoded-32-byte-key>`
 - `ALLOWED_ORIGINS=https://your-app-domain`
-- `MCP_TRUST_PROXY=true`
+- `MCP_TRUST_PROXY=1` (adjust only if the verified Vercel proxy chain has a different exact hop count)
 - `RATE_LIMIT_STORE=redis`
 
 Recommended:

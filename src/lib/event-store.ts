@@ -41,12 +41,16 @@ interface MemoryEventRecord {
 	ownerKey: string;
 	message: JSONRPCMessage;
 	expiresAt: number;
+	byteSize: number;
 }
 
 interface MemoryEventStoreState {
 	events: Map<EventId, MemoryEventRecord>;
-	streamEvents: Map<StreamId, EventId[]>;
+	streamEvents: Map<StreamId, Set<EventId>>;
 	activeReplayStreams: Set<StreamId>;
+	expiryQueue: EventId[];
+	expiryHead: number;
+	totalBytes: number;
 	lastCleanupAt: number;
 }
 
@@ -141,26 +145,41 @@ function assertSafeRedisId(id: string, kind: "streamId" | "eventId"): string {
 
 class InMemoryEventStore implements EventStore {
 	private readonly ttlMs: number;
+	private readonly maxEvents: number;
+	private readonly maxBytes: number;
 	private readonly ownerKey: string;
 	private readonly state: MemoryEventStoreState;
 
 	constructor(
 		ttlSeconds: number,
 		ownerKey: string,
+		maxEvents = 10_000,
+		maxBytes = 64 * 1024 * 1024,
 		state: MemoryEventStoreState = {
 			events: new Map(),
 			streamEvents: new Map(),
 			activeReplayStreams: new Set(),
+			expiryQueue: [],
+			expiryHead: 0,
+			totalBytes: 0,
 			lastCleanupAt: 0,
 		},
 	) {
 		this.ttlMs = ttlSeconds * 1000;
+		this.maxEvents = maxEvents;
+		this.maxBytes = maxBytes;
 		this.ownerKey = ownerKey;
 		this.state = state;
 	}
 
 	forOwner(ownerKey: string): InMemoryEventStore {
-		return new InMemoryEventStore(this.ttlMs / 1000, ownerKey, this.state);
+		return new InMemoryEventStore(
+			this.ttlMs / 1000,
+			ownerKey,
+			this.maxEvents,
+			this.maxBytes,
+			this.state,
+		);
 	}
 
 	private removeEvent(
@@ -172,17 +191,16 @@ class InMemoryEventStore implements EventStore {
 		}
 
 		this.state.events.delete(eventId);
+		this.state.totalBytes = Math.max(0, this.state.totalBytes - event.byteSize);
 
 		const eventIds = this.state.streamEvents.get(event.streamId);
 		if (!eventIds) {
 			return;
 		}
 
-		const filtered = eventIds.filter((candidate) => candidate !== eventId);
-		if (filtered.length === 0) {
+		eventIds.delete(eventId);
+		if (eventIds.size === 0) {
 			this.state.streamEvents.delete(event.streamId);
-		} else if (filtered.length !== eventIds.length) {
-			this.state.streamEvents.set(event.streamId, filtered);
 		}
 	}
 
@@ -206,21 +224,36 @@ class InMemoryEventStore implements EventStore {
 	}
 
 	private cleanupExpired(now = Date.now()): void {
-		for (const [eventId, event] of this.state.events.entries()) {
-			if (event.expiresAt <= now) {
-				this.state.events.delete(eventId);
+		while (this.state.expiryHead < this.state.expiryQueue.length) {
+			const eventId = this.state.expiryQueue[this.state.expiryHead] as EventId;
+			const event = this.state.events.get(eventId);
+			if (event && event.expiresAt > now) {
+				break;
 			}
+			this.state.expiryHead += 1;
+			this.removeEvent(eventId, event);
 		}
+		if (
+			this.state.expiryHead > 1024 &&
+			this.state.expiryHead * 2 >= this.state.expiryQueue.length
+		) {
+			this.state.expiryQueue.splice(0, this.state.expiryHead);
+			this.state.expiryHead = 0;
+		}
+	}
 
-		for (const [streamId, eventIds] of this.state.streamEvents.entries()) {
-			const filtered = eventIds.filter((eventId) =>
-				this.state.events.has(eventId),
-			);
-			if (filtered.length === 0) {
-				this.state.streamEvents.delete(streamId);
-			} else if (filtered.length !== eventIds.length) {
-				this.state.streamEvents.set(streamId, filtered);
+	private enforceBounds(): void {
+		while (
+			this.state.events.size > this.maxEvents ||
+			this.state.totalBytes > this.maxBytes
+		) {
+			const oldestEventId = this.state.events.keys().next().value as
+				| EventId
+				| undefined;
+			if (!oldestEventId) {
+				break;
 			}
+			this.removeEvent(oldestEventId);
 		}
 	}
 
@@ -240,16 +273,21 @@ class InMemoryEventStore implements EventStore {
 		this.maybeCleanupExpired();
 
 		const eventId = randomUUID();
+		const byteSize = Buffer.byteLength(JSON.stringify(message));
 		this.state.events.set(eventId, {
 			streamId,
 			ownerKey: this.ownerKey,
 			message,
 			expiresAt: Date.now() + this.ttlMs,
+			byteSize,
 		});
+		this.state.totalBytes += byteSize;
+		this.state.expiryQueue.push(eventId);
 
-		const streamIds = this.state.streamEvents.get(streamId) || [];
-		streamIds.push(eventId);
+		const streamIds = this.state.streamEvents.get(streamId) || new Set();
+		streamIds.add(eventId);
 		this.state.streamEvents.set(streamId, streamIds);
+		this.enforceBounds();
 
 		return eventId;
 	}
@@ -296,7 +334,9 @@ class InMemoryEventStore implements EventStore {
 			throw new Error(`Event not found for replay: ${lastEventId}`);
 		}
 
-		const eventIds = this.state.streamEvents.get(lastEvent.streamId) || [];
+		const eventIds = Array.from(
+			this.state.streamEvents.get(lastEvent.streamId) || [],
+		);
 		const index = eventIds.indexOf(lastEventId);
 		if (index < 0) {
 			throw new Error(
@@ -606,6 +646,8 @@ export function createManagedEventStore(
 		const memoryStore = new InMemoryEventStore(
 			config.eventStore.ttlSeconds,
 			"internal",
+			config.eventStore.maxEvents,
+			config.eventStore.maxBytes,
 		);
 		return {
 			mode: "memory",

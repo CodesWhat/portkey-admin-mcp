@@ -4,7 +4,7 @@
 
 <h1>Portkey Admin MCP Server</h1>
 
-**The [Portkey](https://portkey.ai/) Admin API as an MCP server — 171 tools across prompts, configs, keys, analytics, governance, and more.**
+**The [Portkey](https://portkey.ai/) Admin API as an MCP server — 178 tools across prompts, configs, keys, analytics, governance, deployments, and more.**
 
 </div>
 
@@ -95,7 +95,7 @@ npx -y portkey-admin-mcp
 ```
 
 Scoping domains is also the biggest lever on context cost, not just access. `tools/list`
-is paginated, and the complete 171-tool catalog is roughly 387 KB (~99K tokens) once a
+is paginated, and the complete 178-tool catalog is roughly 400 KB once a
 client follows `nextCursor` through every page. Narrowing to the domains a client
 actually needs cuts that roughly proportionally.
 
@@ -135,6 +135,7 @@ Then use this config:
 | **Prompt Partials** | 7 | Reusable prompt fragments with versioning |
 | **Prompt Labels** | 5 | Organize prompt versions (production, staging, dev) |
 | **Configs** | 6 | Gateway routing, caching, retry, loadbalancing |
+| **Deployments** | 5 | Register, inspect, update, and archive self-hosted Gateways |
 | **API Keys** | 6 | Create, rotate, and manage scoped API keys |
 | **Secret References** | 5 | Manage AWS, Azure, and HashiCorp external-secret references |
 | **Virtual Keys** | 5 | Manage provider access keys |
@@ -146,13 +147,18 @@ Then use this config:
 | **Guardrails** | 11 | Content safety policies, organisation defaults, workspace exclusions |
 | **Usage Limits** | 7 | Cost and token consumption limits |
 | **Rate Limits** | 5 | Request frequency controls |
-| **Analytics** | 20 | Cost, latency, errors, tokens, cache, feedback |
+| **Analytics** | 22 | Cost, latency, errors, tokens, cache, feedback, provider groups |
 | **Logging** | 10 | Log retrieval, ingestion, export, and field restrictions |
 | **Tracing** | 2 | Feedback creation and updates on traces |
 | **Users & Workspaces** | 24 | User management, invites, workspace members, SCIM group mappings |
 | **Audit** | 1 | Audit log access |
 
-**171 tools total.** See [ENDPOINTS.md](./ENDPOINTS.md) for the full list with descriptions.
+**178 tools total across 20 tool domains.** See [ENDPOINTS.md](./ENDPOINTS.md) for the full list with descriptions.
+
+Portkey's newer product language increasingly presents provider credentials as
+Providers, while the current Admin API still exposes both `/virtual-keys` and
+`/providers`. This server keeps both domains: Virtual Keys manage provider access
+credentials, and Providers manage workspace provider configurations.
 
 <hr>
 
@@ -165,16 +171,18 @@ If a tool returns a `403` with Portkey error `AB03`, it means missing scopes —
 <details>
 <summary><strong>Enterprise-gated tools and other scope requirements</strong></summary>
 
-### Enterprise-gated tools (40)
+### Enterprise-gated tools (53)
 
 The following tools require an **organisation-level scope that is only available on Portkey Enterprise plans**. They return `403 You do not have enough permissions to execute this request` on workspace plans. Their descriptions include an `Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.` suffix so MCP clients know upfront.
 
 | Area | Tools | Required scope |
 |---|---|---|
-| Analytics (20) | `get_cost_analytics`, `get_request_analytics`, `get_token_analytics`, `get_latency_analytics`, `get_error_analytics`, `get_error_rate_analytics`, `get_cache_hit_latency`, `get_cache_hit_rate`, `get_users_analytics`, `get_error_stacks_analytics`, `get_error_status_codes_analytics`, `get_user_requests_analytics`, `get_rescued_requests_analytics`, `get_feedback_analytics`, `get_feedback_models_analytics`, `get_feedback_scores_analytics`, `get_feedback_weighted_analytics`, `get_analytics_group_users`, `get_analytics_group_models`, `get_analytics_group_metadata` | org-level `analytics.view` |
+| Analytics (22) | `get_cost_analytics`, `get_request_analytics`, `get_token_analytics`, `get_latency_analytics`, `get_error_analytics`, `get_error_rate_analytics`, `get_cache_hit_latency`, `get_cache_hit_rate`, `get_cache_summary`, `get_users_analytics`, `get_error_stacks_analytics`, `get_error_status_codes_analytics`, `get_user_requests_analytics`, `get_rescued_requests_analytics`, `get_feedback_analytics`, `get_feedback_models_analytics`, `get_feedback_scores_analytics`, `get_feedback_weighted_analytics`, `get_analytics_group_users`, `get_analytics_group_models`, `get_analytics_group_metadata`, `get_analytics_group_providers` | org-level `analytics.view` |
+| Deployments (5) | `list_deployments`, `register_deployment`, `get_deployment`, `update_deployment`, `archive_deployment` | Enterprise deployment administration |
 | Audit | `list_audit_logs` | `audit_logs.list` |
 | Org-level integrations | `get_integration`, `list_integration_models`, `list_integration_workspaces` | `organisation_integrations.read` |
 | Org-level users | `list_all_users`, `get_user`, `get_user_stats`, `list_user_invites` | `organisation_users.list` / `organisation_users.read` |
+| Organisation guardrails (6) | `get_organisation_defaults`, `update_organisation_defaults`, `list_input_guardrail_workspace_exclusions`, `update_input_guardrail_workspace_exclusions`, `list_output_guardrail_workspace_exclusions`, `update_output_guardrail_workspace_exclusions` | `organisation_settings.read/update` and `organisation_exclusions.list/update` |
 | Log exports (8) | `create_log_export`, `list_log_exports`, `get_log_export`, `start_log_export`, `cancel_log_export`, `download_log_export`, `update_log_export`, `get_log_export_field_restrictions` | Enterprise Logs Export + `logs.export` |
 | SCIM groups (4) | `list_scim_groups`, `list_scim_workspace_mappings`, `create_scim_workspace_mapping`, `delete_scim_workspace_mapping` | SCIM enabled + organisation admin access |
 
@@ -194,6 +202,12 @@ The following tools require an **organisation-level scope that is only available
 > **Status**: The HTTP transport works locally and is covered by the integration test suite, but it is a proof of concept — there is **no hosted version** of this server, and hosted deployment is not currently a goal. Use stdio (npx) as the supported transport.
 
 The server supports Streamable HTTP for remote access:
+
+HTTP authentication controls access to the server, but it does not impersonate
+separate Portkey tenants. All authenticated principals use the same configured
+`PORTKEY_API_KEY` and can invoke any enabled tool and scope that credential
+grants. Run separate instances or deployments with separately scoped Portkey
+credentials and `PORTKEY_TOOL_DOMAINS` allowlists for different trust levels.
 
 ```bash
 PORTKEY_API_KEY=your_key \
@@ -222,7 +236,7 @@ For local-only HTTP use, leave `MCP_HOST` at its default `127.0.0.1`. Set `MCP_H
 | `PORTKEY_BASE_URL` | `https://api.portkey.ai/v1` | Portkey Admin API base URL. Prisma AIRS/SCM URLs are not compatible; credentialed requests never auto-follow redirects |
 | `PORTKEY_ALLOW_PRIVATE_BASE_URL` | — | Set to `true` to allow a literal loopback/private `PORTKEY_BASE_URL` |
 | `PORTKEY_ALLOW_INSECURE_HTTP` | — | Separately set to `true` only when a trusted self-hosted gateway cannot use HTTPS |
-| `PORTKEY_TOOL_DOMAINS` | — | Server-side tool-domain allowlist. HTTP `?tools=` may narrow this set but cannot expand it |
+| `PORTKEY_TOOL_DOMAINS` | — | Server-side allowlist of the 20 domains: `users`, `workspaces`, `configs`, `deployments`, `keys`, `collections`, `prompts`, `analytics`, `guardrails`, `limits`, `audit`, `labels`, `partials`, `tracing`, `logging`, `providers`, `secret-references`, `integrations`, `mcp-integrations`, `mcp-servers`. HTTP `?tools=` may narrow it but cannot expand it |
 | `MCP_HOST` | `127.0.0.1` | Bind address |
 | `MCP_PORT` | `3000` | Port |
 | `MCP_PUBLIC_BASE_URL` | — | Public absolute base URL to advertise from `/auth/info` and the status page; recommended for hosted deployments |
@@ -237,6 +251,8 @@ For local-only HTTP use, leave `MCP_HOST` at its default `127.0.0.1`. Set `MCP_H
 | `MCP_MAX_SESSIONS` | `100` | Maximum concurrent stateful sessions or active stateless request handlers |
 | `MCP_EVENT_STORE` | `off` | `off`, `memory`, or `redis`; stateless `GET /mcp` replay requires `memory` or `redis` |
 | `MCP_EVENT_TTL_SECONDS` | `300` | Replay retention in seconds |
+| `MCP_EVENT_STORE_MAX_EVENTS` | `10000` | Maximum events retained by the in-memory replay store; oldest events are evicted first |
+| `MCP_EVENT_STORE_MAX_BYTES` | `67108864` | Approximate maximum serialized bytes retained by the in-memory replay store |
 | `MCP_EVENT_STORE_COMMAND_TIMEOUT_MS` | `5000` | Redis command timeout for the event store, in milliseconds; `0` disables the timeout (restores unbounded pre-v6 behavior) |
 | `MCP_REDIS_URL` | — | Redis URL for shared event store; production requires `rediss://` and ACL-scoped credentials |
 | `MCP_EVENT_ENCRYPTION_KEY` | — | Required 32-byte base64 AES key for Redis replay payloads; generate with `openssl rand -base64 32` |
@@ -244,7 +260,7 @@ For local-only HTTP use, leave `MCP_HOST` at its default `127.0.0.1`. Set `MCP_H
 | `MCP_TLS_KEY_PATH` | — | TLS key for native HTTPS |
 | `MCP_TLS_CERT_PATH` | — | TLS cert for native HTTPS |
 | `ALLOWED_ORIGINS` | — | CORS allow-list; also used to validate the `Host` header (DNS-rebinding protection) when `MCP_AUTH_MODE=none` |
-| `MCP_TRUST_PROXY` | `false` | Trust proxy headers (for reverse proxies) |
+| `MCP_TRUST_PROXY` | `loopback` | Express trust-proxy policy. Use an exact nonnegative hop count or trusted proxy subnet; `true` is rejected because it trusts forwarding headers from every peer |
 | `RATE_LIMIT_STORE` | `memory` | `redis` for multi-instance/serverless deployments; production memory mode requires `RATE_LIMIT_SINGLE_PROCESS=true` |
 | `RATE_LIMIT_REDIS_URL` | — | Shared limiter Redis URL, falling back to `MCP_REDIS_URL`/`REDIS_URL`; production requires `rediss://` |
 | `RATE_LIMIT_REDIS_KEY_PREFIX` | `mcp:rate-limit` | Redis namespace for atomic pre-authentication IP and principal-plus-IP token buckets |
@@ -307,12 +323,17 @@ npm test              # unit + contract tests
 npm run test:coverage # unit + contract tests with the enforced 80% line floor
 npm run test:e2e      # MCP protocol tests
 npm run test:http     # HTTP endpoint smoke test
+npm run smoke         # credentialed read-only Portkey API smoke suite
 npm run ci            # full pipeline (lint + typecheck + coverage + build + e2e + verify)
 ```
 
+The live smoke suite reports expected credential-scope denials and the explicitly
+tracked hosted control-plane route gaps as skips. Unexpected HTTP responses,
+network errors, and response-contract failures still fail the run.
+
 The required CI and release gates measure every TypeScript source file and fail
-below 80% line coverage. The current full report is 99.36% lines, 92.61%
-branches, and 99.01% functions.
+below 80% line coverage. The current full report is 98.19% lines, 91.92%
+branches, and 98.58% functions.
 
 `npm run dev:http` now requires `MCP_AUTH_MODE=bearer` or `MCP_AUTH_MODE=clerk` by default. For deliberate local-only unauthenticated testing, set `MCP_ALLOW_UNAUTHENTICATED_HTTP=true`.
 

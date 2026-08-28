@@ -15,6 +15,10 @@ import { dirname, join } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 
+import {
+	CacheSummaryResponseSchema,
+	ProviderGroupAnalyticsResponseSchema,
+} from "../src/schemas/contracts/analytics.contract.js";
 // Contract schemas
 import {
 	ConfigDetailsSchema,
@@ -23,6 +27,7 @@ import {
 	GetConfigResponseSchema,
 	ListConfigsResponseSchema,
 } from "../src/schemas/contracts/configs.contract.js";
+import { ListDeploymentsResponseSchema } from "../src/schemas/contracts/deployments.contract.js";
 import {
 	ApiKeySchema,
 	CreateApiKeyResponseSchema,
@@ -32,6 +37,12 @@ import {
 	RotateApiKeyResponseSchema,
 	VirtualKeySchema,
 } from "../src/schemas/contracts/keys.contract.js";
+import {
+	ListRateLimitsResponseSchema,
+	ListUsageLimitEntitiesResponseSchema,
+	ListUsageLimitsResponseSchema,
+} from "../src/schemas/contracts/limits.contract.js";
+import { ListMcpIntegrationsResponseSchema } from "../src/schemas/contracts/mcp-integrations.contract.js";
 import {
 	CreatePromptResponseSchema,
 	GetPromptResponseSchema,
@@ -289,6 +300,35 @@ describe("Contract: Prompts API", () => {
 // ==================== Keys ====================
 
 describe("Contract: Keys API", () => {
+	it("accepts token rate limits across second and week windows", () => {
+		const virtualKeys = loadFixture("virtual-keys-list") as {
+			data: Array<Record<string, unknown>>;
+		};
+		const apiKeys = loadFixture("api-keys-list") as {
+			data: Array<Record<string, unknown>>;
+		};
+		virtualKeys.data[0] = {
+			...virtualKeys.data[0],
+			rate_limits: [
+				{ type: "tokens", unit: "rps", value: 20 },
+				{ type: "tokens", unit: "rpw", value: 500 },
+			],
+		};
+		apiKeys.data[0] = {
+			...apiKeys.data[0],
+			rate_limits: [
+				{ type: "tokens", unit: "rps", value: 20 },
+				{ type: "tokens", unit: "rpw", value: 500 },
+			],
+		};
+
+		assert.equal(
+			ListVirtualKeysResponseSchema.safeParse(virtualKeys).success,
+			true,
+		);
+		assert.equal(ListApiKeysResponseSchema.safeParse(apiKeys).success, true);
+	});
+
 	it("ListVirtualKeysResponse schema parses virtual-keys-list fixture", () => {
 		const fixture = loadFixture("virtual-keys-list");
 		const result = ListVirtualKeysResponseSchema.safeParse(fixture);
@@ -407,6 +447,56 @@ describe("Contract: newly documented control-plane fixtures", () => {
 	});
 });
 
+describe("Contract: current control-plane read fixtures", () => {
+	it("validates deployments and MCP integrations", () => {
+		assert.equal(
+			ListDeploymentsResponseSchema.safeParse(loadFixture("deployments-list"))
+				.success,
+			true,
+		);
+		assert.equal(
+			ListMcpIntegrationsResponseSchema.safeParse(
+				loadFixture("mcp-integrations-list"),
+			).success,
+			true,
+		);
+	});
+
+	it("validates current rate and usage policy shapes", () => {
+		assert.equal(
+			ListRateLimitsResponseSchema.safeParse(loadFixture("rate-limits-list"))
+				.success,
+			true,
+		);
+		assert.equal(
+			ListUsageLimitsResponseSchema.safeParse(loadFixture("usage-limits-list"))
+				.success,
+			true,
+		);
+		assert.equal(
+			ListUsageLimitEntitiesResponseSchema.safeParse(
+				loadFixture("usage-limit-entities-list"),
+			).success,
+			true,
+		);
+	});
+
+	it("validates current cache and provider analytics shapes", () => {
+		assert.equal(
+			CacheSummaryResponseSchema.safeParse(
+				loadFixture("analytics-cache-summary"),
+			).success,
+			true,
+		);
+		assert.equal(
+			ProviderGroupAnalyticsResponseSchema.safeParse(
+				loadFixture("analytics-providers-group"),
+			).success,
+			true,
+		);
+	});
+});
+
 // ==================== Fixture provenance ====================
 
 describe("Contract: fixtures manifest", () => {
@@ -428,15 +518,22 @@ describe("Contract: fixtures manifest", () => {
 			documentationDerivedFixtures?: string[];
 			liveCaptureStatus?: string;
 		};
-		const newFixtureNames = [
+		const allowedDocumentationDerivedFixtures = [
 			"api-keys-rotate",
+			"analytics-cache-summary",
+			"analytics-providers-group",
+			"deployments-list",
+			"mcp-integrations-list",
+			"rate-limits-list",
 			"secret-references-create",
 			"secret-references-get",
 			"secret-references-list",
+			"usage-limit-entities-list",
+			"usage-limits-list",
 		];
 		for (const fixtureName of manifest.documentationDerivedFixtures ?? []) {
 			assert.ok(
-				newFixtureNames.includes(fixtureName),
+				allowedDocumentationDerivedFixtures.includes(fixtureName),
 				`unexpected documentation-derived fixture: ${fixtureName}`,
 			);
 		}
@@ -446,6 +543,22 @@ describe("Contract: fixtures manifest", () => {
 				"blocked documentation-derived fixtures must record the live-capture status",
 			);
 		}
+	});
+
+	it("records permission-blocked captures explicitly", () => {
+		const manifest = JSON.parse(
+			readFileSync(join(__dirname, "fixtures", "manifest.json"), "utf-8"),
+		) as {
+			captureOutcomes?: Record<
+				string,
+				{ status?: string; httpStatus?: number }
+			>;
+		};
+		assert.deepEqual(manifest.captureOutcomes?.["users-list"], {
+			status: "permission-blocked",
+			httpStatus: 403,
+			lastAttemptedAt: "2026-07-14",
+		});
 	});
 
 	it("stays in sync with the fixtures on disk", () => {

@@ -282,7 +282,7 @@ export function registerConfigsTools(
 	// Phase 1: Update configuration tool
 	server.tool(
 		"update_config",
-		"Update a config by slug; every call creates a new config version rather than overwriting, so earlier versions stay recoverable via list_config_versions. Only provided fields change: name, status, and all routing/cache/retry settings (cache_mode, cache_max_age, retry_attempts, retry_on_status_codes, strategy_mode, targets) are editable, while the slug stays fixed. Changes apply immediately to every API key and prompt referencing the config; get the slug from list_configs and review current settings with get_config before editing. Returns the config id, slug, and updated config payload.",
+		"Update a config by slug; every call creates a new config version rather than overwriting, so earlier versions stay recoverable via list_config_versions. Only provided fields change: name, status, and all routing/cache/retry settings (cache_mode, cache_max_age, retry_attempts, retry_on_status_codes, strategy_mode, targets) are editable, while the slug stays fixed. Changes apply immediately to every API key and prompt referencing the config. Returns the update acknowledgement and new version_id.",
 		CONFIGS_TOOL_SCHEMAS.updateConfig,
 		{
 			readOnlyHint: false,
@@ -308,9 +308,8 @@ export function registerConfigsTools(
 
 			return jsonResult({
 				message: `Successfully updated configuration "${params.slug}"`,
-				id: result.id,
-				slug: result.slug,
-				config: result.config,
+				success: result.success,
+				version_id: result.version_id,
 			});
 		},
 	);
@@ -332,18 +331,17 @@ export function registerConfigsTools(
 	// Phase 1: List configuration versions tool
 	server.tool(
 		"list_config_versions",
-		"List every version of a config with version number, config payload, creator, and timestamp. Use this to audit history or compare revisions before update_config or delete_config.",
+		"List every version of a config with version_id, structured config payload, updater, and timestamp. Use this to audit history or compare revisions before update_config or delete_config.",
 		CONFIGS_TOOL_SCHEMAS.listConfigVersions,
 		async (params) => {
 			const result = await service.configs.listConfigVersions(params.slug);
 			return jsonResult({
 				total: result.total,
 				versions: (result.data ?? []).map((version) => ({
-					id: version.id,
-					version: version.version,
+					version_id: version.version_id,
 					config: version.config,
 					created_at: version.created_at,
-					created_by: version.created_by,
+					updated_by: version.updated_by,
 				})),
 			});
 		},

@@ -18,6 +18,7 @@
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { z } from "zod";
 import { registerAllTools } from "../src/tools/index.js";
 import { registerKeysTools } from "../src/tools/keys.tools.js";
 import { registerToolCallbacks } from "./helpers/tool-registry.js";
@@ -56,6 +57,16 @@ describe("list_virtual_keys", () => {
 												type: "requests" as const,
 												unit: "rpm" as const,
 												value: 60,
+											},
+											{
+												type: "tokens" as const,
+												unit: "rps" as const,
+												value: 20,
+											},
+											{
+												type: "tokens" as const,
+												unit: "rpw" as const,
+												value: 500,
 											},
 										],
 										reset_usage: null,
@@ -101,7 +112,11 @@ describe("list_virtual_keys", () => {
 					alert_threshold: 80,
 					periodic_reset: "monthly",
 				},
-				rate_limits: [{ type: "requests", unit: "rpm", value: 60 }],
+				rate_limits: [
+					{ type: "requests", unit: "rpm", value: 60 },
+					{ type: "tokens", unit: "rps", value: 20 },
+					{ type: "tokens", unit: "rpw", value: 500 },
+				],
 				reset_usage: null,
 				created_at: "2026-01-01T00:00:00.000Z",
 				model_config: { foo: "bar" },
@@ -143,6 +158,18 @@ describe("create_virtual_key", () => {
 			api_version: "2024-02-01",
 			resource_name: "my-resource",
 			deployment_name: "gpt4",
+			deployment_configurations: [
+				{
+					api_version: "2024-10-01",
+					deployment_name: "gpt-5",
+					alias: "primary",
+					is_default: true,
+				},
+			],
+			expires_at: "2027-01-01T00:00:00Z",
+			secret_mappings: [
+				{ target_field: "key", secret_reference_id: "secret-1" },
+			],
 			credit_limit: 500,
 			alert_threshold: 90,
 			rate_limit_rpm: 120,
@@ -157,6 +184,18 @@ describe("create_virtual_key", () => {
 			apiVersion: "2024-02-01",
 			resourceName: "my-resource",
 			deploymentName: "gpt4",
+			deploymentConfig: [
+				{
+					apiVersion: "2024-10-01",
+					deploymentName: "gpt-5",
+					alias: "primary",
+					is_default: true,
+				},
+			],
+			expires_at: "2027-01-01T00:00:00Z",
+			secret_mappings: [
+				{ target_field: "key", secret_reference_id: "secret-1" },
+			],
 			usage_limits: {
 				type: "cost",
 				periodic_reset: "monthly",
@@ -233,6 +272,24 @@ describe("create_virtual_key", () => {
 		assert.equal(payload.usage_limits, undefined);
 		assert.equal(payload.rate_limits, undefined);
 	});
+
+	it("reports the key and secret_mappings alternative at the input root", async () => {
+		const callbacks = registerToolCallbacks((server) => {
+			registerKeysTools(server as never, {} as never);
+		});
+		const cb = callbacks.get("create_virtual_key");
+		assert.ok(cb);
+
+		await assert.rejects(
+			() => cb({ name: "Missing credential", provider: "openai" }),
+			(error: unknown) => {
+				assert.ok(error instanceof z.ZodError);
+				assert.deepEqual(error.issues[0]?.path, []);
+				assert.match(error.issues[0]?.message ?? "", /key.*secret_mappings/);
+				return true;
+			},
+		);
+	});
 });
 
 // ---------------------------------------------------------------------------
@@ -291,6 +348,24 @@ describe("get_virtual_key", () => {
 // ---------------------------------------------------------------------------
 
 describe("update_virtual_key", () => {
+	it("describes the success acknowledgement returned by the tool", () => {
+		let description = "";
+		registerKeysTools(
+			{
+				tool(name: string, ...rest: unknown[]) {
+					if (name === "update_virtual_key") {
+						description = String(rest[0]);
+					}
+					return {} as never;
+				},
+			} as never,
+			{} as never,
+		);
+
+		assert.match(description, /Returns success/);
+		assert.doesNotMatch(description, /updated name, slug, and status/);
+	});
+
 	it("sends slug-addressed update payload and returns the updated summary", async () => {
 		let capturedSlug: string | undefined;
 		let capturedPayload: unknown;
@@ -302,11 +377,7 @@ describe("update_virtual_key", () => {
 						updateVirtualKey: async (slug: string, payload: unknown) => {
 							capturedSlug = slug;
 							capturedPayload = payload;
-							return {
-								name: "Renamed",
-								slug: "openai-prod",
-								status: "active" as const,
-							};
+							return { success: true };
 						},
 					},
 				} as never,
@@ -322,6 +393,12 @@ describe("update_virtual_key", () => {
 			credit_limit: 200,
 			alert_threshold: 75,
 			rate_limit_rpm: 30,
+			deployment_configurations: [
+				{ api_version: "2024-10-01", deployment_name: "gpt-5-mini" },
+			],
+			secret_mappings: [
+				{ target_field: "key", secret_reference_id: "secret-2" },
+			],
 		})) as { content: Array<{ text: string }> };
 
 		assert.equal(capturedSlug, "openai-prod");
@@ -336,16 +413,18 @@ describe("update_virtual_key", () => {
 				alert_threshold: 75,
 			},
 			rate_limits: [{ type: "requests", unit: "rpm", value: 30 }],
+			deploymentConfig: [
+				{ apiVersion: "2024-10-01", deploymentName: "gpt-5-mini" },
+			],
+			secret_mappings: [
+				{ target_field: "key", secret_reference_id: "secret-2" },
+			],
 		});
 
 		const payload = JSON.parse(result.content[0]?.text ?? "{}") as {
-			name?: string;
-			slug?: string;
-			status?: string;
+			success?: boolean;
 		};
-		assert.equal(payload.name, "Renamed");
-		assert.equal(payload.slug, "openai-prod");
-		assert.equal(payload.status, "active");
+		assert.equal(payload.success, true);
 	});
 });
 
@@ -392,6 +471,37 @@ describe("delete_virtual_key", () => {
 // ---------------------------------------------------------------------------
 
 describe("create_api_key", () => {
+	it("reports mutually exclusive rotation fields at the rotation policy root", async () => {
+		const callbacks = registerToolCallbacks((server) => {
+			registerKeysTools(server as never, {} as never);
+		});
+		const cb = callbacks.get("create_api_key");
+		assert.ok(cb);
+
+		await assert.rejects(
+			() =>
+				cb({
+					type: "organisation",
+					sub_type: "service",
+					name: "Rotating key",
+					scopes: [],
+					rotation_policy: {
+						rotation_period: "weekly",
+						next_rotation_at: "2027-01-01T00:00:00Z",
+					},
+				}),
+			(error: unknown) => {
+				assert.ok(error instanceof z.ZodError);
+				assert.deepEqual(error.issues[0]?.path, ["rotation_policy"]);
+				assert.match(
+					error.issues[0]?.message ?? "",
+					/rotation_period.*next_rotation_at|next_rotation_at.*rotation_period/,
+				);
+				return true;
+			},
+		);
+	});
+
 	it("sends assembled defaults and limits, keyed by type/sub_type", async () => {
 		let capturedArgs: unknown[] = [];
 		const callbacks = registerToolCallbacks((server) => {
@@ -429,6 +539,13 @@ describe("create_api_key", () => {
 			default_metadata: { env: "prod" },
 			alert_emails: ["ops@example.com"],
 			expires_at: "2027-01-01T00:00:00.000Z",
+			organisation_id: "org-1",
+			rate_limits: [{ type: "tokens", unit: "rps", value: 20 }],
+			default_allow_config_override: false,
+			rotation_policy: {
+				rotation_period: "weekly",
+				key_transition_period_ms: 1_800_000,
+			},
 		})) as { content: Array<{ text: string }> };
 
 		assert.deepEqual(capturedArgs[0], "workspace");
@@ -445,10 +562,19 @@ describe("create_api_key", () => {
 				credit_limit: 50,
 				alert_threshold: 90,
 			},
-			rate_limits: [{ type: "requests", unit: "rpm", value: 10 }],
-			defaults: { config_id: "cfg_1", metadata: { env: "prod" } },
+			rate_limits: [{ type: "tokens", unit: "rps", value: 20 }],
+			defaults: {
+				config_id: "cfg_1",
+				metadata: { env: "prod" },
+				allow_config_override: false,
+			},
 			alert_emails: ["ops@example.com"],
 			expires_at: "2027-01-01T00:00:00.000Z",
+			organisation_id: "org-1",
+			rotation_policy: {
+				rotation_period: "weekly",
+				key_transition_period_ms: 1_800_000,
+			},
 		});
 
 		const payload = JSON.parse(result.content[0]?.text ?? "{}") as {
@@ -490,6 +616,43 @@ describe("create_api_key", () => {
 
 		const payload = capturedPayload as { defaults?: unknown };
 		assert.equal(payload.defaults, undefined);
+	});
+
+	it("preserves an explicit null rate-limit value over the legacy RPM input", async () => {
+		let capturedPayload: unknown;
+		const callbacks = registerToolCallbacks((server) => {
+			registerKeysTools(
+				server as never,
+				{
+					keys: {
+						createApiKey: async (
+							_type: unknown,
+							_subType: unknown,
+							payload: unknown,
+						) => {
+							capturedPayload = payload;
+							return { id: "key_3", key: "secret" };
+						},
+					},
+				} as never,
+			);
+		});
+
+		const cb = callbacks.get("create_api_key");
+		assert.ok(cb);
+		await cb({
+			type: "organisation",
+			sub_type: "service",
+			name: "No limits",
+			scopes: [],
+			rate_limits: null,
+			rate_limit_rpm: 60,
+		});
+
+		assert.equal(
+			(capturedPayload as { rate_limits?: unknown }).rate_limits,
+			null,
+		);
 	});
 
 	it("rejects a workspace-type key without workspace_id", async () => {
@@ -869,5 +1032,35 @@ describe("update_api_key", () => {
 
 		const payload = capturedPayload as { defaults?: unknown };
 		assert.equal(payload.defaults, undefined);
+	});
+
+	it("preserves an explicit null rate-limit clear over the legacy RPM input", async () => {
+		let capturedPayload: unknown;
+		const callbacks = registerToolCallbacks((server) => {
+			registerKeysTools(
+				server as never,
+				{
+					keys: {
+						updateApiKey: async (_id: string, payload: unknown) => {
+							capturedPayload = payload;
+							return { success: true };
+						},
+					},
+				} as never,
+			);
+		});
+
+		const cb = callbacks.get("update_api_key");
+		assert.ok(cb);
+		await cb({
+			id: "550e8400-e29b-41d4-a716-446655440000",
+			rate_limits: null,
+			rate_limit_rpm: 60,
+		});
+
+		assert.equal(
+			(capturedPayload as { rate_limits?: unknown }).rate_limits,
+			null,
+		);
 	});
 });

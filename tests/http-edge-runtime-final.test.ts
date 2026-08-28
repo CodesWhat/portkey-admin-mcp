@@ -26,6 +26,8 @@ const MANAGED_ENV_KEYS = [
 	"MCP_AUTH_MODE",
 	"MCP_AUTH_TOKEN",
 	"MCP_EVENT_STORE",
+	"MCP_EVENT_STORE_MAX_BYTES",
+	"MCP_EVENT_STORE_MAX_EVENTS",
 	"MCP_HOST",
 	"MCP_MAX_SESSIONS",
 	"MCP_PUBLIC_BASE_URL",
@@ -40,6 +42,12 @@ const MANAGED_ENV_KEYS = [
 	"PORTKEY_API_KEY",
 	"RATE_LIMIT_ENABLED",
 ] as const;
+
+it("resets event-store limits between runtime tests", () => {
+	const managedKeys = new Set<string>(MANAGED_ENV_KEYS);
+	assert.equal(managedKeys.has("MCP_EVENT_STORE_MAX_EVENTS"), true);
+	assert.equal(managedKeys.has("MCP_EVENT_STORE_MAX_BYTES"), true);
+});
 
 const originalModuleEnvironment = new Map(
 	MANAGED_ENV_KEYS.map((key) => [key, process.env[key]]),
@@ -766,6 +774,100 @@ describe("final HTTP runtime edge behavior", { concurrency: false }, () => {
 						]);
 					} finally {
 						eventStorePrototype.acquireReplayLease = originalAcquire;
+					}
+				},
+			);
+		} finally {
+			StreamableHTTPServerTransport.prototype.handleRequest =
+				originalHandleRequest;
+		}
+	});
+
+	it("returns JSON-RPC for stateful GET and DELETE failures and releases replay leases", async () => {
+		const originalHandleRequest =
+			StreamableHTTPServerTransport.prototype.handleRequest;
+		try {
+			await withListeningApp(
+				{ MCP_EVENT_STORE: "memory", MCP_SESSION_MODE: "stateful" },
+				async ({ baseUrl, runtime }) => {
+					const initResponse = await fetch(`${baseUrl}/mcp`, {
+						method: "POST",
+						headers: jsonHeaders(),
+						body: initializeBody(),
+					});
+					assert.equal(initResponse.status, 200);
+					const sessionId = initResponse.headers.get("mcp-session-id");
+					assert.ok(sessionId);
+					const eventMatch = (await initResponse.text()).match(/^id: (\S+)/m);
+					assert.ok(eventMatch);
+					const eventId = eventMatch[1] as string;
+
+					const prototypeProbe = createManagedEventStore(runtime.config);
+					const directEventStore =
+						prototypeProbe.eventStoreForOwner("prototype-probe");
+					assert.ok(directEventStore);
+					const eventStorePrototype = Object.getPrototypeOf(
+						directEventStore,
+					) as {
+						acquireReplayLease: (
+							eventId: string,
+						) => Promise<{ status: string; release?: () => Promise<void> }>;
+					};
+					const originalAcquire = eventStorePrototype.acquireReplayLease;
+					let releases = 0;
+					eventStorePrototype.acquireReplayLease = async function (id) {
+						const lease = await originalAcquire.call(this, id);
+						if (lease.status !== "acquired" || !lease.release) return lease;
+						return {
+							status: "acquired",
+							release: async () => {
+								await lease.release?.();
+								releases += 1;
+							},
+						};
+					};
+					StreamableHTTPServerTransport.prototype.handleRequest = async () => {
+						throw new Error("stateful transport failed");
+					};
+
+					try {
+						const failedGet = await fetch(`${baseUrl}/mcp`, {
+							headers: {
+								accept: "text/event-stream",
+								"last-event-id": eventId,
+								"mcp-protocol-version": "2025-11-25",
+								"mcp-session-id": sessionId,
+							},
+						});
+						assert.equal(failedGet.status, 500);
+						assert.match(failedGet.headers.get("content-type") ?? "", /json/);
+						assert.equal(
+							((await failedGet.json()) as { error: { code: number } }).error
+								.code,
+							-32603,
+						);
+						assert.equal(releases, 1);
+
+						const failedDelete = await fetch(`${baseUrl}/mcp`, {
+							method: "DELETE",
+							headers: {
+								"mcp-protocol-version": "2025-11-25",
+								"mcp-session-id": sessionId,
+							},
+						});
+						assert.equal(failedDelete.status, 500);
+						assert.match(
+							failedDelete.headers.get("content-type") ?? "",
+							/json/,
+						);
+						assert.equal(
+							((await failedDelete.json()) as { error: { code: number } }).error
+								.code,
+							-32603,
+						);
+					} finally {
+						eventStorePrototype.acquireReplayLease = originalAcquire;
+						await prototypeProbe.close();
 					}
 				},
 			);

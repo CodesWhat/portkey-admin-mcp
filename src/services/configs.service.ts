@@ -106,17 +106,30 @@ export interface UpdateConfigRequest {
 }
 
 export interface ConfigVersion {
-	id: string;
-	version: number;
+	version_id: string;
 	config: ConfigDetails;
 	created_at: string;
-	created_by?: string;
+	updated_by?: string;
+}
+
+interface RawConfigVersion extends Omit<ConfigVersion, "config"> {
+	config: string;
 }
 
 export interface ConfigVersionsResponse {
 	object: "list";
 	total: number;
 	data: ConfigVersion[];
+}
+
+interface RawConfigVersionsResponse
+	extends Omit<ConfigVersionsResponse, "data"> {
+	data: RawConfigVersion[];
+}
+
+export interface UpdateConfigResponse {
+	success: boolean;
+	version_id: string;
 }
 
 export interface ListConfigsParams {
@@ -157,12 +170,12 @@ export class ConfigsService extends BaseService {
 	async updateConfig(
 		slug: string,
 		data: UpdateConfigRequest,
-	): Promise<GetConfigResponse> {
-		const response = await this.put<RawGetConfigResponse>(
+	): Promise<UpdateConfigResponse> {
+		const response = await this.put<CreateConfigApiResponse>(
 			`/configs/${this.encodePathSegment(slug)}`,
 			data,
 		);
-		return this.parseConfigResponse(response);
+		return { success: response.success, version_id: response.data.version_id };
 	}
 
 	async deleteConfig(slug: string): Promise<{ success: boolean }> {
@@ -173,8 +186,15 @@ export class ConfigsService extends BaseService {
 	}
 
 	async listConfigVersions(slug: string): Promise<ConfigVersionsResponse> {
-		return this.get<ConfigVersionsResponse>(
+		const response = await this.get<RawConfigVersionsResponse>(
 			`/configs/${this.encodePathSegment(slug)}/versions`,
 		);
+		return {
+			...response,
+			data: response.data.map((version) => ({
+				...version,
+				config: JSON.parse(version.config || "{}") as ConfigDetails,
+			})),
+		};
 	}
 }

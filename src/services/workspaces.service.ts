@@ -15,6 +15,8 @@ export interface Workspace {
 	created_at: string;
 	last_updated_at: string;
 	defaults: WorkspaceDefaults | null;
+	usage_limits?: WorkspaceUsageLimit[];
+	rate_limits?: WorkspaceRateLimit[];
 	object: "workspace";
 }
 
@@ -27,6 +29,24 @@ export interface ListWorkspacesResponse {
 export interface ListWorkspacesParams {
 	page_size?: number;
 	current_page?: number;
+	name?: string;
+	exact_name?: string;
+	status?: "active" | "archived";
+}
+
+export interface WorkspaceUsageLimit {
+	credit_limit?: number;
+	type?: "cost" | "tokens";
+	alert_threshold?: number;
+	periodic_reset?: "monthly" | "weekly" | null;
+	periodic_reset_days?: number | null;
+	next_usage_reset_at?: string | null;
+}
+
+export interface WorkspaceRateLimit {
+	type?: "requests" | "tokens";
+	unit?: "rpd" | "rph" | "rpm";
+	value?: number;
 }
 
 export interface WorkspaceUser {
@@ -55,6 +75,8 @@ export interface SingleWorkspaceResponse {
 		  })
 		| null;
 	users: WorkspaceUser[];
+	usage_limits?: WorkspaceUsageLimit[];
+	rate_limits?: WorkspaceRateLimit[];
 }
 
 export interface CreateWorkspaceRequest {
@@ -65,6 +87,9 @@ export interface CreateWorkspaceRequest {
 		is_default?: number;
 		metadata?: Record<string, string>;
 	};
+	users?: string[];
+	usage_limits?: WorkspaceUsageLimit[];
+	rate_limits?: WorkspaceRateLimit[];
 }
 
 export interface UpdateWorkspaceRequest {
@@ -74,12 +99,22 @@ export interface UpdateWorkspaceRequest {
 	defaults?: {
 		is_default?: number;
 		metadata?: Record<string, string>;
+		input_guardrails?: string[];
+		output_guardrails?: string[];
+		user_api_key_config?: string | null;
 	};
+	usage_limits?: WorkspaceUsageLimit[];
+	rate_limits?: WorkspaceRateLimit[];
 }
 
 export interface AddWorkspaceMemberRequest {
 	user_id: string;
 	role: "admin" | "member" | "manager";
+}
+
+export interface AddWorkspaceMemberResult extends AddWorkspaceMemberRequest {
+	success: true;
+	workspace_id: string;
 }
 
 export interface UpdateWorkspaceMemberRequest {
@@ -90,6 +125,13 @@ export interface WorkspaceMembersResponse {
 	total: number;
 	object: string;
 	data: WorkspaceUser[];
+}
+
+export interface ListWorkspaceMembersParams {
+	current_page?: number;
+	page_size?: number;
+	role?: "admin" | "manager" | "member";
+	email?: string;
 }
 
 export type ScimWorkspaceRole = "admin" | "member" | "manager";
@@ -202,11 +244,12 @@ export class WorkspacesService extends BaseService {
 	async updateWorkspace(
 		workspaceId: string,
 		data: UpdateWorkspaceRequest,
-	): Promise<Workspace> {
-		return this.put<Workspace>(
+	): Promise<{ success: true }> {
+		await this.put<Record<string, never>>(
 			`/admin/workspaces/${this.encodePathSegment(workspaceId)}`,
 			data,
 		);
+		return { success: true };
 	}
 
 	async deleteWorkspace(workspaceId: string): Promise<{ success: boolean }> {
@@ -219,18 +262,26 @@ export class WorkspacesService extends BaseService {
 	async addWorkspaceMember(
 		workspaceId: string,
 		data: AddWorkspaceMemberRequest,
-	): Promise<WorkspaceUser> {
-		return this.post<WorkspaceUser>(
+	): Promise<AddWorkspaceMemberResult> {
+		await this.post<Record<string, never>>(
 			`/admin/workspaces/${this.encodePathSegment(workspaceId)}/users`,
-			data,
+			{ users: [{ id: data.user_id, role: data.role }] },
 		);
+		return {
+			success: true,
+			workspace_id: workspaceId,
+			user_id: data.user_id,
+			role: data.role,
+		};
 	}
 
 	async listWorkspaceMembers(
 		workspaceId: string,
+		params?: ListWorkspaceMembersParams,
 	): Promise<WorkspaceMembersResponse> {
 		return this.get<WorkspaceMembersResponse>(
 			`/admin/workspaces/${this.encodePathSegment(workspaceId)}/users`,
+			params,
 		);
 	}
 

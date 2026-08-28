@@ -12,6 +12,86 @@ import type {
 } from "../services/keys.service.js";
 import { jsonResult } from "./utils.js";
 
+const virtualKeySecretMappingSchema = z.object({
+	target_field: z
+		.string()
+		.refine(
+			(value) => value === "key" || value.startsWith("model_config."),
+			"target_field must be 'key' or start with 'model_config.'",
+		)
+		.describe("Virtual Key field populated from the Secret Reference"),
+	secret_reference_id: z
+		.string()
+		.describe("Secret Reference ID that owns the external secret"),
+	secret_key: z
+		.string()
+		.nullable()
+		.optional()
+		.describe("Optional key selected from a structured external secret"),
+	value_format: z
+		.enum(["json", "string"])
+		.nullable()
+		.optional()
+		.describe("Whether Portkey reads the mapped value as JSON or a string"),
+});
+
+const virtualKeyDeploymentSchema = z.object({
+	api_version: z.string().min(1).describe("Azure OpenAI API version"),
+	deployment_name: z.string().min(1).describe("Azure deployment name"),
+	alias: z
+		.string()
+		.optional()
+		.describe("Optional model alias for the deployment"),
+	is_default: z
+		.boolean()
+		.optional()
+		.describe("Whether this is the default Azure deployment"),
+});
+
+const apiKeyRateLimitSchema = z.object({
+	type: z
+		.enum(["requests", "tokens"])
+		.describe("Whether the limit counts requests or tokens"),
+	unit: z
+		.enum(["rpd", "rph", "rpm", "rps", "rpw"])
+		.describe("Rate window unit for the request or token count"),
+	value: z.coerce
+		.number()
+		.int()
+		.nonnegative()
+		.describe("Maximum count in the selected rate window"),
+});
+
+const rotationPolicySchema = z
+	.object({
+		rotation_period: z
+			.enum(["weekly", "monthly"])
+			.nullable()
+			.optional()
+			.describe("Built-in weekly or monthly automatic rotation cadence"),
+		next_rotation_at: z.iso
+			.datetime({ offset: true })
+			.nullable()
+			.optional()
+			.describe("Explicit next rotation timestamp in ISO 8601 format"),
+		key_transition_period_ms: z.coerce
+			.number()
+			.int()
+			.min(1_800_000)
+			.optional()
+			.describe("Overlap in milliseconds before the previous key expires"),
+	})
+	.superRefine((value, context) => {
+		if (value.rotation_period && value.next_rotation_at) {
+			context.addIssue({
+				code: "custom",
+				path: [],
+				message: "next_rotation_at and rotation_period are mutually exclusive",
+			});
+		}
+	})
+	.describe("Automatic API-key rotation policy, or null to remove it");
+
 const KEYS_TOOL_SCHEMAS = {
 	listVirtualKeys: {
 		current_page: z.coerce
@@ -35,7 +115,10 @@ const KEYS_TOOL_SCHEMAS = {
 			.describe(
 				"Provider slug (e.g., 'openai', 'anthropic', 'azure-openai', 'google')",
 			),
-		key: z.string().describe("The actual provider API key to store"),
+		key: z
+			.string()
+			.optional()
+			.describe("Provider API key; omit when secret_mappings supplies key"),
 		note: z
 			.string()
 			.optional()
@@ -56,6 +139,20 @@ const KEYS_TOOL_SCHEMAS = {
 			.string()
 			.optional()
 			.describe("Deployment name (for Azure OpenAI)"),
+		deployment_configurations: z
+			.array(virtualKeyDeploymentSchema)
+			.optional()
+			.describe(
+				"Azure deployment configurations with API versions and aliases",
+			),
+		expires_at: z.iso
+			.datetime({ offset: true })
+			.optional()
+			.describe("Expiration in ISO 8601 format"),
+		secret_mappings: z
+			.array(virtualKeySecretMappingSchema)
+			.optional()
+			.describe("Secret Reference mappings for key or model_config fields"),
 		credit_limit: z.coerce
 			.number()
 			.positive()
@@ -101,6 +198,14 @@ const KEYS_TOOL_SCHEMAS = {
 			.positive()
 			.optional()
 			.describe("New rate limit in requests per minute"),
+		deployment_configurations: z
+			.array(virtualKeyDeploymentSchema)
+			.optional()
+			.describe("Replacement Azure deployment configurations"),
+		secret_mappings: z
+			.array(virtualKeySecretMappingSchema)
+			.optional()
+			.describe("Replacement Secret Reference mappings"),
 	},
 	deleteVirtualKey: {
 		slug: z.string().describe("The slug of the virtual key to delete"),
@@ -121,6 +226,7 @@ const KEYS_TOOL_SCHEMAS = {
 			.string()
 			.optional()
 			.describe("Optional description for the key"),
+		organisation_id: z.string().optional().describe("Organisation UUID"),
 		workspace_id: z
 			.string()
 			.optional()
@@ -150,6 +256,11 @@ const KEYS_TOOL_SCHEMAS = {
 			.positive()
 			.optional()
 			.describe("Rate limit in requests per minute"),
+		rate_limits: z
+			.array(apiKeyRateLimitSchema)
+			.nullable()
+			.optional()
+			.describe("Request or token rate limits, or null to clear them"),
 		default_config_id: z
 			.string()
 			.optional()
@@ -158,14 +269,22 @@ const KEYS_TOOL_SCHEMAS = {
 			.record(z.string(), z.string())
 			.optional()
 			.describe("Default metadata key-value pairs"),
+		default_allow_config_override: z
+			.boolean()
+			.optional()
+			.describe("Allow callers to override the default config"),
 		alert_emails: z
 			.array(z.string())
 			.optional()
 			.describe("Email addresses for alerts"),
-		expires_at: z
-			.string()
+		expires_at: z.iso
+			.datetime({ offset: true })
 			.optional()
 			.describe("Expiration date in ISO 8601 format"),
+		rotation_policy: rotationPolicySchema
+			.nullable()
+			.optional()
+			.describe("Automatic API-key rotation policy, or null to disable it"),
 	},
 	listApiKeys: {
 		page_size: z.coerce
@@ -210,6 +329,16 @@ const KEYS_TOOL_SCHEMAS = {
 			.positive()
 			.optional()
 			.describe("New rate limit in requests per minute"),
+		rate_limits: z
+			.array(apiKeyRateLimitSchema)
+			.nullable()
+			.optional()
+			.describe("Replacement request or token rate limits, or null to clear"),
+		reset_usage: z.coerce
+			.number()
+			.nonnegative()
+			.optional()
+			.describe("Set to a nonnegative acknowledgement value to reset usage"),
 		default_config_id: z
 			.string()
 			.optional()
@@ -218,17 +347,25 @@ const KEYS_TOOL_SCHEMAS = {
 			.record(z.string(), z.string())
 			.optional()
 			.describe("New default metadata key-value pairs"),
+		default_allow_config_override: z
+			.boolean()
+			.optional()
+			.describe("Whether callers may override the key's default config"),
 		alert_emails: z
 			.array(z.string())
 			.optional()
 			.describe("New email addresses for alerts"),
-		expires_at: z
-			.string()
+		expires_at: z.iso
+			.datetime({ offset: true })
 			.nullable()
 			.optional()
 			.describe(
 				"New expiration date in ISO 8601 format, or null to remove expiration",
 			),
+		rotation_policy: rotationPolicySchema
+			.nullable()
+			.optional()
+			.describe("Replacement rotation policy, or null to disable it"),
 	},
 	rotateApiKey: {
 		id: z.string().uuid().describe("API key UUID obtained from list_api_keys"),
@@ -245,6 +382,21 @@ const KEYS_TOOL_SCHEMAS = {
 		id: z.string().uuid().describe("The UUID of the API key to delete"),
 	},
 } as const;
+
+const createVirtualKeySchema = z
+	.object(KEYS_TOOL_SCHEMAS.createVirtualKey)
+	.superRefine((value, context) => {
+		if (
+			value.key === undefined &&
+			!value.secret_mappings?.some((mapping) => mapping.target_field === "key")
+		) {
+			context.addIssue({
+				code: "custom",
+				path: [],
+				message: "key or a secret_mappings entry targeting key is required",
+			});
+		}
+	});
 
 const createApiKeySchema = z
 	.object(KEYS_TOOL_SCHEMAS.createApiKey)
@@ -304,6 +456,8 @@ function formatVirtualKey(key: VirtualKey): {
 	reset_usage: number | null;
 	created_at: string;
 	model_config: Record<string, unknown>;
+	expires_at?: string | null;
+	secret_mappings?: VirtualKey["secret_mappings"];
 } {
 	return {
 		name: key.name,
@@ -315,6 +469,8 @@ function formatVirtualKey(key: VirtualKey): {
 		reset_usage: key.reset_usage,
 		created_at: key.created_at,
 		model_config: key.model_config,
+		expires_at: key.expires_at,
+		secret_mappings: key.secret_mappings,
 	};
 }
 
@@ -433,26 +589,41 @@ export function registerKeysTools(
 		"Store a provider API key as a virtual key. The raw key is encrypted and only returned at creation time, so save the returned slug and use it in prompts/configs. Optional usage and rate limits apply immediately, and the tool returns the new slug.",
 		KEYS_TOOL_SCHEMAS.createVirtualKey,
 		async (params) => {
+			const validated = createVirtualKeySchema.parse(params);
 			const result = await service.keys.createVirtualKey({
-				name: params.name,
-				provider: params.provider,
-				key: params.key,
-				note: params.note,
-				workspace_id: params.workspace_id,
-				apiVersion: params.api_version,
-				resourceName: params.resource_name,
-				deploymentName: params.deployment_name,
+				name: validated.name,
+				provider: validated.provider,
+				key: validated.key,
+				note: validated.note,
+				workspace_id: validated.workspace_id,
+				apiVersion: validated.api_version,
+				resourceName: validated.resource_name,
+				deploymentName: validated.deployment_name,
+				deploymentConfig: validated.deployment_configurations?.map(
+					(configuration) => ({
+						apiVersion: configuration.api_version,
+						deploymentName: configuration.deployment_name,
+						...(configuration.alias !== undefined
+							? { alias: configuration.alias }
+							: {}),
+						...(configuration.is_default !== undefined
+							? { is_default: configuration.is_default }
+							: {}),
+					}),
+				),
 				usage_limits: buildUsageLimits({
-					credit_limit: params.credit_limit,
-					alert_threshold: params.alert_threshold,
+					credit_limit: validated.credit_limit,
+					alert_threshold: validated.alert_threshold,
 				}),
-				rate_limits: buildRateLimitsRpm(params.rate_limit_rpm),
+				rate_limits: buildRateLimitsRpm(validated.rate_limit_rpm),
+				expires_at: validated.expires_at,
+				secret_mappings: validated.secret_mappings,
 			});
 
 			// Handle both response formats: { data: { slug } } or { slug }
 			const slug = result.data?.slug ?? (result as { slug?: string }).slug;
 			return jsonResult({
-				message: `Successfully created virtual key "${params.name}"`,
+				message: `Successfully created virtual key "${validated.name}"`,
 				success: result.success,
 				slug,
 			});
@@ -473,7 +644,7 @@ export function registerKeysTools(
 	// Phase 2: Update virtual key tool
 	server.tool(
 		"update_virtual_key",
-		"Update a virtual key's name, secret, note, or limits. Rotating the key takes effect immediately, and limit changes apply to downstream prompts and configs using this slug. Returns the updated name, slug, and status.",
+		"Update a virtual key's name, secret, note, or limits. Rotating the key takes effect immediately, and limit changes apply to downstream prompts and configs using this slug. Returns success when Portkey accepts the update.",
 		KEYS_TOOL_SCHEMAS.updateVirtualKey,
 		async (params) => {
 			const result = await service.keys.updateVirtualKey(params.slug, {
@@ -485,13 +656,24 @@ export function registerKeysTools(
 					alert_threshold: params.alert_threshold,
 				}),
 				rate_limits: buildRateLimitsRpm(params.rate_limit_rpm),
+				deploymentConfig: params.deployment_configurations?.map(
+					(configuration) => ({
+						apiVersion: configuration.api_version,
+						deploymentName: configuration.deployment_name,
+						...(configuration.alias !== undefined
+							? { alias: configuration.alias }
+							: {}),
+						...(configuration.is_default !== undefined
+							? { is_default: configuration.is_default }
+							: {}),
+					}),
+				),
+				secret_mappings: params.secret_mappings,
 			});
 
 			return jsonResult({
 				message: `Successfully updated virtual key "${params.slug}"`,
-				name: result.name,
-				slug: result.slug,
-				status: result.status,
+				success: result.success,
 			});
 		},
 	);
@@ -523,6 +705,7 @@ export function registerKeysTools(
 				{
 					name: validated.name,
 					description: validated.description,
+					organisation_id: validated.organisation_id,
 					workspace_id: validated.workspace_id,
 					user_id: validated.user_id,
 					scopes: validated.scopes,
@@ -530,17 +713,23 @@ export function registerKeysTools(
 						credit_limit: validated.credit_limit,
 						alert_threshold: validated.alert_threshold,
 					}),
-					rate_limits: buildRateLimitsRpm(validated.rate_limit_rpm),
+					rate_limits:
+						validated.rate_limits === undefined
+							? buildRateLimitsRpm(validated.rate_limit_rpm)
+							: validated.rate_limits,
 					defaults: (() => {
 						const d: Record<string, unknown> = {};
 						if (validated.default_config_id !== undefined)
 							d.config_id = validated.default_config_id;
 						if (validated.default_metadata !== undefined)
 							d.metadata = validated.default_metadata;
+						if (validated.default_allow_config_override !== undefined)
+							d.allow_config_override = validated.default_allow_config_override;
 						return Object.keys(d).length > 0 ? d : undefined;
 					})(),
 					alert_emails: validated.alert_emails,
 					expires_at: validated.expires_at,
+					rotation_policy: validated.rotation_policy,
 				},
 			);
 
@@ -596,17 +785,33 @@ export function registerKeysTools(
 					credit_limit: params.credit_limit,
 					alert_threshold: params.alert_threshold,
 				}),
-				rate_limits: buildRateLimitsRpm(params.rate_limit_rpm),
+				rate_limits:
+					params.rate_limits === undefined
+						? buildRateLimitsRpm(params.rate_limit_rpm)
+						: params.rate_limits,
+				...(params.reset_usage !== undefined
+					? { reset_usage: params.reset_usage }
+					: {}),
 				defaults:
 					params.default_config_id !== undefined ||
-					params.default_metadata !== undefined
+					params.default_metadata !== undefined ||
+					params.default_allow_config_override !== undefined
 						? {
 								config_id: params.default_config_id,
 								metadata: params.default_metadata,
+								...(params.default_allow_config_override !== undefined
+									? {
+											allow_config_override:
+												params.default_allow_config_override,
+										}
+									: {}),
 							}
 						: undefined,
 				alert_emails: params.alert_emails,
 				expires_at: params.expires_at,
+				...(params.rotation_policy !== undefined
+					? { rotation_policy: params.rotation_policy }
+					: {}),
 			});
 
 			return jsonResult({

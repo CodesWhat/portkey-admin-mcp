@@ -21,7 +21,6 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import cors from "cors";
 import express from "express";
-import { rateLimit as expressRateLimit } from "express-rate-limit";
 import helmet from "helmet";
 import {
 	getSharedPortkeyService,
@@ -89,6 +88,13 @@ export function waitForResponseWritable(
 	});
 }
 
+export function getNextReplayPollDelay(
+	currentDelayMs: number,
+	deliveredEvent: boolean,
+): number {
+	return deliveredEvent ? 100 : Math.min(currentDelayMs * 2, 1000);
+}
+
 function getReadyCheckMode(): "local" | "portkey" {
 	const readyCheckMode =
 		(process.env.MCP_READY_CHECK_MODE?.trim().toLowerCase() || "local") as
@@ -112,7 +118,9 @@ function resolveTrustProxy(raw: string | undefined): boolean | number | string {
 
 	const normalized = trimmed.toLowerCase();
 	if (normalized === "true") {
-		return true;
+		throw new Error(
+			"MCP_TRUST_PROXY=true is unsafe because it trusts forwarding headers from every peer. Set an exact hop count or trusted proxy subnet instead.",
+		);
 	}
 	if (normalized === "false") {
 		return false;
@@ -202,7 +210,7 @@ function respondJsonRpcInternalError(
 	context: string,
 	error: unknown,
 ): void {
-	Logger.error("Stateless transport request handling failed", {
+	Logger.error("MCP transport request handling failed", {
 		metadata: {
 			context,
 			error: error instanceof Error ? error.message : String(error),
@@ -1078,10 +1086,13 @@ function createMcpGetHandler(deps: McpGetHandlerDeps): express.RequestHandler {
 
 							let cursor = lastEventId;
 							let finalResponseSeen = false;
+							let pollDelayMs = 100;
 							const deadline = Date.now() + 25_000;
 							while (getIsReady() && !res.destroyed && !finalResponseSeen) {
+								let deliveredEvent = false;
 								await replayEventStore.replayEventsAfter(cursor, {
 									send: async (eventId, message) => {
+										deliveredEvent = true;
 										cursor = eventId;
 										finalResponseSeen =
 											"id" in message &&
@@ -1103,8 +1114,12 @@ function createMcpGetHandler(deps: McpGetHandlerDeps): express.RequestHandler {
 									res.write(`id: ${cursor}\ndata: \n\n`);
 									break;
 								}
+								pollDelayMs = getNextReplayPollDelay(
+									pollDelayMs,
+									deliveredEvent,
+								);
 								await new Promise((resolvePoll) =>
-									setTimeout(resolvePoll, 100),
+									setTimeout(resolvePoll, pollDelayMs),
 								);
 							}
 
@@ -1402,17 +1417,6 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 	}
 	app.use(originValidationMiddleware);
 	const rateLimitConfig = getRateLimitConfig();
-	app.use(
-		expressRateLimit({
-			windowMs: rateLimitConfig.windowMs,
-			limit: rateLimitConfig.maxTokens,
-			standardHeaders: false,
-			legacyHeaders: false,
-			validate: false,
-			skip: (req) => !rateLimitConfig.enabled || !isMcpRequestPath(req.path),
-			message: { error: "Too Many Requests" },
-		}),
-	);
 	app.use(rateLimitMiddleware);
 	app.use(mcpAuthMiddleware);
 	app.use(principalRateLimitMiddleware);
@@ -1531,6 +1535,21 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 		}),
 	);
 
+	app.use(
+		(
+			error: unknown,
+			req: express.Request,
+			res: express.Response,
+			next: express.NextFunction,
+		) => {
+			if (!isMcpRequestPath(req.path)) {
+				next(error);
+				return;
+			}
+			respondJsonRpcInternalError(res, `${req.method} /mcp`, error);
+		},
+	);
+
 	cleanupInterval = isStatefulSessionMode
 		? setInterval(async () => {
 				try {
@@ -1626,7 +1645,7 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 				allowedOrigins,
 				authMode: authConfig.mode,
 				readyCheckMode,
-				rateLimitEnabled: process.env.RATE_LIMIT_ENABLED !== "false",
+				rateLimitEnabled: rateLimitConfig.enabled,
 				maxSessions: config.maxSessions,
 				publicBaseUrl,
 			},

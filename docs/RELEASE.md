@@ -28,10 +28,17 @@ Everything after the merge is automatic:
   `main`. If the version has no existing tag and `server.json` agrees, it
   creates and pushes `vX.Y.Z` and dispatches the `Release` workflow.
 - **`Release`** (`release.yml`) re-runs the full CI suite against the tagged
-  commit, then runs the publish jobs:
-  - **`package-npm`** installs with lifecycle scripts disabled, builds the
-    package without OIDC permission, and uploads the exact tarball as a
-    one-day workflow artifact.
+  commit, pins every validated release or manifest ref to its resolved commit
+  SHA, requires the workflow's selected ref to resolve to the requested tag
+  commit, and rechecks that the release tag still resolves to the same commit
+  immediately before each publish operation. It then runs the publish jobs:
+  - **`package-npm`** first checks whether the immutable npm version already
+    exists. New versions must run at the exact tag commit GitHub selected for
+    the workflow; only then does the job install with lifecycle scripts disabled,
+    build without OIDC permission, install that exact tarball into a fresh prefix
+    with lifecycle scripts disabled, verify both executable links, initialize
+    stdio, start the HTTP binary on loopback, and upload a one-day artifact.
+    Existing-version backfills skip dependency execution and packaging entirely.
   - **`publish-npm`** downloads and verifies that tarball, then publishes it via
     OIDC trusted publishing with provenance and lifecycle scripts disabled. No
     checkout, dependency install, long-lived npm token, or build step occurs in
@@ -82,7 +89,7 @@ tool schemas, and scores after the release tag reaches GitHub. No source file
 should be uploaded through the Glama UI.
 
 After release, verify that the indexed commit, active-development notice,
-171-tool inventory, and TDQS score breakdown have refreshed at:
+178-tool inventory, and TDQS score breakdown have refreshed at:
 
 ```text
 https://glama.ai/mcp/servers/CodesWhat/portkey-admin-mcp
@@ -111,17 +118,19 @@ tagged commit.
 `publish-npm` requires a Trusted Publisher configured on npmjs.com for the
 `portkey-admin-mcp` package: Package Settings → Trusted Publisher → GitHub
 Actions, with organization `CodesWhat`, repository `portkey-admin-mcp`, and
-workflow filename `release.yml` (no environment). Without it the npm publish
-step fails with an auth error and the manual fallback below applies.
-
-## Manual Fallback
-
-If the automation is unavailable, the old flow still works: `npm publish
---access public` locally from the release commit, then `git tag vX.Y.Z &&
-git push origin vX.Y.Z` — the `Release` workflow picks the tag up from there
-(`publish-npm` skips because the version already exists on npm).
+workflow filename `release.yml` and environment `release`. Without it the npm
+publish step fails with an auth error. Fix the trusted-publisher configuration,
+then rerun the failed workflow jobs. Do not publish locally or create a
+replacement tag outside the automated release path.
 
 ## Backfill an Existing Tag
 
-Use the `Release` workflow's manual dispatch and pass the existing tag name.
-The workflow verifies that the tag exists before publishing a GitHub Release.
+Use the `Release` workflow's manual dispatch at the existing tag ref and pass
+the same tag name, for example `gh workflow run release.yml --ref vX.Y.Z -f
+tag=vX.Y.Z`. The workflow verifies that the tag exists and is reachable from
+protected `main` before publishing. It never executes dependencies from a
+dispatch-supplied ref: an npm version that already exists skips packaging, while
+an unpublished version is built only when the requested tag equals the commit
+GitHub selected through `--ref`. An optional `manifest_ref` may point to a
+corrected `server.json`, but that ref must also be reachable from protected
+`main`.

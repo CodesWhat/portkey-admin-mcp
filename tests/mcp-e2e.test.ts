@@ -67,7 +67,7 @@ const PKG = JSON.parse(
 	readFileSync(new URL("../package.json", import.meta.url), "utf-8"),
 );
 
-// All 171 expected tool names across 19 domains
+// All 178 expected tool names across 20 domains
 const EXPECTED_TOOLS = [
 	// users (10)
 	"list_all_users",
@@ -102,6 +102,12 @@ const EXPECTED_TOOLS = [
 	"update_config",
 	"delete_config",
 	"list_config_versions",
+	// deployments (5)
+	"list_deployments",
+	"register_deployment",
+	"get_deployment",
+	"update_deployment",
+	"archive_deployment",
 	// keys and secret references (16)
 	"list_virtual_keys",
 	"create_virtual_key",
@@ -141,7 +147,7 @@ const EXPECTED_TOOLS = [
 	"migrate_prompt",
 	"promote_prompt",
 	"validate_completion_metadata",
-	// analytics (20)
+	// analytics (22)
 	"get_cost_analytics",
 	"get_request_analytics",
 	"get_token_analytics",
@@ -150,6 +156,7 @@ const EXPECTED_TOOLS = [
 	"get_error_rate_analytics",
 	"get_cache_hit_latency",
 	"get_cache_hit_rate",
+	"get_cache_summary",
 	"get_users_analytics",
 	"get_error_stacks_analytics",
 	"get_error_status_codes_analytics",
@@ -162,6 +169,7 @@ const EXPECTED_TOOLS = [
 	"get_analytics_group_users",
 	"get_analytics_group_models",
 	"get_analytics_group_metadata",
+	"get_analytics_group_providers",
 	// guardrails (11)
 	"get_organisation_defaults",
 	"update_organisation_defaults",
@@ -655,12 +663,12 @@ describe("MCP E2E Protocol Tests", () => {
 				await subsetClient.connect(subsetTransport);
 				const result = await subsetClient.listTools();
 				const toolNames = result.tools.map((tool) => tool.name).sort();
+				const expectedSubset = EXPECTED_TOOLS.slice(
+					EXPECTED_TOOLS.indexOf("create_prompt"),
+					EXPECTED_TOOLS.indexOf("get_organisation_defaults"),
+				).sort();
 
-				assert.equal(toolNames.length, 34);
-				assert.ok(toolNames.includes("create_prompt"));
-				assert.ok(toolNames.includes("get_request_analytics"));
-				assert.ok(!toolNames.includes("list_all_users"));
-				assert.ok(!toolNames.includes("create_workspace"));
+				assert.deepEqual(toolNames, expectedSubset);
 			} finally {
 				await subsetClient.close();
 			}

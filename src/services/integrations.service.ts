@@ -331,9 +331,9 @@ export class IntegrationsService extends BaseService {
 		slug: string,
 		modelSlug: string,
 	): Promise<{ success: boolean }> {
-		await this.delete(
-			`/integrations/${this.encodePathSegment(slug)}/models?slugs=${encodeURIComponent(modelSlug)}`,
-		);
+		await this.delete(`/integrations/${this.encodePathSegment(slug)}/models`, {
+			slugs: modelSlug,
+		});
 		return { success: true };
 	}
 

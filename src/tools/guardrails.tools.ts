@@ -13,7 +13,9 @@ const guardrailCheckSchema = z.object({
 	parameters: z
 		.record(z.string(), z.unknown())
 		.optional()
-		.describe("Check-specific configuration parameters"),
+		.describe(
+			"Check-specific configuration. Supported examples include requestParametersCheck and parameters.forwardHeaders; forwarded headers can expose sensitive values, so allow only the minimum required names.",
+		),
 });
 
 const guardrailFeedbackSchema = z.object({
@@ -80,7 +82,7 @@ const GUARDRAILS_TOOL_SCHEMAS = {
 		current_page: z.coerce
 			.number()
 			.int()
-			.positive()
+			.nonnegative()
 			.optional()
 			.describe("Page number for pagination"),
 	},

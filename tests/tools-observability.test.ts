@@ -443,10 +443,8 @@ describe("create_rate_limit payload assembly", () => {
 								unit: "rpm",
 								value: 100,
 								status: "active",
-								conditions: [
-									{ field: "virtual_key", operator: "is", value: "vk_abc" },
-								],
-								group_by: ["virtual_key"],
+								conditions: [{ key: "virtual_key", value: "vk_abc" }],
+								group_by: [{ key: "virtual_key" }],
 								created_at: "2026-01-01T00:00:00.000Z",
 								last_updated_at: "2026-01-01T00:00:00.000Z",
 								object: "rate_limit",
@@ -461,8 +459,8 @@ describe("create_rate_limit payload assembly", () => {
 		assert.ok(callback, "expected create_rate_limit to be registered");
 
 		await callback({
-			conditions: [{ field: "virtual_key", operator: "is", value: "vk_abc" }],
-			group_by: ["virtual_key"],
+			conditions: [{ key: "virtual_key", value: "vk_abc" }],
+			group_by: [{ key: "virtual_key" }],
 			type: "requests",
 			unit: "rpm",
 			value: 100,
@@ -471,14 +469,13 @@ describe("create_rate_limit payload assembly", () => {
 		});
 
 		assert.deepEqual(receivedPayload, {
-			conditions: [{ field: "virtual_key", operator: "is", value: "vk_abc" }],
-			group_by: ["virtual_key"],
+			conditions: [{ key: "virtual_key", value: "vk_abc" }],
+			group_by: [{ key: "virtual_key" }],
 			type: "requests",
 			unit: "rpm",
 			value: 100,
 			name: "My RPM Limit",
 			workspace_id: "ws_1",
-			organisation_id: undefined,
 		});
 	});
 });
@@ -559,10 +556,8 @@ describe("create_usage_limit payload assembly", () => {
 								alert_threshold: 80,
 								periodic_reset: "monthly" as const,
 								status: "active",
-								conditions: [
-									{ field: "virtual_key", operator: "is", value: "vk_1" },
-								],
-								group_by: ["virtual_key"],
+								conditions: [{ key: "virtual_key", value: "vk_1" }],
+								group_by: [{ key: "virtual_key" }],
 								created_at: "2026-01-01T00:00:00.000Z",
 								last_updated_at: "2026-01-01T00:00:00.000Z",
 								object: "usage_limit",
@@ -577,8 +572,8 @@ describe("create_usage_limit payload assembly", () => {
 		assert.ok(callback, "expected create_usage_limit to be registered");
 
 		await callback({
-			conditions: [{ field: "virtual_key", operator: "is", value: "vk_1" }],
-			group_by: ["virtual_key"],
+			conditions: [{ key: "virtual_key", value: "vk_1" }],
+			group_by: [{ key: "virtual_key" }],
 			type: "cost",
 			credit_limit: 50,
 			alert_threshold: 80,
@@ -586,15 +581,12 @@ describe("create_usage_limit payload assembly", () => {
 		});
 
 		assert.deepEqual(receivedPayload, {
-			conditions: [{ field: "virtual_key", operator: "is", value: "vk_1" }],
-			group_by: ["virtual_key"],
+			conditions: [{ key: "virtual_key", value: "vk_1" }],
+			group_by: [{ key: "virtual_key" }],
 			type: "cost",
 			credit_limit: 50,
 			alert_threshold: 80,
 			periodic_reset: "monthly",
-			name: undefined,
-			workspace_id: undefined,
-			organisation_id: undefined,
 		});
 	});
 });

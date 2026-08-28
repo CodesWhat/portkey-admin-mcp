@@ -7,6 +7,7 @@
 
 import "dotenv/config";
 import { HealthService, PortkeyService } from "../src/services/index.js";
+import { expectedSmokeSkipReason } from "./smoke-outcomes.js";
 
 // The smoke suite hits the live Portkey API. CI only invokes it when the
 // release workflow provides the dedicated staging key.
@@ -25,6 +26,7 @@ let health: HealthService;
 // Test context - stores discovered IDs for subsequent tests
 interface TestContext {
 	workspaceId?: string;
+	workspaceSlug?: string;
 	userId?: string;
 	userInviteId?: string;
 	collectionId?: string;
@@ -41,6 +43,8 @@ interface TestContext {
 	providerSlug?: string;
 	apiKeyId?: string;
 	mcpServerId?: string;
+	mcpIntegrationId?: string;
+	deploymentId?: string;
 }
 
 interface TestResult {
@@ -82,6 +86,12 @@ async function test(
 		console.log(`  \x1b[32mPASS\x1b[0m  ${name} (${latency}ms)`);
 	} catch (error) {
 		const latency = Date.now() - start;
+		const expectedSkip = expectedSmokeSkipReason(name, error);
+		if (expectedSkip) {
+			results.push({ name, status: "SKIP", message: expectedSkip, latency });
+			console.log(`  \x1b[33mSKIP\x1b[0m  ${name} (${expectedSkip})`);
+			return;
+		}
 		const message = error instanceof Error ? error.message : String(error);
 		results.push({ name, status: "FAIL", message, latency });
 		console.log(`  \x1b[31mFAIL\x1b[0m  ${name}: ${message}`);
@@ -106,7 +116,15 @@ async function main() {
 
 	await test("listWorkspaces", async () => {
 		const res = await portkey.workspaces.listWorkspaces();
-		if (res.data?.[0]) ctx.workspaceId = res.data[0].id;
+		if (res.data?.[0]) {
+			ctx.workspaceId = res.data[0].id;
+			ctx.workspaceSlug = res.data[0].slug;
+		}
+	});
+
+	await test("listDeployments", async () => {
+		const res = await portkey.deployments.listDeployments();
+		if (res.data?.[0]) ctx.deploymentId = res.data[0].id;
 	});
 
 	await test("listUsers", async () => {
@@ -170,7 +188,9 @@ async function main() {
 	await test(
 		"listUsageLimits",
 		async () => {
-			const res = await portkey.limits.listUsageLimits(ctx.workspaceId);
+			const res = await portkey.limits.listUsageLimits({
+				workspace_id: ctx.workspaceId,
+			});
 			if (res.data?.[0]) ctx.usageLimitId = res.data[0].id;
 		},
 		() => (ctx.workspaceId ? null : "no workspaceId"),
@@ -179,7 +199,9 @@ async function main() {
 	await test(
 		"listRateLimits",
 		async () => {
-			const res = await portkey.limits.listRateLimits(ctx.workspaceId);
+			const res = await portkey.limits.listRateLimits({
+				workspace_id: ctx.workspaceId,
+			});
 			if (res.data?.[0]) ctx.rateLimitId = res.data[0].id;
 		},
 		() => (ctx.workspaceId ? null : "no workspaceId"),
@@ -223,6 +245,13 @@ async function main() {
 		if (res.data?.[0]) ctx.mcpServerId = res.data[0].id;
 	});
 
+	await test("listMcpIntegrations", async () => {
+		const res = await portkey.mcpIntegrations.listMcpIntegrations({
+			workspace_id: ctx.workspaceId,
+		});
+		if (res.data?.[0]) ctx.mcpIntegrationId = res.data[0].id;
+	});
+
 	await test("listScimWorkspaceMappings", async () => {
 		await portkey.workspaces.listScimWorkspaceMappings({
 			workspace_id: ctx.workspaceId,
@@ -249,6 +278,14 @@ async function main() {
 			await portkey.workspaces.getWorkspace(ctx.workspaceId!);
 		},
 		() => (ctx.workspaceId ? null : "no workspaceId"),
+	);
+
+	await test(
+		"getDeployment",
+		async () => {
+			await portkey.deployments.getDeployment(ctx.deploymentId!);
+		},
+		() => (ctx.deploymentId ? null : "no deploymentId"),
 	);
 
 	await test(
@@ -352,6 +389,16 @@ async function main() {
 	);
 
 	await test(
+		"listUsageLimitEntities",
+		async () => {
+			await portkey.limits.listUsageLimitEntities(ctx.usageLimitId!, {
+				page_size: 1,
+			});
+		},
+		() => (ctx.usageLimitId ? null : "no usageLimitId"),
+	);
+
+	await test(
 		"getRateLimit",
 		async () => {
 			await portkey.limits.getRateLimit(ctx.rateLimitId!);
@@ -415,6 +462,14 @@ async function main() {
 			await portkey.integrations.getIntegration(ctx.integrationSlug!);
 		},
 		() => (ctx.integrationSlug ? null : "no integrationSlug"),
+	);
+
+	await test(
+		"getMcpIntegration",
+		async () => {
+			await portkey.mcpIntegrations.getMcpIntegration(ctx.mcpIntegrationId!);
+		},
+		() => (ctx.mcpIntegrationId ? null : "no mcpIntegrationId"),
 	);
 
 	await test("getOrganisationDefaults", async () => {
@@ -490,6 +545,30 @@ async function main() {
 	await test("getCacheHitRate", async () => {
 		await portkey.analytics.getCacheHitRate(analyticsParams);
 	});
+
+	await test(
+		"getCacheSummary",
+		async () => {
+			await portkey.analytics.getCacheSummary({
+				...analyticsParams,
+				workspace_slug: ctx.workspaceSlug!,
+			});
+		},
+		() => (ctx.workspaceSlug ? null : "no workspaceSlug"),
+	);
+
+	await test(
+		"getAnalyticsGroupProviders",
+		async () => {
+			await portkey.analytics.getAnalyticsGroupProviders({
+				...analyticsParams,
+				workspace_slug: ctx.workspaceSlug!,
+				page_size: 1,
+				include_total: "true",
+			});
+		},
+		() => (ctx.workspaceSlug ? null : "no workspaceSlug"),
+	);
 
 	await test("getUsersAnalytics", async () => {
 		await portkey.analytics.getUsersAnalytics(analyticsParams);

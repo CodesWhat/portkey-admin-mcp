@@ -13,16 +13,21 @@ const USERS_TOOL_SCHEMAS = {
 		current_page: z.coerce
 			.number()
 			.int()
-			.positive()
+			.nonnegative()
 			.optional()
 			.describe("Page number for pagination"),
 		page_size: z.coerce
 			.number()
 			.int()
-			.positive()
+			.nonnegative()
 			.max(100)
 			.optional()
 			.describe("Number of results per page (max 100)"),
+		role: z
+			.enum(["admin", "member", "owner"])
+			.optional()
+			.describe("Filter by organisation role"),
+		email: z.string().email().optional().describe("Filter by exact email"),
 	},
 	inviteUser: {
 		email: z.string().email().describe("Email address of the user to invite"),
@@ -148,6 +153,15 @@ const USERS_TOOL_SCHEMAS = {
 			.max(100)
 			.optional()
 			.describe("Number of results per page (max 100)"),
+		role: z
+			.enum(["admin", "member"])
+			.optional()
+			.describe("Filter invitations by organisation role"),
+		email: z.string().email().optional().describe("Filter by invited email"),
+		status: z
+			.enum(["pending", "cancelled", "accepted", "expired"])
+			.optional()
+			.describe("Filter invitations by lifecycle status"),
 	},
 	getUserInvite: {
 		invite_id: z.string().describe("The invite ID to retrieve"),
@@ -221,6 +235,8 @@ export function registerUsersTools(
 			const users = await service.users.listUsers({
 				current_page: params.current_page,
 				page_size: params.page_size,
+				role: params.role,
+				email: params.email,
 			});
 			return jsonResult({
 				total: users.total,
@@ -307,6 +323,9 @@ export function registerUsersTools(
 			const invites = await service.users.listUserInvites({
 				current_page: params.current_page,
 				page_size: params.page_size,
+				role: params.role,
+				email: params.email,
+				status: params.status,
 			});
 			return jsonResult({
 				total: invites.total,

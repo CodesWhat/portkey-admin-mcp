@@ -12,6 +12,7 @@ import { registerAnalyticsTools } from "./analytics.tools.js";
 import { registerAuditTools } from "./audit.tools.js";
 import { registerCollectionsTools } from "./collections.tools.js";
 import { registerConfigsTools } from "./configs.tools.js";
+import { registerDeploymentsTools } from "./deployments.tools.js";
 import { registerGuardrailsTools } from "./guardrails.tools.js";
 import { registerIntegrationsTools } from "./integrations.tools.js";
 import { registerKeysTools } from "./keys.tools.js";
@@ -34,6 +35,7 @@ const TOOL_DOMAIN_REGISTRARS = [
 	["users", registerUsersTools],
 	["workspaces", registerWorkspacesTools],
 	["configs", registerConfigsTools],
+	["deployments", registerDeploymentsTools],
 	["keys", registerKeysTools],
 	["collections", registerCollectionsTools],
 	["prompts", registerPromptsTools],
@@ -118,6 +120,7 @@ const ENTERPRISE_GATED_TOOL_NAMES = new Set([
 	"get_error_rate_analytics",
 	"get_cache_hit_latency",
 	"get_cache_hit_rate",
+	"get_cache_summary",
 	"get_users_analytics",
 	"get_error_stacks_analytics",
 	"get_error_status_codes_analytics",
@@ -130,6 +133,12 @@ const ENTERPRISE_GATED_TOOL_NAMES = new Set([
 	"get_analytics_group_users",
 	"get_analytics_group_models",
 	"get_analytics_group_metadata",
+	"get_analytics_group_providers",
+	"list_deployments",
+	"register_deployment",
+	"get_deployment",
+	"update_deployment",
+	"archive_deployment",
 	"list_audit_logs",
 	"get_integration",
 	"list_integration_models",

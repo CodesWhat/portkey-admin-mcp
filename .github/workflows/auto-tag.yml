@@ -60,5 +60,6 @@ jobs:
           git push origin "$tag"
 
           # Tags pushed with GITHUB_TOKEN do not fire the tag-push trigger on
-          # other workflows, so dispatch the Release workflow explicitly.
-          gh workflow run release.yml -f tag="$tag"
+          # other workflows, so dispatch the Release workflow explicitly at
+          # the immutable tag commit used for packaging.
+          gh workflow run release.yml --ref "$tag" -f tag="$tag"

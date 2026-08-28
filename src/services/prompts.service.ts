@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from "node:util";
 import { BaseService, isNoContent } from "./base.service.js";
 import type {
 	BillingMetadata,
@@ -14,6 +15,7 @@ import type {
 	PromotePromptResponse,
 	PromptCompletionRequest,
 	PromptCompletionResponse,
+	PromptListItem,
 	PromptVersionListItem,
 	PublishPromptRequest,
 	PublishPromptResponse,
@@ -30,7 +32,13 @@ export type * from "./prompts.types.js";
 
 export class PromptsService extends BaseService {
 	async createPrompt(data: CreatePromptRequest): Promise<CreatePromptResponse> {
-		return this.post<CreatePromptResponse>("/prompts", data);
+		const { is_raw_template, ...rest } = data;
+		return this.post<CreatePromptResponse>("/prompts", {
+			...rest,
+			...(is_raw_template !== undefined
+				? { is_raw_template: Number(is_raw_template) }
+				: {}),
+		});
 	}
 
 	async listPrompts(params?: ListPromptsParams): Promise<ListPromptsResponse> {
@@ -69,11 +77,13 @@ export class PromptsService extends BaseService {
 						tools: raw.tools ?? undefined,
 						tool_choice: raw.tool_choice ?? undefined,
 						template_metadata: raw.template_metadata,
+						is_raw_template:
+							raw.is_raw_template === undefined
+								? undefined
+								: Boolean(raw.is_raw_template),
 						created_at: raw.created_at,
 					}
 				: undefined,
-			// Flat response doesn't include version history — use list_prompt_versions
-			versions: [],
 			object: "prompt",
 		};
 	}
@@ -84,7 +94,7 @@ export class PromptsService extends BaseService {
 	): Promise<UpdatePromptResponse> {
 		// PUT /prompts/:id accepts "string" (same as POST), NOT "prompt_template".
 		// "template_metadata" must be remapped to "prompt_metadata".
-		const { template_metadata, ...rest } = data;
+		const { template_metadata, is_raw_template, ...rest } = data;
 		const body: Record<string, unknown> = {
 			...rest,
 			// Enable partial updates so missing version fields are backfilled from latest version
@@ -92,6 +102,9 @@ export class PromptsService extends BaseService {
 		};
 		if (template_metadata !== undefined) {
 			body.prompt_metadata = template_metadata;
+		}
+		if (is_raw_template !== undefined) {
+			body.is_raw_template = Number(is_raw_template);
 		}
 		return this.put<UpdatePromptResponse>(
 			`/prompts/${this.encodePathSegment(promptId)}`,
@@ -146,6 +159,32 @@ export class PromptsService extends BaseService {
 		return response.data;
 	}
 
+	private async findPromptByExactName(
+		name: string,
+		collectionId: string,
+	): Promise<PromptListItem | undefined> {
+		const pageSize = 100;
+		let currentPage = 1;
+		while (true) {
+			const page = await this.listPrompts({
+				collection_id: collectionId,
+				search: name,
+				page_size: pageSize,
+				current_page: currentPage,
+			});
+			const exact = page.data.find(
+				(prompt) => prompt.name.toLowerCase() === name.toLowerCase(),
+			);
+			if (exact) {
+				return exact;
+			}
+			if (page.data.length === 0 || currentPage * pageSize >= page.total) {
+				return undefined;
+			}
+			currentPage += 1;
+		}
+	}
+
 	async renderPrompt(
 		promptId: string,
 		data: RenderPromptRequest,
@@ -195,14 +234,9 @@ export class PromptsService extends BaseService {
 	): Promise<MigratePromptResponse> {
 		const { dry_run = false, app, env } = data;
 
-		const existingPrompts = await this.listPrompts({
-			collection_id: data.collection_id,
-			search: data.name,
-			page_size: 10,
-		});
-
-		const existingPrompt = existingPrompts.data.find(
-			(p) => p.name.toLowerCase() === data.name.toLowerCase(),
+		const existingPrompt = await this.findPromptByExactName(
+			data.name,
+			data.collection_id,
 		);
 
 		if (existingPrompt) {
@@ -214,15 +248,49 @@ export class PromptsService extends BaseService {
 				);
 			}
 
-			const templateChanged =
-				JSON.stringify(currentVersion.string) !== JSON.stringify(data.string);
-			const parametersChanged =
-				JSON.stringify(currentVersion.parameters) !==
-				JSON.stringify(data.parameters);
+			const templateChanged = !isDeepStrictEqual(
+				currentVersion.string,
+				data.string,
+			);
+			const parametersChanged = !isDeepStrictEqual(
+				currentVersion.parameters,
+				data.parameters,
+			);
 			const modelChanged =
 				data.model !== undefined && currentVersion.model !== data.model;
+			const virtualKeyChanged = currentVersion.virtual_key !== data.virtual_key;
+			const versionDescriptionChanged =
+				data.version_description !== undefined &&
+				currentVersion.version_description !== data.version_description;
+			const functionsChanged =
+				data.functions !== undefined &&
+				!isDeepStrictEqual(currentVersion.functions, data.functions);
+			const toolsChanged =
+				data.tools !== undefined &&
+				!isDeepStrictEqual(currentVersion.tools, data.tools);
+			const toolChoiceChanged =
+				data.tool_choice !== undefined &&
+				!isDeepStrictEqual(currentVersion.tool_choice, data.tool_choice);
+			const rawTemplateChanged =
+				data.is_raw_template !== undefined &&
+				currentVersion.is_raw_template !== data.is_raw_template;
+			const desiredMetadata = { ...data.template_metadata, app, env };
+			const currentMetadata = currentVersion.template_metadata ?? {};
+			const metadataChanged = Object.entries(desiredMetadata).some(
+				([key, value]) => !isDeepStrictEqual(currentMetadata[key], value),
+			);
 
-			const needsUpdate = templateChanged || parametersChanged || modelChanged;
+			const needsUpdate =
+				templateChanged ||
+				parametersChanged ||
+				modelChanged ||
+				virtualKeyChanged ||
+				versionDescriptionChanged ||
+				functionsChanged ||
+				toolsChanged ||
+				toolChoiceChanged ||
+				rawTemplateChanged ||
+				metadataChanged;
 
 			if (!needsUpdate) {
 				return {
@@ -259,6 +327,7 @@ export class PromptsService extends BaseService {
 				functions: data.functions,
 				tools: data.tools,
 				tool_choice: data.tool_choice,
+				is_raw_template: data.is_raw_template,
 			});
 
 			return {
@@ -298,6 +367,7 @@ export class PromptsService extends BaseService {
 			functions: data.functions,
 			tools: data.tools,
 			tool_choice: data.tool_choice,
+			is_raw_template: data.is_raw_template,
 		});
 
 		return {
@@ -326,14 +396,9 @@ export class PromptsService extends BaseService {
 			sourcePrompt.name.replace(/-(dev|staging|prod)$/, "") +
 				`-${data.target_env}`;
 
-		const existingTargets = await this.listPrompts({
-			collection_id: data.target_collection_id,
-			search: targetName,
-			page_size: 10,
-		});
-
-		const existingTarget = existingTargets.data.find(
-			(p) => p.name.toLowerCase() === targetName.toLowerCase(),
+		const existingTarget = await this.findPromptByExactName(
+			targetName,
+			data.target_collection_id,
 		);
 
 		if (existingTarget) {
@@ -341,10 +406,11 @@ export class PromptsService extends BaseService {
 				string: sourceVersion.string,
 				parameters: sourceVersion.parameters,
 				model: sourceVersion.model,
-				virtual_key: sourceVersion.virtual_key,
+				virtual_key: data.virtual_key || sourceVersion.virtual_key,
 				functions: sourceVersion.functions,
 				tools: sourceVersion.tools,
 				tool_choice: sourceVersion.tool_choice,
+				is_raw_template: sourceVersion.is_raw_template,
 				version_description: `Promoted from ${sourcePrompt.slug} v${sourceVersion.version_number}`,
 				template_metadata: {
 					...sourceVersion.template_metadata,
@@ -382,6 +448,7 @@ export class PromptsService extends BaseService {
 			functions: sourceVersion.functions,
 			tools: sourceVersion.tools,
 			tool_choice: sourceVersion.tool_choice,
+			is_raw_template: sourceVersion.is_raw_template,
 			version_description: `Promoted from ${sourcePrompt.slug} v${sourceVersion.version_number}`,
 			template_metadata: {
 				...sourceVersion.template_metadata,

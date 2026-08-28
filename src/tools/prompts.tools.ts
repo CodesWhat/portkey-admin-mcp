@@ -15,7 +15,7 @@ import type { RawGetPromptResponse } from "../services/prompts.types.js";
 import { jsonResult } from "./utils.js";
 
 const PROMPT_VARIABLES_SCHEMA = z
-	.record(z.string(), z.union([z.string(), z.coerce.number(), z.boolean()]))
+	.record(z.string(), z.union([z.string(), z.number(), z.boolean()]))
 	.describe("Variable values to substitute into the template");
 
 const PROMPT_TEMPLATE_CONTENT_BLOCK_SCHEMA = z
@@ -99,6 +99,10 @@ const PROMPTS_TOOL_SCHEMAS = {
 			.optional()
 			.describe("Tool definitions for tool use"),
 		tool_choice: ToolChoiceSchema.optional().describe("Tool choice strategy"),
+		is_raw_template: z
+			.boolean()
+			.optional()
+			.describe("Render the stored template as a raw structural template"),
 		dry_run: z
 			.boolean()
 			.optional()
@@ -174,6 +178,10 @@ const PROMPTS_TOOL_SCHEMAS = {
 		tool_choice: ToolChoiceSchema.optional().describe(
 			"New tool choice strategy",
 		),
+		is_raw_template: z
+			.boolean()
+			.optional()
+			.describe("Enable or disable raw structural-template rendering"),
 		dry_run: z
 			.boolean()
 			.optional()
@@ -247,6 +255,10 @@ const PROMPTS_TOOL_SCHEMAS = {
 			.describe("Function definitions"),
 		tools: z.array(PromptToolSchema).optional().describe("Tool definitions"),
 		tool_choice: ToolChoiceSchema.optional().describe("Tool choice strategy"),
+		is_raw_template: z
+			.boolean()
+			.optional()
+			.describe("Preserve raw structural-template rendering semantics"),
 		dry_run: z
 			.boolean()
 			.optional()
@@ -521,6 +533,9 @@ export function registerPromptsTools(
 				...(params.tool_choice !== undefined
 					? { tool_choice: toPromptToolChoice(params.tool_choice) }
 					: {}),
+				...(params.is_raw_template !== undefined
+					? { is_raw_template: params.is_raw_template }
+					: {}),
 			});
 
 			return jsonResult({
@@ -549,7 +564,10 @@ export function registerPromptsTools(
 		"Fetch a prompt's full definition, active version, and version history. Use this before updating, publishing, rendering, or copying a prompt when you need the stored template and metadata. For multi-message chat prompts pass messages (preferred) or a JSON-encoded array as string.",
 		PROMPTS_TOOL_SCHEMAS.getPrompt,
 		async (params) => {
-			const prompt = await service.prompts.getPrompt(params.prompt_id);
+			const [prompt, versions] = await Promise.all([
+				service.prompts.getPrompt(params.prompt_id),
+				service.prompts.listPromptVersions(params.prompt_id),
+			]);
 
 			// Resolve the raw template string — Portkey may return it as a nested { string: "..." } object
 			const templateString = extractPromptTemplateString(
@@ -591,14 +609,19 @@ export function registerPromptsTools(
 							metadata: prompt.current_version.template_metadata,
 							has_tools: !!prompt.current_version.tools?.length,
 							has_functions: !!prompt.current_version.functions?.length,
+							is_raw_template: prompt.current_version.is_raw_template,
 						}
 					: null,
-				version_count: (prompt.versions || []).length,
-				versions: (prompt.versions || []).map((v) => ({
+				version_count: versions.length,
+				versions: versions.map((v) => ({
 					id: v.id,
-					version_number: v.version_number,
-					description: v.version_description,
+					version_number: v.prompt_version,
+					description: v.prompt_description,
 					created_at: v.created_at,
+					is_raw_template:
+						v.is_raw_template === undefined
+							? undefined
+							: Boolean(v.is_raw_template),
 				})),
 			});
 		},
@@ -658,6 +681,9 @@ export function registerPromptsTools(
 				...(updateData.tools !== undefined ? { tools: updateData.tools } : {}),
 				...(updateData.tool_choice !== undefined
 					? { tool_choice: toPromptToolChoice(updateData.tool_choice) }
+					: {}),
+				...(updateData.is_raw_template !== undefined
+					? { is_raw_template: updateData.is_raw_template }
 					: {}),
 			});
 
@@ -831,6 +857,9 @@ export function registerPromptsTools(
 				...(params.tools !== undefined ? { tools: params.tools } : {}),
 				...(params.tool_choice !== undefined
 					? { tool_choice: toPromptToolChoice(params.tool_choice) }
+					: {}),
+				...(params.is_raw_template !== undefined
+					? { is_raw_template: params.is_raw_template }
 					: {}),
 				...(params.dry_run !== undefined ? { dry_run: params.dry_run } : {}),
 			});

@@ -26,30 +26,55 @@ const mcpSecretMappingsSchema = uniqueSecretMappingsSchema(
 	mcpSecretMappingSchema,
 );
 
+const mcpConfigurationsSchema = z
+	.record(z.string(), z.unknown())
+	.superRefine((value, ctx) => {
+		if ("custom_headers" in value && !isStringRecord(value.custom_headers)) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["custom_headers"],
+				message:
+					"configurations.custom_headers must be a string-to-string record",
+			});
+		}
+	});
+
 const MCP_INTEGRATIONS_TOOL_SCHEMAS = {
 	listMcpIntegrations: {
 		current_page: z.coerce
 			.number()
 			.int()
-			.positive()
+			.nonnegative()
 			.optional()
 			.describe("Page number for pagination"),
 		page_size: z.coerce
 			.number()
 			.int()
 			.positive()
-			.max(100)
+			.max(1000)
 			.optional()
-			.describe("Number of results per page (max 100)"),
+			.describe("Number of results per page (max 1000)"),
 		workspace_id: z.string().optional().describe("Filter by workspace ID"),
+		organisation_id: z
+			.string()
+			.optional()
+			.describe("Filter by organisation UUID"),
+		type: z
+			.enum(["workspace", "organisation", "all"])
+			.optional()
+			.describe(
+				"Filter by workspace, organisation, or all integration ownership",
+			),
+		search: z.string().optional().describe("Search integrations by name"),
 	},
 	createMcpIntegration: {
 		name: z.string().describe("Display name for the MCP integration"),
 		url: z.string().describe("URL endpoint of the MCP server to integrate"),
 		auth_type: z
-			.enum(["oauth_auto", "headers", "none"])
+			.string()
+			.min(1)
 			.describe(
-				"Authentication type: 'none', 'headers' (custom headers), or 'oauth_auto' (OAuth)",
+				"Authentication type. Current examples are 'none', 'headers' (custom headers), and 'oauth_auto' (OAuth); Portkey may accept additional values.",
 			),
 		transport: z
 			.enum(["http", "sse"])
@@ -69,6 +94,11 @@ const MCP_INTEGRATIONS_TOOL_SCHEMAS = {
 			.optional()
 			.describe(
 				'Custom headers for authentication (e.g. { "Authorization": "Bearer xxx" }). Sent via configurations.custom_headers',
+			),
+		configurations: mcpConfigurationsSchema
+			.optional()
+			.describe(
+				"Additional documented or forward-compatible configuration fields. For headers auth, configurations.custom_headers is a string-to-string header map.",
 			),
 		workspace_id: z
 			.string()
@@ -91,9 +121,12 @@ const MCP_INTEGRATIONS_TOOL_SCHEMAS = {
 		description: z.string().optional().describe("New description"),
 		url: z.string().optional().describe("New URL endpoint"),
 		auth_type: z
-			.enum(["oauth_auto", "headers", "none"])
+			.string()
+			.min(1)
 			.optional()
-			.describe("New authentication type"),
+			.describe(
+				"New authentication type. Current examples are 'none', 'headers' (custom headers), and 'oauth_auto' (OAuth); Portkey may accept additional values.",
+			),
 		transport: z
 			.enum(["http", "sse"])
 			.optional()
@@ -103,6 +136,11 @@ const MCP_INTEGRATIONS_TOOL_SCHEMAS = {
 			.optional()
 			.describe(
 				"New custom headers for authentication. Sent via configurations.custom_headers",
+			),
+		configurations: mcpConfigurationsSchema
+			.optional()
+			.describe(
+				"Replacement documented or forward-compatible configuration fields. configurations.custom_headers must be a string-to-string header map when present.",
 			),
 		secret_mappings: mcpSecretMappingsSchema
 			.optional()
@@ -154,24 +192,39 @@ const MCP_INTEGRATIONS_TOOL_SCHEMAS = {
 const createMcpIntegrationSchema = z
 	.object(MCP_INTEGRATIONS_TOOL_SCHEMAS.createMcpIntegration)
 	.superRefine((value, ctx) => {
+		const configuredHeaders = value.configurations?.custom_headers;
 		if (
 			value.auth_type === "headers" &&
 			(!value.custom_headers ||
 				Object.keys(value.custom_headers).length === 0) &&
+			(!isStringRecord(configuredHeaders) ||
+				Object.keys(configuredHeaders).length === 0) &&
 			!value.secret_mappings?.some(
 				(mapping) => mapping.target_field === "configurations.custom_headers",
 			)
 		) {
 			ctx.addIssue({
 				code: z.ZodIssueCode.custom,
-				path: ["custom_headers"],
-				message: "custom_headers must be provided when auth_type is 'headers'",
+				path: [],
+				message:
+					"custom_headers, configurations.custom_headers, or secret_mappings targeting configurations.custom_headers must be provided when auth_type is 'headers'",
 			});
 		}
 	});
 
+const updateMcpIntegrationSchema = z.object(
+	MCP_INTEGRATIONS_TOOL_SCHEMAS.updateMcpIntegration,
+);
+
 function isRecord(value: unknown): value is Record<string, unknown> {
-	return typeof value === "object" && value !== null;
+	return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isStringRecord(value: unknown): value is Record<string, string> {
+	return (
+		isRecord(value) &&
+		Object.values(value).every((item) => typeof item === "string")
+	);
 }
 
 function getCustomHeaderNames(
@@ -301,10 +354,17 @@ export function registerMcpIntegrationsTools(
 		},
 		async (rawParams) => {
 			const params = createMcpIntegrationSchema.parse(rawParams);
-			const { custom_headers, ...rest } = params;
+			const { custom_headers, configurations, ...rest } = params;
 			const result = await service.mcpIntegrations.createMcpIntegration({
 				...rest,
-				...(custom_headers ? { configurations: { custom_headers } } : {}),
+				...(configurations !== undefined || custom_headers !== undefined
+					? {
+							configurations: {
+								...configurations,
+								...(custom_headers !== undefined ? { custom_headers } : {}),
+							},
+						}
+					: {}),
 			});
 			return jsonResult({
 				message: `Successfully created MCP integration "${params.name}"`,
@@ -337,11 +397,19 @@ export function registerMcpIntegrationsTools(
 			idempotentHint: true,
 			openWorldHint: true,
 		},
-		async (params) => {
-			const { id, custom_headers, ...rest } = params;
+		async (rawParams) => {
+			const params = updateMcpIntegrationSchema.parse(rawParams);
+			const { id, custom_headers, configurations, ...rest } = params;
 			await service.mcpIntegrations.updateMcpIntegration(id, {
 				...rest,
-				...(custom_headers ? { configurations: { custom_headers } } : {}),
+				...(configurations !== undefined || custom_headers !== undefined
+					? {
+							configurations: {
+								...configurations,
+								...(custom_headers !== undefined ? { custom_headers } : {}),
+							},
+						}
+					: {}),
 			});
 			return jsonResult({
 				message: `Successfully updated MCP integration "${id}"`,

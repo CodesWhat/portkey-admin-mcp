@@ -14,6 +14,8 @@ export interface ServerConfig {
 	eventStore: {
 		mode: "off" | "memory" | "redis";
 		ttlSeconds: number;
+		maxEvents?: number;
+		maxBytes?: number;
 		redisUrl?: string;
 		redisKeyPrefix: string;
 		encryptionKey?: Buffer;
@@ -137,6 +139,24 @@ export function getServerConfig(): ServerConfig {
 			`Invalid MCP_EVENT_TTL_SECONDS value: ${eventStoreTtlStr}. Must be a positive integer`,
 		);
 	}
+	const eventStoreMaxEventsStr = (
+		process.env.MCP_EVENT_STORE_MAX_EVENTS || "10000"
+	).trim();
+	const eventStoreMaxEvents = parseStrictInteger(eventStoreMaxEventsStr);
+	if (Number.isNaN(eventStoreMaxEvents) || eventStoreMaxEvents <= 0) {
+		throw new Error(
+			`Invalid MCP_EVENT_STORE_MAX_EVENTS value: ${eventStoreMaxEventsStr}. Must be a positive integer`,
+		);
+	}
+	const eventStoreMaxBytesStr = (
+		process.env.MCP_EVENT_STORE_MAX_BYTES || String(64 * 1024 * 1024)
+	).trim();
+	const eventStoreMaxBytes = parseStrictInteger(eventStoreMaxBytesStr);
+	if (Number.isNaN(eventStoreMaxBytes) || eventStoreMaxBytes <= 0) {
+		throw new Error(
+			`Invalid MCP_EVENT_STORE_MAX_BYTES value: ${eventStoreMaxBytesStr}. Must be a positive integer`,
+		);
+	}
 
 	const eventStoreCommandTimeoutStr = (
 		process.env.MCP_EVENT_STORE_COMMAND_TIMEOUT_MS || "5000"
@@ -224,6 +244,8 @@ export function getServerConfig(): ServerConfig {
 		eventStore: {
 			mode: eventStoreMode,
 			ttlSeconds: eventStoreTtlSeconds,
+			maxEvents: eventStoreMaxEvents,
+			maxBytes: eventStoreMaxBytes,
 			redisUrl,
 			redisKeyPrefix,
 			encryptionKey: eventEncryptionKey,

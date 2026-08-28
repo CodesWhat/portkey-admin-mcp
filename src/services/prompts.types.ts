@@ -59,6 +59,7 @@ export interface CreatePromptRequest {
 	finetune_id?: string;
 	version_description?: string;
 	template_metadata?: PromptTemplateMetadata;
+	is_raw_template?: boolean;
 }
 
 export interface CreatePromptResponse {
@@ -111,6 +112,7 @@ export interface PromptVersion {
 	tools?: PromptToolDefinition[];
 	tool_choice?: ToolChoice;
 	template_metadata?: PromptTemplateMetadata;
+	is_raw_template?: boolean;
 	created_at: string;
 }
 
@@ -136,6 +138,7 @@ export interface RawGetPromptResponse {
 	tool_choice?: ToolChoice | null;
 	template_metadata?: PromptTemplateMetadata;
 	virtual_key?: string;
+	is_raw_template?: 0 | 1;
 	object: "prompt";
 }
 
@@ -148,7 +151,6 @@ export interface GetPromptResponse {
 	created_at: string;
 	last_updated_at: string;
 	current_version?: PromptVersion;
-	versions: PromptVersion[];
 	object: "prompt";
 }
 
@@ -166,6 +168,7 @@ export interface UpdatePromptRequest {
 	tool_choice?: ToolChoice;
 	version_description?: string;
 	template_metadata?: PromptTemplateMetadata;
+	is_raw_template?: boolean;
 }
 
 export interface UpdatePromptResponse {
@@ -255,6 +258,7 @@ export interface MigratePromptRequest {
 	tools?: PromptToolDefinition[];
 	tool_choice?: ToolChoice;
 	dry_run?: boolean;
+	is_raw_template?: boolean;
 }
 
 export interface MigratePromptResponse {
@@ -317,6 +321,7 @@ export interface PromptVersionListItem {
 	created_at: string;
 	status: string;
 	object: "prompt";
+	is_raw_template?: 0 | 1;
 }
 
 export interface ListPromptVersionsResponse {

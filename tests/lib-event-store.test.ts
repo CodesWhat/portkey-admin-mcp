@@ -191,7 +191,7 @@ describe("managed event-store modes", () => {
 			) as unknown as {
 				state: {
 					lastCleanupAt: number;
-					streamEvents: Map<string, string[]>;
+					streamEvents: Map<string, Set<string>>;
 				};
 				storeEvent: (
 					streamId: string,
@@ -221,9 +221,10 @@ describe("managed event-store modes", () => {
 				await eventStore.getStreamIdForEventId(firstEventId),
 				undefined,
 			);
-			assert.deepEqual(eventStore.state.streamEvents.get("stream-1"), [
-				secondEventId,
-			]);
+			assert.deepEqual(
+				Array.from(eventStore.state.streamEvents.get("stream-1") ?? []),
+				[secondEventId],
+			);
 
 			eventStore.state.streamEvents.delete("stream-1");
 			await assert.rejects(
@@ -243,6 +244,71 @@ describe("managed event-store modes", () => {
 		} finally {
 			Date.now = originalDateNow;
 		}
+	});
+
+	it("evicts the oldest memory events at count and byte caps", async () => {
+		const countStore = createManagedEventStore(
+			eventStoreConfig({
+				mode: "memory",
+				ttlSeconds: 60,
+				redisKeyPrefix: "unused",
+				commandTimeoutMs: 5_000,
+				maxEvents: 2,
+				maxBytes: 1_000_000,
+			} as ServerConfig["eventStore"]),
+		);
+		const countEvents = countStore.eventStoreForOwner("principal-a");
+		assert.ok(countEvents);
+		const first = await countEvents.storeEvent("stream-1", {
+			jsonrpc: "2.0",
+			method: "first",
+		});
+		const second = await countEvents.storeEvent("stream-1", {
+			jsonrpc: "2.0",
+			method: "second",
+		});
+		const third = await countEvents.storeEvent("stream-1", {
+			jsonrpc: "2.0",
+			method: "third",
+		});
+		assert.equal(await countEvents.getStreamIdForEventId?.(first), undefined);
+		assert.equal(await countEvents.getStreamIdForEventId?.(second), "stream-1");
+		const replayed: string[] = [];
+		await countEvents.replayEventsAfter(second, {
+			send: async (eventId) => {
+				replayed.push(eventId);
+			},
+		});
+		assert.deepEqual(replayed, [third]);
+
+		const message = {
+			jsonrpc: "2.0" as const,
+			method: "payload",
+			params: { value: "x".repeat(64) },
+		};
+		const oneMessageBytes = Buffer.byteLength(JSON.stringify(message));
+		const byteStore = createManagedEventStore(
+			eventStoreConfig({
+				mode: "memory",
+				ttlSeconds: 60,
+				redisKeyPrefix: "unused",
+				commandTimeoutMs: 5_000,
+				maxEvents: 100,
+				maxBytes: oneMessageBytes + 1,
+			} as ServerConfig["eventStore"]),
+		);
+		const byteEvents = byteStore.eventStoreForOwner(
+			"principal-a",
+		) as unknown as {
+			state: { events: Map<string, unknown>; totalBytes: number };
+			storeEvent: (streamId: string, value: JSONRPCMessage) => Promise<string>;
+			getStreamIdForEventId: (eventId: string) => Promise<string | undefined>;
+		};
+		const byteFirst = await byteEvents.storeEvent("stream-2", message);
+		await byteEvents.storeEvent("stream-2", message);
+		assert.equal(await byteEvents.getStreamIdForEventId(byteFirst), undefined);
+		assert.equal(byteEvents.state.events.size, 1);
+		assert.ok(byteEvents.state.totalBytes <= oneMessageBytes + 1);
 	});
 });
 
