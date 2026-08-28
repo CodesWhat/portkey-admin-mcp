@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.1] - 2026-08-28
+
+Maintenance release for repository automation, dependency locks, and current
+compatibility documentation. Runtime source and the 178-tool catalog are
+unchanged, so MCP clients do not need to refresh `tools/list`.
+
+### Changed
+
+- Verify the downloaded actionlint archive against the SHA-256 published with
+  its upstream release instead of executing a downloader script.
+- Isolate automatic tag creation and release dispatch in separately permissioned
+  jobs while keeping the full release path unattended after protected merge.
+- Refresh stable transitive dependencies after the configured seven-day release
+  age, with dependency review and npm audit remaining clean.
+- Revalidate the official Portkey OpenAPI and Prisma AIRS boundary, regenerate
+  the endpoint catalog, and submit the moved Awesome MCP Servers listing update.
+
 ## [0.11.0] - 2026-08-27
 
 Whole-application remediation and Portkey Admin API compatibility release. The
@@ -588,7 +605,8 @@ First stable release. Graduates from beta with 151 tools covering ~98% of the Po
 - Vercel deployment support
 - Contract tests, E2E tests, security tests
 
-[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.11.0...HEAD
+[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.11.1...HEAD
+[0.11.1]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.11.0...v0.11.1
 [0.11.0]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.10.1...v0.11.0
 [0.10.1]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.10.0...v0.10.1
 [0.10.0]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.9.0...v0.10.0
