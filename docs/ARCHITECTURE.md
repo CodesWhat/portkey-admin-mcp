@@ -48,6 +48,12 @@ separate policy boundary:
 - optional encrypted Redis event storage for resumable delivery; and
 - readiness and graceful-shutdown handling.
 
+HTTP authentication is a server access gate, not Portkey tenant
+impersonation. All authenticated principals use the same configured
+`PORTKEY_API_KEY` and can invoke any enabled tool and scope that credential
+grants. Different trust levels require separate instances or deployments with
+separately scoped Portkey credentials and `PORTKEY_TOOL_DOMAINS` allowlists.
+
 The upstream `PORTKEY_BASE_URL` must be HTTPS unless both development-only
 private-network opt-ins are set. Public model-pricing requests use Portkey's
 public catalog origin and omit the tenant API key.

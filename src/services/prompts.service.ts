@@ -406,7 +406,7 @@ export class PromptsService extends BaseService {
 				string: sourceVersion.string,
 				parameters: sourceVersion.parameters,
 				model: sourceVersion.model,
-				virtual_key: data.virtual_key ?? sourceVersion.virtual_key,
+				virtual_key: data.virtual_key || sourceVersion.virtual_key,
 				functions: sourceVersion.functions,
 				tools: sourceVersion.tools,
 				tool_choice: sourceVersion.tool_choice,

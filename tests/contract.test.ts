@@ -300,6 +300,35 @@ describe("Contract: Prompts API", () => {
 // ==================== Keys ====================
 
 describe("Contract: Keys API", () => {
+	it("accepts token rate limits across second and week windows", () => {
+		const virtualKeys = loadFixture("virtual-keys-list") as {
+			data: Array<Record<string, unknown>>;
+		};
+		const apiKeys = loadFixture("api-keys-list") as {
+			data: Array<Record<string, unknown>>;
+		};
+		virtualKeys.data[0] = {
+			...virtualKeys.data[0],
+			rate_limits: [
+				{ type: "tokens", unit: "rps", value: 20 },
+				{ type: "tokens", unit: "rpw", value: 500 },
+			],
+		};
+		apiKeys.data[0] = {
+			...apiKeys.data[0],
+			rate_limits: [
+				{ type: "tokens", unit: "rps", value: 20 },
+				{ type: "tokens", unit: "rpw", value: 500 },
+			],
+		};
+
+		assert.equal(
+			ListVirtualKeysResponseSchema.safeParse(virtualKeys).success,
+			true,
+		);
+		assert.equal(ListApiKeysResponseSchema.safeParse(apiKeys).success, true);
+	});
+
 	it("ListVirtualKeysResponse schema parses virtual-keys-list fixture", () => {
 		const fixture = loadFixture("virtual-keys-list");
 		const result = ListVirtualKeysResponseSchema.safeParse(fixture);

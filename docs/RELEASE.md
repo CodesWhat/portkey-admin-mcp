@@ -28,7 +28,9 @@ Everything after the merge is automatic:
   `main`. If the version has no existing tag and `server.json` agrees, it
   creates and pushes `vX.Y.Z` and dispatches the `Release` workflow.
 - **`Release`** (`release.yml`) re-runs the full CI suite against the tagged
-  commit, then runs the publish jobs:
+  commit, pins every validated release or manifest ref to its resolved commit
+  SHA, and rechecks that the release tag still resolves to the same commit
+  immediately before each publish operation. It then runs the publish jobs:
   - **`package-npm`** first checks whether the immutable npm version already
     exists. New versions must run at the exact tag commit GitHub selected for
     the workflow; only then does the job install with lifecycle scripts disabled,

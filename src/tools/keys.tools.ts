@@ -69,8 +69,8 @@ const rotationPolicySchema = z
 			.nullable()
 			.optional()
 			.describe("Built-in weekly or monthly automatic rotation cadence"),
-		next_rotation_at: z
-			.string()
+		next_rotation_at: z.iso
+			.datetime({ offset: true })
 			.nullable()
 			.optional()
 			.describe("Explicit next rotation timestamp in ISO 8601 format"),
@@ -85,7 +85,7 @@ const rotationPolicySchema = z
 		if (value.rotation_period && value.next_rotation_at) {
 			context.addIssue({
 				code: "custom",
-				path: ["next_rotation_at"],
+				path: [],
 				message: "next_rotation_at and rotation_period are mutually exclusive",
 			});
 		}
@@ -145,7 +145,10 @@ const KEYS_TOOL_SCHEMAS = {
 			.describe(
 				"Azure deployment configurations with API versions and aliases",
 			),
-		expires_at: z.string().optional().describe("Expiration in ISO 8601 format"),
+		expires_at: z.iso
+			.datetime({ offset: true })
+			.optional()
+			.describe("Expiration in ISO 8601 format"),
 		secret_mappings: z
 			.array(virtualKeySecretMappingSchema)
 			.optional()
@@ -274,8 +277,8 @@ const KEYS_TOOL_SCHEMAS = {
 			.array(z.string())
 			.optional()
 			.describe("Email addresses for alerts"),
-		expires_at: z
-			.string()
+		expires_at: z.iso
+			.datetime({ offset: true })
 			.optional()
 			.describe("Expiration date in ISO 8601 format"),
 		rotation_policy: rotationPolicySchema
@@ -352,8 +355,8 @@ const KEYS_TOOL_SCHEMAS = {
 			.array(z.string())
 			.optional()
 			.describe("New email addresses for alerts"),
-		expires_at: z
-			.string()
+		expires_at: z.iso
+			.datetime({ offset: true })
 			.nullable()
 			.optional()
 			.describe(
@@ -389,7 +392,7 @@ const createVirtualKeySchema = z
 		) {
 			context.addIssue({
 				code: "custom",
-				path: ["key"],
+				path: [],
 				message: "key or a secret_mappings entry targeting key is required",
 			});
 		}
@@ -641,7 +644,7 @@ export function registerKeysTools(
 	// Phase 2: Update virtual key tool
 	server.tool(
 		"update_virtual_key",
-		"Update a virtual key's name, secret, note, or limits. Rotating the key takes effect immediately, and limit changes apply to downstream prompts and configs using this slug. Returns the updated name, slug, and status.",
+		"Update a virtual key's name, secret, note, or limits. Rotating the key takes effect immediately, and limit changes apply to downstream prompts and configs using this slug. Returns success when Portkey accepts the update.",
 		KEYS_TOOL_SCHEMAS.updateVirtualKey,
 		async (params) => {
 			const result = await service.keys.updateVirtualKey(params.slug, {

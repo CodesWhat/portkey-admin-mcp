@@ -31,8 +31,9 @@ jobs:
       contents: read
     outputs:
       tag: ${{ steps.resolve.outputs.tag }}
-      ci_ref: ${{ steps.resolve.outputs.ci_ref }}
-      manifest_ref: ${{ steps.resolve.outputs.manifest_ref }}
+      tag_commit: ${{ steps.resolve.outputs.tag_commit }}
+      manifest_commit: ${{ steps.resolve.outputs.manifest_commit }}
+      ci_commit: ${{ steps.resolve.outputs.ci_commit }}
     steps:
       - name: Checkout release metadata
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -59,28 +60,34 @@ jobs:
           fi
 
           git fetch origin main --tags --force
-          tag_commit="$(git rev-list -n 1 "refs/tags/$tag")"
+          tag_commit="$(git rev-list -n 1 "refs/tags/$tag" || true)"
           if [[ -z "$tag_commit" ]] || ! git merge-base --is-ancestor "$tag_commit" origin/main; then
             echo "Release tag $tag is not reachable from protected main" >&2
             exit 1
           fi
 
-          ci_ref="$tag"
+          ci_commit="$tag_commit"
           manifest_ref="$MANIFEST_REF"
+          manifest_commit=""
           if [[ -n "$manifest_ref" ]]; then
+            if [[ ! "$manifest_ref" =~ ^[0-9a-fA-F]{40}$ ]] && ! git check-ref-format --branch "$manifest_ref" >/dev/null; then
+              echo "Invalid manifest ref: $manifest_ref" >&2
+              exit 1
+            fi
             git fetch origin "$manifest_ref"
             manifest_commit="$(git rev-parse 'FETCH_HEAD^{commit}')"
             if ! git merge-base --is-ancestor "$manifest_commit" origin/main; then
               echo "Manifest ref is not reachable from protected main: $manifest_ref" >&2
               exit 1
             fi
-            ci_ref="$manifest_ref"
+            ci_commit="$manifest_commit"
           fi
 
           {
             echo "tag=$tag"
-            echo "ci_ref=$ci_ref"
-            echo "manifest_ref=$manifest_ref"
+            echo "tag_commit=$tag_commit"
+            echo "manifest_commit=$manifest_commit"
+            echo "ci_commit=$ci_commit"
           } >>"$GITHUB_OUTPUT"
 
   ci:
@@ -89,7 +96,7 @@ jobs:
     # tag never produces a GitHub Release or an MCP Registry entry.
     uses: ./.github/workflows/ci.yml
     with:
-      ref: ${{ needs.release-ref.outputs.ci_ref }}
+      ref: ${{ needs.release-ref.outputs.ci_commit }}
     permissions:
       contents: read
       # ci.yml's dependency-review job declares this; it skips on release runs
@@ -120,24 +127,22 @@ jobs:
       - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
-          EVENT_NAME: ${{ github.event_name }}
-          INPUT_TAG: ${{ github.event.inputs.tag }}
+          RELEASE_TAG: ${{ needs.release-ref.outputs.tag }}
+          TAG_COMMIT: ${{ needs.release-ref.outputs.tag_commit }}
         run: |
           set -euo pipefail
 
-          tag="${GITHUB_REF_NAME}"
-          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
-            tag="$INPUT_TAG"
-          fi
-
-          if [[ ! "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
-            echo "Refusing to publish non-semver tag: $tag" >&2
+          current_tag_commit="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${RELEASE_TAG}" --jq .sha)"
+          if [[ "$current_tag_commit" != "$TAG_COMMIT" ]]; then
+            echo "Release tag moved after validation: $RELEASE_TAG" >&2
             exit 1
           fi
 
-          git fetch --tags --force
-          if ! git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
-            echo "Tag does not exist on the remote: $tag" >&2
+          tag="$RELEASE_TAG"
+          git fetch origin "refs/tags/${tag}:refs/tags/${tag}" --force
+          fetched_tag_commit="$(git rev-list -n 1 "refs/tags/$tag")"
+          if [[ "$fetched_tag_commit" != "$TAG_COMMIT" ]]; then
+            echo "Fetched release tag does not match the validated commit: $tag" >&2
             exit 1
           fi
 
@@ -168,6 +173,12 @@ jobs:
             args+=(--prerelease --latest=false)
           else
             args+=(--latest)
+          fi
+
+          current_tag_commit="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${RELEASE_TAG}" --jq .sha)"
+          if [[ "$current_tag_commit" != "$TAG_COMMIT" ]]; then
+            echo "Release tag moved before GitHub Release publication: $RELEASE_TAG" >&2
+            exit 1
           fi
 
           gh release create "$tag" "${args[@]}"
@@ -242,12 +253,12 @@ jobs:
         if: steps.publication.outputs.already_published != 'true'
         env:
           RELEASE_TAG: ${{ steps.tag.outputs.tag }}
+          TAG_COMMIT: ${{ needs.release-ref.outputs.tag_commit }}
           VERSION: ${{ steps.tag.outputs.version }}
         run: |
           set -euo pipefail
 
-          git fetch origin "refs/tags/${RELEASE_TAG}:refs/tags/${RELEASE_TAG}" --force
-          tag_commit="$(git rev-parse "refs/tags/${RELEASE_TAG}^{commit}")"
+          tag_commit="$TAG_COMMIT"
           trusted_commit="$(git rev-parse "${GITHUB_SHA}^{commit}")"
           if [[ "$tag_commit" != "$trusted_commit" ]]; then
             echo "Refusing to build $RELEASE_TAG because it does not match the trusted workflow commit $GITHUB_SHA" >&2
@@ -369,10 +380,19 @@ jobs:
       - name: Publish to npm
         if: needs.package-npm.outputs.already_published != 'true'
         env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.release-ref.outputs.tag }}
+          TAG_COMMIT: ${{ needs.release-ref.outputs.tag_commit }}
           VERSION: ${{ steps.tag.outputs.version }}
           TARBALL: ${{ steps.artifact.outputs.tarball }}
         run: |
           set -euo pipefail
+
+          current_tag_commit="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${RELEASE_TAG}" --jq .sha)"
+          if [[ "$current_tag_commit" != "$TAG_COMMIT" ]]; then
+            echo "Release tag moved after validation: $RELEASE_TAG" >&2
+            exit 1
+          fi
 
           if npm view "portkey-admin-mcp@${VERSION}" version >/dev/null 2>&1; then
             echo "portkey-admin-mcp@${VERSION} is already on npm; nothing to do."
@@ -409,7 +429,7 @@ jobs:
         with:
           # A manifest-only correction can republish an existing version without
           # moving its immutable release tag or republishing its npm artifact.
-          ref: ${{ needs.release-ref.outputs.manifest_ref || needs.release-ref.outputs.tag }}
+          ref: ${{ needs.release-ref.outputs.manifest_commit || needs.release-ref.outputs.tag_commit }}
           persist-credentials: false
 
       - name: Setup Node.js
@@ -486,4 +506,17 @@ jobs:
         run: ./mcp-publisher login github-oidc
 
       - name: Publish to the MCP Registry
-        run: ./mcp-publisher publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.release-ref.outputs.tag }}
+          TAG_COMMIT: ${{ needs.release-ref.outputs.tag_commit }}
+        run: |
+          set -euo pipefail
+
+          current_tag_commit="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${RELEASE_TAG}" --jq .sha)"
+          if [[ "$current_tag_commit" != "$TAG_COMMIT" ]]; then
+            echo "Release tag moved after validation: $RELEASE_TAG" >&2
+            exit 1
+          fi
+
+          ./mcp-publisher publish

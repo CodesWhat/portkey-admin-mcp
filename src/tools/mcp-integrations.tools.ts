@@ -40,7 +40,7 @@ const MCP_INTEGRATIONS_TOOL_SCHEMAS = {
 			.positive()
 			.max(1000)
 			.optional()
-			.describe("Number of results per page (max 100)"),
+			.describe("Number of results per page (max 1000)"),
 		workspace_id: z.string().optional().describe("Filter by workspace ID"),
 		organisation_id: z
 			.string()
@@ -179,6 +179,8 @@ const createMcpIntegrationSchema = z
 			value.auth_type === "headers" &&
 			(!value.custom_headers ||
 				Object.keys(value.custom_headers).length === 0) &&
+			(!isRecord(value.configurations?.custom_headers) ||
+				Object.keys(value.configurations.custom_headers).length === 0) &&
 			!value.secret_mappings?.some(
 				(mapping) => mapping.target_field === "configurations.custom_headers",
 			)

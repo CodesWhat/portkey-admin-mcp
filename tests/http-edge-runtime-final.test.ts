@@ -26,6 +26,8 @@ const MANAGED_ENV_KEYS = [
 	"MCP_AUTH_MODE",
 	"MCP_AUTH_TOKEN",
 	"MCP_EVENT_STORE",
+	"MCP_EVENT_STORE_MAX_BYTES",
+	"MCP_EVENT_STORE_MAX_EVENTS",
 	"MCP_HOST",
 	"MCP_MAX_SESSIONS",
 	"MCP_PUBLIC_BASE_URL",
@@ -40,6 +42,12 @@ const MANAGED_ENV_KEYS = [
 	"PORTKEY_API_KEY",
 	"RATE_LIMIT_ENABLED",
 ] as const;
+
+it("resets event-store limits between runtime tests", () => {
+	const managedKeys = new Set<string>(MANAGED_ENV_KEYS);
+	assert.equal(managedKeys.has("MCP_EVENT_STORE_MAX_EVENTS"), true);
+	assert.equal(managedKeys.has("MCP_EVENT_STORE_MAX_BYTES"), true);
+});
 
 const originalModuleEnvironment = new Map(
 	MANAGED_ENV_KEYS.map((key) => [key, process.env[key]]),

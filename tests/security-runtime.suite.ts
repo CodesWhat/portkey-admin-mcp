@@ -87,6 +87,64 @@ describe("supply-chain configuration", () => {
 		assert.match(packageJob, /tag_commit.*trusted_commit/);
 	});
 
+	it("pins validated release refs to commits and rechecks the tag before publishing", () => {
+		const workflow = readFileSync(
+			new URL("../.github/workflows/release.yml", import.meta.url),
+			"utf8",
+		);
+		const gateJob = workflow.match(
+			/\n {2}release-ref:[\s\S]*?(?=\n {2}ci:)/,
+		)?.[0];
+		const ciJob = workflow.match(
+			/\n {2}ci:[\s\S]*?(?=\n {2}github-release:)/,
+		)?.[0];
+		const githubJob = workflow.match(
+			/\n {2}github-release:[\s\S]*?(?=\n {2}package-npm:)/,
+		)?.[0];
+		const publishJob = workflow.match(
+			/\n {2}publish-npm:[\s\S]*?(?=\n {2}publish-registry:)/,
+		)?.[0];
+		const registryJob = workflow.match(/\n {2}publish-registry:[\s\S]*$/)?.[0];
+
+		assert.ok(gateJob);
+		for (const output of ["tag_commit", "manifest_commit", "ci_commit"]) {
+			assert.match(
+				gateJob,
+				new RegExp(
+					`${output}: \\$\\{\\{ steps\\.resolve\\.outputs\\.${output} \\}\\}`,
+				),
+			);
+			assert.match(gateJob, new RegExp(`echo "${output}=\\$${output}"`));
+		}
+
+		assert.match(
+			ciJob ?? "",
+			/ref: \$\{\{ needs\.release-ref\.outputs\.ci_commit \}\}/,
+		);
+		assert.match(
+			registryJob ?? "",
+			/ref: \$\{\{ needs\.release-ref\.outputs\.manifest_commit \|\| needs\.release-ref\.outputs\.tag_commit \}\}/,
+		);
+		assert.doesNotMatch(
+			registryJob ?? "",
+			/ref: \$\{\{ needs\.release-ref\.outputs\.(?:manifest_ref|tag) /,
+		);
+
+		for (const [name, job] of [
+			["github-release", githubJob],
+			["publish-npm", publishJob],
+			["publish-registry", registryJob],
+		] as const) {
+			assert.ok(job, `expected ${name} job`);
+			assert.match(
+				job,
+				/TAG_COMMIT: \$\{\{ needs\.release-ref\.outputs\.tag_commit \}\}/,
+			);
+			assert.match(job, /current_tag_commit/);
+			assert.match(job, /current_tag_commit.*TAG_COMMIT/);
+		}
+	});
+
 	it("skips package execution when a backfilled version already exists", () => {
 		const workflow = readFileSync(
 			new URL("../.github/workflows/release.yml", import.meta.url),

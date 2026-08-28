@@ -692,6 +692,45 @@ describe("create_mcp_integration tool payload assembly", () => {
 		});
 	});
 
+	it("accepts configurations.custom_headers as the headers-auth source", async () => {
+		let capturedPayload: unknown;
+		const callbacks = registerToolCallbacks((server) => {
+			registerMcpIntegrationsTools(
+				server as never,
+				{
+					mcpIntegrations: {
+						createMcpIntegration: async (payload: unknown) => {
+							capturedPayload = payload;
+							return { id: "int-1", slug: "configured-headers" };
+						},
+					},
+				} as never,
+			);
+		});
+		const createCallback = callbacks.get("create_mcp_integration");
+		assert.ok(createCallback);
+
+		await createCallback({
+			name: "Configured Headers",
+			url: "https://mcp.example.com/v1",
+			auth_type: "headers",
+			transport: "http",
+			configurations: {
+				custom_headers: { Authorization: "Bearer secret" },
+			},
+		});
+
+		assert.deepEqual(capturedPayload, {
+			name: "Configured Headers",
+			url: "https://mcp.example.com/v1",
+			auth_type: "headers",
+			transport: "http",
+			configurations: {
+				custom_headers: { Authorization: "Bearer secret" },
+			},
+		});
+	});
+
 	it("returns an isError result when auth_type is headers but custom_headers are missing", async () => {
 		const callbacks = registerToolCallbacks((server) => {
 			registerMcpIntegrationsTools(server as never, {} as never);

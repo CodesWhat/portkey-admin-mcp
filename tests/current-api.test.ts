@@ -14,6 +14,7 @@ import { McpServersService } from "../src/services/mcp-servers.service.js";
 import { WorkspacesService } from "../src/services/workspaces.service.js";
 import { registerGuardrailsTools } from "../src/tools/guardrails.tools.js";
 import { registerIntegrationsTools } from "../src/tools/integrations.tools.js";
+import { registerKeysTools } from "../src/tools/keys.tools.js";
 import { registerLoggingTools } from "../src/tools/logging.tools.js";
 import { registerMcpIntegrationsTools } from "../src/tools/mcp-integrations.tools.js";
 import { registerMcpServersTools } from "../src/tools/mcp-servers.tools.js";
@@ -1257,6 +1258,64 @@ describe("current Portkey integration schemas and model pricing", () => {
 				`${name} should reject duplicate target_field values`,
 			);
 		}
+	});
+
+	it("enforces current timestamp and MCP integration pagination contracts", () => {
+		const keyDefinitions = captureToolDefinitions((server) => {
+			registerKeysTools(server as never, {} as never);
+		});
+		const workspaceDefinitions = captureToolDefinitions((server) => {
+			registerWorkspacesTools(server as never, {} as never);
+		});
+		const mcpDefinitions = captureToolDefinitions((server) => {
+			registerMcpIntegrationsTools(server as never, {} as never);
+		});
+
+		assert.equal(
+			safeParseToolInput(keyDefinitions.get("create_virtual_key"), {
+				name: "Key",
+				provider: "openai",
+				key: "secret",
+				expires_at: "not-a-timestamp",
+			}).success,
+			false,
+		);
+		assert.equal(
+			safeParseToolInput(keyDefinitions.get("create_api_key"), {
+				type: "organisation",
+				sub_type: "service",
+				name: "Key",
+				scopes: [],
+				rotation_policy: {
+					next_rotation_at: "2027-01-01T00:00:00+02:00",
+				},
+			}).success,
+			true,
+		);
+		assert.equal(
+			safeParseToolInput(keyDefinitions.get("update_api_key"), {
+				id: "550e8400-e29b-41d4-a716-446655440000",
+				expires_at: "tomorrow",
+			}).success,
+			false,
+		);
+		assert.equal(
+			safeParseToolInput(workspaceDefinitions.get("update_workspace"), {
+				workspace_id: "workspace-1",
+				usage_limits: [{ next_usage_reset_at: "later" }],
+			}).success,
+			false,
+		);
+
+		const listInput = mcpDefinitions.get("list_mcp_integrations")
+			?.inputSchema as Record<string, z.ZodType>;
+		assert.match(listInput.page_size?.description ?? "", /max 1000/);
+		assert.equal(
+			safeParseToolInput(mcpDefinitions.get("list_mcp_integrations"), {
+				page_size: 1000,
+			}).success,
+			true,
+		);
 	});
 });
 

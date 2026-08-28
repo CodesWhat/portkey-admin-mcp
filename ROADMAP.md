@@ -48,15 +48,23 @@ README, endpoint catalog, domain counts, and Enterprise-gated inventory together
 - Manual release backfills never execute dependencies from a dispatch-supplied
   ref. New archives build only from GitHub's selected tag commit, existing npm
   versions skip packaging, and hosted Qlty uses the repository's Biome version.
+- Validated release and manifest refs are pinned to immutable commit SHAs. Every
+  public publisher rechecks the release tag before changing external state.
 - Workspace-member, prompt migration/promotion, config update/version, user
   pagination, analytics-bound, prompt-variable, and integration-delete contracts
   now match current behavior.
+- Key and workspace timestamps use strict ISO 8601 validation, cross-field errors
+  identify every involved input, and MCP integration header/pagination contracts
+  match their accepted payloads.
 - Readiness checks coalesce and back off; replay polling backs off; the in-memory
   replay store has event/byte caps and indexed eviction.
 - Private IPv6 coverage is complete, trust-all proxy mode is rejected, stateful
   transport failures return JSON-RPC, and the duplicate HTTP limiter is gone.
 - Every confirmed review finding has focused regression coverage. The ignored
   `.research-findings.md` owns the detailed 21-item checklist and verification state.
+- HTTP docs state that every authenticated principal shares the configured
+  Portkey credential and that separate trust levels need separately scoped
+  deployments and tool-domain allowlists.
 
 ### Current Portkey API additions
 

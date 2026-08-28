@@ -45,8 +45,8 @@ test("an existing release can republish a corrected MCP Registry manifest", () =
 	);
 
 	assert.match(workflowSource, /manifest_ref:/);
-	assert.match(workflowSource, /needs\.release-ref\.outputs\.manifest_ref/);
-	assert.match(workflowSource, /needs\.release-ref\.outputs\.tag/);
+	assert.match(workflowSource, /needs\.release-ref\.outputs\.manifest_commit/);
+	assert.match(workflowSource, /needs\.release-ref\.outputs\.tag_commit/);
 	assert.match(
 		workflowSource,
 		/git merge-base --is-ancestor "\$manifest_commit" origin\/main/,
@@ -159,6 +159,17 @@ test("the release guide covers every published catalog", () => {
 			new RegExp(`^#{2,3} .*${catalog}`, "im"),
 			`RELEASE.md needs a ${catalog} section`,
 		);
+	}
+});
+
+test("HTTP deployment docs disclose the shared Portkey credential boundary", () => {
+	const readme = readFileSync(`${root}README.md`, "utf8");
+	const architecture = readFileSync(`${root}docs/ARCHITECTURE.md`, "utf8");
+
+	for (const source of [readme, architecture]) {
+		assert.match(source, /all authenticated principals/i);
+		assert.match(source, /PORTKEY_API_KEY/);
+		assert.match(source, /separate (?:instance|deployment)/i);
 	}
 });
 

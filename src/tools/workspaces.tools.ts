@@ -65,8 +65,8 @@ const workspaceUsageLimitSchema = z.object({
 		.nullable()
 		.optional()
 		.describe("Custom reset cadence in days, from 1 through 365"),
-	next_usage_reset_at: z
-		.string()
+	next_usage_reset_at: z.iso
+		.datetime({ offset: true })
 		.nullable()
 		.optional()
 		.describe("Next reset timestamp in ISO 8601 format"),

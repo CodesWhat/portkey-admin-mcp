@@ -18,6 +18,7 @@
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { z } from "zod";
 import { registerAllTools } from "../src/tools/index.js";
 import { registerKeysTools } from "../src/tools/keys.tools.js";
 import { registerToolCallbacks } from "./helpers/tool-registry.js";
@@ -56,6 +57,16 @@ describe("list_virtual_keys", () => {
 												type: "requests" as const,
 												unit: "rpm" as const,
 												value: 60,
+											},
+											{
+												type: "tokens" as const,
+												unit: "rps" as const,
+												value: 20,
+											},
+											{
+												type: "tokens" as const,
+												unit: "rpw" as const,
+												value: 500,
 											},
 										],
 										reset_usage: null,
@@ -101,7 +112,11 @@ describe("list_virtual_keys", () => {
 					alert_threshold: 80,
 					periodic_reset: "monthly",
 				},
-				rate_limits: [{ type: "requests", unit: "rpm", value: 60 }],
+				rate_limits: [
+					{ type: "requests", unit: "rpm", value: 60 },
+					{ type: "tokens", unit: "rps", value: 20 },
+					{ type: "tokens", unit: "rpw", value: 500 },
+				],
 				reset_usage: null,
 				created_at: "2026-01-01T00:00:00.000Z",
 				model_config: { foo: "bar" },
@@ -257,6 +272,24 @@ describe("create_virtual_key", () => {
 		assert.equal(payload.usage_limits, undefined);
 		assert.equal(payload.rate_limits, undefined);
 	});
+
+	it("reports the key and secret_mappings alternative at the input root", async () => {
+		const callbacks = registerToolCallbacks((server) => {
+			registerKeysTools(server as never, {} as never);
+		});
+		const cb = callbacks.get("create_virtual_key");
+		assert.ok(cb);
+
+		await assert.rejects(
+			() => cb({ name: "Missing credential", provider: "openai" }),
+			(error: unknown) => {
+				assert.ok(error instanceof z.ZodError);
+				assert.deepEqual(error.issues[0]?.path, []);
+				assert.match(error.issues[0]?.message ?? "", /key.*secret_mappings/);
+				return true;
+			},
+		);
+	});
 });
 
 // ---------------------------------------------------------------------------
@@ -315,6 +348,24 @@ describe("get_virtual_key", () => {
 // ---------------------------------------------------------------------------
 
 describe("update_virtual_key", () => {
+	it("describes the success acknowledgement returned by the tool", () => {
+		let description = "";
+		registerKeysTools(
+			{
+				tool(name: string, ...rest: unknown[]) {
+					if (name === "update_virtual_key") {
+						description = String(rest[0]);
+					}
+					return {} as never;
+				},
+			} as never,
+			{} as never,
+		);
+
+		assert.match(description, /Returns success/);
+		assert.doesNotMatch(description, /updated name, slug, and status/);
+	});
+
 	it("sends slug-addressed update payload and returns the updated summary", async () => {
 		let capturedSlug: string | undefined;
 		let capturedPayload: unknown;
@@ -420,6 +471,37 @@ describe("delete_virtual_key", () => {
 // ---------------------------------------------------------------------------
 
 describe("create_api_key", () => {
+	it("reports mutually exclusive rotation fields at the rotation policy root", async () => {
+		const callbacks = registerToolCallbacks((server) => {
+			registerKeysTools(server as never, {} as never);
+		});
+		const cb = callbacks.get("create_api_key");
+		assert.ok(cb);
+
+		await assert.rejects(
+			() =>
+				cb({
+					type: "organisation",
+					sub_type: "service",
+					name: "Rotating key",
+					scopes: [],
+					rotation_policy: {
+						rotation_period: "weekly",
+						next_rotation_at: "2027-01-01T00:00:00Z",
+					},
+				}),
+			(error: unknown) => {
+				assert.ok(error instanceof z.ZodError);
+				assert.deepEqual(error.issues[0]?.path, ["rotation_policy"]);
+				assert.match(
+					error.issues[0]?.message ?? "",
+					/rotation_period.*next_rotation_at|next_rotation_at.*rotation_period/,
+				);
+				return true;
+			},
+		);
+	});
+
 	it("sends assembled defaults and limits, keyed by type/sub_type", async () => {
 		let capturedArgs: unknown[] = [];
 		const callbacks = registerToolCallbacks((server) => {

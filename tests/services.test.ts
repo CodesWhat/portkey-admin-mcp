@@ -805,6 +805,46 @@ describe("deep-review service regressions", () => {
 			"vk-production",
 		);
 	});
+
+	it("falls back to the source virtual key for an empty promotion override", async () => {
+		enqueue({
+			id: "source-1",
+			name: "support-dev",
+			slug: "support-dev",
+			collection_id: "collection-1",
+			workspace_id: "workspace-1",
+			created_at: "2026-08-01T00:00:00Z",
+			last_updated_at: "2026-08-02T00:00:00Z",
+			prompt_version_id: "source-version",
+			prompt_version: 4,
+			string: "Hello",
+			parameters: {},
+			virtual_key: "vk-staging",
+			template_metadata: { app: "support", env: "dev" },
+		});
+		enqueue({
+			object: "list",
+			total: 1,
+			data: [{ id: "target-1", name: "support-prod", slug: "support-prod" }],
+		});
+		enqueue({
+			id: "target-1",
+			slug: "support-prod",
+			prompt_version_id: "target-v2",
+		});
+
+		await new PromptsService("test-key", BASE_URL).promotePrompt({
+			source_prompt_id: "source-1",
+			target_collection_id: "collection-2",
+			target_env: "prod",
+			virtual_key: "",
+		});
+
+		assert.equal(
+			(capturedBody(2) as Record<string, unknown>).virtual_key,
+			"vk-staging",
+		);
+	});
 });
 
 describe("UsersService request contracts", () => {

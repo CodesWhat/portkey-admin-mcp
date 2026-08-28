@@ -203,6 +203,12 @@ The following tools require an **organisation-level scope that is only available
 
 The server supports Streamable HTTP for remote access:
 
+HTTP authentication controls access to the server, but it does not impersonate
+separate Portkey tenants. All authenticated principals use the same configured
+`PORTKEY_API_KEY` and can invoke any enabled tool and scope that credential
+grants. Run separate instances or deployments with separately scoped Portkey
+credentials and `PORTKEY_TOOL_DOMAINS` allowlists for different trust levels.
+
 ```bash
 PORTKEY_API_KEY=your_key \
 MCP_HOST=127.0.0.1 \
