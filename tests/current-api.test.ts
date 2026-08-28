@@ -7,6 +7,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { z } from "zod";
 import { BaseService } from "../src/services/base.service.js";
+import { DeploymentsService } from "../src/services/deployments.service.js";
 import { GuardrailsService } from "../src/services/guardrails.service.js";
 import { IntegrationsService } from "../src/services/integrations.service.js";
 import { LoggingService } from "../src/services/logging.service.js";
@@ -31,46 +32,57 @@ type CapturedRequest = {
 async function captureServiceRequest(
 	invoke: () => Promise<unknown>,
 ): Promise<CapturedRequest> {
+	// The v2 helpers are patched alongside their v1 counterparts so a service
+	// that moves to the /v2 base stays captured here. Without them the real
+	// fetch runs and the test hits the network.
 	const basePrototype = BaseService.prototype as unknown as {
 		get: (path: string, params?: object) => Promise<unknown>;
 		post: (path: string, body?: unknown) => Promise<unknown>;
 		put: (path: string, body?: unknown) => Promise<unknown>;
 		delete: (path: string, params?: object) => Promise<unknown>;
+		getV2: (path: string, params?: object) => Promise<unknown>;
+		postV2: (path: string, body?: unknown) => Promise<unknown>;
+		putV2: (path: string, body?: unknown) => Promise<unknown>;
+		deleteV2: (path: string, params?: object) => Promise<unknown>;
 	};
 	const originalMethods = {
 		get: basePrototype.get,
 		post: basePrototype.post,
 		put: basePrototype.put,
 		delete: basePrototype.delete,
+		getV2: basePrototype.getV2,
+		postV2: basePrototype.postV2,
+		putV2: basePrototype.putV2,
+		deleteV2: basePrototype.deleteV2,
 	};
 	let captured: CapturedRequest | undefined;
 
-	basePrototype.get = async (path: string, params?: object) => {
-		captured = { method: "GET", path, params };
-		return {};
-	};
-	basePrototype.post = async (path: string, body?: unknown) => {
-		captured = { method: "POST", path, body };
-		return {};
-	};
-	basePrototype.put = async (path: string, body?: unknown) => {
-		captured = { method: "PUT", path, body };
-		return {};
-	};
-	basePrototype.delete = async (path: string, params?: object) => {
-		captured = { method: "DELETE", path, params };
-		return {};
-	};
+	const captureRead =
+		(method: "GET" | "DELETE") => async (path: string, params?: object) => {
+			captured = { method, path, params };
+			return {};
+		};
+	const captureWrite =
+		(method: "POST" | "PUT") => async (path: string, body?: unknown) => {
+			captured = { method, path, body };
+			return {};
+		};
+
+	basePrototype.get = captureRead("GET");
+	basePrototype.getV2 = captureRead("GET");
+	basePrototype.delete = captureRead("DELETE");
+	basePrototype.deleteV2 = captureRead("DELETE");
+	basePrototype.post = captureWrite("POST");
+	basePrototype.postV2 = captureWrite("POST");
+	basePrototype.put = captureWrite("PUT");
+	basePrototype.putV2 = captureWrite("PUT");
 
 	try {
 		await invoke();
 		assert.ok(captured, "expected a service request to be captured");
 		return captured;
 	} finally {
-		basePrototype.get = originalMethods.get;
-		basePrototype.post = originalMethods.post;
-		basePrototype.put = originalMethods.put;
-		basePrototype.delete = originalMethods.delete;
+		Object.assign(basePrototype, originalMethods);
 	}
 }
 
@@ -927,6 +939,53 @@ describe("current Portkey integration schemas and model pricing", () => {
 				params: undefined,
 			},
 		);
+	});
+
+	it("routes deployments, organisation defaults, and SCIM groups to the v2 base", async () => {
+		const originalFetch = globalThis.fetch;
+		const urls: string[] = [];
+		globalThis.fetch = (async (input: string | URL | Request) => {
+			urls.push(String(input));
+			return new Response(JSON.stringify({}), {
+				status: 200,
+				headers: { "content-type": "application/json" },
+			});
+		}) as typeof globalThis.fetch;
+
+		try {
+			await new DeploymentsService("test-dummy-key").listDeployments();
+			await new GuardrailsService("test-dummy-key").getOrganisationDefaults();
+			await new WorkspacesService("test-dummy-key").listScimGroups();
+			assert.deepEqual(urls, [
+				"https://api.portkey.ai/v2/deployments",
+				"https://api.portkey.ai/v2/admin/organisation/defaults",
+				"https://api.portkey.ai/v2/scim/groups",
+			]);
+		} finally {
+			globalThis.fetch = originalFetch;
+		}
+	});
+
+	it("derives the v2 base from a self-hosted PORTKEY_BASE_URL", async () => {
+		const originalFetch = globalThis.fetch;
+		let requestUrl: string | undefined;
+		globalThis.fetch = (async (input: string | URL | Request) => {
+			requestUrl = String(input);
+			return new Response(JSON.stringify({}), {
+				status: 200,
+				headers: { "content-type": "application/json" },
+			});
+		}) as typeof globalThis.fetch;
+
+		try {
+			await new DeploymentsService(
+				"test-dummy-key",
+				"https://gateway.example.com/v1",
+			).listDeployments();
+			assert.equal(requestUrl, "https://gateway.example.com/v2/deployments");
+		} finally {
+			globalThis.fetch = originalFetch;
+		}
 	});
 
 	it("omits the Portkey API key from public model pricing requests", async () => {

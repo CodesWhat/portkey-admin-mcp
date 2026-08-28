@@ -95,13 +95,13 @@ export class DeploymentsService extends BaseService {
 	async listDeployments(
 		params?: ListDeploymentsParams,
 	): Promise<ListDeploymentsResponse> {
-		return this.get<ListDeploymentsResponse>("/deployments", params);
+		return this.getV2<ListDeploymentsResponse>("/deployments", params);
 	}
 
 	async registerDeployment(
 		data: RegisterDeploymentRequest,
 	): Promise<RegisterDeploymentResponse> {
-		return this.post<RegisterDeploymentResponse>("/deployments", data);
+		return this.postV2<RegisterDeploymentResponse>("/deployments", data);
 	}
 
 	async getDeployment(
@@ -109,7 +109,7 @@ export class DeploymentsService extends BaseService {
 		organisation_id?: string,
 	): Promise<DeploymentDetail> {
 		if (!id.trim()) throw new Error("Deployment ID is required");
-		return this.get<DeploymentDetail>(
+		return this.getV2<DeploymentDetail>(
 			`/deployments/${this.encodePathSegment(id)}`,
 			{ organisation_id },
 		);
@@ -120,7 +120,7 @@ export class DeploymentsService extends BaseService {
 		data: UpdateDeploymentRequest,
 	): Promise<Record<string, unknown>> {
 		if (!id.trim()) throw new Error("Deployment ID is required");
-		return this.put<Record<string, unknown>>(
+		return this.putV2<Record<string, unknown>>(
 			`/deployments/${this.encodePathSegment(id)}`,
 			data,
 		);
@@ -128,7 +128,7 @@ export class DeploymentsService extends BaseService {
 
 	async archiveDeployment(id: string): Promise<Record<string, unknown>> {
 		if (!id.trim()) throw new Error("Deployment ID is required");
-		const result = await this.delete<Record<string, unknown>>(
+		const result = await this.deleteV2<Record<string, unknown>>(
 			`/deployments/${this.encodePathSegment(id)}`,
 		);
 		return isNoContent(result) ? {} : result;

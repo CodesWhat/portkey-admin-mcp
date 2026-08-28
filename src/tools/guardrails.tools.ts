@@ -84,7 +84,7 @@ const GUARDRAILS_TOOL_SCHEMAS = {
 			.int()
 			.nonnegative()
 			.optional()
-			.describe("Page number for pagination"),
+			.describe("Zero-based page number; the first page is 0"),
 	},
 	getGuardrail: {
 		guardrail_id: z

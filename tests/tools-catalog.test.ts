@@ -70,6 +70,20 @@ async function captureServiceRequest(
 		return {};
 	};
 
+	// Alias the /v2 helpers onto the same capture functions so a service that
+	// moves to the /v2 base cannot fall through to a real network request.
+	const v2Prototype = basePrototype as unknown as Record<string, unknown>;
+	const originalV2Methods = {
+		getV2: v2Prototype.getV2,
+		postV2: v2Prototype.postV2,
+		putV2: v2Prototype.putV2,
+		deleteV2: v2Prototype.deleteV2,
+	};
+	v2Prototype.getV2 = basePrototype.get;
+	v2Prototype.postV2 = basePrototype.post;
+	v2Prototype.putV2 = basePrototype.put;
+	v2Prototype.deleteV2 = basePrototype.delete;
+
 	try {
 		await invoke();
 		assert.ok(captured, "expected a service request to be captured");
@@ -79,6 +93,7 @@ async function captureServiceRequest(
 		basePrototype.post = originalMethods.post;
 		basePrototype.put = originalMethods.put;
 		basePrototype.delete = originalMethods.delete;
+		Object.assign(v2Prototype, originalV2Methods);
 	}
 }
 

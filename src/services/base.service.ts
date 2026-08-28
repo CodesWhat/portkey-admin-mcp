@@ -11,6 +11,21 @@ const DEFAULT_BASE_URL = "https://api.portkey.ai/v1";
 const DEFAULT_PUBLIC_BASE_URL = "https://api.portkey.ai";
 
 /**
+ * Derive the `/v2` sibling of a configured `/v1` base URL.
+ *
+ * Portkey serves deployments, organisation defaults, and SCIM groups only
+ * under `/v2`; the `/v1` paths fall through to the gateway's generic
+ * "x-portkey-config or x-portkey-provider header is required" catch-all,
+ * which is indistinguishable from a nonexistent route. Swapping the version
+ * segment (rather than hardcoding `https://api.portkey.ai/v2`) keeps a
+ * self-hosted PORTKEY_BASE_URL working. A base URL that does not end in
+ * `/v1` is returned unchanged, since we cannot know how it versions.
+ */
+function toV2BaseUrl(baseUrl: string): string {
+	return baseUrl.replace(/\/v1$/, "/v2");
+}
+
+/**
  * Sentinel credential substituted by {@link getSharedPortkeyService} (see
  * src/services/index.ts) when PORTKEY_API_KEY is unset, so the shared
  * service can still complete `initialize`/`tools/list` without credentials.
@@ -197,6 +212,7 @@ export function isNoContent<T>(value: T | NoContent): value is NoContent {
 export class BaseService {
 	protected readonly apiKey: string;
 	protected readonly baseUrl: string;
+	protected readonly v2BaseUrl: string;
 	protected readonly timeout: number = 30000;
 
 	constructor(apiKeyOverride?: string, baseUrlOverride?: string) {
@@ -211,6 +227,7 @@ export class BaseService {
 			baseUrlOverride ?? process.env.PORTKEY_BASE_URL ?? DEFAULT_BASE_URL;
 		validateUrl(baseUrl);
 		this.baseUrl = baseUrl.replace(/\/+$/, "");
+		this.v2BaseUrl = toV2BaseUrl(this.baseUrl);
 	}
 
 	protected encodePathSegment(value: string): string {
@@ -364,9 +381,39 @@ export class BaseService {
 		);
 	}
 
+	/** Read a `/v2`-only admin endpoint. See {@link toV2BaseUrl}. */
+	protected async getV2<T>(path: string, params?: object): Promise<T> {
+		return this.rejectNoContent(
+			await this.executeRequest<T>("GET", path, {
+				params,
+				baseUrl: this.v2BaseUrl,
+			}),
+		);
+	}
+
 	protected async post<T>(path: string, body?: unknown): Promise<T> {
 		return this.rejectNoContent(
 			await this.executeRequest<T>("POST", path, { body }),
+		);
+	}
+
+	/** Write to a `/v2`-only admin endpoint. See {@link toV2BaseUrl}. */
+	protected async postV2<T>(path: string, body?: unknown): Promise<T> {
+		return this.rejectNoContent(
+			await this.executeRequest<T>("POST", path, {
+				body,
+				baseUrl: this.v2BaseUrl,
+			}),
+		);
+	}
+
+	/** Update a `/v2`-only admin endpoint. See {@link toV2BaseUrl}. */
+	protected async putV2<T>(path: string, body?: unknown): Promise<T> {
+		return this.rejectNoContent(
+			await this.executeRequest<T>("PUT", path, {
+				body,
+				baseUrl: this.v2BaseUrl,
+			}),
 		);
 	}
 
@@ -388,6 +435,18 @@ export class BaseService {
 		return this.executeRequest<T>("DELETE", path, {
 			params,
 			allowNoContent: true,
+		});
+	}
+
+	/** Delete on a `/v2`-only admin endpoint. See {@link toV2BaseUrl}. */
+	protected async deleteV2<T>(
+		path: string,
+		params?: object,
+	): Promise<T | NoContent> {
+		return this.executeRequest<T>("DELETE", path, {
+			params,
+			allowNoContent: true,
+			baseUrl: this.v2BaseUrl,
 		});
 	}
 }

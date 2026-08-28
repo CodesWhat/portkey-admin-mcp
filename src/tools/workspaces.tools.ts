@@ -119,7 +119,7 @@ const WORKSPACES_TOOL_SCHEMAS = {
 			.int()
 			.nonnegative()
 			.optional()
-			.describe("Page number to retrieve when results are paginated"),
+			.describe("Zero-based page number; the first page is 0"),
 		name: z.string().optional().describe("Case-sensitive name filter"),
 		exact_name: z.string().optional().describe("Exact workspace name filter"),
 		status: z

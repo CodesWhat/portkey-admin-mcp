@@ -153,6 +153,20 @@ async function captureServiceRequest(
 		return {};
 	};
 
+	// Alias the /v2 helpers onto the same capture functions so a service that
+	// moves to the /v2 base cannot fall through to a real network request.
+	const v2Prototype = basePrototype as unknown as Record<string, unknown>;
+	const originalV2Methods = {
+		getV2: v2Prototype.getV2,
+		postV2: v2Prototype.postV2,
+		putV2: v2Prototype.putV2,
+		deleteV2: v2Prototype.deleteV2,
+	};
+	v2Prototype.getV2 = basePrototype.get;
+	v2Prototype.postV2 = basePrototype.post;
+	v2Prototype.putV2 = basePrototype.put;
+	v2Prototype.deleteV2 = basePrototype.delete;
+
 	try {
 		await invoke();
 		assert.ok(captured, "expected a service request to be captured");
@@ -162,6 +176,7 @@ async function captureServiceRequest(
 		basePrototype.post = originalMethods.post;
 		basePrototype.put = originalMethods.put;
 		basePrototype.delete = originalMethods.delete;
+		Object.assign(v2Prototype, originalV2Methods);
 	}
 }
 
@@ -1801,8 +1816,11 @@ describe("Curated tool responses", () => {
 
 		assert.ok(listPromptsCallback, "expected list_prompts to be registered");
 
+		// Zero-based: page 1 with size 2 consumes slots 0-3 of 5, so a further
+		// page exists. Page 2 would consume 6 of 5 and must report has_more
+		// false, which is what the old 1-based arithmetic got wrong.
 		const result = (await listPromptsCallback({
-			current_page: 2,
+			current_page: 1,
 			page_size: 2,
 		})) as { content: Array<{ text: string }> };
 		const payload = JSON.parse(result.content[0]?.text || "{}") as {
@@ -1816,7 +1834,7 @@ describe("Curated tool responses", () => {
 		};
 
 		assert.equal(payload.total, 5);
-		assert.equal(payload.current_page, 2);
+		assert.equal(payload.current_page, 1);
 		assert.equal(payload.page_size, 2);
 		assert.equal(payload.returned_count, 2);
 		assert.equal(payload.has_more, true);
@@ -1843,6 +1861,22 @@ describe("Curated tool responses", () => {
 				last_updated_at: "2026-01-04T00:00:00.000Z",
 			},
 		]);
+
+		// Without current_page the API ignores page_size and returns every
+		// record, so advertising a next page invents one that does not exist.
+		const unpaged = (await listPromptsCallback({ page_size: 2 })) as {
+			content: Array<{ text: string }>;
+		};
+		const unpagedPayload = JSON.parse(unpaged.content[0]?.text || "{}") as {
+			current_page?: number;
+			has_more?: boolean;
+			next_offset?: number | null;
+			next_page?: number | null;
+		};
+		assert.equal(unpagedPayload.current_page, 0);
+		assert.equal(unpagedPayload.has_more, false);
+		assert.equal(unpagedPayload.next_offset, null);
+		assert.equal(unpagedPayload.next_page, null);
 	});
 
 	it("summarizes user lists instead of returning raw API list wrappers", async () => {

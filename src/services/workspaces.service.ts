@@ -222,7 +222,7 @@ export class WorkspacesService extends BaseService {
 	async listScimGroups(
 		params?: ListScimGroupsParams,
 	): Promise<ListScimGroupsResponse> {
-		return this.get<ListScimGroupsResponse>("/scim/groups", params);
+		return this.getV2<ListScimGroupsResponse>("/scim/groups", params);
 	}
 
 	async listWorkspaces(
