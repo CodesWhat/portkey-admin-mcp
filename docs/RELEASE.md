@@ -26,7 +26,9 @@ Everything after the merge is automatic:
 
 - **`Auto Tag Release`** (`auto-tag.yml`) fires when `package.json` changes on
   `main`. If the version has no existing tag and `server.json` agrees, it
-  creates and pushes `vX.Y.Z` and dispatches the `Release` workflow.
+  creates and pushes `vX.Y.Z`, then dispatches the `Release` workflow. Tag
+  creation and workflow dispatch use separate jobs, so no job can both write
+  repository contents and start another workflow.
 - **`Release`** (`release.yml`) re-runs the full CI suite against the tagged
   commit, pins every validated release or manifest ref to its resolved commit
   SHA, requires the workflow's selected ref to resolve to the requested tag

@@ -39,6 +39,44 @@ describe("supply-chain configuration", () => {
 		);
 	});
 
+	it("verifies the actionlint archive against the upstream release digest", () => {
+		const workflow = readFileSync(
+			new URL("../.github/workflows/ci.yml", import.meta.url),
+			"utf8",
+		);
+		const actionlintJob = workflow.match(
+			/\n {2}actionlint:[\s\S]*?(?=\n {2}dependency-review:)/,
+		)?.[0];
+
+		assert.ok(actionlintJob, "expected an actionlint job");
+		assert.match(
+			actionlintJob,
+			/ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8/,
+		);
+		assert.match(actionlintJob, /sha256sum --check --strict/);
+		assert.match(actionlintJob, /tar -xzf "\$archive"/);
+		assert.doesNotMatch(actionlintJob, /download-actionlint\.bash/);
+	});
+
+	it("isolates automatic tag creation from release dispatch permissions", () => {
+		const workflow = readFileSync(
+			new URL("../.github/workflows/auto-tag.yml", import.meta.url),
+			"utf8",
+		);
+		const workflowHeader = workflow.split("\njobs:")[0] ?? "";
+		const tagJob = workflow.match(/\n {2}tag:[\s\S]*?(?=\n {2}dispatch:)/)?.[0];
+		const dispatchJob = workflow.match(/\n {2}dispatch:[\s\S]*$/)?.[0];
+
+		assert.match(workflowHeader, /permissions: \{\}/);
+		assert.ok(tagJob, "expected an isolated tag job");
+		assert.match(tagJob, /permissions:\s+contents: write/);
+		assert.doesNotMatch(tagJob, /actions: write/);
+		assert.ok(dispatchJob, "expected an isolated dispatch job");
+		assert.match(dispatchJob, /needs: tag/);
+		assert.match(dispatchJob, /permissions:\s+actions: write/);
+		assert.doesNotMatch(dispatchJob, /contents: write/);
+	});
+
 	it("keeps dependency execution out of the OIDC npm publishing job", () => {
 		const workflow = readFileSync(
 			new URL("../.github/workflows/release.yml", import.meta.url),
