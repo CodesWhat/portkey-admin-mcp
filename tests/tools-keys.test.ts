@@ -618,6 +618,43 @@ describe("create_api_key", () => {
 		assert.equal(payload.defaults, undefined);
 	});
 
+	it("preserves an explicit null rate-limit value over the legacy RPM input", async () => {
+		let capturedPayload: unknown;
+		const callbacks = registerToolCallbacks((server) => {
+			registerKeysTools(
+				server as never,
+				{
+					keys: {
+						createApiKey: async (
+							_type: unknown,
+							_subType: unknown,
+							payload: unknown,
+						) => {
+							capturedPayload = payload;
+							return { id: "key_3", key: "secret" };
+						},
+					},
+				} as never,
+			);
+		});
+
+		const cb = callbacks.get("create_api_key");
+		assert.ok(cb);
+		await cb({
+			type: "organisation",
+			sub_type: "service",
+			name: "No limits",
+			scopes: [],
+			rate_limits: null,
+			rate_limit_rpm: 60,
+		});
+
+		assert.equal(
+			(capturedPayload as { rate_limits?: unknown }).rate_limits,
+			null,
+		);
+	});
+
 	it("rejects a workspace-type key without workspace_id", async () => {
 		const callbacks = registerToolCallbacks((server) => {
 			registerKeysTools(
@@ -995,5 +1032,35 @@ describe("update_api_key", () => {
 
 		const payload = capturedPayload as { defaults?: unknown };
 		assert.equal(payload.defaults, undefined);
+	});
+
+	it("preserves an explicit null rate-limit clear over the legacy RPM input", async () => {
+		let capturedPayload: unknown;
+		const callbacks = registerToolCallbacks((server) => {
+			registerKeysTools(
+				server as never,
+				{
+					keys: {
+						updateApiKey: async (_id: string, payload: unknown) => {
+							capturedPayload = payload;
+							return { success: true };
+						},
+					},
+				} as never,
+			);
+		});
+
+		const cb = callbacks.get("update_api_key");
+		assert.ok(cb);
+		await cb({
+			id: "550e8400-e29b-41d4-a716-446655440000",
+			rate_limits: null,
+			rate_limit_rpm: 60,
+		});
+
+		assert.equal(
+			(capturedPayload as { rate_limits?: unknown }).rate_limits,
+			null,
+		);
 	});
 });

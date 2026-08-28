@@ -61,7 +61,7 @@ const MCP_INTEGRATIONS_TOOL_SCHEMAS = {
 			.string()
 			.min(1)
 			.describe(
-				"Authentication type: 'none', 'headers' (custom headers), or 'oauth_auto' (OAuth)",
+				"Authentication type. Current examples are 'none', 'headers' (custom headers), and 'oauth_auto' (OAuth); Portkey may accept additional values.",
 			),
 		transport: z
 			.enum(["http", "sse"])
@@ -86,7 +86,7 @@ const MCP_INTEGRATIONS_TOOL_SCHEMAS = {
 			.record(z.string(), z.unknown())
 			.optional()
 			.describe(
-				"Additional documented or forward-compatible configuration fields",
+				"Additional documented or forward-compatible configuration fields. For headers auth, configurations.custom_headers is a string-to-string header map.",
 			),
 		workspace_id: z
 			.string()
@@ -108,7 +108,13 @@ const MCP_INTEGRATIONS_TOOL_SCHEMAS = {
 		name: z.string().optional().describe("New display name"),
 		description: z.string().optional().describe("New description"),
 		url: z.string().optional().describe("New URL endpoint"),
-		auth_type: z.string().min(1).optional().describe("New authentication type"),
+		auth_type: z
+			.string()
+			.min(1)
+			.optional()
+			.describe(
+				"New authentication type. Current examples are 'none', 'headers' (custom headers), and 'oauth_auto' (OAuth); Portkey may accept additional values.",
+			),
 		transport: z
 			.enum(["http", "sse"])
 			.optional()
@@ -175,12 +181,13 @@ const MCP_INTEGRATIONS_TOOL_SCHEMAS = {
 const createMcpIntegrationSchema = z
 	.object(MCP_INTEGRATIONS_TOOL_SCHEMAS.createMcpIntegration)
 	.superRefine((value, ctx) => {
+		const configuredHeaders = value.configurations?.custom_headers;
 		if (
 			value.auth_type === "headers" &&
 			(!value.custom_headers ||
 				Object.keys(value.custom_headers).length === 0) &&
-			(!isRecord(value.configurations?.custom_headers) ||
-				Object.keys(value.configurations.custom_headers).length === 0) &&
+			(!isStringRecord(configuredHeaders) ||
+				Object.keys(configuredHeaders).length === 0) &&
 			!value.secret_mappings?.some(
 				(mapping) => mapping.target_field === "configurations.custom_headers",
 			)
@@ -194,7 +201,14 @@ const createMcpIntegrationSchema = z
 	});
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-	return typeof value === "object" && value !== null;
+	return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isStringRecord(value: unknown): value is Record<string, string> {
+	return (
+		isRecord(value) &&
+		Object.values(value).every((item) => typeof item === "string")
+	);
 }
 
 function getCustomHeaderNames(

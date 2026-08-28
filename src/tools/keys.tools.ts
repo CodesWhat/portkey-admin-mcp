@@ -714,8 +714,9 @@ export function registerKeysTools(
 						alert_threshold: validated.alert_threshold,
 					}),
 					rate_limits:
-						validated.rate_limits ??
-						buildRateLimitsRpm(validated.rate_limit_rpm),
+						validated.rate_limits === undefined
+							? buildRateLimitsRpm(validated.rate_limit_rpm)
+							: validated.rate_limits,
 					defaults: (() => {
 						const d: Record<string, unknown> = {};
 						if (validated.default_config_id !== undefined)
@@ -785,7 +786,9 @@ export function registerKeysTools(
 					alert_threshold: params.alert_threshold,
 				}),
 				rate_limits:
-					params.rate_limits ?? buildRateLimitsRpm(params.rate_limit_rpm),
+					params.rate_limits === undefined
+						? buildRateLimitsRpm(params.rate_limit_rpm)
+						: params.rate_limits,
 				...(params.reset_usage !== undefined
 					? { reset_usage: params.reset_usage }
 					: {}),

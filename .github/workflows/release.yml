@@ -66,6 +66,12 @@ jobs:
             exit 1
           fi
 
+          dispatch_commit="$(git rev-parse "${GITHUB_SHA}^{commit}")"
+          if [[ "$dispatch_commit" != "$tag_commit" ]]; then
+            echo "Release workflow ref does not match the requested tag: $tag" >&2
+            exit 1
+          fi
+
           ci_commit="$tag_commit"
           manifest_ref="$MANIFEST_REF"
           manifest_commit=""

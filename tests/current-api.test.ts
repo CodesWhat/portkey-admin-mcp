@@ -1309,7 +1309,24 @@ describe("current Portkey integration schemas and model pricing", () => {
 
 		const listInput = mcpDefinitions.get("list_mcp_integrations")
 			?.inputSchema as Record<string, z.ZodType>;
+		const createInput = mcpDefinitions.get("create_mcp_integration")
+			?.inputSchema as Record<string, z.ZodType>;
+		const updateInput = mcpDefinitions.get("update_mcp_integration")
+			?.inputSchema as Record<string, z.ZodType>;
 		assert.match(listInput.page_size?.description ?? "", /max 1000/);
+		assert.match(
+			createInput.configurations?.description ?? "",
+			/configurations\.custom_headers.*string-to-string/i,
+		);
+		for (const description of [
+			createInput.auth_type?.description ?? "",
+			updateInput.auth_type?.description ?? "",
+		]) {
+			assert.match(description, /examples/i);
+			assert.match(description, /none/);
+			assert.match(description, /headers/);
+			assert.match(description, /oauth_auto/);
+		}
 		assert.equal(
 			safeParseToolInput(mcpDefinitions.get("list_mcp_integrations"), {
 				page_size: 1000,

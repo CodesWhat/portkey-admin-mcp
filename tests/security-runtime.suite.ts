@@ -107,6 +107,11 @@ describe("supply-chain configuration", () => {
 		const registryJob = workflow.match(/\n {2}publish-registry:[\s\S]*$/)?.[0];
 
 		assert.ok(gateJob);
+		assert.match(
+			gateJob,
+			/dispatch_commit="\$\(git rev-parse "\$\{GITHUB_SHA\}\^\{commit\}"\)"/,
+		);
+		assert.match(gateJob, /dispatch_commit.*tag_commit/);
 		for (const output of ["tag_commit", "manifest_commit", "ci_commit"]) {
 			assert.match(
 				gateJob,

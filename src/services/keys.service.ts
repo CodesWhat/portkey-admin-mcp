@@ -144,7 +144,7 @@ export interface CreateApiKeyRequest {
 	organisation_id?: string;
 	workspace_id?: string;
 	user_id?: string;
-	rate_limits?: ApiKeyRateLimit[];
+	rate_limits?: ApiKeyRateLimit[] | null;
 	usage_limits?: Partial<ApiKeyUsageLimits>;
 	scopes?: string[];
 	defaults?: ApiKeyDefaults;
@@ -162,7 +162,7 @@ export interface CreateApiKeyResponse {
 export interface UpdateApiKeyRequest {
 	name?: string;
 	description?: string;
-	rate_limits?: ApiKeyRateLimit[];
+	rate_limits?: ApiKeyRateLimit[] | null;
 	usage_limits?: Partial<ApiKeyUsageLimits>;
 	reset_usage?: number;
 	scopes?: string[];

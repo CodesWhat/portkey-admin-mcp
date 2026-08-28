@@ -703,7 +703,9 @@
 									"description": "Next reset timestamp in ISO 8601 format",
 									"anyOf": [
 										{
-											"type": "string"
+											"type": "string",
+											"format": "date-time",
+											"pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
 										},
 										{
 											"type": "null"
@@ -860,7 +862,9 @@
 									"description": "Next reset timestamp in ISO 8601 format",
 									"anyOf": [
 										{
-											"type": "string"
+											"type": "string",
+											"format": "date-time",
+											"pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
 										},
 										{
 											"type": "null"
@@ -1760,7 +1764,9 @@
 					},
 					"expires_at": {
 						"description": "Expiration in ISO 8601 format",
-						"type": "string"
+						"type": "string",
+						"format": "date-time",
+						"pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
 					},
 					"secret_mappings": {
 						"description": "Secret Reference mappings for key or model_config fields",
@@ -1853,7 +1859,7 @@
 		},
 		{
 			"name": "update_virtual_key",
-			"description": "Update a virtual key's name, secret, note, or limits. Rotating the key takes effect immediately, and limit changes apply to downstream prompts and configs using this slug. Returns the updated name, slug, and status.",
+			"description": "Update a virtual key's name, secret, note, or limits. Rotating the key takes effect immediately, and limit changes apply to downstream prompts and configs using this slug. Returns success when Portkey accepts the update.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
@@ -2109,7 +2115,9 @@
 					},
 					"expires_at": {
 						"description": "Expiration date in ISO 8601 format",
-						"type": "string"
+						"type": "string",
+						"format": "date-time",
+						"pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
 					},
 					"rotation_policy": {
 						"description": "Automatic API-key rotation policy, or null to disable it",
@@ -2133,7 +2141,9 @@
 										"description": "Explicit next rotation timestamp in ISO 8601 format",
 										"anyOf": [
 											{
-												"type": "string"
+												"type": "string",
+												"format": "date-time",
+												"pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
 											},
 											{
 												"type": "null"
@@ -2330,7 +2340,9 @@
 						"description": "New expiration date in ISO 8601 format, or null to remove expiration",
 						"anyOf": [
 							{
-								"type": "string"
+								"type": "string",
+								"format": "date-time",
+								"pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
 							},
 							{
 								"type": "null"
@@ -2359,7 +2371,9 @@
 										"description": "Explicit next rotation timestamp in ISO 8601 format",
 										"anyOf": [
 											{
-												"type": "string"
+												"type": "string",
+												"format": "date-time",
+												"pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
 											},
 											{
 												"type": "null"
@@ -11591,7 +11605,7 @@
 						"maximum": 9007199254740991
 					},
 					"page_size": {
-						"description": "Number of results per page (max 100)",
+						"description": "Number of results per page (max 1000)",
 						"type": "integer",
 						"exclusiveMinimum": 0,
 						"maximum": 1000
@@ -11640,7 +11654,7 @@
 					"auth_type": {
 						"type": "string",
 						"minLength": 1,
-						"description": "Authentication type: 'none', 'headers' (custom headers), or 'oauth_auto' (OAuth)"
+						"description": "Authentication type. Current examples are 'none', 'headers' (custom headers), and 'oauth_auto' (OAuth); Portkey may accept additional values."
 					},
 					"transport": {
 						"type": "string",
@@ -11666,7 +11680,7 @@
 						}
 					},
 					"configurations": {
-						"description": "Additional documented or forward-compatible configuration fields",
+						"description": "Additional documented or forward-compatible configuration fields. For headers auth, configurations.custom_headers is a string-to-string header map.",
 						"type": "object",
 						"propertyNames": {
 							"type": "string"
@@ -11774,7 +11788,7 @@
 						"type": "string"
 					},
 					"auth_type": {
-						"description": "New authentication type",
+						"description": "New authentication type. Current examples are 'none', 'headers' (custom headers), and 'oauth_auto' (OAuth); Portkey may accept additional values.",
 						"type": "string",
 						"minLength": 1
 					},

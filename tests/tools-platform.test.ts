@@ -731,6 +731,41 @@ describe("create_mcp_integration tool payload assembly", () => {
 		});
 	});
 
+	it("rejects non-string configurations.custom_headers values", async () => {
+		const callbacks = registerToolCallbacks((server) => {
+			registerMcpIntegrationsTools(
+				server as never,
+				{
+					mcpIntegrations: {
+						createMcpIntegration: async () => {
+							throw new Error("should not be called");
+						},
+					},
+				} as never,
+			);
+		});
+		const createCallback = callbacks.get("create_mcp_integration");
+		assert.ok(createCallback);
+
+		await assert.rejects(
+			() =>
+				createCallback({
+					name: "Invalid Headers",
+					url: "https://mcp.example.com/v1",
+					auth_type: "headers",
+					transport: "http",
+					configurations: {
+						custom_headers: { Authorization: 42 },
+					},
+				}),
+			(error: Error) => {
+				assert.doesNotMatch(error.message, /should not be called/);
+				assert.match(error.message, /custom_headers/);
+				return true;
+			},
+		);
+	});
+
 	it("returns an isError result when auth_type is headers but custom_headers are missing", async () => {
 		const callbacks = registerToolCallbacks((server) => {
 			registerMcpIntegrationsTools(server as never, {} as never);
