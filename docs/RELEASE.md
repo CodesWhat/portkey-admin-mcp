@@ -113,6 +113,19 @@ The release is complete only when npm and the MCP Registry show the new
 version, LobeHub has been published manually, and Glama has indexed the new
 tagged commit.
 
+### One-time setup: protected release environment
+
+Configure the GitHub `release` environment with a required non-author reviewer,
+prevent self-review, and restrict deployments with two custom ref policies:
+
+- branch policy `main`;
+- tag policy `v*`.
+
+GitHub stores branch and tag policies as different rule types. A branch policy
+named `v*` does not authorize version tags and causes every publish job to fail
+before the environment approval is offered. Keep the tag rule typed as `tag` and
+rerun failed workflow jobs after correcting a misconfigured environment.
+
 ### One-time setup: npm Trusted Publisher
 
 `publish-npm` requires a Trusted Publisher configured on npmjs.com for the
