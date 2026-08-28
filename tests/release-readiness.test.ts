@@ -96,6 +96,8 @@ test("every publishing job uses the protected release environment", () => {
 		/Do not configure required reviewers or a wait timer/i,
 		"release publishing must run without a manual deployment approval",
 	);
+	assert.match(releaseGuide, /branch policy `main`/i);
+	assert.match(releaseGuide, /tag policy `v\*`/i);
 	assert.doesNotMatch(releaseGuide, /Prevent self-review/i);
 });
 
