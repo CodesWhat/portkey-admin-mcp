@@ -138,7 +138,7 @@ export interface UpdateWorkspaceExclusionsRequest {
 export class GuardrailsService extends BaseService {
 	/** Get the organisation-wide input and output guardrail defaults. */
 	async getOrganisationDefaults(): Promise<OrganisationGuardrailDefaults> {
-		return this.get<OrganisationGuardrailDefaults>(
+		return this.getV2<OrganisationGuardrailDefaults>(
 			"/admin/organisation/defaults",
 		);
 	}
@@ -147,7 +147,7 @@ export class GuardrailsService extends BaseService {
 	async updateOrganisationDefaults(
 		data: UpdateOrganisationGuardrailDefaultsRequest,
 	): Promise<OrganisationGuardrailDefaults> {
-		return this.put<OrganisationGuardrailDefaults>(
+		return this.putV2<OrganisationGuardrailDefaults>(
 			"/admin/organisation/defaults",
 			data,
 		);

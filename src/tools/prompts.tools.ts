@@ -120,9 +120,9 @@ const PROMPTS_TOOL_SCHEMAS = {
 		current_page: z.coerce
 			.number()
 			.int()
-			.positive()
+			.nonnegative()
 			.optional()
-			.describe("Page number for pagination"),
+			.describe("Zero-based page number; the first page is 0"),
 		page_size: z.coerce
 			.number()
 			.int()
@@ -450,11 +450,16 @@ function formatPromptListResponse(
 		last_updated_at: string;
 	}>;
 } {
-	const currentPage = params.current_page ?? 1;
+	// The API only paginates when current_page is supplied; with page_size
+	// alone it ignores the limit and returns every record in one payload.
+	// Reporting has_more/next_page in that case invented a second page that
+	// does not exist.
+	const paginated = params.current_page !== undefined;
+	const currentPage = params.current_page ?? 0;
 	const returnedCount = prompts.data.length;
 	const pageSize = params.page_size ?? returnedCount;
-	const nextOffset = currentPage * pageSize;
-	const hasMore = returnedCount > 0 && nextOffset < prompts.total;
+	const nextOffset = (currentPage + 1) * pageSize;
+	const hasMore = paginated && returnedCount > 0 && nextOffset < prompts.total;
 
 	return {
 		total: prompts.total,

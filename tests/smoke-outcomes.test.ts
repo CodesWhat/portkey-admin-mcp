@@ -21,7 +21,12 @@ describe("live smoke outcome classification", () => {
 		);
 	});
 
-	it("skips documented management routes that the hosted data plane receives", () => {
+	it("no longer hides the gateway catch-all for management routes", () => {
+		// These three used to be allow-listed as "unavailable on the hosted
+		// API". They are not unavailable: they moved to /v2, and the 400 was
+		// the gateway's generic fallback for an unrouted path, identical to
+		// what a nonexistent route returns. Skipping it hid a wrong base URL,
+		// so it must surface as a real failure now.
 		const routeError = new FetchError(
 			"Either x-portkey-config or x-portkey-provider header is required",
 			400,
@@ -32,10 +37,7 @@ describe("live smoke outcome classification", () => {
 			"listScimGroups",
 			"getOrganisationDefaults",
 		]) {
-			assert.equal(
-				expectedSmokeSkipReason(name, routeError),
-				"documented control-plane route is unavailable on the hosted API",
-			);
+			assert.equal(expectedSmokeSkipReason(name, routeError), null);
 		}
 	});
 

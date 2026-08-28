@@ -46,7 +46,7 @@ const MCP_INTEGRATIONS_TOOL_SCHEMAS = {
 			.int()
 			.nonnegative()
 			.optional()
-			.describe("Page number for pagination"),
+			.describe("Zero-based page number; the first page is 0"),
 		page_size: z.coerce
 			.number()
 			.int()

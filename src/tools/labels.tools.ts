@@ -33,9 +33,9 @@ const LABELS_TOOL_SCHEMAS = {
 		current_page: z.coerce
 			.number()
 			.int()
-			.positive()
+			.nonnegative()
 			.optional()
-			.describe("Page number for pagination"),
+			.describe("Zero-based page number; the first page is 0"),
 		page_size: z.coerce
 			.number()
 			.int()

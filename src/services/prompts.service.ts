@@ -164,7 +164,9 @@ export class PromptsService extends BaseService {
 		collectionId: string,
 	): Promise<PromptListItem | undefined> {
 		const pageSize = 100;
-		let currentPage = 1;
+		// The Portkey API pages from 0; starting at 1 silently skipped the
+		// first page of matches.
+		let currentPage = 0;
 		while (true) {
 			const page = await this.listPrompts({
 				collection_id: collectionId,
@@ -178,7 +180,10 @@ export class PromptsService extends BaseService {
 			if (exact) {
 				return exact;
 			}
-			if (page.data.length === 0 || currentPage * pageSize >= page.total) {
+			if (
+				page.data.length === 0 ||
+				(currentPage + 1) * pageSize >= page.total
+			) {
 				return undefined;
 			}
 			currentPage += 1;

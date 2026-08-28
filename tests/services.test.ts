@@ -252,7 +252,7 @@ describe("DeploymentsService request routing", () => {
 		await service.archiveDeployment("dep/one");
 
 		const listUrl = capturedUrl(0);
-		assert.equal(listUrl.pathname, "/v1/deployments");
+		assert.equal(listUrl.pathname, "/v2/deployments");
 		assert.deepEqual(listUrl.searchParams.getAll("workspace_slug"), [
 			"primary",
 			"secondary",
@@ -266,7 +266,7 @@ describe("DeploymentsService request routing", () => {
 			type: "production",
 			auth_settings: { gateway_base_url: "https://edge.example.com" },
 		});
-		assert.equal(capturedUrl(2).pathname, "/v1/deployments/dep%2Fone");
+		assert.equal(capturedUrl(2).pathname, "/v2/deployments/dep%2Fone");
 		assert.equal(capturedUrl(2).searchParams.get("organisation_id"), "org-1");
 		assert.equal(capturedFetches[3]?.init?.method, "PUT");
 		assert.deepEqual(capturedBody(3), { rotate_auth: true });
@@ -565,7 +565,10 @@ describe("PromptsService workflows", () => {
 		} as never);
 		assert.equal(result.action, "unchanged");
 		assert.equal(capturedUrl(0).searchParams.get("page_size"), "100");
-		assert.equal(capturedUrl(1).searchParams.get("current_page"), "2");
+		// The API pages from 0, so the lookup must start at page 0 and the
+		// second request must be page 1. Starting at 1 skipped the first page.
+		assert.equal(capturedUrl(0).searchParams.get("current_page"), "0");
+		assert.equal(capturedUrl(1).searchParams.get("current_page"), "1");
 		assert.equal(
 			capturedFetches.some((call) => call.init?.method === "POST"),
 			false,
@@ -1444,8 +1447,8 @@ describe("Configuration and platform service contracts", () => {
 				capturedUrl(index).pathname,
 			]),
 			[
-				["GET", "/v1/admin/organisation/defaults"],
-				["PUT", "/v1/admin/organisation/defaults"],
+				["GET", "/v2/admin/organisation/defaults"],
+				["PUT", "/v2/admin/organisation/defaults"],
 				["GET", "/v1/workspace-exclusions/input-guardrails"],
 				["PUT", "/v1/workspace-exclusions/output-guardrails"],
 				["GET", "/v1/guardrails"],
