@@ -115,21 +115,20 @@ tagged commit.
 
 ### One-time setup: protected release environment
 
-Configure the GitHub `release` environment with a required reviewer, enable
-**Prevent self-review**, and restrict deployments with two custom ref policies:
+Configure the GitHub `release` environment without required reviewers or a wait
+timer, and restrict deployments with two custom ref policies:
 
 - branch policy `main`;
 - tag policy `v*`.
 
 GitHub stores branch and tag policies as different rule types. A branch policy
 named `v*` does not authorize version tags and causes every publish job to fail
-before the environment approval is offered. Keep the tag rule typed as `tag` and
-rerun failed workflow jobs after correcting a misconfigured environment.
+before it can start. Keep the tag rule typed as `tag` and rerun failed workflow
+jobs after correcting a misconfigured environment.
 
-**Prevent self-review** blocks the user who initiated the deployment from
-approving that deployment; it does not compare the reviewer with the commit or
-pull-request author. Required non-author pull-request approvals remain a separate
-branch-protection merge gate.
+Do not configure required reviewers or a wait timer. Required non-author pull
+request approvals remain the human gate before changes reach protected `main`;
+the post-merge release must run unattended.
 
 ### One-time setup: npm Trusted Publisher
 
