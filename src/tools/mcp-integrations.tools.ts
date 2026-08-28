@@ -205,8 +205,9 @@ const createMcpIntegrationSchema = z
 		) {
 			ctx.addIssue({
 				code: z.ZodIssueCode.custom,
-				path: ["custom_headers"],
-				message: "custom_headers must be provided when auth_type is 'headers'",
+				path: [],
+				message:
+					"custom_headers, configurations.custom_headers, or secret_mappings targeting configurations.custom_headers must be provided when auth_type is 'headers'",
 			});
 		}
 	});

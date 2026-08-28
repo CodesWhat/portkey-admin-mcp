@@ -833,8 +833,11 @@ describe("create_mcp_integration tool payload assembly", () => {
 					auth_type: "headers",
 					transport: "http",
 				}),
-			(error: Error) => {
+			(error: Error & { issues?: Array<{ path: PropertyKey[] }> }) => {
+				assert.deepEqual(error.issues?.[0]?.path, []);
 				assert.match(error.message, /custom_headers/);
+				assert.match(error.message, /configurations\.custom_headers/);
+				assert.match(error.message, /secret_mappings/);
 				return true;
 			},
 		);
