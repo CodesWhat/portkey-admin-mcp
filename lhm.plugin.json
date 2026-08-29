@@ -57,7 +57,7 @@
 				"type": "object",
 				"properties": {
 					"current_page": {
-						"description": "Page number for pagination",
+						"description": "Zero-based page number; the first page is 0",
 						"type": "integer",
 						"minimum": 0,
 						"maximum": 9007199254740991
@@ -318,9 +318,9 @@
 				"type": "object",
 				"properties": {
 					"current_page": {
-						"description": "Page number for pagination",
+						"description": "Zero-based page number; the first page is 0",
 						"type": "integer",
-						"exclusiveMinimum": 0,
+						"minimum": 0,
 						"maximum": 9007199254740991
 					},
 					"page_size": {
@@ -565,7 +565,7 @@
 						"maximum": 100
 					},
 					"current_page": {
-						"description": "Page number to retrieve when results are paginated",
+						"description": "Zero-based page number; the first page is 0",
 						"type": "integer",
 						"minimum": 0,
 						"maximum": 9007199254740991
@@ -1100,9 +1100,9 @@
 				"type": "object",
 				"properties": {
 					"current_page": {
-						"description": "Page number for pagination",
+						"description": "Zero-based page number; the first page is 0",
 						"type": "integer",
-						"exclusiveMinimum": 0,
+						"minimum": 0,
 						"maximum": 9007199254740991
 					},
 					"page_size": {
@@ -1675,9 +1675,9 @@
 				"type": "object",
 				"properties": {
 					"current_page": {
-						"description": "Page number for pagination",
+						"description": "Zero-based page number; the first page is 0",
 						"type": "integer",
-						"exclusiveMinimum": 0,
+						"minimum": 0,
 						"maximum": 9007199254740991
 					},
 					"page_size": {
@@ -2188,9 +2188,9 @@
 						"maximum": 100
 					},
 					"current_page": {
-						"description": "Page number for pagination",
+						"description": "Zero-based page number; the first page is 0",
 						"type": "integer",
-						"exclusiveMinimum": 0,
+						"minimum": 0,
 						"maximum": 9007199254740991
 					},
 					"workspace_id": {
@@ -2473,9 +2473,9 @@
 						"type": "string"
 					},
 					"current_page": {
-						"description": "Page number for pagination",
+						"description": "Zero-based page number; the first page is 0",
 						"type": "integer",
-						"exclusiveMinimum": 0,
+						"minimum": 0,
 						"maximum": 9007199254740991
 					},
 					"page_size": {
@@ -2799,9 +2799,9 @@
 						"type": "string"
 					},
 					"current_page": {
-						"description": "Page number for pagination",
+						"description": "Zero-based page number; the first page is 0",
 						"type": "integer",
-						"exclusiveMinimum": 0,
+						"minimum": 0,
 						"maximum": 9007199254740991
 					},
 					"page_size": {
@@ -6804,7 +6804,7 @@
 						"type": "string"
 					},
 					"current_page": {
-						"description": "Page number for pagination",
+						"description": "Zero-based page number; the first page is 0",
 						"type": "integer",
 						"minimum": 0,
 						"maximum": 9007199254740991
@@ -6983,7 +6983,7 @@
 						"type": "string"
 					},
 					"current_page": {
-						"description": "Page number for pagination",
+						"description": "Zero-based page number; the first page is 0",
 						"type": "integer",
 						"minimum": 0,
 						"maximum": 9007199254740991
@@ -7381,7 +7381,7 @@
 						"type": "string"
 					},
 					"current_page": {
-						"description": "Page number for pagination",
+						"description": "Zero-based page number; the first page is 0",
 						"type": "integer",
 						"minimum": 0,
 						"maximum": 9007199254740991
@@ -7613,7 +7613,7 @@
 						"maximum": 100
 					},
 					"current_page": {
-						"description": "Page number for pagination",
+						"description": "Zero-based page number; the first page is 0",
 						"type": "integer",
 						"minimum": 0,
 						"maximum": 9007199254740991
@@ -8596,9 +8596,9 @@
 						"type": "string"
 					},
 					"current_page": {
-						"description": "Page number for pagination (starts at 1)",
+						"description": "Zero-based page number; the first page is 0",
 						"type": "integer",
-						"exclusiveMinimum": 0,
+						"minimum": 0,
 						"maximum": 9007199254740991
 					},
 					"page_size": {
@@ -8674,9 +8674,9 @@
 						"type": "string"
 					},
 					"current_page": {
-						"description": "Page number for pagination",
+						"description": "Zero-based page number; the first page is 0",
 						"type": "integer",
-						"exclusiveMinimum": 0,
+						"minimum": 0,
 						"maximum": 9007199254740991
 					},
 					"page_size": {
@@ -9461,9 +9461,9 @@
 				"type": "object",
 				"properties": {
 					"current_page": {
-						"description": "Page number for pagination",
+						"description": "Zero-based page number; the first page is 0",
 						"type": "integer",
-						"exclusiveMinimum": 0,
+						"minimum": 0,
 						"maximum": 9007199254740991
 					},
 					"page_size": {
@@ -10372,9 +10372,9 @@
 				"type": "object",
 				"properties": {
 					"current_page": {
-						"description": "Page number for pagination",
+						"description": "Zero-based page number; the first page is 0",
 						"type": "integer",
-						"exclusiveMinimum": 0,
+						"minimum": 0,
 						"maximum": 9007199254740991
 					},
 					"page_size": {
@@ -11289,9 +11289,9 @@
 						"description": "The slug of the integration"
 					},
 					"current_page": {
-						"description": "Page number for pagination",
+						"description": "Zero-based page number; the first page is 0",
 						"type": "integer",
-						"exclusiveMinimum": 0,
+						"minimum": 0,
 						"maximum": 9007199254740991
 					},
 					"page_size": {
@@ -11470,9 +11470,9 @@
 						"description": "The slug of the integration"
 					},
 					"current_page": {
-						"description": "Page number for pagination",
+						"description": "Zero-based page number; the first page is 0",
 						"type": "integer",
-						"exclusiveMinimum": 0,
+						"minimum": 0,
 						"maximum": 9007199254740991
 					},
 					"page_size": {
@@ -11599,7 +11599,7 @@
 				"type": "object",
 				"properties": {
 					"current_page": {
-						"description": "Page number for pagination",
+						"description": "Zero-based page number; the first page is 0",
 						"type": "integer",
 						"minimum": 0,
 						"maximum": 9007199254740991
@@ -12120,9 +12120,9 @@
 				"type": "object",
 				"properties": {
 					"current_page": {
-						"description": "Page number for pagination",
+						"description": "Zero-based page number; the first page is 0",
 						"type": "integer",
-						"exclusiveMinimum": 0,
+						"minimum": 0,
 						"maximum": 9007199254740991
 					},
 					"page_size": {
@@ -12281,9 +12281,9 @@
 						"description": "The MCP server ID or slug"
 					},
 					"current_page": {
-						"description": "Page number for pagination",
+						"description": "Zero-based page number; the first page is 0",
 						"type": "integer",
-						"exclusiveMinimum": 0,
+						"minimum": 0,
 						"maximum": 9007199254740991
 					},
 					"page_size": {
@@ -12359,9 +12359,9 @@
 						"description": "The MCP server ID or slug"
 					},
 					"current_page": {
-						"description": "Page number for pagination",
+						"description": "Zero-based page number; the first page is 0",
 						"type": "integer",
-						"exclusiveMinimum": 0,
+						"minimum": 0,
 						"maximum": 9007199254740991
 					},
 					"page_size": {
