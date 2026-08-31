@@ -89,7 +89,7 @@ jobs:
       contents: read
     services:
       redis:
-        image: redis:8.8-alpine@sha256:8096655e437712b07503796fb64d81359256cfcff0ab29d95a7da72863786efb
+        image: redis:8.8-alpine@sha256:96cb544fa0af5aa898d160cffb7dae70c3df117190fc123831c64712cda425ff
         ports:
           - 6379:6379
         options: >-
