@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.3] - 2026-09-07
+
+Bug-fix release for the `list_*` pagination schemas. Four tools accepted an
+unbounded or zero `page_size` and two SCIM tool descriptions still claimed the
+rest of the catalog paged from 1, so MCP clients should refresh `tools/list` to
+pick up the corrected parameter schemas. No runtime routes changed.
+
+### Fixed
+
+- Cap `page_size` at 100 and require at least 1 on `get_analytics_group_providers`,
+  `list_usage_limits`, and `list_workspace_members`, and reject `page_size: 0`
+  on `list_all_users`. Every sibling `list_*` tool already enforced those bounds,
+  so these four were hand-copied schemas that had lost their constraints and
+  could pull an uncapped page into the MCP transcript.
+- Drop the stale claim on the SCIM `page` parameter that other list tools use a
+  1-based `current_page`. 0.11.2 made every `current_page` zero-based and
+  updated all 28 of their descriptions, but missed the two SCIM descriptions
+  that cross-reference them, so the catalog contradicted itself.
+
+### Changed
+
+- Define `current_page` and `page_size` once in the shared schema module and
+  reuse it across all 16 paginated tool modules, keeping each tool's own
+  parameter description. The two intentional larger caps (500 on
+  `list_mcp_server_connections`, 1000 on `list_mcp_integrations`) are unchanged.
+- Fail the HTTP test suite on CI when `openssl` is missing instead of skipping
+  the only cross-principal session isolation test.
+
 ## [0.11.2] - 2026-08-28
 
 Bug-fix release. Eight tools were calling Portkey admin routes that have moved
@@ -640,7 +668,8 @@ First stable release. Graduates from beta with 151 tools covering ~98% of the Po
 - Vercel deployment support
 - Contract tests, E2E tests, security tests
 
-[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.11.2...HEAD
+[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.11.3...HEAD
+[0.11.3]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.11.2...v0.11.3
 [0.11.2]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.11.1...v0.11.2
 [0.11.1]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.11.0...v0.11.1
 [0.11.0]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.10.1...v0.11.0

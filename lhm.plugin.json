@@ -1,7 +1,7 @@
 {
 	"identifier": "codeswhat-portkey-admin-mcp",
 	"name": "Portkey Admin MCP Server",
-	"version": "0.11.2",
+	"version": "0.11.3",
 	"description": "Portkey Admin API MCP server with current control-plane coverage, 178 tools, and Prisma AIRS interoperability guidance.",
 	"author": "CodesWhat",
 	"authorUrl": "https://github.com/CodesWhat",
@@ -65,7 +65,7 @@
 					"page_size": {
 						"description": "Number of results per page (max 100)",
 						"type": "integer",
-						"minimum": 0,
+						"exclusiveMinimum": 0,
 						"maximum": 100
 					},
 					"role": {
@@ -438,7 +438,7 @@
 						"enum": ["admin", "member", "manager"]
 					},
 					"page": {
-						"description": "Zero-based results page to retrieve; the first page is 0. Unlike current_page used by other list tools in this API (which is 1-based), do not pass 1 for the first page here.",
+						"description": "Zero-based results page to retrieve; the first page is 0. These SCIM tools name the parameter page, not the current_page used by other list tools.",
 						"type": "integer",
 						"minimum": 0,
 						"maximum": 9007199254740991
@@ -530,7 +530,7 @@
 						"type": "string"
 					},
 					"page": {
-						"description": "Zero-based results page to retrieve; the first page is 0. Unlike current_page used by other list tools in this API (which is 1-based), do not pass 1 for the first page here.",
+						"description": "Zero-based results page to retrieve; the first page is 0. These SCIM tools name the parameter page, not the current_page used by other list tools.",
 						"type": "integer",
 						"minimum": 0,
 						"maximum": 9007199254740991
@@ -983,7 +983,7 @@
 						"description": "Number of members per page",
 						"type": "integer",
 						"exclusiveMinimum": 0,
-						"maximum": 9007199254740991
+						"maximum": 100
 					},
 					"role": {
 						"description": "Filter by workspace role",
@@ -7171,8 +7171,8 @@
 					"page_size": {
 						"description": "Number of provider groups per page",
 						"type": "integer",
-						"minimum": 0,
-						"maximum": 9007199254740991
+						"exclusiveMinimum": 0,
+						"maximum": 100
 					},
 					"order_by": {
 						"description": "Metric or field used to order groups",
@@ -7609,7 +7609,7 @@
 					"page_size": {
 						"description": "Number of items per page (1-100, default: 100)",
 						"type": "integer",
-						"minimum": 1,
+						"exclusiveMinimum": 0,
 						"maximum": 100
 					},
 					"current_page": {
@@ -7952,7 +7952,7 @@
 						"description": "Number of policies to return per page",
 						"type": "integer",
 						"exclusiveMinimum": 0,
-						"maximum": 9007199254740991
+						"maximum": 100
 					},
 					"current_page": {
 						"description": "Zero-based page number",
@@ -8236,7 +8236,7 @@
 						"description": "Number of policies to return per page",
 						"type": "integer",
 						"exclusiveMinimum": 0,
-						"maximum": 9007199254740991
+						"maximum": 100
 					},
 					"current_page": {
 						"description": "Zero-based page number",
@@ -10070,7 +10070,7 @@
 					"page_size": {
 						"description": "References per page, from 1 to 100; defaults to 20",
 						"type": "integer",
-						"minimum": 1,
+						"exclusiveMinimum": 0,
 						"maximum": 100
 					}
 				},
@@ -12066,7 +12066,7 @@
 					"page_size": {
 						"description": "Connections per page, from 1 through 500; defaults to 100",
 						"type": "integer",
-						"minimum": 1,
+						"exclusiveMinimum": 0,
 						"maximum": 500
 					}
 				},

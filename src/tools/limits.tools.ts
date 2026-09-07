@@ -1,5 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import { CurrentPageSchema, PageSizeSchema } from "../lib/schemas.js";
 import type { PortkeyService } from "../services/index.js";
 import { jsonResult } from "./utils.js";
 
@@ -28,18 +29,8 @@ const groupBySchema = z.object({
 		),
 });
 const paginationSchema = {
-	page_size: z.coerce
-		.number()
-		.int()
-		.positive()
-		.optional()
-		.describe("Number of policies to return per page"),
-	current_page: z.coerce
-		.number()
-		.int()
-		.nonnegative()
-		.optional()
-		.describe("Zero-based page number"),
+	page_size: PageSizeSchema.describe("Number of policies to return per page"),
+	current_page: CurrentPageSchema.describe("Zero-based page number"),
 };
 
 const LIMITS_TOOL_SCHEMAS = {
@@ -188,19 +179,8 @@ const LIMITS_TOOL_SCHEMAS = {
 			.optional()
 			.describe("Filter by enforcement state"),
 		search: z.string().optional().describe("Search tracked values"),
-		page_size: z.coerce
-			.number()
-			.int()
-			.positive()
-			.max(100)
-			.optional()
-			.describe("Number of entities per page"),
-		current_page: z.coerce
-			.number()
-			.int()
-			.nonnegative()
-			.optional()
-			.describe("Zero-based page number"),
+		page_size: PageSizeSchema.describe("Number of entities per page"),
+		current_page: CurrentPageSchema.describe("Zero-based page number"),
 	},
 	resetUsageLimitEntity: {
 		limit_id: z.string().min(1).describe("Usage-limit policy UUID"),

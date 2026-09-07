@@ -128,3 +128,24 @@ export function toPromptToolChoice(
 
 	return toolChoice.mode;
 }
+
+// ===== Pagination Schemas =====
+
+export const CurrentPageSchema = z.coerce
+	.number()
+	.int()
+	.nonnegative()
+	.optional()
+	.describe("Zero-based page number; the first page is 0");
+
+export function pageSizeSchema(max = 100) {
+	return z.coerce
+		.number()
+		.int()
+		.positive()
+		.max(max)
+		.optional()
+		.describe(`Results per page (max ${max})`);
+}
+
+export const PageSizeSchema = pageSizeSchema();
