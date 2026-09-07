@@ -1,5 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import { CurrentPageSchema, PageSizeSchema } from "../lib/schemas.js";
 import type { PortkeyService } from "../services/index.js";
 import type { SecretManagerType } from "../services/secret-references.service.js";
 import { jsonResult } from "./utils.js";
@@ -329,19 +330,12 @@ const SECRET_REFERENCE_TOOL_SCHEMAS = {
 			.max(255)
 			.optional()
 			.describe("Search references by name"),
-		current_page: z.coerce
-			.number()
-			.int()
-			.nonnegative()
-			.optional()
-			.describe("Zero-based page number; defaults to 0"),
-		page_size: z.coerce
-			.number()
-			.int()
-			.min(1)
-			.max(100)
-			.optional()
-			.describe("References per page, from 1 to 100; defaults to 20"),
+		current_page: CurrentPageSchema.describe(
+			"Zero-based page number; defaults to 0",
+		),
+		page_size: PageSizeSchema.describe(
+			"References per page, from 1 to 100; defaults to 20",
+		),
 	},
 	get: {
 		id: z.string().min(1).describe("Secret Reference UUID or slug"),

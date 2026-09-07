@@ -1,5 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import { CurrentPageSchema, PageSizeSchema } from "../lib/schemas.js";
 import type { PortkeyService } from "../services/index.js";
 import type {
 	CreateScimWorkspaceMappingRequest,
@@ -107,19 +108,10 @@ const createScimWorkspaceMappingSchema = z
 
 const WORKSPACES_TOOL_SCHEMAS = {
 	listWorkspaces: {
-		page_size: z.coerce
-			.number()
-			.int()
-			.positive()
-			.max(100)
-			.optional()
-			.describe("Number of workspaces to return per page (max 100)"),
-		current_page: z.coerce
-			.number()
-			.int()
-			.nonnegative()
-			.optional()
-			.describe("Zero-based page number; the first page is 0"),
+		page_size: PageSizeSchema.describe(
+			"Number of workspaces to return per page (max 100)",
+		),
+		current_page: CurrentPageSchema,
 		name: z.string().optional().describe("Case-sensitive name filter"),
 		exact_name: z.string().optional().describe("Exact workspace name filter"),
 		status: z
@@ -216,18 +208,8 @@ const WORKSPACES_TOOL_SCHEMAS = {
 	},
 	listWorkspaceMembers: {
 		workspace_id: z.string().describe("The workspace ID to list members for"),
-		current_page: z.coerce
-			.number()
-			.int()
-			.nonnegative()
-			.optional()
-			.describe("Zero-based page number"),
-		page_size: z.coerce
-			.number()
-			.int()
-			.positive()
-			.optional()
-			.describe("Number of members per page"),
+		current_page: CurrentPageSchema.describe("Zero-based page number"),
+		page_size: PageSizeSchema.describe("Number of members per page"),
 		role: z
 			.enum(["admin", "manager", "member"])
 			.optional()
@@ -289,15 +271,9 @@ const WORKSPACES_TOOL_SCHEMAS = {
 			.nonnegative()
 			.optional()
 			.describe(
-				"Zero-based results page to retrieve; the first page is 0. Unlike current_page used by other list tools in this API (which is 1-based), do not pass 1 for the first page here.",
+				"Zero-based results page to retrieve; the first page is 0. These SCIM tools name the parameter page, not the current_page used by other list tools.",
 			),
-		page_size: z.coerce
-			.number()
-			.int()
-			.positive()
-			.max(100)
-			.optional()
-			.describe("Mappings per page, from 1 through 100"),
+		page_size: PageSizeSchema.describe("Mappings per page, from 1 through 100"),
 	},
 	deleteScimWorkspaceMapping: {
 		mapping_id: z
@@ -315,15 +291,11 @@ const WORKSPACES_TOOL_SCHEMAS = {
 			.nonnegative()
 			.optional()
 			.describe(
-				"Zero-based results page to retrieve; the first page is 0. Unlike current_page used by other list tools in this API (which is 1-based), do not pass 1 for the first page here.",
+				"Zero-based results page to retrieve; the first page is 0. These SCIM tools name the parameter page, not the current_page used by other list tools.",
 			),
-		page_size: z.coerce
-			.number()
-			.int()
-			.positive()
-			.max(100)
-			.optional()
-			.describe("SCIM groups per page, from 1 through 100"),
+		page_size: PageSizeSchema.describe(
+			"SCIM groups per page, from 1 through 100",
+		),
 	},
 } as const;
 
