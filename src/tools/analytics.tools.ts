@@ -1,5 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import { CurrentPageSchema, PageSizeSchema } from "../lib/schemas.js";
 import type {
 	AnalyticsService,
 	BaseAnalyticsParams,
@@ -184,19 +185,8 @@ const baseAnalyticsSchema = {
 
 const paginatedAnalyticsSchema = {
 	...baseAnalyticsSchema,
-	current_page: z.coerce
-		.number()
-		.int()
-		.nonnegative()
-		.optional()
-		.describe("Zero-based page number; the first page is 0"),
-	page_size: z.coerce
-		.number()
-		.int()
-		.positive()
-		.max(100)
-		.optional()
-		.describe("Results per page (max 100)"),
+	current_page: CurrentPageSchema,
+	page_size: PageSizeSchema,
 };
 
 const cacheSummarySchema = {
@@ -223,18 +213,8 @@ const providerMetricSchema = z.enum([
 
 const providerGroupAnalyticsSchema = {
 	...cacheSummarySchema,
-	current_page: z.coerce
-		.number()
-		.int()
-		.nonnegative()
-		.optional()
-		.describe("Zero-based result page"),
-	page_size: z.coerce
-		.number()
-		.int()
-		.nonnegative()
-		.optional()
-		.describe("Number of provider groups per page"),
+	current_page: CurrentPageSchema.describe("Zero-based result page"),
+	page_size: PageSizeSchema.describe("Number of provider groups per page"),
 	order_by: z
 		.string()
 		.optional()

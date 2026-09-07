@@ -1,5 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import { CurrentPageSchema, PageSizeSchema } from "../lib/schemas.js";
 import type { PortkeyService } from "../services/index.js";
 import { jsonResult } from "./utils.js";
 
@@ -20,19 +21,8 @@ const configTargetSchema = z
 
 const CONFIGS_TOOL_SCHEMAS = {
 	listConfigs: {
-		current_page: z.coerce
-			.number()
-			.int()
-			.nonnegative()
-			.optional()
-			.describe("Zero-based page number; the first page is 0"),
-		page_size: z.coerce
-			.number()
-			.int()
-			.positive()
-			.max(100)
-			.optional()
-			.describe("Number of results per page (max 100)"),
+		current_page: CurrentPageSchema,
+		page_size: PageSizeSchema.describe("Number of results per page (max 100)"),
 	},
 	getConfig: {
 		slug: z

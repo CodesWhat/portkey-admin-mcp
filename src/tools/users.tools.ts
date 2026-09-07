@@ -1,5 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import { CurrentPageSchema, PageSizeSchema } from "../lib/schemas.js";
 import type { PortkeyService } from "../services/index.js";
 import type {
 	AnalyticsGroup,
@@ -10,19 +11,8 @@ import { formatFullName, jsonResult } from "./utils.js";
 
 const USERS_TOOL_SCHEMAS = {
 	listAllUsers: {
-		current_page: z.coerce
-			.number()
-			.int()
-			.nonnegative()
-			.optional()
-			.describe("Zero-based page number; the first page is 0"),
-		page_size: z.coerce
-			.number()
-			.int()
-			.nonnegative()
-			.max(100)
-			.optional()
-			.describe("Number of results per page (max 100)"),
+		current_page: CurrentPageSchema,
+		page_size: PageSizeSchema.describe("Number of results per page (max 100)"),
 		role: z
 			.enum(["admin", "member", "owner"])
 			.optional()
@@ -116,13 +106,7 @@ const USERS_TOOL_SCHEMAS = {
 			.string()
 			.optional()
 			.describe("Filter by specific virtual key slugs (comma-separated)"),
-		page_size: z.coerce
-			.number()
-			.int()
-			.positive()
-			.max(100)
-			.optional()
-			.describe("Number of results per page (max 100)"),
+		page_size: PageSizeSchema.describe("Number of results per page (max 100)"),
 	},
 	getUser: {
 		user_id: z.string().describe("The user ID to retrieve"),
@@ -140,19 +124,8 @@ const USERS_TOOL_SCHEMAS = {
 		user_id: z.string().describe("The user ID to delete"),
 	},
 	listUserInvites: {
-		current_page: z.coerce
-			.number()
-			.int()
-			.nonnegative()
-			.optional()
-			.describe("Zero-based page number; the first page is 0"),
-		page_size: z.coerce
-			.number()
-			.int()
-			.positive()
-			.max(100)
-			.optional()
-			.describe("Number of results per page (max 100)"),
+		current_page: CurrentPageSchema,
+		page_size: PageSizeSchema.describe("Number of results per page (max 100)"),
 		role: z
 			.enum(["admin", "member"])
 			.optional()

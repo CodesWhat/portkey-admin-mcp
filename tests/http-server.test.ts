@@ -209,6 +209,15 @@ function hasOpenssl(): boolean {
 
 const OPENSSL_AVAILABLE = hasOpenssl();
 
+// On CI the isolation test below is the only HTTP-layer proof that two clerk
+// principals cannot reach each other's sessions, so a missing openssl there is a
+// broken runner image and must fail loudly instead of quietly skipping it.
+if (process.env.CI && !OPENSSL_AVAILABLE) {
+	throw new Error(
+		"openssl is required on CI: the clerk session isolation test must not be skipped",
+	);
+}
+
 function generateSelfSignedCert(): { key: string; cert: string } {
 	const dir = mkdtempSync(join(tmpdir(), "portkey-mcp-jwks-cert-"));
 	try {

@@ -1,6 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { buildRateLimitsRpm, buildUsageLimits } from "../lib/limits.js";
+import { CurrentPageSchema, PageSizeSchema } from "../lib/schemas.js";
 import type { PortkeyService } from "../services/index.js";
 import {
 	createSecretMappingSchema,
@@ -139,19 +140,10 @@ const INTEGRATIONS_TOOL_SCHEMAS = {
 			.describe("Exact provider model identifier, such as gpt-4o"),
 	},
 	listIntegrations: {
-		current_page: z.coerce
-			.number()
-			.int()
-			.nonnegative()
-			.optional()
-			.describe("Zero-based page number; the first page is 0"),
-		page_size: z.coerce
-			.number()
-			.int()
-			.positive()
-			.max(100)
-			.optional()
-			.describe("Number of results per page (default 100, max 100)"),
+		current_page: CurrentPageSchema,
+		page_size: PageSizeSchema.describe(
+			"Number of results per page (default 100, max 100)",
+		),
 		workspace_id: z
 			.string()
 			.optional()
@@ -309,19 +301,8 @@ const INTEGRATIONS_TOOL_SCHEMAS = {
 	},
 	listIntegrationModels: {
 		slug: z.string().describe("The slug of the integration"),
-		current_page: z.coerce
-			.number()
-			.int()
-			.nonnegative()
-			.optional()
-			.describe("Zero-based page number; the first page is 0"),
-		page_size: z.coerce
-			.number()
-			.int()
-			.positive()
-			.max(100)
-			.optional()
-			.describe("Number of results per page"),
+		current_page: CurrentPageSchema,
+		page_size: PageSizeSchema.describe("Number of results per page"),
 	},
 	updateIntegrationModels: {
 		slug: z.string().describe("The slug of the integration"),
@@ -370,19 +351,8 @@ const INTEGRATIONS_TOOL_SCHEMAS = {
 	},
 	listIntegrationWorkspaces: {
 		slug: z.string().describe("The slug of the integration"),
-		current_page: z.coerce
-			.number()
-			.int()
-			.nonnegative()
-			.optional()
-			.describe("Zero-based page number; the first page is 0"),
-		page_size: z.coerce
-			.number()
-			.int()
-			.positive()
-			.max(100)
-			.optional()
-			.describe("Number of results per page"),
+		current_page: CurrentPageSchema,
+		page_size: PageSizeSchema.describe("Number of results per page"),
 	},
 	updateIntegrationWorkspaces: {
 		slug: z.string().describe("The slug of the integration"),

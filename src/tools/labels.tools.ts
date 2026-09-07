@@ -1,5 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import { CurrentPageSchema, PageSizeSchema } from "../lib/schemas.js";
 import type { PortkeyService } from "../services/index.js";
 import { jsonResult } from "./utils.js";
 
@@ -30,19 +31,8 @@ const LABELS_TOOL_SCHEMAS = {
 			.describe("Filter by organisation ID"),
 		workspace_id: z.string().optional().describe("Filter by workspace ID"),
 		search: z.string().optional().describe("Search labels by name"),
-		current_page: z.coerce
-			.number()
-			.int()
-			.nonnegative()
-			.optional()
-			.describe("Zero-based page number; the first page is 0"),
-		page_size: z.coerce
-			.number()
-			.int()
-			.positive()
-			.max(100)
-			.optional()
-			.describe("Results per page (max 100)"),
+		current_page: CurrentPageSchema,
+		page_size: PageSizeSchema,
 	},
 	getPromptLabel: {
 		label_id: z.string().describe("Label ID to retrieve"),

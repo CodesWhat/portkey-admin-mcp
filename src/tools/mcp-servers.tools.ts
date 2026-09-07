@@ -1,5 +1,10 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import {
+	CurrentPageSchema,
+	PageSizeSchema,
+	pageSizeSchema,
+} from "../lib/schemas.js";
 import type { PortkeyService } from "../services/index.js";
 import type {
 	McpServerUserAccess,
@@ -10,19 +15,8 @@ import { formatFullName, jsonResult } from "./utils.js";
 
 const MCP_SERVERS_TOOL_SCHEMAS = {
 	listMcpServers: {
-		current_page: z.coerce
-			.number()
-			.int()
-			.nonnegative()
-			.optional()
-			.describe("Zero-based page number; the first page is 0"),
-		page_size: z.coerce
-			.number()
-			.int()
-			.positive()
-			.max(100)
-			.optional()
-			.describe("Number of results per page (max 100)"),
+		current_page: CurrentPageSchema,
+		page_size: PageSizeSchema.describe("Number of results per page (max 100)"),
 		workspace_id: z.string().optional().describe("Filter by workspace ID"),
 	},
 	createMcpServer: {
@@ -55,19 +49,8 @@ const MCP_SERVERS_TOOL_SCHEMAS = {
 	},
 	listMcpServerCapabilities: {
 		id: z.string().describe("The MCP server ID or slug"),
-		current_page: z.coerce
-			.number()
-			.int()
-			.nonnegative()
-			.optional()
-			.describe("Zero-based page number; the first page is 0"),
-		page_size: z.coerce
-			.number()
-			.int()
-			.positive()
-			.max(100)
-			.optional()
-			.describe("Number of results per page (max 100)"),
+		current_page: CurrentPageSchema,
+		page_size: PageSizeSchema.describe("Number of results per page (max 100)"),
 	},
 	updateMcpServerCapabilities: {
 		id: z.string().describe("The MCP server ID or slug"),
@@ -86,19 +69,8 @@ const MCP_SERVERS_TOOL_SCHEMAS = {
 	},
 	listMcpServerUserAccess: {
 		id: z.string().describe("The MCP server ID or slug"),
-		current_page: z.coerce
-			.number()
-			.int()
-			.nonnegative()
-			.optional()
-			.describe("Zero-based page number; the first page is 0"),
-		page_size: z.coerce
-			.number()
-			.int()
-			.positive()
-			.max(100)
-			.optional()
-			.describe("Number of results per page (max 100)"),
+		current_page: CurrentPageSchema,
+		page_size: PageSizeSchema.describe("Number of results per page (max 100)"),
 	},
 	updateMcpServerUserAccess: {
 		id: z.string().describe("The MCP server ID or slug"),
@@ -127,19 +99,12 @@ const MCP_SERVERS_TOOL_SCHEMAS = {
 			.describe(
 				"Workspace ID or slug; required with an organisation admin API key",
 			),
-		current_page: z.coerce
-			.number()
-			.int()
-			.min(0)
-			.optional()
-			.describe("Zero-based results page; defaults to 0"),
-		page_size: z.coerce
-			.number()
-			.int()
-			.min(1)
-			.max(500)
-			.optional()
-			.describe("Connections per page, from 1 through 500; defaults to 100"),
+		current_page: CurrentPageSchema.describe(
+			"Zero-based results page; defaults to 0",
+		),
+		page_size: pageSizeSchema(500).describe(
+			"Connections per page, from 1 through 500; defaults to 100",
+		),
 	},
 	disconnectMcpServerConnection: {
 		id: z

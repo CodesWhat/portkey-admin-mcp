@@ -2,7 +2,9 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import {
 	BillingMetadataSchema,
+	CurrentPageSchema,
 	HyperparametersSchema,
+	PageSizeSchema,
 	PromptAppIdentifierSchema,
 	PromptEnvironmentIdentifierSchema,
 	PromptFunctionSchema,
@@ -117,19 +119,8 @@ const PROMPTS_TOOL_SCHEMAS = {
 			),
 		workspace_id: z.string().optional().describe("Filter by workspace ID"),
 		search: z.string().optional().describe("Search prompts by name"),
-		current_page: z.coerce
-			.number()
-			.int()
-			.nonnegative()
-			.optional()
-			.describe("Zero-based page number; the first page is 0"),
-		page_size: z.coerce
-			.number()
-			.int()
-			.positive()
-			.max(100)
-			.optional()
-			.describe("Results per page (max 100)"),
+		current_page: CurrentPageSchema,
+		page_size: PageSizeSchema,
 	},
 	getPrompt: {
 		prompt_id: z.string().describe("Prompt ID or slug to retrieve"),

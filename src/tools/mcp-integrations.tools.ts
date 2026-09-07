@@ -1,5 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import { CurrentPageSchema, pageSizeSchema } from "../lib/schemas.js";
 import type { PortkeyService } from "../services/index.js";
 import type {
 	McpIntegration,
@@ -41,19 +42,10 @@ const mcpConfigurationsSchema = z
 
 const MCP_INTEGRATIONS_TOOL_SCHEMAS = {
 	listMcpIntegrations: {
-		current_page: z.coerce
-			.number()
-			.int()
-			.nonnegative()
-			.optional()
-			.describe("Zero-based page number; the first page is 0"),
-		page_size: z.coerce
-			.number()
-			.int()
-			.positive()
-			.max(1000)
-			.optional()
-			.describe("Number of results per page (max 1000)"),
+		current_page: CurrentPageSchema,
+		page_size: pageSizeSchema(1000).describe(
+			"Number of results per page (max 1000)",
+		),
 		workspace_id: z.string().optional().describe("Filter by workspace ID"),
 		organisation_id: z
 			.string()
