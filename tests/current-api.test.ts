@@ -1518,6 +1518,18 @@ describe("new tool quality contract", () => {
 				{ readOnlyHint: false, destructiveHint: true, idempotentHint: true },
 			],
 			[
+				"list_guardrail_mcp_servers",
+				{ readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+			],
+			[
+				"replace_guardrail_mcp_servers",
+				{ readOnlyHint: false, destructiveHint: true, idempotentHint: true },
+			],
+			[
+				"upsert_guardrail_mcp_server",
+				{ readOnlyHint: false, destructiveHint: true, idempotentHint: true },
+			],
+			[
 				"get_log",
 				{ readOnlyHint: true, destructiveHint: false, idempotentHint: true },
 			],

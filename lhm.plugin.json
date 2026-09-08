@@ -7844,6 +7844,7 @@
 				"$schema": "http://json-schema.org/draft-07/schema#"
 			},
 			"annotations": {
+				"title": "List Guardrail MCP Servers",
 				"readOnlyHint": true,
 				"destructiveHint": false,
 				"idempotentHint": true,
@@ -7951,7 +7952,7 @@
 			"annotations": {
 				"title": "Upsert Guardrail MCP Server",
 				"readOnlyHint": false,
-				"destructiveHint": false,
+				"destructiveHint": true,
 				"idempotentHint": true,
 				"openWorldHint": true
 			}

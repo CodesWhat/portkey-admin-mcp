@@ -389,6 +389,13 @@ export function registerGuardrailsTools(
 		"list_guardrail_mcp_servers",
 		"List every MCP-server mapping for one guardrail, including the input/output phases and mapped capability IDs. Use this before replace_guardrail_mcp_servers because replacement removes every mapping omitted from its request.",
 		GUARDRAILS_TOOL_SCHEMAS.listGuardrailMcpServerMappings,
+		{
+			title: "List Guardrail MCP Servers",
+			readOnlyHint: true,
+			destructiveHint: false,
+			idempotentHint: true,
+			openWorldHint: true,
+		},
 		async ({ guardrail_id }) =>
 			jsonResult({
 				mappings:
@@ -426,7 +433,7 @@ export function registerGuardrailsTools(
 		{
 			title: "Upsert Guardrail MCP Server",
 			readOnlyHint: false,
-			destructiveHint: false,
+			destructiveHint: true,
 			idempotentHint: true,
 			openWorldHint: true,
 		},
