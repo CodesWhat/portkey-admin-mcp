@@ -56,7 +56,7 @@
 	},
 	"name": "portkey-admin-mcp",
 	"mcpName": "io.github.CodesWhat/portkey-admin-mcp",
-	"version": "0.11.3",
+	"version": "0.11.4",
 	"main": "build/index.js",
 	"keywords": [
 		"mcp",

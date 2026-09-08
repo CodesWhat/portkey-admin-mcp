@@ -5,7 +5,8 @@ import {
 	type Server as HttpServer,
 	request as httpRequest,
 } from "node:http";
-import net from "node:net";
+import { Server as HttpsServer, request as httpsRequest } from "node:https";
+import net, { type AddressInfo } from "node:net";
 import { describe, it } from "node:test";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
@@ -16,6 +17,10 @@ import {
 import { createManagedEventStore } from "../src/lib/event-store.js";
 import { Logger } from "../src/lib/logger.js";
 import { SessionStore } from "../src/lib/session-store.js";
+import {
+	OPENSSL_AVAILABLE,
+	writeSelfSignedCertFiles,
+} from "./helpers/tls-cert.js";
 
 const MANAGED_ENV_KEYS = [
 	"ALLOWED_ORIGINS",
@@ -998,5 +1003,107 @@ describe("final HTTP runtime edge behavior", { concurrency: false }, () => {
 				await runtime.closeHttpApp().catch(() => {});
 			}
 		});
+	});
+
+	it("closes the listener on closeHttpApp so the port can be reused", async () => {
+		const port = await getFreePort();
+		const restoreExit = interceptExit((code) => {
+			throw new Error(`unexpected process.exit(${code})`);
+		});
+		try {
+			await withEnvironment({ PORT: String(port) }, async () => {
+				const runtime1 = createHttpAppRuntime();
+				const server1 = runtime1.startHttpServer();
+				await waitUntilListening(server1);
+				assert.equal(server1.listening, true);
+
+				await runtime1.closeHttpApp();
+				assert.equal(server1.listening, false);
+
+				const runtime2 = createHttpAppRuntime();
+				const server2 = runtime2.startHttpServer();
+				try {
+					await waitUntilListening(server2);
+					assert.equal(server2.listening, true);
+					assert.equal((server2.address() as AddressInfo).port, port);
+				} finally {
+					await runtime2.closeHttpApp();
+					assert.equal(server2.listening, false);
+					await closeServer(server1);
+					await closeServer(server2);
+				}
+			});
+		} finally {
+			restoreExit();
+		}
+	});
+
+	it("serves requests over native HTTPS through startHttpServer", {
+		skip: OPENSSL_AVAILABLE ? false : "openssl binary not available",
+	}, async () => {
+		const { cert, certPath, keyPath, cleanup } = writeSelfSignedCertFiles();
+		try {
+			const port = await getFreePort();
+			await withEnvironment(
+				{
+					PORT: String(port),
+					MCP_TLS_CERT_PATH: certPath,
+					MCP_TLS_KEY_PATH: keyPath,
+				},
+				async () => {
+					const runtime = createHttpAppRuntime();
+					const server = runtime.startHttpServer();
+					try {
+						await waitUntilListening(server);
+						assert.ok(server instanceof HttpsServer);
+
+						const body = await new Promise<{
+							statusCode: number;
+							body: string;
+						}>((resolveResponse, reject) => {
+							const request = httpsRequest(
+								{
+									host: "127.0.0.1",
+									port,
+									path: "/auth/info",
+									ca: cert,
+								},
+								(response) => {
+									let rawBody = "";
+									response.setEncoding("utf8");
+									response.on("data", (chunk: string) => {
+										rawBody += chunk;
+									});
+									response.on("end", () => {
+										resolveResponse({
+											statusCode: response.statusCode ?? 0,
+											body: rawBody,
+										});
+									});
+								},
+							);
+							request.on("error", reject);
+							request.end();
+						});
+
+						assert.equal(body.statusCode, 200);
+						const parsed = JSON.parse(body.body) as {
+							tls: { enabled: boolean; protocol: string };
+							mcpEndpoint: string;
+						};
+						assert.deepEqual(parsed.tls, {
+							enabled: true,
+							protocol: "https",
+						});
+						assert.equal(parsed.mcpEndpoint, `https://127.0.0.1:${port}/mcp`);
+					} finally {
+						await runtime.closeHttpApp();
+						assert.equal(server.listening, false);
+					}
+				},
+			);
+		} finally {
+			cleanup();
+		}
 	});
 });

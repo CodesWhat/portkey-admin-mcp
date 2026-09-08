@@ -1,19 +1,21 @@
 import assert from "node:assert/strict";
-import { type ChildProcess, execFileSync, spawn } from "node:child_process";
+import { type ChildProcess, spawn } from "node:child_process";
 import { EventEmitter, once } from "node:events";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import {
 	createServer as createHttpServer,
 	request as httpRequest,
 } from "node:http";
 import https, { type Server as HttpsServer } from "node:https";
 import net from "node:net";
-import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { resolve } from "node:path";
 import { afterEach, describe, it } from "node:test";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { exportJWK, generateKeyPair, SignJWT } from "jose";
+import {
+	generateSelfSignedCert,
+	OPENSSL_AVAILABLE,
+} from "./helpers/tls-cert.js";
 
 const TSX_CLI_PATH = resolve(process.cwd(), "node_modules/tsx/dist/cli.mjs");
 const AUTH_TOKEN = "test-secret";
@@ -193,59 +195,6 @@ async function requestJsonWithHeaders(
 const CLERK_TEST_ISSUER = "https://clerk.example.com";
 const CLERK_TEST_AUDIENCE = "portkey-admin-mcp-tests";
 const CLERK_TEST_KID = "session-isolation-test-key";
-
-// The clerk isolation test shells out to `openssl` to mint a throwaway cert for
-// the local HTTPS JWKS server. openssl isn't guaranteed on every machine (or CI
-// image), so probe for it once and skip that single test where it's absent
-// rather than failing the suite on a missing system binary.
-function hasOpenssl(): boolean {
-	try {
-		execFileSync("openssl", ["version"], { stdio: "ignore" });
-		return true;
-	} catch {
-		return false;
-	}
-}
-
-const OPENSSL_AVAILABLE = hasOpenssl();
-
-// On CI the isolation test below is the only HTTP-layer proof that two clerk
-// principals cannot reach each other's sessions, so a missing openssl there is a
-// broken runner image and must fail loudly instead of quietly skipping it.
-if (process.env.CI && !OPENSSL_AVAILABLE) {
-	throw new Error(
-		"openssl is required on CI: the clerk session isolation test must not be skipped",
-	);
-}
-
-function generateSelfSignedCert(): { key: string; cert: string } {
-	const dir = mkdtempSync(join(tmpdir(), "portkey-mcp-jwks-cert-"));
-	try {
-		const keyPath = join(dir, "key.pem");
-		const certPath = join(dir, "cert.pem");
-		execFileSync("openssl", [
-			"req",
-			"-x509",
-			"-newkey",
-			"rsa:2048",
-			"-nodes",
-			"-keyout",
-			keyPath,
-			"-out",
-			certPath,
-			"-days",
-			"1",
-			"-subj",
-			"/CN=127.0.0.1",
-		]);
-		return {
-			key: readFileSync(keyPath, "utf8"),
-			cert: readFileSync(certPath, "utf8"),
-		};
-	} finally {
-		rmSync(dir, { recursive: true, force: true });
-	}
-}
 
 interface JwksTestContext {
 	jwksUrl: string;
