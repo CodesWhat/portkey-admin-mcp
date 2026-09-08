@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.6] - 2026-09-08
+
+Maintenance release for dependency automation and test assurance. Runtime source
+and the 178-tool catalog are unchanged, so MCP clients do not need to refresh
+`tools/list`.
+
+### Changed
+
+- Target Renovate pull requests at the active `dev/0.11` branch instead of
+  protected `main`, with a regression assertion that prevents the release lane
+  from drifting back to direct-main dependency updates.
+- Replace disabled certificate validation in the native HTTPS end-to-end test
+  with an IP-SAN certificate trusted through its generated CA. This keeps the
+  positive TLS path covered without weakening verification.
+
 ## [0.11.5] - 2026-09-08
 
 Dependency-only release. No source changes and the tool catalog is unchanged,
@@ -705,7 +720,8 @@ First stable release. Graduates from beta with 151 tools covering ~98% of the Po
 - Vercel deployment support
 - Contract tests, E2E tests, security tests
 
-[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.11.5...HEAD
+[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.11.6...HEAD
+[0.11.6]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.11.5...v0.11.6
 [0.11.5]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.11.4...v0.11.5
 [0.11.4]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.11.3...v0.11.4
 [0.11.3]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.11.2...v0.11.3
