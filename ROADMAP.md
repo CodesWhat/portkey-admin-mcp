@@ -55,6 +55,9 @@ README, endpoint catalog, domain counts, and Enterprise-gated inventory together
 - Corrected Renovate's base branch to the active development line and verified
   npm 12 still installs the repository's lefthook-managed Git hooks.
 - Refreshed the generated endpoint and LobeHub inventories for 181 tools.
+- Aligned npm and MCP Registry descriptions, documented every maintained and
+  observed distribution surface, and refreshed Awesome MCP Servers PR #13074
+  against current upstream with the CodesWhat owner and 181-tool inventory.
 
 ## Completed 2026-08-28
 
@@ -122,8 +125,9 @@ stable and public:
 
 - Prompt and partial share/fork/unshare, shared-type filters, and share metadata.
 - Agent Gateway management.
-- SDK-only MCP integration sync, credential, client-info, metadata, and access-check
-  operations that do not yet have safe public contracts.
+- SDK-only MCP integration sync, credential, client-info, access-check, and richer
+  metadata operations beyond the existing public metadata route that do not yet
+  have safe public contracts.
 - MCP integration test/named authorization parameters, guardrail `ids`, and
   workspace `name_format=plain`, which are absent from the current public OpenAPI.
 - Disputed limit-policy extensions such as `tpm|tph|tpd`, requests-based usage
@@ -135,6 +139,18 @@ stable and public:
   real failures.
 - A native Prisma AIRS adapter. Add one only after Palo Alto Networks publishes a
   stable AI Gateway management API; keep it distinct from Portkey mode.
+
+## Distribution follow-up
+
+- Submit the existing containerized stdio server to the curated Docker MCP
+  Catalog and keep the catalog manifest pinned to a released source revision.
+- Recheck PulseMCP after listing changes reopen. Its legacy record still uses the
+  pre-organization namespace and is not currently editable.
+- Claim or refresh the stale mcp.so record when its owner workflow is available.
+  Treat FindMCP and Enterprise DNA as downstream mirrors unless they publish a
+  supported correction path.
+- Defer Smithery until this project intentionally ships an MCPB bundle or a
+  hosted Streamable HTTP endpoint.
 
 ## Fixture evidence boundary
 

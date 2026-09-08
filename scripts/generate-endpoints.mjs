@@ -301,9 +301,9 @@ ${sections.join("\n\n")}
   publishes complete public contracts and an unambiguous versioned base path.
 - Agent Gateway management remains out until its public management contract is
   merged and stable.
-- SDK-only MCP integration sync, credential, metadata, client-info, and access-check
-  operations remain out unless they gain public contracts and transcript-safe
-  credential handling.
+- SDK-only MCP integration sync, credential, client-info, access-check, and richer
+  metadata operations beyond the public metadata route remain out unless they gain
+  public contracts and transcript-safe credential handling.
 - MCP integration test/authorization-parameter additions and guardrail \`ids\`
   filtering remain tracked because they are absent from the current public OpenAPI.
 - Prisma AIRS remains a separate interoperability surface, not a

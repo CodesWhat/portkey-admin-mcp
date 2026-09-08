@@ -41,6 +41,7 @@
 - [API Key Scopes](#api-key-scopes)
 - [HTTP Server (Experimental)](#http-server)
 - [Architecture](./docs/ARCHITECTURE.md)
+- [Distribution and directories](./docs/DISTRIBUTION.md)
 - [Prisma AIRS interoperability](./docs/PRISMA_AIRS_INTEROPERABILITY.md)
 - [Verify a release](./docs/VERIFY_RELEASE.md)
 - [Development](#development)
@@ -349,6 +350,10 @@ for the public threat model and assurance case.
 
 Questions and bug reports belong in [Issues](https://github.com/CodesWhat/portkey-admin-mcp/issues); broader discussion, ideas, and help using the server belong in [Discussions](https://github.com/CodesWhat/portkey-admin-mcp/discussions).
 
+The maintained package, registry, marketplace, and directory records are listed
+in [Distribution and directories](./docs/DISTRIBUTION.md). Treat the generated
+tool catalog in this repository as authoritative when a third-party index lags.
+
 ---
 
 <div align="center">
@@ -376,7 +381,7 @@ Questions and bug reports belong in [Issues](https://github.com/CodesWhat/portke
   </picture>
 </a>
 
-Also listed on [LobeHub](https://lobehub.com/mcp/codeswhat-portkey-admin-mcp) and [Glama](https://glama.ai/mcp/servers/CodesWhat/portkey-admin-mcp):
+Marketplace listings on [LobeHub](https://lobehub.com/mcp/codeswhat-portkey-admin-mcp) and [Glama](https://glama.ai/mcp/servers/CodesWhat/portkey-admin-mcp):
 
 [![LobeHub MCP](https://lobehub.com/badge/mcp/codeswhat-portkey-admin-mcp)](https://lobehub.com/mcp/codeswhat-portkey-admin-mcp)
 

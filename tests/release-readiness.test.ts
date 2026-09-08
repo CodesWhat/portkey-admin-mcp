@@ -38,6 +38,33 @@ test("the MCP Registry description satisfies the current length limit", () => {
 	);
 });
 
+test("npm and MCP Registry use the same canonical project description", () => {
+	const packageJson = readJson("package.json");
+	const server = readJson("server.json");
+
+	assert.equal(server.description, `${packageJson.description}.`);
+});
+
+test("the distribution inventory covers maintained and observed listings", () => {
+	const inventory = readFileSync(`${root}docs/DISTRIBUTION.md`, "utf8");
+
+	for (const surface of [
+		"npm",
+		"MCP Registry",
+		"LobeHub",
+		"Glama",
+		"Awesome MCP Servers",
+		"Docker MCP Catalog",
+		"PulseMCP",
+		"mcp.so",
+		"FindMCP",
+		"Enterprise DNA",
+		"Smithery",
+	]) {
+		assert.match(inventory, new RegExp(surface, "i"));
+	}
+});
+
 test("an existing release can republish a corrected MCP Registry manifest", () => {
 	const workflowSource = readFileSync(
 		`${root}.github/workflows/release.yml`,
@@ -106,6 +133,7 @@ test("the npm artifact includes every local document linked from README", () => 
 	const files = packageJson.files as string[];
 
 	assert.ok(files.includes("ENDPOINTS.md"));
+	assert.ok(files.includes("docs/DISTRIBUTION.md"));
 	assert.ok(files.includes("docs/PRISMA_AIRS_INTEROPERABILITY.md"));
 	assert.ok(files.includes("docs/VERCEL_DEPLOYMENT.md"));
 });

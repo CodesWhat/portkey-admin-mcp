@@ -41,6 +41,7 @@
 	"files": [
 		"build",
 		"ENDPOINTS.md",
+		"docs/DISTRIBUTION.md",
 		"docs/PRISMA_AIRS_INTEROPERABILITY.md",
 		"docs/VERCEL_DEPLOYMENT.md"
 	],
@@ -75,7 +76,7 @@
 	],
 	"author": "Scott Benson",
 	"license": "MIT",
-	"description": "Portkey Admin API MCP server with current control-plane coverage and Prisma AIRS interoperability guidance",
+	"description": "Portkey Admin API control-plane MCP server with Prisma AIRS interoperability guidance",
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/CodesWhat/portkey-admin-mcp.git"
