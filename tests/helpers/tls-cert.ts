@@ -46,6 +46,8 @@ export function generateSelfSignedCert(): { key: string; cert: string } {
 			"1",
 			"-subj",
 			"/CN=127.0.0.1",
+			"-addext",
+			"subjectAltName=IP:127.0.0.1",
 		]);
 		return {
 			key: readFileSync(keyPath, "utf8"),
@@ -57,6 +59,7 @@ export function generateSelfSignedCert(): { key: string; cert: string } {
 }
 
 export function writeSelfSignedCertFiles(): {
+	cert: string;
 	certPath: string;
 	keyPath: string;
 	cleanup: () => void;
@@ -68,6 +71,7 @@ export function writeSelfSignedCertFiles(): {
 	writeFileSync(certPath, cert);
 	writeFileSync(keyPath, key);
 	return {
+		cert,
 		certPath,
 		keyPath,
 		cleanup: () => {
