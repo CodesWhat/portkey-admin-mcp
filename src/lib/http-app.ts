@@ -1615,6 +1615,7 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 					cleanupInterval = undefined;
 				}
 
+				const failures: unknown[] = [];
 				try {
 					if (isStatefulSessionMode) {
 						await sessionStore.closeAll();
@@ -1625,15 +1626,28 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 						),
 					);
 					await Promise.allSettled(activeReplayOperations);
-				} finally {
-					try {
-						await Promise.all([
-							managedEventStore.close(),
-							closeRateLimitStore(),
-						]);
-					} finally {
-						await closeListener();
+				} catch (error) {
+					failures.push(error);
+				}
+
+				const storeResults = await Promise.allSettled([
+					managedEventStore.close(),
+					closeRateLimitStore(),
+				]);
+				for (const result of storeResults) {
+					if (result.status === "rejected") {
+						failures.push(result.reason);
 					}
+				}
+
+				try {
+					await closeListener();
+				} catch (error) {
+					failures.push(error);
+				}
+
+				if (failures.length > 0) {
+					throw failures[0];
 				}
 			})();
 		}
