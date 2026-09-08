@@ -509,6 +509,32 @@ describe("MCP E2E Protocol Tests", () => {
 			}
 		});
 
+		it("guardrail MCP mapping tools accept a UUID or slug", async () => {
+			const result = await client.listTools();
+			const tools = new Map(result.tools.map((tool) => [tool.name, tool]));
+			for (const name of [
+				"list_guardrail_mcp_servers",
+				"replace_guardrail_mcp_servers",
+				"upsert_guardrail_mcp_server",
+			]) {
+				const guardrailId = (
+					tools.get(name)?.inputSchema.properties as
+						| Record<
+								string,
+								{ type?: string; minLength?: number; format?: string }
+						  >
+						| undefined
+				)?.guardrail_id;
+				assert.equal(guardrailId?.type, "string", `${name} needs a string ID`);
+				assert.equal(guardrailId?.minLength, 1, `${name} rejects empty IDs`);
+				assert.equal(
+					guardrailId?.format,
+					undefined,
+					`${name} must not reject guardrail slugs`,
+				);
+			}
+		});
+
 		it("all pagination inputs require integers", async () => {
 			const result = await client.listTools();
 			for (const tool of result.tools) {

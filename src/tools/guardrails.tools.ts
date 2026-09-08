@@ -165,10 +165,10 @@ const GUARDRAILS_TOOL_SCHEMAS = {
 			.describe("Replace existing exclusion states instead of merging changes"),
 	},
 	listGuardrailMcpServerMappings: {
-		guardrail_id: z.string().uuid().describe("Guardrail UUID"),
+		guardrail_id: z.string().min(1).describe("Guardrail UUID or slug"),
 	},
 	replaceGuardrailMcpServerMappings: {
-		guardrail_id: z.string().uuid().describe("Guardrail UUID"),
+		guardrail_id: z.string().min(1).describe("Guardrail UUID or slug"),
 		mcp_servers: z
 			.record(z.string().uuid(), guardrailMcpServerMappingConfigSchema)
 			.describe(
@@ -176,7 +176,7 @@ const GUARDRAILS_TOOL_SCHEMAS = {
 			),
 	},
 	upsertGuardrailMcpServerMapping: {
-		guardrail_id: z.string().uuid().describe("Guardrail UUID"),
+		guardrail_id: z.string().min(1).describe("Guardrail UUID or slug"),
 		mcp_server_id: z.string().uuid().describe("MCP server UUID"),
 		...guardrailMcpServerMappingConfigShape,
 	},

@@ -290,7 +290,7 @@ describe("guardrail lifecycle through the safe tool server", () => {
 	});
 
 	it("lists, replaces, and upserts guardrail MCP-server mappings", async () => {
-		const guardrailId = "e9f2c706-bf2a-4cc7-8ceb-3bbd1f6770c5";
+		const guardrailId = "pg-pii-filter-a1b2c3";
 		const serverId = "4fc595a8-15f9-4f1b-83cf-3f881873ad1d";
 		const capabilityId = "25a0ea52-e89f-43cd-8e15-267004cd1564";
 		const calls: unknown[] = [];
