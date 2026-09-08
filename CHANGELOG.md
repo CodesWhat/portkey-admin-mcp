@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.4] - 2026-09-07
+
+Bug-fix release for the HTTP transport's programmatic shutdown. The tool
+catalog is unchanged, so MCP clients do not need to refresh `tools/list`.
+
+### Fixed
+
+- Close the HTTP(S) listener from `closeHttpApp()`. It only tore down sessions,
+  the event store, and the rate-limit store, so a host that stopped the runtime
+  through the exported lifecycle API and started it again on the same port
+  failed with `EADDRINUSE`. The listener now closes after those resources, even
+  when one of them throws, and the signal-driven shutdown path no longer
+  double-closes it.
+
+### Changed
+
+- Cover native HTTPS end to end. The HTTP runtime suite now starts the real
+  listener with a generated certificate and completes a TLS request against it
+  instead of only checking the reported TLS metadata over plain HTTP. The
+  self-signed certificate helper moved to `tests/helpers/` so both HTTP suites
+  share it.
+
 ## [0.11.3] - 2026-09-07
 
 Bug-fix release for the `list_*` pagination schemas. Four tools accepted an
@@ -668,7 +690,8 @@ First stable release. Graduates from beta with 151 tools covering ~98% of the Po
 - Vercel deployment support
 - Contract tests, E2E tests, security tests
 
-[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.11.3...HEAD
+[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.11.4...HEAD
+[0.11.4]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.11.3...v0.11.4
 [0.11.3]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.11.2...v0.11.3
 [0.11.2]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.11.1...v0.11.2
 [0.11.1]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.11.0...v0.11.1
