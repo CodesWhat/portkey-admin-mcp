@@ -1588,6 +1588,22 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 		}
 	}
 
+	async function closeListener(): Promise<void> {
+		const listener = server;
+		if (!listener?.listening) {
+			return;
+		}
+		await new Promise<void>((resolveClose, reject) => {
+			listener.once("close", resolveClose);
+			listener.close((error) => {
+				if (error) {
+					reject(error);
+				}
+			});
+			listener.closeIdleConnections();
+		});
+	}
+
 	async function closeRuntimeResources(): Promise<void> {
 		if (!closeRuntimeResourcesPromise) {
 			closeRuntimeResourcesPromise = (async () => {
@@ -1610,7 +1626,14 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 					);
 					await Promise.allSettled(activeReplayOperations);
 				} finally {
-					await Promise.all([managedEventStore.close(), closeRateLimitStore()]);
+					try {
+						await Promise.all([
+							managedEventStore.close(),
+							closeRateLimitStore(),
+						]);
+					} finally {
+						await closeListener();
+					}
 				}
 			})();
 		}
@@ -1678,7 +1701,9 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 		console.log(`\n[MCP] Received ${signal}, shutting down gracefully...`);
 		const shutdownTimeoutMs = config.shutdownTimeout;
 
+		let forced = false;
 		const forceExitTimer = setTimeout(() => {
+			forced = true;
 			console.error(
 				`[MCP] Forced shutdown after ${shutdownTimeoutMs}ms timeout`,
 			);
@@ -1697,9 +1722,14 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 			);
 		}
 
+		if (forced) {
+			return;
+		}
+
 		if (!server) {
 			clearTimeout(forceExitTimer);
 			process.exit(exitCode);
+			return;
 		}
 
 		server.close(() => {
