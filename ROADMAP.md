@@ -97,8 +97,8 @@ README, endpoint catalog, domain counts, and Enterprise-gated inventory together
   replay store has event/byte caps and indexed eviction.
 - Private IPv6 coverage is complete, trust-all proxy mode is rejected, stateful
   transport failures return JSON-RPC, and the duplicate HTTP limiter is gone.
-- Every confirmed review finding has focused regression coverage. The ignored
-  `.research-findings.md` owns the detailed 21-item checklist and verification state.
+- Every confirmed review finding has focused regression coverage in the repository
+  test suite, with implementation history retained in the merged pull requests.
 - HTTP docs state that every authenticated principal shares the configured
   Portkey credential and that separate trust levels need separately scoped
   deployments and tool-domain allowlists.
