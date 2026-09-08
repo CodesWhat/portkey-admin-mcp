@@ -1,12 +1,12 @@
 # Portkey Admin API endpoints and MCP tools
 
 Generated from the registered tool catalog by `npm run generate:endpoints`.
-Route mappings were reviewed against the official Portkey OpenAPI on 2026-08-28.
+Route mappings were reviewed against the official Portkey OpenAPI on 2026-09-08.
 
 - Base URL: `https://api.portkey.ai/v1`
 - Authentication: `x-portkey-api-key`
 - Public catalog exception: `get_model_pricing` uses `https://api.portkey.ai` without authentication
-- Total: 178 tools across 20 domains
+- Total: 181 tools across 20 domains
 - Enterprise-gated names and counts are maintained in `src/tools/index.ts` and verified against README by `npm run verify:readme-tools`
 
 The route lists are domain-level service routes. The tool tables are the complete
@@ -218,13 +218,14 @@ Routes:
 | `get_feedback_scores_analytics` | Get raw feedback-score distribution time-series data with per-score buckets. Use this to understand sentiment mix; use get_feedback_weighted_analytics for calibrated scores with weighting. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans. |
 | `get_feedback_weighted_analytics` | Get weighted feedback-score time-series data using the weight recorded at feedback creation. Use this for calibrated quality metrics; use get_feedback_scores_analytics for the raw unweighted distribution. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans. |
 
-## guardrails (11)
+## guardrails (14)
 
 Routes:
 
 - GET/PUT `/admin/organisation/defaults`
 - GET/PUT `/workspace-exclusions/{input-guardrails|output-guardrails}`
 - GET/POST `/guardrails`; GET/PUT/DELETE `/guardrails/{guardrailId}`
+- GET/PUT `/guardrails/{guardrailId}/mcp-servers`; PUT `/guardrails/{guardrailId}/mcp-servers/{mcpServerId}`
 
 | Tool | Selection guidance and result |
 |---|---|
@@ -236,7 +237,10 @@ Routes:
 | `update_output_guardrail_workspace_exclusions` | Set workspace exclusions from organisation-wide output guardrails. Each entry excludes or restores one workspace; override_existing replaces prior states while the default merge behavior preserves unmentioned workspaces. Review the matching list tool first because enforcement changes immediately. Repeating the same states is safe. Requires an organisation service API key with organisation_exclusions.update scope. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans. |
 | `list_guardrails` | List guardrails in the org with id, slug, status, ownership, and optional workspace/org filters. Use this to find IDs and slugs before get_guardrail, update_guardrail, or delete_guardrail. |
 | `get_guardrail` | Fetch one guardrail by id or slug with its full checks and actions; use list_guardrails to discover ids first. Use before update_guardrail or delete_guardrail when you need the exact enforcement policy, and returns the full check and action configuration alongside status and ownership. |
-| `create_guardrail` | Create a guardrail with checks and actions for request filtering. Create it first, then reference it from configs; the new version becomes the policy anchor for downstream use. |
+| `create_guardrail` | Create an LLM or MCP-tool guardrail. LLM guardrails require checks and actions; MCP-tool guardrails can be created first and mapped to servers afterward. The new version becomes the policy anchor for downstream use. |
+| `list_guardrail_mcp_servers` | List every MCP-server mapping for one guardrail, including the input/output phases and mapped capability IDs. Use this before replace_guardrail_mcp_servers because replacement removes every mapping omitted from its request. |
+| `replace_guardrail_mcp_servers` | Replace the complete MCP-server mapping set for one guardrail. Any existing server omitted from mcp_servers is removed, and an empty object clears all mappings. Read list_guardrail_mcp_servers first. Repeating the same complete map is safe. |
+| `upsert_guardrail_mcp_server` | Create or replace one guardrail mapping for one MCP server without changing mappings for other servers. run_on defaults to both input and output. Use list_guardrail_mcp_servers to inspect the current mapping set first. Repeating the same mapping is safe. |
 | `update_guardrail` | Update a guardrail's name, checks, or actions, unlike create_guardrail which registers a new one or delete_guardrail which removes it. This creates a new version that takes effect immediately for dependent configs, so review list_guardrails first; returns the updated id, slug, and version_id. |
 | `delete_guardrail` | Delete a guardrail by id or slug. This is irreversible and removes the check from any configs that reference it, so review dependent configs first. |
 
@@ -258,7 +262,7 @@ Routes:
 | `list_usage_limits` | List cumulative cost or token usage-limit policies with current conditions, grouping, reset schedule, status, and scope. Filter by workspace, policy type, status, and pagination. |
 | `get_usage_limit` | Get one cumulative usage-limit policy by id. Use list_usage_limits first when the id is unknown. Optionally include per-value usage counters and retrieve archived policies; scheduled reset timestamps are returned when present. |
 | `create_usage_limit` | Create a cumulative cost or token usage-limit policy with non-empty conditions and grouping. A periodic reset can be weekly, monthly, or omitted for a cumulative lifetime limit. |
-| `update_usage_limit` | Update a cumulative usage-limit policy's name, credit limit, alert threshold, reset schedule, or one grouped value's usage. Conditions and grouping aren't mutable in the public contract. |
+| `update_usage_limit` | Update a cumulative usage-limit policy's name, description, complete condition set, credit limit, alert threshold, reset schedule, next reset time, or one grouped value's usage. periodic_reset and periodic_reset_days are mutually exclusive; conditions replace the existing set. |
 | `delete_usage_limit` | Archive a cumulative usage-limit policy by id. The policy stops enforcing its budget but its historical record remains available through archived-status reads. |
 | `list_usage_limit_entities` | List the values currently tracked by one usage-limit policy with each value key and current usage. Filter by active or exhausted state, search text, and pagination before resetting one counter. |
 | `reset_usage_limit_entity` | Reset the current usage counter for one tracked usage-limit entity. This changes enforcement immediately for that exact policy and entity, so use the entity id returned by list_usage_limit_entities. |
@@ -434,15 +438,21 @@ Routes:
 - Rate conditions are `{ key, value, excludes? }`; grouping entries are
   `{ key }`. Rate units are `rpm|rph|rpd|rpw`, and targets are
   `llm|mcp_tools`.
-- Usage-policy reads include current reset metadata when Portkey returns it:
-  `periodic_reset_days`, `next_usage_reset_at`, and `last_reset_at`.
+- Usage-policy reads include current reset metadata when Portkey returns it.
+  Updates support complete condition replacement, `periodic_reset_days`, and
+  `next_usage_reset_at`, while rejecting simultaneous named and custom-day reset
+  modes.
 - Workspace membership creation accepts one MCP-facing member but sends Portkey's
   batched `{ users: [{ id, role }] }` wire form.
 - Prompt `is_raw_template` semantics are preserved through create, update,
   migration, copy, version reads, and promotion.
 - Deployment registration or authentication rotation may return one-time secrets.
   Tool results warn that those values appear in the MCP transcript and must be
-  stored immediately. The deprecated deployment ping operation is not exposed.
+  stored immediately. Deployment tag maps remain flat strings and list filters
+  serialize them as JSON. The deprecated deployment ping operation is not exposed.
+- Guardrails target either LLM or MCP-tool traffic. MCP-server bulk replacement
+  removes omitted mappings, while the single-server upsert leaves other mappings
+  unchanged.
 - Virtual Keys and Providers remain separate current Admin API domains even as
   Portkey product terminology shifts toward Providers.
 

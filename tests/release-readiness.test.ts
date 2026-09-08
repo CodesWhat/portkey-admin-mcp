@@ -136,6 +136,7 @@ test("the live smoke suite covers new read-only compatibility surfaces", () => {
 		"getDeployment",
 		"listMcpIntegrations",
 		"getMcpIntegration",
+		"listGuardrailMcpServerMappings",
 		"listUsageLimitEntities",
 		"getCacheSummary",
 		"getAnalyticsGroupProviders",

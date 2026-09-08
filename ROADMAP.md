@@ -1,8 +1,8 @@
 # Portkey Admin MCP roadmap
 
-> Last reviewed: 2026-08-28
+> Last reviewed: 2026-09-08
 > Status: active compatibility maintenance
-> Current catalog: 178 tools across 20 domains, including 53 Enterprise-gated tools
+> Current catalog: 181 tools across 20 domains, including 53 Enterprise-gated tools
 
 Portkey continues to publish control-plane additions after its acquisition by
 Palo Alto Networks. This project follows the stable public Portkey OpenAPI and
@@ -16,12 +16,12 @@ track and is not treated as a compatible `PORTKEY_BASE_URL`.
 | Users | 10 | Accepted users, invitations, stats, lifecycle |
 | Workspaces | 14 | Workspace lifecycle, members, SCIM mappings/groups |
 | Configs | 6 | Gateway configuration lifecycle and versions |
-| Deployments | 5 | Self-hosted Gateway registration, reads, updates, archival |
+| Deployments | 5 | Self-hosted Gateway registration, tags, reads, updates, archival |
 | Keys | 11 | Virtual Keys and API keys, rotation, current limits/defaults |
 | Collections | 5 | Prompt collections |
 | Prompts | 14 | Lifecycle, versions, render, completion, migration, promotion |
 | Analytics | 22 | Graphs, cache summary, and grouped user/model/provider/metadata views |
-| Guardrails | 11 | Policies, organisation defaults, workspace exclusions |
+| Guardrails | 14 | LLM and MCP-tool policies, server mappings, organisation defaults, workspace exclusions |
 | Limits | 12 | Rate/usage policies, tracked entities, counter reset |
 | Audit | 1 | Audit-log reads |
 | Labels | 5 | Prompt version labels |
@@ -37,6 +37,24 @@ track and is not treated as a compatible `PORTKEY_BASE_URL`.
 The complete generated tool catalog and route matrix lives in
 [ENDPOINTS.md](./ENDPOINTS.md). `npm run verify:readme-tools` checks the source,
 README, endpoint catalog, domain counts, and Enterprise-gated inventory together.
+
+## Completed 2026-09-08
+
+- Revalidated the official Portkey OpenAPI through commit `3fa53f2`. Added the
+  stable September contracts for deployment tags, expanded usage-limit policy
+  updates, and guardrail MCP targets and server mappings.
+- Deployment list filters encode tag maps as JSON, create and update preserve
+  flat string tags, and `null` clears all tags where the API permits it.
+- Usage-limit updates now support descriptions, complete condition replacement,
+  custom reset-day intervals, explicit next-reset timestamps, and the documented
+  null-clear fields. Weekly/monthly and custom-day reset modes cannot be active
+  together.
+- Guardrails can target LLM or MCP-tool traffic. Three MCP tools list, replace,
+  and upsert server mappings, with replacement semantics and default input/output
+  phases surfaced in their runtime schemas and descriptions.
+- Corrected Renovate's base branch to the active development line and verified
+  npm 12 still installs the repository's lefthook-managed Git hooks.
+- Refreshed the generated endpoint and LobeHub inventories for 181 tools.
 
 ## Completed 2026-08-28
 
@@ -108,14 +126,13 @@ stable and public:
   operations that do not yet have safe public contracts.
 - MCP integration test/named authorization parameters, guardrail `ids`, and
   workspace `name_format=plain`, which are absent from the current public OpenAPI.
-- Disputed limit-policy extensions such as `tpm|tph|tpd`, arbitrary reset cadence,
-  requests-based usage policies, and mutability beyond the published schema.
-- Hosted control-plane route availability. The merged public OpenAPI documents
-  deployments, SCIM groups, and organisation defaults, but the available hosted
-  organisation credential reached data-plane routes and received missing-provider
-  HTTP 400 responses for `/v1/deployments`, `/v1/scim/groups`, and
-  `/v1/admin/organisation/defaults`. Keep the documented Enterprise/self-hosted
-  tools and recheck those hosted routes.
+- Disputed limit-policy extensions such as `tpm|tph|tpd`, requests-based usage
+  policies, custom reset cadence on creation, and fields absent from the published
+  schemas.
+- Hosted control-plane route availability for credentials that lack the required
+  organisation or feature scopes. The smoke runner treats only explicit HTTP 401
+  and 403 permission denials as skips; unexpected HTTP 400 route failures remain
+  real failures.
 - A native Prisma AIRS adapter. Add one only after Palo Alto Networks publishes a
   stable AI Gateway management API; keep it distinct from Portkey mode.
 
@@ -127,7 +144,6 @@ Secret References, analytics additions, usage-limit entities, and deployments
 remain documentation-derived for the explicit scope or route outcomes recorded in
 `tests/fixtures/manifest.json`.
 
-The 2026-08-27 live read-only smoke run also confirmed that other unavailable
-operations return explicit HTTP 401 or 403 permission responses for the configured
-credential. The smoke runner treats those scope outcomes and the three hosted route
-gaps above as skips while preserving failures for unexpected responses.
+The live read-only smoke run also confirms unavailable operations through explicit
+HTTP 401 or 403 permission responses for the configured credential. Those scope
+outcomes are skips; every unexpected response remains a failure.

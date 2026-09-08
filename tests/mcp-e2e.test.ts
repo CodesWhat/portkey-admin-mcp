@@ -67,7 +67,7 @@ const PKG = JSON.parse(
 	readFileSync(new URL("../package.json", import.meta.url), "utf-8"),
 );
 
-// All 178 expected tool names across 20 domains
+// All 181 expected tool names across 20 domains
 const EXPECTED_TOOLS = [
 	// users (10)
 	"list_all_users",
@@ -170,7 +170,7 @@ const EXPECTED_TOOLS = [
 	"get_analytics_group_models",
 	"get_analytics_group_metadata",
 	"get_analytics_group_providers",
-	// guardrails (11)
+	// guardrails (14)
 	"get_organisation_defaults",
 	"update_organisation_defaults",
 	"list_input_guardrail_workspace_exclusions",
@@ -180,6 +180,9 @@ const EXPECTED_TOOLS = [
 	"list_guardrails",
 	"get_guardrail",
 	"create_guardrail",
+	"list_guardrail_mcp_servers",
+	"replace_guardrail_mcp_servers",
+	"upsert_guardrail_mcp_server",
 	"update_guardrail",
 	"delete_guardrail",
 	// limits (12)
