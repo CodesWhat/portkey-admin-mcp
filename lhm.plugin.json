@@ -7712,7 +7712,7 @@
 						"enum": ["llm", "mcp_tools"]
 					},
 					"checks": {
-						"description": "Array of checks to apply (at least one required)",
+						"description": "Checks to apply; at least one entry. Required when target is llm.",
 						"minItems": 1,
 						"type": "array",
 						"items": {

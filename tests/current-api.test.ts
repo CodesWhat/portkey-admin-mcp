@@ -1660,5 +1660,13 @@ describe("new tool quality contract", () => {
 			String(registrations.get("get_log_export_field_restrictions")?.[0]),
 			/logs\.export/,
 		);
+
+		const createGuardrailSchema = registrations.get("create_guardrail")?.[1] as
+			| Record<string, { description?: string }>
+			| undefined;
+		assert.equal(
+			createGuardrailSchema?.checks?.description,
+			"Checks to apply; at least one entry. Required when target is llm.",
+		);
 	});
 });

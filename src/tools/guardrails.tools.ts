@@ -108,7 +108,9 @@ const GUARDRAILS_TOOL_SCHEMAS = {
 			.array(guardrailCheckSchema)
 			.min(1)
 			.optional()
-			.describe("Array of checks to apply (at least one required)"),
+			.describe(
+				"Checks to apply; at least one entry. Required when target is llm.",
+			),
 		actions: guardrailActionSchema
 			.optional()
 			.describe("Actions to take when guardrail checks pass or fail"),
