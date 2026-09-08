@@ -22,6 +22,7 @@ import { registerCollectionsTools } from "../src/tools/collections.tools.js";
 import { registerIntegrationsTools } from "../src/tools/integrations.tools.js";
 import { registerLabelsTools } from "../src/tools/labels.tools.js";
 import { registerPartialsTools } from "../src/tools/partials.tools.js";
+import { registerPromptsTools } from "../src/tools/prompts.tools.js";
 import { registerProvidersTools } from "../src/tools/providers.tools.js";
 import { registerToolCallbacks } from "./helpers/tool-registry.js";
 
@@ -96,6 +97,67 @@ async function captureServiceRequest(
 		Object.assign(v2Prototype, originalV2Methods);
 	}
 }
+
+// ---------------------------------------------------------------------------
+// prompts.tools.ts
+// ---------------------------------------------------------------------------
+
+describe("prompts tools — pagination defaults", () => {
+	it("starts at page 0 when page_size is provided without current_page", async () => {
+		const listCalls: unknown[] = [];
+		const allPrompts = ["one", "two", "three"].map((slug, index) => ({
+			id: `prompt-${index + 1}`,
+			name: `Prompt ${index + 1}`,
+			slug,
+			collection_id: "collection-1",
+			created_at: "2026-01-01T00:00:00.000Z",
+			last_updated_at: "2026-01-02T00:00:00.000Z",
+			object: "prompt" as const,
+		}));
+		const callbacks = registerToolCallbacks((server) => {
+			registerPromptsTools(
+				server as never,
+				{
+					prompts: {
+						listPrompts: async (params: {
+							current_page?: number;
+							page_size?: number;
+						}) => {
+							listCalls.push(params);
+							return {
+								object: "list" as const,
+								total: allPrompts.length,
+								data:
+									params.current_page === undefined
+										? allPrompts
+										: allPrompts.slice(0, params.page_size),
+							};
+						},
+					},
+				} as never,
+			);
+		});
+
+		const cb = callbacks.get("list_prompts");
+		assert.ok(cb, "list_prompts should be registered");
+
+		const result = (await cb({ page_size: 2 })) as {
+			content: Array<{ text: string }>;
+		};
+		const payload = JSON.parse(result.content[0]?.text ?? "{}") as {
+			current_page?: number;
+			returned_count?: number;
+			has_more?: boolean;
+			prompts?: Array<Record<string, unknown>>;
+		};
+
+		assert.deepEqual(listCalls, [{ page_size: 2, current_page: 0 }]);
+		assert.equal(payload.current_page, 0);
+		assert.equal(payload.returned_count, 2);
+		assert.equal(payload.has_more, true);
+		assert.equal(payload.prompts?.length, 2);
+	});
+});
 
 // ---------------------------------------------------------------------------
 // collections.tools.ts

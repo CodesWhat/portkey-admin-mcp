@@ -1862,21 +1862,22 @@ describe("Curated tool responses", () => {
 			},
 		]);
 
-		// Without current_page the API ignores page_size and returns every
-		// record, so advertising a next page invents one that does not exist.
-		const unpaged = (await listPromptsCallback({ page_size: 2 })) as {
+		// Supplying page_size without current_page normalizes to the first page
+		// so the API applies the requested bound and pagination metadata remains
+		// actionable.
+		const firstPage = (await listPromptsCallback({ page_size: 2 })) as {
 			content: Array<{ text: string }>;
 		};
-		const unpagedPayload = JSON.parse(unpaged.content[0]?.text || "{}") as {
+		const firstPagePayload = JSON.parse(firstPage.content[0]?.text || "{}") as {
 			current_page?: number;
 			has_more?: boolean;
 			next_offset?: number | null;
 			next_page?: number | null;
 		};
-		assert.equal(unpagedPayload.current_page, 0);
-		assert.equal(unpagedPayload.has_more, false);
-		assert.equal(unpagedPayload.next_offset, null);
-		assert.equal(unpagedPayload.next_page, null);
+		assert.equal(firstPagePayload.current_page, 0);
+		assert.equal(firstPagePayload.has_more, true);
+		assert.equal(firstPagePayload.next_offset, 2);
+		assert.equal(firstPagePayload.next_page, 1);
 	});
 
 	it("summarizes user lists instead of returning raw API list wrappers", async () => {
