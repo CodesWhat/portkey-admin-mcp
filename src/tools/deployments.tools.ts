@@ -6,6 +6,15 @@ import { jsonResult } from "./utils.js";
 const binaryFlagSchema = z.union([z.literal(0), z.literal(1)]);
 const deploymentTypeSchema = z.enum(["production", "non_production"]);
 const deploymentStatusSchema = z.enum(["active", "archived"]);
+const deploymentTagsSchema = z.record(
+	z
+		.string()
+		.regex(
+			/^[a-zA-Z0-9_-]+$/,
+			"Tag keys may contain only letters, numbers, underscores, and hyphens",
+		),
+	z.string(),
+);
 
 const authSettingsSchema = {
 	gateway_base_url: z.url().optional().describe("Self-hosted Gateway base URL"),
@@ -45,6 +54,9 @@ const DEPLOYMENTS_TOOL_SCHEMAS = {
 			.optional()
 			.describe("Filter by one or more workspace slugs"),
 		search: z.string().optional().describe("Search deployment names"),
+		tags: deploymentTagsSchema
+			.optional()
+			.describe("Match deployments with all supplied tags"),
 	},
 	registerDeployment: {
 		name: z.string().min(1).describe("Deployment display name"),
@@ -66,6 +78,10 @@ const DEPLOYMENTS_TOOL_SCHEMAS = {
 			.boolean()
 			.optional()
 			.describe("Make this the default deployment"),
+		tags: deploymentTagsSchema
+			.nullable()
+			.optional()
+			.describe("Deployment tags, or null to create without tags"),
 		...authSettingsSchema,
 	},
 	getDeployment: {
@@ -98,6 +114,10 @@ const DEPLOYMENTS_TOOL_SCHEMAS = {
 			.boolean()
 			.optional()
 			.describe("Allow replacement of existing deployment settings"),
+		tags: deploymentTagsSchema
+			.nullable()
+			.optional()
+			.describe("Replacement deployment tags, or null to clear all tags"),
 		...authSettingsSchema,
 		allow_all_workspaces: z
 			.boolean()
@@ -189,6 +209,7 @@ export function registerDeploymentsTools(
 					type: params.type,
 					deployment_config: params.deployment_config,
 					is_default: params.is_default,
+					tags: params.tags,
 					auth_settings,
 				}),
 			);
@@ -220,6 +241,7 @@ export function registerDeploymentsTools(
 					is_default: params.is_default,
 					rotate_auth: params.rotate_auth,
 					override_existing: params.override_existing,
+					tags: params.tags,
 					auth_settings,
 				}),
 			);

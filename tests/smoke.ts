@@ -381,6 +381,14 @@ async function main() {
 	);
 
 	await test(
+		"listGuardrailMcpServerMappings",
+		async () => {
+			await portkey.guardrails.listGuardrailMcpServerMappings(ctx.guardrailId!);
+		},
+		() => (ctx.guardrailId ? null : "no guardrailId"),
+	);
+
+	await test(
 		"getUsageLimit",
 		async () => {
 			await portkey.limits.getUsageLimit(ctx.usageLimitId!);

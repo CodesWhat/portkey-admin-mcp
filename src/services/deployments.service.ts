@@ -2,6 +2,7 @@ import { BaseService, isNoContent } from "./base.service.js";
 
 export type DeploymentType = "production" | "non_production";
 export type DeploymentStatus = "active" | "archived";
+export type DeploymentTags = Record<string, string>;
 
 export interface DeploymentAuthSettingsInput {
 	gateway_base_url?: string;
@@ -33,6 +34,7 @@ export interface DeploymentListItem {
 	last_updated_at: string;
 	last_synced_at: string | null;
 	last_resynced_at: string | null;
+	tags?: DeploymentTags | null;
 	object: "deployment";
 }
 
@@ -50,6 +52,7 @@ export interface ListDeploymentsParams {
 	type?: DeploymentType;
 	workspace_slug?: string[];
 	search?: string;
+	tags?: DeploymentTags;
 }
 
 export interface ListDeploymentsResponse {
@@ -66,6 +69,7 @@ export interface RegisterDeploymentRequest {
 	deployment_config?: Record<string, unknown>;
 	is_default?: boolean;
 	auth_settings?: DeploymentAuthSettingsInput;
+	tags?: DeploymentTags | null;
 }
 
 export interface RegisterDeploymentResponse {
@@ -84,6 +88,7 @@ export interface UpdateDeploymentRequest {
 	is_default?: boolean;
 	rotate_auth?: boolean;
 	override_existing?: boolean;
+	tags?: DeploymentTags | null;
 	auth_settings?: DeploymentAuthSettingsInput & {
 		allow_all_workspaces?: boolean;
 		remove_workspaces_allowed?: string[];
@@ -95,7 +100,11 @@ export class DeploymentsService extends BaseService {
 	async listDeployments(
 		params?: ListDeploymentsParams,
 	): Promise<ListDeploymentsResponse> {
-		return this.getV2<ListDeploymentsResponse>("/deployments", params);
+		const query =
+			params?.tags === undefined
+				? params
+				: { ...params, tags: JSON.stringify(params.tags) };
+		return this.getV2<ListDeploymentsResponse>("/deployments", query);
 	}
 
 	async registerDeployment(

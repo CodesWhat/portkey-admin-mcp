@@ -16,10 +16,21 @@ const securityModule = await import("../src/lib/security.js");
 
 describe("supply-chain configuration", () => {
 	it("holds dependency updates for review after a seven-day release age", () => {
+		const packageVersion = (
+			JSON.parse(
+				readFileSync(new URL("../package.json", import.meta.url), "utf8"),
+			) as { version: string }
+		).version;
+		const [major, minor] = packageVersion.split(".");
+		assert.ok(
+			major && minor,
+			`expected a major.minor version: ${packageVersion}`,
+		);
+
 		const renovate = JSON.parse(
 			readFileSync(new URL("../renovate.json", import.meta.url), "utf8"),
 		) as {
-			baseBranches?: string[];
+			baseBranchPatterns?: string[];
 			minimumReleaseAge?: string;
 			lockFileMaintenance?: { automerge?: boolean };
 			packageRules?: Array<{
@@ -28,7 +39,7 @@ describe("supply-chain configuration", () => {
 			}>;
 		};
 
-		assert.deepEqual(renovate.baseBranches, ["dev/0.11"]);
+		assert.deepEqual(renovate.baseBranchPatterns, [`dev/${major}.${minor}`]);
 		assert.equal(renovate.minimumReleaseAge, "7 days");
 		assert.equal(renovate.lockFileMaintenance?.automerge, false);
 		assert.ok(

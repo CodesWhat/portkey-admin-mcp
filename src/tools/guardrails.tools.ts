@@ -62,6 +62,22 @@ const workspaceGuardrailExclusionSchema = z.object({
 		.describe("True to exclude this workspace; false to restore enforcement"),
 });
 
+const guardrailTargetSchema = z.enum(["llm", "mcp_tools"]);
+const guardrailMcpServerMappingConfigShape = {
+	run_on: z
+		.array(z.enum(["input", "output"]))
+		.min(1)
+		.default(["input", "output"])
+		.describe("Guardrail phases to run for this MCP server"),
+	mcp_integration_capability_ids: z
+		.array(z.string().uuid())
+		.optional()
+		.describe("MCP integration capability UUIDs covered by this mapping"),
+} as const;
+const guardrailMcpServerMappingConfigSchema = z.object(
+	guardrailMcpServerMappingConfigShape,
+);
+
 const GUARDRAILS_TOOL_SCHEMAS = {
 	getOrganisationDefaults: {},
 	listGuardrails: {
@@ -85,13 +101,19 @@ const GUARDRAILS_TOOL_SCHEMAS = {
 	},
 	createGuardrail: {
 		name: z.string().describe("Name of the guardrail"),
+		target: guardrailTargetSchema
+			.optional()
+			.describe("LLM traffic by default, or MCP tool calls"),
 		checks: z
 			.array(guardrailCheckSchema)
 			.min(1)
-			.describe("Array of checks to apply (at least one required)"),
-		actions: guardrailActionSchema.describe(
-			"Actions to take when guardrail checks pass or fail",
-		),
+			.optional()
+			.describe(
+				"Checks to apply; at least one entry. Required when target is llm.",
+			),
+		actions: guardrailActionSchema
+			.optional()
+			.describe("Actions to take when guardrail checks pass or fail"),
 		workspace_id: z
 			.string()
 			.optional()
@@ -144,7 +166,45 @@ const GUARDRAILS_TOOL_SCHEMAS = {
 			.optional()
 			.describe("Replace existing exclusion states instead of merging changes"),
 	},
+	listGuardrailMcpServerMappings: {
+		guardrail_id: z.string().min(1).describe("Guardrail UUID or slug"),
+	},
+	replaceGuardrailMcpServerMappings: {
+		guardrail_id: z.string().min(1).describe("Guardrail UUID or slug"),
+		mcp_servers: z
+			.record(z.string().uuid(), guardrailMcpServerMappingConfigSchema)
+			.describe(
+				"Complete MCP-server mapping set keyed by server UUID; an empty object clears every mapping",
+			),
+	},
+	upsertGuardrailMcpServerMapping: {
+		guardrail_id: z.string().min(1).describe("Guardrail UUID or slug"),
+		mcp_server_id: z.string().uuid().describe("MCP server UUID"),
+		...guardrailMcpServerMappingConfigShape,
+	},
 } as const;
+
+const createGuardrailSchema = z
+	.object(GUARDRAILS_TOOL_SCHEMAS.createGuardrail)
+	.superRefine((value, context) => {
+		if (
+			(value.target ?? "llm") === "llm" &&
+			(!value.checks || !value.actions)
+		) {
+			context.addIssue({
+				code: "custom",
+				path: [],
+				message: "checks and actions are required when target is llm",
+			});
+		}
+	});
+
+const replaceGuardrailMcpServerMappingsSchema = z.object(
+	GUARDRAILS_TOOL_SCHEMAS.replaceGuardrailMcpServerMappings,
+);
+const upsertGuardrailMcpServerMappingSchema = z.object(
+	GUARDRAILS_TOOL_SCHEMAS.upsertGuardrailMcpServerMapping,
+);
 
 const GET_ORGANISATION_DEFAULTS_ANNOTATIONS = {
 	title: "Get Organisation Guardrail Defaults",
@@ -269,6 +329,7 @@ export function registerGuardrailsTools(
 					last_updated_at: guardrail.last_updated_at,
 					owner_id: guardrail.owner_id,
 					updated_by: guardrail.updated_by,
+					target: guardrail.target,
 				})),
 			});
 		},
@@ -296,6 +357,8 @@ export function registerGuardrailsTools(
 				last_updated_at: guardrail.last_updated_at,
 				owner_id: guardrail.owner_id,
 				updated_by: guardrail.updated_by,
+				target: guardrail.target,
+				mcp_server_mappings: guardrail.mcp_server_mappings,
 			});
 		},
 	);
@@ -303,11 +366,13 @@ export function registerGuardrailsTools(
 	// Create guardrail tool
 	server.tool(
 		"create_guardrail",
-		"Create a guardrail with checks and actions for request filtering. Create it first, then reference it from configs; the new version becomes the policy anchor for downstream use.",
+		"Create an LLM or MCP-tool guardrail. LLM guardrails require checks and actions; MCP-tool guardrails can be created first and mapped to servers afterward. The new version becomes the policy anchor for downstream use.",
 		GUARDRAILS_TOOL_SCHEMAS.createGuardrail,
-		async (params) => {
+		async (rawParams) => {
+			const params = createGuardrailSchema.parse(rawParams);
 			const result = await service.guardrails.createGuardrail({
 				name: params.name,
+				...(params.target === undefined ? {} : { target: params.target }),
 				checks: params.checks,
 				actions: params.actions,
 				workspace_id: params.workspace_id,
@@ -319,6 +384,71 @@ export function registerGuardrailsTools(
 				slug: result.slug,
 				version_id: result.version_id,
 			});
+		},
+	);
+
+	server.tool(
+		"list_guardrail_mcp_servers",
+		"List every MCP-server mapping for one guardrail, including the input/output phases and mapped capability IDs. Use this before replace_guardrail_mcp_servers because replacement removes every mapping omitted from its request.",
+		GUARDRAILS_TOOL_SCHEMAS.listGuardrailMcpServerMappings,
+		{
+			title: "List Guardrail MCP Servers",
+			readOnlyHint: true,
+			destructiveHint: false,
+			idempotentHint: true,
+			openWorldHint: true,
+		},
+		async ({ guardrail_id }) =>
+			jsonResult({
+				mappings:
+					await service.guardrails.listGuardrailMcpServerMappings(guardrail_id),
+			}),
+	);
+
+	server.tool(
+		"replace_guardrail_mcp_servers",
+		"Replace the complete MCP-server mapping set for one guardrail. Any existing server omitted from mcp_servers is removed, and an empty object clears all mappings. Read list_guardrail_mcp_servers first. Repeating the same complete map is safe.",
+		GUARDRAILS_TOOL_SCHEMAS.replaceGuardrailMcpServerMappings,
+		{
+			title: "Replace Guardrail MCP Servers",
+			readOnlyHint: false,
+			destructiveHint: true,
+			idempotentHint: true,
+			openWorldHint: true,
+		},
+		async (rawParams) => {
+			const { guardrail_id, ...data } =
+				replaceGuardrailMcpServerMappingsSchema.parse(rawParams);
+			return jsonResult(
+				await service.guardrails.replaceGuardrailMcpServerMappings(
+					guardrail_id,
+					data,
+				),
+			);
+		},
+	);
+
+	server.tool(
+		"upsert_guardrail_mcp_server",
+		"Create or replace one guardrail mapping for one MCP server without changing mappings for other servers. run_on defaults to both input and output. Use list_guardrail_mcp_servers to inspect the current mapping set first. Repeating the same mapping is safe.",
+		GUARDRAILS_TOOL_SCHEMAS.upsertGuardrailMcpServerMapping,
+		{
+			title: "Upsert Guardrail MCP Server",
+			readOnlyHint: false,
+			destructiveHint: true,
+			idempotentHint: true,
+			openWorldHint: true,
+		},
+		async (rawParams) => {
+			const { guardrail_id, mcp_server_id, ...data } =
+				upsertGuardrailMcpServerMappingSchema.parse(rawParams);
+			return jsonResult(
+				await service.guardrails.upsertGuardrailMcpServerMapping(
+					guardrail_id,
+					mcp_server_id,
+					data,
+				),
+			);
 		},
 	);
 

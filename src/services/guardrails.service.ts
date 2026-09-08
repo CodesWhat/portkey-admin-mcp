@@ -2,6 +2,8 @@ import { BaseService } from "./base.service.js";
 
 // Types
 
+export type GuardrailTarget = "llm" | "mcp_tools";
+
 /** Parameters for individual guardrail checks */
 export interface GuardrailCheckParameters {
 	[key: string]: unknown;
@@ -41,15 +43,17 @@ export interface Guardrail {
 	last_updated_at: string;
 	owner_id: string;
 	organisation_id: string;
-	workspace_id: string;
+	workspace_id: string | null;
+	target: GuardrailTarget;
 	status: "active" | "archived";
 	updated_by: string | null;
 }
 
 /** Detailed guardrail with checks and actions */
 export interface GuardrailDetail extends Guardrail {
-	checks: GuardrailCheck[];
-	actions: GuardrailAction;
+	checks?: GuardrailCheck[];
+	actions?: GuardrailAction;
+	mcp_server_mappings?: GuardrailMcpServerMapping[];
 }
 
 /** Parameters for listing guardrails */
@@ -69,8 +73,9 @@ export interface ListGuardrailsResponse {
 /** Request body for creating a guardrail */
 export interface CreateGuardrailRequest {
 	name: string;
-	checks: GuardrailCheck[];
-	actions: GuardrailAction;
+	target?: GuardrailTarget;
+	checks?: GuardrailCheck[];
+	actions?: GuardrailAction;
 	workspace_id?: string;
 	organisation_id?: string;
 }
@@ -87,6 +92,34 @@ export interface GuardrailMutationResponse {
 	id: string;
 	slug: string;
 	version_id: string;
+}
+
+export interface GuardrailMcpServerMappingConfig {
+	run_on?: GuardrailDirection[];
+	mcp_integration_capability_ids?: string[];
+}
+
+export interface ReplaceGuardrailMcpServerMappingsRequest {
+	mcp_servers: Record<string, GuardrailMcpServerMappingConfig>;
+}
+
+export interface GuardrailMcpServerMapping {
+	id: string;
+	guardrail_id: string;
+	mcp_server_id: string;
+	run_on: GuardrailDirection[];
+	capability_ids?: string[];
+}
+
+export interface ReplaceGuardrailMcpServerMappingsResponse {
+	changed: boolean;
+	added: number;
+	updated: number;
+	removed: number;
+}
+
+export interface UpsertGuardrailMcpServerMappingResponse {
+	map_id: string;
 }
 
 /** Whether organisation guardrails run before or after the model call */
@@ -216,6 +249,39 @@ export class GuardrailsService extends BaseService {
 	): Promise<GuardrailMutationResponse> {
 		return this.put<GuardrailMutationResponse>(
 			`/guardrails/${this.encodePathSegment(guardrailId)}`,
+			data,
+		);
+	}
+
+	async listGuardrailMcpServerMappings(
+		guardrailId: string,
+	): Promise<GuardrailMcpServerMapping[]> {
+		if (!guardrailId.trim()) throw new Error("Guardrail ID is required");
+		return this.get<GuardrailMcpServerMapping[]>(
+			`/guardrails/${this.encodePathSegment(guardrailId)}/mcp-servers`,
+		);
+	}
+
+	async replaceGuardrailMcpServerMappings(
+		guardrailId: string,
+		data: ReplaceGuardrailMcpServerMappingsRequest,
+	): Promise<ReplaceGuardrailMcpServerMappingsResponse> {
+		if (!guardrailId.trim()) throw new Error("Guardrail ID is required");
+		return this.put<ReplaceGuardrailMcpServerMappingsResponse>(
+			`/guardrails/${this.encodePathSegment(guardrailId)}/mcp-servers`,
+			data,
+		);
+	}
+
+	async upsertGuardrailMcpServerMapping(
+		guardrailId: string,
+		mcpServerId: string,
+		data: GuardrailMcpServerMappingConfig,
+	): Promise<UpsertGuardrailMcpServerMappingResponse> {
+		if (!guardrailId.trim()) throw new Error("Guardrail ID is required");
+		if (!mcpServerId.trim()) throw new Error("MCP server ID is required");
+		return this.put<UpsertGuardrailMcpServerMappingResponse>(
+			`/guardrails/${this.encodePathSegment(guardrailId)}/mcp-servers/${this.encodePathSegment(mcpServerId)}`,
 			data,
 		);
 	}

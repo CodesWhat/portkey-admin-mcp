@@ -11,8 +11,9 @@
 		"lint": "biome lint .",
 		"format": "biome format --write .",
 		"check": "biome check --write .",
-		"test": "tsx --test tests/config.test.ts tests/security-worker-layout.test.ts tests/security-edge-runtime.test.ts tests/contract.test.ts tests/contract-extended.test.ts tests/unit.test.ts tests/services.test.ts tests/base-services.test.ts tests/http-server.test.ts tests/http-edge-runtime.test.ts tests/http-edge-runtime-final.test.ts tests/tools-observability.test.ts tests/tools-catalog.test.ts tests/tools-prompts-configs.test.ts tests/tools-remaining.test.ts tests/tools-edge-workflows.test.ts tests/tools-platform.test.ts tests/tools-keys.test.ts tests/tools-users.test.ts tests/tools-analytics.test.ts tests/current-api.test.ts tests/release-readiness.test.ts tests/auth-clerk.test.ts tests/lib-event-store.test.ts tests/lib-session-mcp.test.ts tests/smoke-outcomes.test.ts",
-		"test:coverage": "tsx --test --experimental-test-coverage --test-coverage-include='src/**/*.ts' --test-coverage-lines=80 $TEST_COVERAGE_REPORTERS tests/config.test.ts tests/security-worker-layout.test.ts tests/security-edge-runtime.test.ts tests/contract.test.ts tests/contract-extended.test.ts tests/unit.test.ts tests/services.test.ts tests/base-services.test.ts tests/http-server.test.ts tests/http-edge-runtime.test.ts tests/http-edge-runtime-final.test.ts tests/tools-observability.test.ts tests/tools-catalog.test.ts tests/tools-prompts-configs.test.ts tests/tools-remaining.test.ts tests/tools-edge-workflows.test.ts tests/tools-platform.test.ts tests/tools-keys.test.ts tests/tools-users.test.ts tests/tools-analytics.test.ts tests/current-api.test.ts tests/release-readiness.test.ts tests/auth-clerk.test.ts tests/lib-event-store.test.ts tests/lib-session-mcp.test.ts tests/smoke-outcomes.test.ts",
+		"test": "tsx --test tests/config.test.ts tests/security-worker-layout.test.ts tests/security-edge-runtime.test.ts tests/contract.test.ts tests/contract-extended.test.ts tests/unit.test.ts tests/services.test.ts tests/base-services.test.ts tests/fetch.test.ts tests/http-server.test.ts tests/http-edge-runtime.test.ts tests/http-edge-runtime-final.test.ts tests/tools-observability.test.ts tests/tools-catalog.test.ts tests/tools-prompts-configs.test.ts tests/tools-remaining.test.ts tests/tools-edge-workflows.test.ts tests/tools-platform.test.ts tests/tools-keys.test.ts tests/tools-users.test.ts tests/tools-analytics.test.ts tests/current-api.test.ts tests/release-readiness.test.ts tests/lobehub-generator.test.ts tests/auth-clerk.test.ts tests/lib-event-store.test.ts tests/lib-session-mcp.test.ts tests/smoke-outcomes.test.ts",
+		"test:coverage": "tsx --test --experimental-test-coverage --test-coverage-include='src/**/*.ts' --test-coverage-lines=80 $TEST_COVERAGE_REPORTERS tests/config.test.ts tests/security-worker-layout.test.ts tests/security-edge-runtime.test.ts tests/contract.test.ts tests/contract-extended.test.ts tests/unit.test.ts tests/services.test.ts tests/base-services.test.ts tests/fetch.test.ts tests/http-server.test.ts tests/http-edge-runtime.test.ts tests/http-edge-runtime-final.test.ts tests/tools-observability.test.ts tests/tools-catalog.test.ts tests/tools-prompts-configs.test.ts tests/tools-remaining.test.ts tests/tools-edge-workflows.test.ts tests/tools-platform.test.ts tests/tools-keys.test.ts tests/tools-users.test.ts tests/tools-analytics.test.ts tests/current-api.test.ts tests/release-readiness.test.ts tests/lobehub-generator.test.ts tests/auth-clerk.test.ts tests/lib-event-store.test.ts tests/lib-session-mcp.test.ts tests/smoke-outcomes.test.ts",
+		"test:lobehub-generator": "tsx --test tests/lobehub-generator.test.ts",
 		"test:coverage:qlty": "mkdir -p coverage && TEST_COVERAGE_REPORTERS=\"--test-reporter=lcov --test-reporter-destination=$PWD/coverage/lcov.info --test-reporter=spec --test-reporter-destination=stdout\" npm run test:coverage",
 		"dev": "tsx --watch src/index.ts",
 		"dev:http": "tsx --watch src/server.ts",
@@ -41,6 +42,7 @@
 	"files": [
 		"build",
 		"ENDPOINTS.md",
+		"docs/DISTRIBUTION.md",
 		"docs/PRISMA_AIRS_INTEROPERABILITY.md",
 		"docs/VERCEL_DEPLOYMENT.md"
 	],
@@ -56,7 +58,7 @@
 	},
 	"name": "portkey-admin-mcp",
 	"mcpName": "io.github.CodesWhat/portkey-admin-mcp",
-	"version": "0.11.6",
+	"version": "0.12.0",
 	"main": "build/index.js",
 	"keywords": [
 		"mcp",
@@ -75,7 +77,7 @@
 	],
 	"author": "Scott Benson",
 	"license": "MIT",
-	"description": "Portkey Admin API MCP server with current control-plane coverage and Prisma AIRS interoperability guidance",
+	"description": "Portkey Admin API control-plane MCP server with Prisma AIRS interoperability guidance",
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/CodesWhat/portkey-admin-mcp.git"
@@ -85,15 +87,15 @@
 		"url": "https://github.com/CodesWhat/portkey-admin-mcp/issues"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "2.5.8",
+		"@biomejs/biome": "2.5.11",
 		"@types/cors": "2.8.19",
 		"@types/express": "5.0.6",
 		"@types/node": "24.13.3",
 		"dotenv": "17.4.2",
 		"esbuild": "0.28.2",
-		"knip": "6.32.2",
-		"lefthook": "2.1.10",
-		"tsx": "4.23.12",
+		"knip": "6.34.0",
+		"lefthook": "2.1.12",
+		"tsx": "4.23.13",
 		"typescript": "7.0.2"
 	}
 }

@@ -132,9 +132,13 @@ export interface CreateUsageLimitRequest {
 
 export interface UpdateUsageLimitRequest {
 	name?: string;
+	description?: string | null;
+	conditions?: LimitCondition[];
 	credit_limit?: number;
 	alert_threshold?: number | null;
 	periodic_reset?: "monthly" | "weekly" | null;
+	periodic_reset_days?: number | null;
+	next_usage_reset_at?: string | null;
 	reset_usage_for_value?: string;
 }
 

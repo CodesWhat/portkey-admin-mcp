@@ -850,9 +850,13 @@ describe("rate and usage limit lifecycle callbacks", () => {
 			await update({
 				id: "usage-1",
 				name: "Updated budget",
+				description: "Production model budget",
+				conditions: [{ key: "model", value: "gpt-5" }],
 				credit_limit: 750,
-				alert_threshold: 90,
-				periodic_reset: "weekly",
+				alert_threshold: null,
+				periodic_reset: null,
+				periodic_reset_days: 30,
+				next_usage_reset_at: "2026-10-01T00:00:00Z",
 				reset_usage_for_value: "user-1",
 			}),
 		);
@@ -867,14 +871,52 @@ describe("rate and usage limit lifecycle callbacks", () => {
 				"usage-1",
 				{
 					name: "Updated budget",
+					description: "Production model budget",
+					conditions: [{ key: "model", value: "gpt-5" }],
 					credit_limit: 750,
-					alert_threshold: 90,
-					periodic_reset: "weekly",
+					alert_threshold: null,
+					periodic_reset: null,
+					periodic_reset_days: 30,
+					next_usage_reset_at: "2026-10-01T00:00:00Z",
 					reset_usage_for_value: "user-1",
 				},
 			],
 			["delete", "usage-1"],
 		]);
+	});
+
+	it("rejects invalid usage-limit updates before calling the service", async () => {
+		let updateCalls = 0;
+		const callbacks = callbacksFor(registerLimitsTools, "limits", {
+			updateUsageLimit: async () => {
+				updateCalls += 1;
+				return {};
+			},
+		});
+		const update = callbacks.get("update_usage_limit");
+		assert.ok(update);
+
+		await assert.rejects(
+			update({
+				id: "usage-1",
+				periodic_reset: "weekly",
+				periodic_reset_days: 30,
+			}),
+			/periodic_reset.*periodic_reset_days/i,
+		);
+		await assert.rejects(
+			update({ id: "usage-1", conditions: [] }),
+			/conditions/i,
+		);
+		await assert.rejects(
+			update({ id: "usage-1", periodic_reset_days: 366 }),
+			/365|periodic_reset_days/i,
+		);
+		await assert.rejects(
+			update({ id: "usage-1", next_usage_reset_at: "tomorrow" }),
+			/next_usage_reset_at|datetime/i,
+		);
+		assert.equal(updateCalls, 0);
 	});
 
 	it("lists tracked entities and resets only the selected entity", async () => {

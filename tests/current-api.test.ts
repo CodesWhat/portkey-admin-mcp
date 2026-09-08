@@ -1518,6 +1518,18 @@ describe("new tool quality contract", () => {
 				{ readOnlyHint: false, destructiveHint: true, idempotentHint: true },
 			],
 			[
+				"list_guardrail_mcp_servers",
+				{ readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+			],
+			[
+				"replace_guardrail_mcp_servers",
+				{ readOnlyHint: false, destructiveHint: true, idempotentHint: true },
+			],
+			[
+				"upsert_guardrail_mcp_server",
+				{ readOnlyHint: false, destructiveHint: true, idempotentHint: true },
+			],
+			[
 				"get_log",
 				{ readOnlyHint: true, destructiveHint: false, idempotentHint: true },
 			],
@@ -1647,6 +1659,14 @@ describe("new tool quality contract", () => {
 		assert.match(
 			String(registrations.get("get_log_export_field_restrictions")?.[0]),
 			/logs\.export/,
+		);
+
+		const createGuardrailSchema = registrations.get("create_guardrail")?.[1] as
+			| Record<string, { description?: string }>
+			| undefined;
+		assert.equal(
+			createGuardrailSchema?.checks?.description,
+			"Checks to apply; at least one entry. Required when target is llm.",
 		);
 	});
 });

@@ -237,17 +237,22 @@ describe("DeploymentsService request routing", () => {
 			type: "production",
 			workspace_slug: ["primary", "secondary"],
 			search: "edge",
+			tags: { cloud: "aws", region: "us-west-2" },
 		});
 		enqueue({ id: "dep-1", client_auth: "one-time-secret" });
 		await service.registerDeployment({
 			name: "Edge",
 			type: "production",
 			auth_settings: { gateway_base_url: "https://edge.example.com" },
+			tags: { cloud: "aws" },
 		});
 		enqueue({ id: "dep-1" });
 		await service.getDeployment("dep/one", "org-1");
 		enqueue({ client_auth: "rotated-secret" });
-		await service.updateDeployment("dep/one", { rotate_auth: true });
+		await service.updateDeployment("dep/one", {
+			rotate_auth: true,
+			tags: null,
+		});
 		enqueue({});
 		await service.archiveDeployment("dep/one");
 
@@ -261,15 +266,20 @@ describe("DeploymentsService request routing", () => {
 		assert.equal(listUrl.searchParams.get("status"), "active");
 		assert.equal(listUrl.searchParams.get("type"), "production");
 		assert.equal(listUrl.searchParams.get("search"), "edge");
+		assert.equal(
+			listUrl.searchParams.get("tags"),
+			JSON.stringify({ cloud: "aws", region: "us-west-2" }),
+		);
 		assert.deepEqual(capturedBody(1), {
 			name: "Edge",
 			type: "production",
 			auth_settings: { gateway_base_url: "https://edge.example.com" },
+			tags: { cloud: "aws" },
 		});
 		assert.equal(capturedUrl(2).pathname, "/v2/deployments/dep%2Fone");
 		assert.equal(capturedUrl(2).searchParams.get("organisation_id"), "org-1");
 		assert.equal(capturedFetches[3]?.init?.method, "PUT");
-		assert.deepEqual(capturedBody(3), { rotate_auth: true });
+		assert.deepEqual(capturedBody(3), { rotate_auth: true, tags: null });
 		assert.equal(capturedFetches[4]?.init?.method, "DELETE");
 	});
 });
@@ -967,7 +977,17 @@ describe("LimitsService validation and routing", () => {
 			type: "cost",
 			credit_limit: 100,
 		});
-		await service.updateUsageLimit("usage/one", { credit_limit: 200 });
+		await service.updateUsageLimit("usage/one", {
+			name: "Quarterly budget",
+			description: "Budget for production models",
+			conditions: [{ key: "workspace_id", value: "workspace-1" }],
+			credit_limit: 200,
+			alert_threshold: null,
+			periodic_reset: null,
+			periodic_reset_days: 90,
+			next_usage_reset_at: "2026-12-01T00:00:00Z",
+			reset_usage_for_value: "workspace-1",
+		});
 		enqueue({});
 		assert.deepEqual(await service.deleteUsageLimit("usage/one"), {
 			success: true,
@@ -991,6 +1011,17 @@ describe("LimitsService validation and routing", () => {
 		assert.equal(capturedUrl(0).searchParams.get("target"), "mcp_tools");
 		assert.equal(capturedUrl(1).searchParams.get("status"), "archived");
 		assert.equal(capturedUrl(6).searchParams.get("include_usage"), "true");
+		assert.deepEqual(capturedBody(8), {
+			name: "Quarterly budget",
+			description: "Budget for production models",
+			conditions: [{ key: "workspace_id", value: "workspace-1" }],
+			credit_limit: 200,
+			alert_threshold: null,
+			periodic_reset: null,
+			periodic_reset_days: 90,
+			next_usage_reset_at: "2026-12-01T00:00:00Z",
+			reset_usage_for_value: "workspace-1",
+		});
 		assert.equal(capturedUrl(10).searchParams.get("status"), "exhausted");
 		assert.equal(
 			capturedUrl(11).pathname,
@@ -1437,6 +1468,22 @@ describe("Configuration and platform service contracts", () => {
 		await service.getGuardrail("guardrail/one");
 		await service.createGuardrail({ name: "PII" } as never);
 		await service.updateGuardrail("guardrail/one", { name: "PII v2" } as never);
+		await service.listGuardrailMcpServerMappings("guardrail/one");
+		await service.replaceGuardrailMcpServerMappings("guardrail/one", {
+			mcp_servers: {
+				"4fc595a8-15f9-4f1b-83cf-3f881873ad1d": {
+					run_on: ["input", "output"],
+					mcp_integration_capability_ids: [
+						"25a0ea52-e89f-43cd-8e15-267004cd1564",
+					],
+				},
+			},
+		});
+		await service.upsertGuardrailMcpServerMapping(
+			"guardrail/one",
+			"server/two",
+			{ run_on: ["output"] },
+		);
 		enqueue(undefined, 204);
 		assert.deepEqual(await service.deleteGuardrail("guardrail/one"), {
 			success: true,
@@ -1455,9 +1502,23 @@ describe("Configuration and platform service contracts", () => {
 				["GET", "/v1/guardrails/guardrail%2Fone"],
 				["POST", "/v1/guardrails"],
 				["PUT", "/v1/guardrails/guardrail%2Fone"],
+				["GET", "/v1/guardrails/guardrail%2Fone/mcp-servers"],
+				["PUT", "/v1/guardrails/guardrail%2Fone/mcp-servers"],
+				["PUT", "/v1/guardrails/guardrail%2Fone/mcp-servers/server%2Ftwo"],
 				["DELETE", "/v1/guardrails/guardrail%2Fone"],
 			],
 		);
+		assert.deepEqual(capturedBody(9), {
+			mcp_servers: {
+				"4fc595a8-15f9-4f1b-83cf-3f881873ad1d": {
+					run_on: ["input", "output"],
+					mcp_integration_capability_ids: [
+						"25a0ea52-e89f-43cd-8e15-267004cd1564",
+					],
+				},
+			},
+		});
+		assert.deepEqual(capturedBody(10), { run_on: ["output"] });
 	});
 
 	it("routes labels and maps a no-content deletion", async () => {

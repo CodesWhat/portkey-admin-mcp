@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-09-08
+
+Portkey control-plane compatibility and runtime-hardening release. The catalog
+grows from 178 to 181 tools, so MCP clients should refresh `tools/list`.
+
+### Added
+
+- Add list, complete replacement, and single-server upsert tools for guardrail
+  MCP-server mappings, plus the documented `llm` and `mcp_tools` guardrail
+  targets and their target-specific validation.
+- Add deployment tag filtering and create/update support, including distinct
+  omitted, replacement-map, and explicit-clear update semantics.
+- Expand usage-policy updates with description, replacement conditions,
+  periodic reset days, and nullable next-reset timestamps without widening the
+  create contract.
+- Publish a maintained distribution inventory covering owner-controlled MCP
+  records, stale downstream mirrors, the Awesome MCP Servers submission, and
+  the Docker Catalog and Smithery decisions.
+
+### Changed
+
+- Mark external MCP server instructions as untrusted self-reported result data
+  with explicit provenance while preserving the upstream value for review.
+- Move Renovate to `dev/0.12`; update the Redis CI image, pinned workflow
+  actions, development toolchain, Biome/Qlty alignment, and both Docker stages
+  to Node.js 24.20.0.
+- Exercise LobeHub generation behavior against all 181 runtime tools, including
+  paginated discovery and refusal to publish a shrinking catalog.
+
+### Fixed
+
+- Keep outbound request deadlines active while success and error response
+  bodies are consumed, not only until response headers arrive.
+- Treat `page_size` without `current_page` as Portkey's zero-based first prompt
+  page so the requested bound and continuation metadata agree.
+- Make Redis availability probes bounded and non-reconnecting, fail closed in
+  CI, and retain local skips when a developer has no Redis service.
+
 ## [0.11.6] - 2026-09-08
 
 Maintenance release for dependency automation and test assurance. Runtime source
@@ -720,7 +758,8 @@ First stable release. Graduates from beta with 151 tools covering ~98% of the Po
 - Vercel deployment support
 - Contract tests, E2E tests, security tests
 
-[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.11.6...HEAD
+[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.12.0...HEAD
+[0.12.0]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.11.6...v0.12.0
 [0.11.6]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.11.5...v0.11.6
 [0.11.5]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.11.4...v0.11.5
 [0.11.4]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.11.3...v0.11.4

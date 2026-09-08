@@ -549,8 +549,12 @@ export function registerPromptsTools(
 		"List prompts across the workspace, with optional collection, workspace, or search filters. Returns a paginated summary with id, name, slug, model, and status so you can choose a prompt_id before get_prompt, update_prompt, or render_prompt.",
 		PROMPTS_TOOL_SCHEMAS.listPrompts,
 		async (params) => {
-			const prompts = await service.prompts.listPrompts(params);
-			return jsonResult(formatPromptListResponse(prompts, params));
+			const effectiveParams =
+				params.page_size !== undefined && params.current_page === undefined
+					? { ...params, current_page: 0 }
+					: params;
+			const prompts = await service.prompts.listPrompts(effectiveParams);
+			return jsonResult(formatPromptListResponse(prompts, effectiveParams));
 		},
 	);
 
