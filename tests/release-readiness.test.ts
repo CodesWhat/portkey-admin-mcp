@@ -57,12 +57,14 @@ test("the distribution inventory covers maintained and observed listings", () =>
 		"Docker MCP Catalog",
 		"PulseMCP",
 		"mcp.so",
+		"mcpservers.org",
 		"FindMCP",
 		"Enterprise DNA",
 		"Smithery",
 	]) {
 		assert.match(inventory, new RegExp(surface, "i"));
 	}
+	assert.match(inventory, /scttbnsn-portkey-admin-mcp/);
 });
 
 test("an existing release can republish a corrected MCP Registry manifest", () => {

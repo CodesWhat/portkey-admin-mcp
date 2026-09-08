@@ -30,8 +30,10 @@ runtime catalog before release.
 
 | Surface | State on 2026-09-08 | Maintenance decision |
 |---|---|---|
+| [LobeHub legacy listing](https://lobehub.com/mcp/scttbnsn-portkey-admin-mcp) | A second claimed listing remains published at version 0.3.5 under the previous owner slug | Unpublish `scttbnsn-portkey-admin-mcp` after the canonical CodesWhat listing reaches 0.12.0, then verify only the canonical listing remains |
 | [PulseMCP](https://www.pulsemcp.com/servers) | A legacy record uses `io.github.s-b-e-n-s-o-n/portkey-admin-mcp` and an old count; listing changes are paused | Recheck when its submission and correction flow reopens; prefer MCP Registry ingestion |
 | [mcp.so](https://mcp.so/servers/portkey-admin-mcp) | Live but stale under the previous owner, with a visible claim control and conflicting counts | Claim and refresh only through its owner workflow; do not automate an undocumented interface |
+| [mcpservers.org](https://mcpservers.org/servers/s-b-e-n-s-o-n/portkey-admin-mcp) | Scrapes the current README but retains the previous owner slug and a 151-tool headline | Use its **Request update** flow after 0.12.0, then treat the result as downstream indexing rather than a release gate |
 | [FindMCP](https://findmcp.app/servers/io-github-s-b-e-n-s-o-n-portkey-admin-mcp) | Mirrors the legacy MCP Registry namespace and old catalog | Allow normal Registry re-ingestion first; request a correction only if the stale record persists |
 | [Enterprise DNA](https://enterprisedna.co/directories/mcp/s-b-e-n-s-o-n-portkey-admin-mcp/) | Scraped page under the previous GitHub owner | Treat as a downstream mirror unless it publishes a maintainer update path |
 

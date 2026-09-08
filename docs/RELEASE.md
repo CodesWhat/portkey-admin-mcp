@@ -82,6 +82,11 @@ verify that `codeswhat-portkey-admin-mcp` appears in:
 npx -y @lobehub/market-cli plugin list --output json
 ```
 
+The old `scttbnsn-portkey-admin-mcp` listing predates the CodesWhat transfer.
+Once the canonical listing is current, remove that duplicate with `plugin
+unpublish` and use `plugin list --output json` to confirm that only
+`codeswhat-portkey-admin-mcp` remains published.
+
 ## Refresh Glama
 
 Glama indexes the tagged GitHub repository; it does not consume a separate
