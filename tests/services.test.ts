@@ -977,7 +977,17 @@ describe("LimitsService validation and routing", () => {
 			type: "cost",
 			credit_limit: 100,
 		});
-		await service.updateUsageLimit("usage/one", { credit_limit: 200 });
+		await service.updateUsageLimit("usage/one", {
+			name: "Quarterly budget",
+			description: "Budget for production models",
+			conditions: [{ key: "workspace_id", value: "workspace-1" }],
+			credit_limit: 200,
+			alert_threshold: null,
+			periodic_reset: null,
+			periodic_reset_days: 90,
+			next_usage_reset_at: "2026-12-01T00:00:00Z",
+			reset_usage_for_value: "workspace-1",
+		});
 		enqueue({});
 		assert.deepEqual(await service.deleteUsageLimit("usage/one"), {
 			success: true,
@@ -1001,6 +1011,17 @@ describe("LimitsService validation and routing", () => {
 		assert.equal(capturedUrl(0).searchParams.get("target"), "mcp_tools");
 		assert.equal(capturedUrl(1).searchParams.get("status"), "archived");
 		assert.equal(capturedUrl(6).searchParams.get("include_usage"), "true");
+		assert.deepEqual(capturedBody(8), {
+			name: "Quarterly budget",
+			description: "Budget for production models",
+			conditions: [{ key: "workspace_id", value: "workspace-1" }],
+			credit_limit: 200,
+			alert_threshold: null,
+			periodic_reset: null,
+			periodic_reset_days: 90,
+			next_usage_reset_at: "2026-12-01T00:00:00Z",
+			reset_usage_for_value: "workspace-1",
+		});
 		assert.equal(capturedUrl(10).searchParams.get("status"), "exhausted");
 		assert.equal(
 			capturedUrl(11).pathname,
