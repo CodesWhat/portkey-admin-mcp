@@ -1468,6 +1468,22 @@ describe("Configuration and platform service contracts", () => {
 		await service.getGuardrail("guardrail/one");
 		await service.createGuardrail({ name: "PII" } as never);
 		await service.updateGuardrail("guardrail/one", { name: "PII v2" } as never);
+		await service.listGuardrailMcpServerMappings("guardrail/one");
+		await service.replaceGuardrailMcpServerMappings("guardrail/one", {
+			mcp_servers: {
+				"4fc595a8-15f9-4f1b-83cf-3f881873ad1d": {
+					run_on: ["input", "output"],
+					mcp_integration_capability_ids: [
+						"25a0ea52-e89f-43cd-8e15-267004cd1564",
+					],
+				},
+			},
+		});
+		await service.upsertGuardrailMcpServerMapping(
+			"guardrail/one",
+			"server/two",
+			{ run_on: ["output"] },
+		);
 		enqueue(undefined, 204);
 		assert.deepEqual(await service.deleteGuardrail("guardrail/one"), {
 			success: true,
@@ -1486,9 +1502,23 @@ describe("Configuration and platform service contracts", () => {
 				["GET", "/v1/guardrails/guardrail%2Fone"],
 				["POST", "/v1/guardrails"],
 				["PUT", "/v1/guardrails/guardrail%2Fone"],
+				["GET", "/v1/guardrails/guardrail%2Fone/mcp-servers"],
+				["PUT", "/v1/guardrails/guardrail%2Fone/mcp-servers"],
+				["PUT", "/v1/guardrails/guardrail%2Fone/mcp-servers/server%2Ftwo"],
 				["DELETE", "/v1/guardrails/guardrail%2Fone"],
 			],
 		);
+		assert.deepEqual(capturedBody(9), {
+			mcp_servers: {
+				"4fc595a8-15f9-4f1b-83cf-3f881873ad1d": {
+					run_on: ["input", "output"],
+					mcp_integration_capability_ids: [
+						"25a0ea52-e89f-43cd-8e15-267004cd1564",
+					],
+				},
+			},
+		});
+		assert.deepEqual(capturedBody(10), { run_on: ["output"] });
 	});
 
 	it("routes labels and maps a no-content deletion", async () => {

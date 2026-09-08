@@ -282,6 +282,43 @@ describe("create_guardrail payload assembly", () => {
 		assert.equal(payload.slug, "jwt-guard");
 		assert.equal(payload.version_id, "ver_2");
 	});
+
+	it("allows MCP-target guardrails without LLM checks and actions", async () => {
+		let receivedPayload: unknown;
+		const callbacks = registerToolCallbacks((server) => {
+			registerGuardrailsTools(
+				server as never,
+				{
+					guardrails: {
+						createGuardrail: async (payload: unknown) => {
+							receivedPayload = payload;
+							return {
+								id: "guard_456",
+								slug: "mcp-guard",
+								version_id: "ver_2",
+							};
+						},
+					},
+				} as never,
+			);
+		});
+		const create = callbacks.get("create_guardrail");
+		assert.ok(create);
+
+		await create({ name: "MCP guard", target: "mcp_tools" });
+		assert.deepEqual(receivedPayload, {
+			name: "MCP guard",
+			target: "mcp_tools",
+			checks: undefined,
+			actions: undefined,
+			workspace_id: undefined,
+			organisation_id: undefined,
+		});
+		await assert.rejects(
+			create({ name: "Incomplete LLM guard" }),
+			/checks.*actions|actions.*checks/i,
+		);
+	});
 });
 
 describe("update_guardrail payload assembly", () => {
@@ -327,8 +364,17 @@ describe("get_guardrail curated response shape", () => {
 							status: "active",
 							workspace_id: "ws_abc",
 							organisation_id: "org_abc",
+							target: "mcp_tools",
 							checks: [{ id: "default.prompt_injection", is_enabled: true }],
 							actions: { deny: true, message: "Blocked" },
+							mcp_server_mappings: [
+								{
+									id: "41b0bd53-a071-4224-a4c6-a65925a4988a",
+									guardrail_id: "e9f2c706-bf2a-4cc7-8ceb-3bbd1f6770c5",
+									mcp_server_id: "4fc595a8-15f9-4f1b-83cf-3f881873ad1d",
+									run_on: ["input"],
+								},
+							],
 							created_at: "2026-01-01T00:00:00.000Z",
 							last_updated_at: "2026-01-02T00:00:00.000Z",
 							owner_id: "user_1",
@@ -347,14 +393,21 @@ describe("get_guardrail curated response shape", () => {
 		};
 		const payload = JSON.parse(result.content[0]?.text || "{}") as {
 			id?: string;
+			target?: string;
 			checks?: Array<{ id: string }>;
 			actions?: { deny?: boolean };
+			mcp_server_mappings?: Array<{ mcp_server_id: string }>;
 		};
 
 		assert.equal(payload.id, "guard_789");
 		assert.ok(Array.isArray(payload.checks) && payload.checks.length === 1);
 		assert.equal(payload.checks[0]?.id, "default.prompt_injection");
 		assert.equal(payload.actions?.deny, true);
+		assert.equal(payload.target, "mcp_tools");
+		assert.equal(
+			payload.mcp_server_mappings?.[0]?.mcp_server_id,
+			"4fc595a8-15f9-4f1b-83cf-3f881873ad1d",
+		);
 	});
 });
 
@@ -374,6 +427,7 @@ describe("list_guardrails curated response shape", () => {
 									slug: "guard-a",
 									status: "active",
 									workspace_id: "ws_1",
+									target: "llm",
 									organisation_id: "org_1",
 									created_at: "2026-01-01T00:00:00.000Z",
 									last_updated_at: "2026-01-01T00:00:00.000Z",
@@ -386,6 +440,7 @@ describe("list_guardrails curated response shape", () => {
 									slug: "guard-b",
 									status: "archived",
 									workspace_id: "ws_1",
+									target: "mcp_tools",
 									organisation_id: "org_1",
 									created_at: "2026-01-02T00:00:00.000Z",
 									last_updated_at: "2026-01-02T00:00:00.000Z",
@@ -405,7 +460,7 @@ describe("list_guardrails curated response shape", () => {
 		const result = (await callback({})) as { content: Array<{ text: string }> };
 		const payload = JSON.parse(result.content[0]?.text || "{}") as {
 			total?: number;
-			guardrails?: Array<{ id: string; slug: string }>;
+			guardrails?: Array<{ id: string; slug: string; target: string }>;
 		};
 
 		assert.equal(payload.total, 2);
@@ -414,6 +469,7 @@ describe("list_guardrails curated response shape", () => {
 		);
 		assert.equal(payload.guardrails[0]?.id, "g1");
 		assert.equal(payload.guardrails[1]?.slug, "guard-b");
+		assert.equal(payload.guardrails[1]?.target, "mcp_tools");
 	});
 });
 
