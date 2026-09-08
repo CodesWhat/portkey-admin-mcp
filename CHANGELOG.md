@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.5] - 2026-09-08
+
+Dependency-only release. No source changes and the tool catalog is unchanged,
+so MCP clients do not need to refresh `tools/list`.
+
+### Security
+
+- Bump `fast-uri` (transitive via `ajv` from `@modelcontextprotocol/sdk`) from
+  3.1.5 to 3.1.7. Clears GHSA-5jgf-p345-68v8, GHSA-f65p-4m7j-42xc,
+  GHSA-fph4-wmhf-6fwf, and GHSA-jqff-g426-hqxp (host confusion and SSRF via
+  hostname normalization).
+- Bump `qs` (transitive via `express`) from 6.15.3 to 6.16.0. Clears
+  GHSA-4mjr-xmp4-gh2g (denial of service via attacker-controlled `isBuffer`)
+  and GHSA-x5fp-wj9c-mxmx (array-limit bypass via bracket-key comma parsing).
+
 ## [0.11.4] - 2026-09-07
 
 Bug-fix release for the HTTP transport's programmatic shutdown. The tool
@@ -690,7 +705,8 @@ First stable release. Graduates from beta with 151 tools covering ~98% of the Po
 - Vercel deployment support
 - Contract tests, E2E tests, security tests
 
-[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.11.4...HEAD
+[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.11.5...HEAD
+[0.11.5]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.11.4...v0.11.5
 [0.11.4]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.11.3...v0.11.4
 [0.11.3]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.11.2...v0.11.3
 [0.11.2]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.11.1...v0.11.2
