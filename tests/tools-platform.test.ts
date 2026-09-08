@@ -181,6 +181,60 @@ describe("Gateway deployments", () => {
 		assert.match(String(payload.handling), /Store.*immediately/i);
 	});
 
+	it("forwards deployment tag filters and mutations and rejects invalid keys", async () => {
+		let listParams: unknown;
+		let registration: unknown;
+		let update: unknown;
+		const callbacks = registerToolCallbacks((server) => {
+			registerDeploymentsTools(
+				server as never,
+				{
+					deployments: {
+						listDeployments: async (params: unknown) => {
+							listParams = params;
+							return { object: "list", total: 0, data: [] };
+						},
+						registerDeployment: async (data: unknown) => {
+							registration = data;
+							return { id: "dep-1" };
+						},
+						getDeployment: async () => ({ id: "dep-1" }),
+						updateDeployment: async (_id: string, data: unknown) => {
+							update = data;
+							return {};
+						},
+						archiveDeployment: async () => ({}),
+					},
+				} as never,
+			);
+		});
+
+		await callbacks.get("list_deployments")?.({ tags: { cloud: "aws" } });
+		await callbacks.get("register_deployment")?.({
+			name: "Edge",
+			tags: { cloud: "aws" },
+		});
+		await callbacks.get("update_deployment")?.({ id: "dep-1", tags: null });
+
+		assert.deepEqual(listParams, { tags: { cloud: "aws" } });
+		assert.deepEqual(registration, {
+			name: "Edge",
+			tags: { cloud: "aws" },
+		});
+		assert.deepEqual(update, { tags: null });
+
+		const schemas = registerToolSchemas((server) =>
+			registerDeploymentsTools(server as never, {} as never),
+		);
+		const listTags = schemas.get("list_deployments")?.tags;
+		const createTags = schemas.get("register_deployment")?.tags;
+		const updateTags = schemas.get("update_deployment")?.tags;
+		assert.equal(listTags?.safeParse({ cloud: "aws" }).success, true);
+		assert.equal(listTags?.safeParse({ "bad key": "aws" }).success, false);
+		assert.equal(createTags?.safeParse({ cloud: "aws" }).success, true);
+		assert.equal(updateTags?.safeParse(null).success, true);
+	});
+
 	it("routes encoded service ids and calls DELETE for archival", async () => {
 		const getRequest = await captureServiceRequest(() =>
 			new DeploymentsService("test-dummy-key").getDeployment("dep/one"),

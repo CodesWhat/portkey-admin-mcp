@@ -14,6 +14,7 @@ export const DeploymentListItemSchema = z
 		last_updated_at: z.string(),
 		last_synced_at: z.string().nullable(),
 		last_resynced_at: z.string().nullable(),
+		tags: z.record(z.string(), z.string()).nullable().optional(),
 		object: z.literal("deployment"),
 	})
 	.passthrough();

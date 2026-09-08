@@ -237,17 +237,22 @@ describe("DeploymentsService request routing", () => {
 			type: "production",
 			workspace_slug: ["primary", "secondary"],
 			search: "edge",
+			tags: { cloud: "aws", region: "us-west-2" },
 		});
 		enqueue({ id: "dep-1", client_auth: "one-time-secret" });
 		await service.registerDeployment({
 			name: "Edge",
 			type: "production",
 			auth_settings: { gateway_base_url: "https://edge.example.com" },
+			tags: { cloud: "aws" },
 		});
 		enqueue({ id: "dep-1" });
 		await service.getDeployment("dep/one", "org-1");
 		enqueue({ client_auth: "rotated-secret" });
-		await service.updateDeployment("dep/one", { rotate_auth: true });
+		await service.updateDeployment("dep/one", {
+			rotate_auth: true,
+			tags: null,
+		});
 		enqueue({});
 		await service.archiveDeployment("dep/one");
 
@@ -261,15 +266,20 @@ describe("DeploymentsService request routing", () => {
 		assert.equal(listUrl.searchParams.get("status"), "active");
 		assert.equal(listUrl.searchParams.get("type"), "production");
 		assert.equal(listUrl.searchParams.get("search"), "edge");
+		assert.equal(
+			listUrl.searchParams.get("tags"),
+			JSON.stringify({ cloud: "aws", region: "us-west-2" }),
+		);
 		assert.deepEqual(capturedBody(1), {
 			name: "Edge",
 			type: "production",
 			auth_settings: { gateway_base_url: "https://edge.example.com" },
+			tags: { cloud: "aws" },
 		});
 		assert.equal(capturedUrl(2).pathname, "/v2/deployments/dep%2Fone");
 		assert.equal(capturedUrl(2).searchParams.get("organisation_id"), "org-1");
 		assert.equal(capturedFetches[3]?.init?.method, "PUT");
-		assert.deepEqual(capturedBody(3), { rotate_auth: true });
+		assert.deepEqual(capturedBody(3), { rotate_auth: true, tags: null });
 		assert.equal(capturedFetches[4]?.init?.method, "DELETE");
 	});
 });
