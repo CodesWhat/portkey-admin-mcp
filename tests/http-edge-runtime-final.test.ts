@@ -1041,7 +1041,7 @@ describe("final HTTP runtime edge behavior", { concurrency: false }, () => {
 	it("serves requests over native HTTPS through startHttpServer", {
 		skip: OPENSSL_AVAILABLE ? false : "openssl binary not available",
 	}, async () => {
-		const { certPath, keyPath, cleanup } = writeSelfSignedCertFiles();
+		const { cert, certPath, keyPath, cleanup } = writeSelfSignedCertFiles();
 		try {
 			const port = await getFreePort();
 			await withEnvironment(
@@ -1066,7 +1066,7 @@ describe("final HTTP runtime edge behavior", { concurrency: false }, () => {
 									host: "127.0.0.1",
 									port,
 									path: "/auth/info",
-									rejectUnauthorized: false,
+									ca: cert,
 								},
 								(response) => {
 									let rawBody = "";
