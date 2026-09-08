@@ -19,6 +19,7 @@ describe("supply-chain configuration", () => {
 		const renovate = JSON.parse(
 			readFileSync(new URL("../renovate.json", import.meta.url), "utf8"),
 		) as {
+			baseBranches?: string[];
 			minimumReleaseAge?: string;
 			lockFileMaintenance?: { automerge?: boolean };
 			packageRules?: Array<{
@@ -27,6 +28,7 @@ describe("supply-chain configuration", () => {
 			}>;
 		};
 
+		assert.deepEqual(renovate.baseBranches, ["dev/0.11"]);
 		assert.equal(renovate.minimumReleaseAge, "7 days");
 		assert.equal(renovate.lockFileMaintenance?.automerge, false);
 		assert.ok(
