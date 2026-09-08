@@ -67,7 +67,7 @@ const PKG = JSON.parse(
 	readFileSync(new URL("../package.json", import.meta.url), "utf-8"),
 );
 
-// All 178 expected tool names across 20 domains
+// All 181 expected tool names across 20 domains
 const EXPECTED_TOOLS = [
 	// users (10)
 	"list_all_users",
@@ -170,7 +170,7 @@ const EXPECTED_TOOLS = [
 	"get_analytics_group_models",
 	"get_analytics_group_metadata",
 	"get_analytics_group_providers",
-	// guardrails (11)
+	// guardrails (14)
 	"get_organisation_defaults",
 	"update_organisation_defaults",
 	"list_input_guardrail_workspace_exclusions",
@@ -180,6 +180,9 @@ const EXPECTED_TOOLS = [
 	"list_guardrails",
 	"get_guardrail",
 	"create_guardrail",
+	"list_guardrail_mcp_servers",
+	"replace_guardrail_mcp_servers",
+	"upsert_guardrail_mcp_server",
 	"update_guardrail",
 	"delete_guardrail",
 	// limits (12)
@@ -502,6 +505,32 @@ describe("MCP E2E Protocol Tests", () => {
 					tool.inputSchema.type,
 					"object",
 					`Tool "${tool.name}" inputSchema.type should be "object"`,
+				);
+			}
+		});
+
+		it("guardrail MCP mapping tools accept a UUID or slug", async () => {
+			const result = await client.listTools();
+			const tools = new Map(result.tools.map((tool) => [tool.name, tool]));
+			for (const name of [
+				"list_guardrail_mcp_servers",
+				"replace_guardrail_mcp_servers",
+				"upsert_guardrail_mcp_server",
+			]) {
+				const guardrailId = (
+					tools.get(name)?.inputSchema.properties as
+						| Record<
+								string,
+								{ type?: string; minLength?: number; format?: string }
+						  >
+						| undefined
+				)?.guardrail_id;
+				assert.equal(guardrailId?.type, "string", `${name} needs a string ID`);
+				assert.equal(guardrailId?.minLength, 1, `${name} rejects empty IDs`);
+				assert.equal(
+					guardrailId?.format,
+					undefined,
+					`${name} must not reject guardrail slugs`,
 				);
 			}
 		});

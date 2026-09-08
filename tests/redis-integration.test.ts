@@ -6,15 +6,26 @@ import { createManagedEventStore } from "../src/lib/event-store.js";
 import { consumeRedisRateLimitToken } from "../src/lib/security.js";
 
 const redisUrl = process.env.MCP_REDIS_TEST_URL ?? "redis://127.0.0.1:6379";
+const redisAvailabilityTimeoutMs = 1_000;
 
 async function redisIsAvailable(): Promise<boolean> {
-	const client = createClient({ url: redisUrl });
+	const client = createClient({
+		url: redisUrl,
+		commandOptions: { timeout: redisAvailabilityTimeoutMs },
+		socket: {
+			connectTimeout: redisAvailabilityTimeoutMs,
+			reconnectStrategy: false,
+		},
+	});
 	client.on("error", () => {});
 	try {
 		await client.connect();
 		await client.ping();
 		return true;
-	} catch {
+	} catch (error) {
+		if (process.env.CI) {
+			throw error;
+		}
 		return false;
 	} finally {
 		if (client.isOpen) {

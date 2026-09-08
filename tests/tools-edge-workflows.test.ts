@@ -31,6 +31,7 @@ const GUARDRAIL = {
 	slug: "pii-filter",
 	status: "active",
 	workspace_id: "workspace-1",
+	target: "llm",
 	organisation_id: "organisation-1",
 	created_at: "2026-01-01T00:00:00.000Z",
 	last_updated_at: "2026-01-02T00:00:00.000Z",
@@ -191,6 +192,11 @@ describe("guardrail lifecycle through the safe tool server", () => {
 			(listed.guardrails as Array<Record<string, unknown>>)[0]?.internal,
 			undefined,
 		);
+		assert.equal(
+			(listed.guardrails as Array<Record<string, unknown>>)[0]?.target,
+			"llm",
+		);
+		assert.equal(detail.target, "llm");
 		assert.deepEqual(detail.actions, { deny: true, message: "PII detected" });
 		assert.equal(detail.internal, undefined);
 		assert.deepEqual(calls, [
@@ -280,6 +286,84 @@ describe("guardrail lifecycle through the safe tool server", () => {
 			["update", "pii-filter", { name: "PII filter v2", checks, actions }],
 			["update", "pii-filter", {}],
 			["delete", "pii-filter"],
+		]);
+	});
+
+	it("lists, replaces, and upserts guardrail MCP-server mappings", async () => {
+		const guardrailId = "pg-pii-filter-a1b2c3";
+		const serverId = "4fc595a8-15f9-4f1b-83cf-3f881873ad1d";
+		const capabilityId = "25a0ea52-e89f-43cd-8e15-267004cd1564";
+		const calls: unknown[] = [];
+		const callbacks = callbacksForDomain("guardrails", {
+			guardrails: {
+				listGuardrailMcpServerMappings: async (id: string) => {
+					calls.push(["list", id]);
+					return [
+						{
+							id: "41b0bd53-a071-4224-a4c6-a65925a4988a",
+							guardrail_id: id,
+							mcp_server_id: serverId,
+							run_on: ["input", "output"],
+							capability_ids: [capabilityId],
+						},
+					];
+				},
+				replaceGuardrailMcpServerMappings: async (
+					id: string,
+					params: unknown,
+				) => {
+					calls.push(["replace", id, params]);
+					return { changed: true, added: 1, updated: 0, removed: 0 };
+				},
+				upsertGuardrailMcpServerMapping: async (
+					id: string,
+					mcpServerId: string,
+					params: unknown,
+				) => {
+					calls.push(["upsert", id, mcpServerId, params]);
+					return { map_id: "41b0bd53-a071-4224-a4c6-a65925a4988a" };
+				},
+			},
+		});
+		const list = callbacks.get("list_guardrail_mcp_servers");
+		const replace = callbacks.get("replace_guardrail_mcp_servers");
+		const upsert = callbacks.get("upsert_guardrail_mcp_server");
+		assert.ok(list && replace && upsert);
+
+		const listed = parseEnvelope(await list({ guardrail_id: guardrailId }));
+		const replaced = parseEnvelope(
+			await replace({
+				guardrail_id: guardrailId,
+				mcp_servers: {
+					[serverId]: { mcp_integration_capability_ids: [capabilityId] },
+				},
+			}),
+		);
+		const upserted = parseEnvelope(
+			await upsert({ guardrail_id: guardrailId, mcp_server_id: serverId }),
+		);
+
+		assert.equal(
+			(listed.mappings as Array<Record<string, unknown>>)[0]?.mcp_server_id,
+			serverId,
+		);
+		assert.equal(replaced.changed, true);
+		assert.equal(upserted.map_id, "41b0bd53-a071-4224-a4c6-a65925a4988a");
+		assert.deepEqual(calls, [
+			["list", guardrailId],
+			[
+				"replace",
+				guardrailId,
+				{
+					mcp_servers: {
+						[serverId]: {
+							run_on: ["input", "output"],
+							mcp_integration_capability_ids: [capabilityId],
+						},
+					},
+				},
+			],
+			["upsert", guardrailId, serverId, { run_on: ["input", "output"] }],
 		]);
 	});
 });

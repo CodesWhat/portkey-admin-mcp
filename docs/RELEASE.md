@@ -82,6 +82,11 @@ verify that `codeswhat-portkey-admin-mcp` appears in:
 npx -y @lobehub/market-cli plugin list --output json
 ```
 
+The old `scttbnsn-portkey-admin-mcp` listing predates the CodesWhat transfer.
+Once the canonical listing is current, remove that duplicate with `plugin
+unpublish` and use `plugin list --output json` to confirm that only
+`codeswhat-portkey-admin-mcp` remains published.
+
 ## Refresh Glama
 
 Glama indexes the tagged GitHub repository; it does not consume a separate
@@ -91,7 +96,7 @@ tool schemas, and scores after the release tag reaches GitHub. No source file
 should be uploaded through the Glama UI.
 
 After release, verify that the indexed commit, active-development notice,
-178-tool inventory, and TDQS score breakdown have refreshed at:
+181-tool inventory, and TDQS score breakdown have refreshed at:
 
 ```text
 https://glama.ai/mcp/servers/CodesWhat/portkey-admin-mcp
@@ -114,6 +119,12 @@ Confirm the same version and current Portkey/Prisma AIRS positioning across:
 The release is complete only when npm and the MCP Registry show the new
 version, LobeHub has been published manually, and Glama has indexed the new
 tagged commit.
+
+The dated owner-controlled and downstream directory inventory lives in
+[DISTRIBUTION.md](./DISTRIBUTION.md). Audit it when the repository moves, the
+catalog changes, or a directory adds a supported update path. Do not hold a
+release for downstream aggregators that are paused or have no owner update
+contract.
 
 ### One-time setup: protected release environment
 

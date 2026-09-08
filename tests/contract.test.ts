@@ -27,7 +27,10 @@ import {
 	GetConfigResponseSchema,
 	ListConfigsResponseSchema,
 } from "../src/schemas/contracts/configs.contract.js";
-import { ListDeploymentsResponseSchema } from "../src/schemas/contracts/deployments.contract.js";
+import {
+	DeploymentListItemSchema,
+	ListDeploymentsResponseSchema,
+} from "../src/schemas/contracts/deployments.contract.js";
 import {
 	ApiKeySchema,
 	CreateApiKeyResponseSchema,
@@ -459,6 +462,43 @@ describe("Contract: current control-plane read fixtures", () => {
 				loadFixture("mcp-integrations-list"),
 			).success,
 			true,
+		);
+	});
+
+	it("validates deployment tags as flat string maps or null", () => {
+		const base = {
+			id: "dep-1",
+			name: "Edge",
+			slug: "edge",
+			type: "production",
+			status: "active",
+			is_default: 0,
+			connection_status: "healthy",
+			created_by: "user-1",
+			created_at: "2026-09-08T00:00:00Z",
+			last_updated_at: "2026-09-08T00:00:00Z",
+			last_synced_at: null,
+			last_resynced_at: null,
+			object: "deployment",
+		};
+
+		assert.equal(
+			DeploymentListItemSchema.safeParse({
+				...base,
+				tags: { cloud: "aws", region: "us-west-2" },
+			}).success,
+			true,
+		);
+		assert.equal(
+			DeploymentListItemSchema.safeParse({ ...base, tags: null }).success,
+			true,
+		);
+		assert.equal(
+			DeploymentListItemSchema.safeParse({
+				...base,
+				tags: { replicas: 3 },
+			}).success,
+			false,
 		);
 	});
 

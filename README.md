@@ -4,7 +4,7 @@
 
 <h1>Portkey Admin MCP Server</h1>
 
-**The [Portkey](https://portkey.ai/) Admin API as an MCP server — 178 tools across prompts, configs, keys, analytics, governance, deployments, and more.**
+**The [Portkey](https://portkey.ai/) Admin API as an MCP server — 181 tools across prompts, configs, keys, analytics, governance, deployments, and more.**
 
 </div>
 
@@ -32,7 +32,7 @@
 <hr>
 
 > [!IMPORTANT]
-> **Active compatibility development.** Palo Alto Networks completed its Portkey acquisition on 2026‑05‑29 and now presents Portkey as the core of Prisma AIRS AI Gateway. The Portkey Admin API remains live, and its official OpenAPI and product changelog continued adding control-plane surfaces through August 2026; this project has therefore resumed API-coverage work. It targets the Portkey-compatible API (`x-portkey-api-key`), not Prisma AIRS/Strata Cloud Manager directly. Prisma AIRS AI Gateway currently has a different management and authentication surface, so it is not a `PORTKEY_BASE_URL` swap. See the short [Prisma AIRS interoperability guide](./docs/PRISMA_AIRS_INTEROPERABILITY.md) for the supported side-by-side model and adapter criteria.
+> **Active compatibility development.** Palo Alto Networks completed its Portkey acquisition on 2026‑05‑29 and now presents Portkey as the core of Prisma AIRS AI Gateway. The Portkey Admin API remains live, and its official OpenAPI and product changelog continued adding control-plane surfaces through September 2026; this project has therefore resumed API-coverage work. It targets the Portkey-compatible API (`x-portkey-api-key`), not Prisma AIRS/Strata Cloud Manager directly. Prisma AIRS AI Gateway currently has a different management and authentication surface, so it is not a `PORTKEY_BASE_URL` swap. See the short [Prisma AIRS interoperability guide](./docs/PRISMA_AIRS_INTEROPERABILITY.md) for the supported side-by-side model and adapter criteria.
 
 <h2 align="center">Contents</h2>
 
@@ -41,6 +41,7 @@
 - [API Key Scopes](#api-key-scopes)
 - [HTTP Server (Experimental)](#http-server)
 - [Architecture](./docs/ARCHITECTURE.md)
+- [Distribution and directories](./docs/DISTRIBUTION.md)
 - [Prisma AIRS interoperability](./docs/PRISMA_AIRS_INTEROPERABILITY.md)
 - [Verify a release](./docs/VERIFY_RELEASE.md)
 - [Development](#development)
@@ -95,7 +96,7 @@ npx -y portkey-admin-mcp
 ```
 
 Scoping domains is also the biggest lever on context cost, not just access. `tools/list`
-is paginated, and the complete 178-tool catalog is roughly 400 KB once a
+is paginated, and the complete 181-tool catalog is roughly 400 KB once a
 client follows `nextCursor` through every page. Narrowing to the domains a client
 actually needs cuts that roughly proportionally.
 
@@ -144,7 +145,7 @@ Then use this config:
 | **Integrations** | 11 | Provider integrations, model pricing, models, workspace access |
 | **MCP Integrations** | 10 | External MCP tool integrations |
 | **MCP Servers** | 12 | MCP server registry, capabilities, and live connections |
-| **Guardrails** | 11 | Content safety policies, organisation defaults, workspace exclusions |
+| **Guardrails** | 14 | LLM and MCP-tool policies, server mappings, organisation defaults, workspace exclusions |
 | **Usage Limits** | 7 | Cost and token consumption limits |
 | **Rate Limits** | 5 | Request frequency controls |
 | **Analytics** | 22 | Cost, latency, errors, tokens, cache, feedback, provider groups |
@@ -153,7 +154,7 @@ Then use this config:
 | **Users & Workspaces** | 24 | User management, invites, workspace members, SCIM group mappings |
 | **Audit** | 1 | Audit log access |
 
-**178 tools total across 20 tool domains.** See [ENDPOINTS.md](./ENDPOINTS.md) for the full list with descriptions.
+**181 tools total across 20 tool domains.** See [ENDPOINTS.md](./ENDPOINTS.md) for the full list with descriptions.
 
 Portkey's newer product language increasingly presents provider credentials as
 Providers, while the current Admin API still exposes both `/virtual-keys` and
@@ -349,6 +350,10 @@ for the public threat model and assurance case.
 
 Questions and bug reports belong in [Issues](https://github.com/CodesWhat/portkey-admin-mcp/issues); broader discussion, ideas, and help using the server belong in [Discussions](https://github.com/CodesWhat/portkey-admin-mcp/discussions).
 
+The maintained package, registry, marketplace, and directory records are listed
+in [Distribution and directories](./docs/DISTRIBUTION.md). Treat the generated
+tool catalog in this repository as authoritative when a third-party index lags.
+
 ---
 
 <div align="center">
@@ -376,7 +381,7 @@ Questions and bug reports belong in [Issues](https://github.com/CodesWhat/portke
   </picture>
 </a>
 
-Also listed on [LobeHub](https://lobehub.com/mcp/codeswhat-portkey-admin-mcp) and [Glama](https://glama.ai/mcp/servers/CodesWhat/portkey-admin-mcp):
+Marketplace listings on [LobeHub](https://lobehub.com/mcp/codeswhat-portkey-admin-mcp) and [Glama](https://glama.ai/mcp/servers/CodesWhat/portkey-admin-mcp):
 
 [![LobeHub MCP](https://lobehub.com/badge/mcp/codeswhat-portkey-admin-mcp)](https://lobehub.com/mcp/codeswhat-portkey-admin-mcp)
 

@@ -110,6 +110,7 @@ const DOMAINS = [
 			"GET/PUT `/admin/organisation/defaults`",
 			"GET/PUT `/workspace-exclusions/{input-guardrails|output-guardrails}`",
 			"GET/POST `/guardrails`; GET/PUT/DELETE `/guardrails/{guardrailId}`",
+			"GET/PUT `/guardrails/{guardrailId}/mcp-servers`; PUT `/guardrails/{guardrailId}/mcp-servers/{mcpServerId}`",
 		],
 	},
 	{
@@ -238,7 +239,7 @@ const analyticsRows = ANALYTICS.map(
 const output = `# Portkey Admin API endpoints and MCP tools
 
 Generated from the registered tool catalog by \`npm run generate:endpoints\`.
-Route mappings were reviewed against the official Portkey OpenAPI on 2026-08-28.
+Route mappings were reviewed against the official Portkey OpenAPI on 2026-09-08.
 
 - Base URL: \`https://api.portkey.ai/v1\`
 - Authentication: \`x-portkey-api-key\`
@@ -276,15 +277,21 @@ ${sections.join("\n\n")}
 - Rate conditions are \`{ key, value, excludes? }\`; grouping entries are
   \`{ key }\`. Rate units are \`rpm|rph|rpd|rpw\`, and targets are
   \`llm|mcp_tools\`.
-- Usage-policy reads include current reset metadata when Portkey returns it:
-  \`periodic_reset_days\`, \`next_usage_reset_at\`, and \`last_reset_at\`.
+- Usage-policy reads include current reset metadata when Portkey returns it.
+  Updates support complete condition replacement, \`periodic_reset_days\`, and
+  \`next_usage_reset_at\`, while rejecting simultaneous named and custom-day reset
+  modes.
 - Workspace membership creation accepts one MCP-facing member but sends Portkey's
   batched \`{ users: [{ id, role }] }\` wire form.
 - Prompt \`is_raw_template\` semantics are preserved through create, update,
   migration, copy, version reads, and promotion.
 - Deployment registration or authentication rotation may return one-time secrets.
   Tool results warn that those values appear in the MCP transcript and must be
-  stored immediately. The deprecated deployment ping operation is not exposed.
+  stored immediately. Deployment tag maps remain flat strings and list filters
+  serialize them as JSON. The deprecated deployment ping operation is not exposed.
+- Guardrails target either LLM or MCP-tool traffic. MCP-server bulk replacement
+  removes omitted mappings, while the single-server upsert leaves other mappings
+  unchanged.
 - Virtual Keys and Providers remain separate current Admin API domains even as
   Portkey product terminology shifts toward Providers.
 
@@ -294,9 +301,9 @@ ${sections.join("\n\n")}
   publishes complete public contracts and an unambiguous versioned base path.
 - Agent Gateway management remains out until its public management contract is
   merged and stable.
-- SDK-only MCP integration sync, credential, metadata, client-info, and access-check
-  operations remain out unless they gain public contracts and transcript-safe
-  credential handling.
+- SDK-only MCP integration sync, credential, client-info, access-check, and richer
+  metadata operations beyond the public metadata route remain out unless they gain
+  public contracts and transcript-safe credential handling.
 - MCP integration test/authorization-parameter additions and guardrail \`ids\`
   filtering remain tracked because they are absent from the current public OpenAPI.
 - Prisma AIRS remains a separate interoperability surface, not a

@@ -147,7 +147,18 @@ const LIMITS_TOOL_SCHEMAS = {
 	},
 	updateUsageLimit: {
 		id: z.string().min(1).describe("Usage-limit policy UUID"),
-		name: z.string().optional().describe("Replacement display name"),
+		name: z.string().max(255).optional().describe("Replacement display name"),
+		description: z
+			.string()
+			.max(500)
+			.nullable()
+			.optional()
+			.describe("Replacement description, or null to clear it"),
+		conditions: z
+			.array(conditionSchema)
+			.min(1)
+			.optional()
+			.describe("Complete replacement condition set"),
 		credit_limit: z.coerce
 			.number()
 			.nonnegative()
@@ -164,6 +175,19 @@ const LIMITS_TOOL_SCHEMAS = {
 			.nullable()
 			.optional()
 			.describe("Replacement reset schedule"),
+		periodic_reset_days: z.coerce
+			.number()
+			.int()
+			.min(1)
+			.max(365)
+			.nullable()
+			.optional()
+			.describe("Custom reset interval in days, or null to clear it"),
+		next_usage_reset_at: z.iso
+			.datetime({ offset: true })
+			.nullable()
+			.optional()
+			.describe("Next reset timestamp in ISO 8601 format, or null to clear it"),
 		reset_usage_for_value: z
 			.string()
 			.optional()
@@ -187,6 +211,19 @@ const LIMITS_TOOL_SCHEMAS = {
 		entity_id: z.string().min(1).describe("Tracked entity UUID to reset"),
 	},
 } as const;
+
+const updateUsageLimitSchema = z
+	.object(LIMITS_TOOL_SCHEMAS.updateUsageLimit)
+	.superRefine((value, context) => {
+		if (value.periodic_reset != null && value.periodic_reset_days != null) {
+			context.addIssue({
+				code: "custom",
+				path: ["periodic_reset_days"],
+				message:
+					"periodic_reset and periodic_reset_days are mutually exclusive",
+			});
+		}
+	});
 
 function compact<T extends Record<string, unknown>>(value: T): T {
 	return Object.fromEntries(
@@ -295,9 +332,10 @@ export function registerLimitsTools(
 
 	server.tool(
 		"update_usage_limit",
-		"Update a cumulative usage-limit policy's name, credit limit, alert threshold, reset schedule, or one grouped value's usage. Conditions and grouping aren't mutable in the public contract.",
+		"Update a cumulative usage-limit policy's name, description, complete condition set, credit limit, alert threshold, reset schedule, next reset time, or one grouped value's usage. periodic_reset and periodic_reset_days are mutually exclusive; conditions replace the existing set.",
 		LIMITS_TOOL_SCHEMAS.updateUsageLimit,
-		async ({ id, ...updates }) => {
+		async (params) => {
+			const { id, ...updates } = updateUsageLimitSchema.parse(params);
 			await service.limits.updateUsageLimit(id, compact(updates));
 			return jsonResult({ success: true, id });
 		},
