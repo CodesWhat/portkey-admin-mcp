@@ -149,6 +149,9 @@ jobs:
       - name: Verify README tool inventory
         run: npm run verify:readme-tools
 
+      - name: Verify generated files are current
+        run: npm run verify:generated
+
       - name: Optional smoke test (requires secret)
         env:
           PORTKEY_API_KEY: ${{ secrets.PORTKEY_API_KEY_STAGING }}

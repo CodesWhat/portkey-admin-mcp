@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `npm run verify:generated` fails when regenerating would change
+  `ENDPOINTS.md` or `lhm.plugin.json`. It runs in `npm run ci` and in the CI
+  workflow.
+
+### Changed
+
+- Raise the dependency floors to the tested versions: `@modelcontextprotocol/sdk`
+  `^1.31.0` and `zod` `^4.6.5`. Resolved versions don't change.
+- Document `PORTKEY_ORGANISATION_ID` for the live smoke suite, add the missing
+  variables to the README environment reference, and describe the actual
+  release flow in `docs/RELEASE.md`.
+
+### Fixed
+
+- `ENDPOINTS.md`, which ships in the npm package, now carries the current
+  `list_audit_logs` description. The row still described the old workspace or
+  organization contract.
+
 ## [0.12.1] - 2026-10-02
 
 Audit-log contract fix and dependency maintenance. The catalog stays at 181
@@ -30,9 +50,9 @@ should refresh `tools/list`.
   inputs now need seconds (`2026-01-01T00:00:00Z`, not `2026-01-01T00:00Z`),
   and the email pattern is rewritten without lookaheads. Nullable string
   inputs are now emitted as `"type": ["string", "null"]`. This note was added
-  after 0.12.1 was published; `lhm.plugin.json` in the 0.12.1 package predates
-  the regeneration, while the LobeHub listing was published from the
-  regenerated manifest.
+  after 0.12.1 was published. The npm package doesn't include `lhm.plugin.json`;
+  the `v0.12.1` tag carries the older manifest, while the LobeHub listing was
+  published from the regenerated one.
 
 ### Fixed
 

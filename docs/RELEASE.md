@@ -5,11 +5,35 @@ and catalog scanners can detect published versions.
 
 ## Publish a New Stable Release (automated)
 
-1. On a dev branch, update `package.json`, `package-lock.json`, `server.json`,
-   `lhm.plugin.json`, and `CHANGELOG.md` for the new version. The release
-   readiness test keeps all four version-bearing JSON files synchronized.
-2. Run `npm run ci`.
-3. Open a PR and merge it to `main`.
+1. On the `dev/<minor>` branch (currently `dev/0.12`), update `package.json`,
+   `package-lock.json`, `server.json`, `lhm.plugin.json`, and `CHANGELOG.md`
+   for the new version. The release readiness test keeps all four
+   version-bearing JSON files synchronized.
+2. If tool schemas, tool descriptions, or a dependency that changes generated
+   schema output (zod) changed, regenerate with `npm run generate:lobehub-tools`
+   and then `npm run generate:endpoints`, and commit the results.
+   `generate:endpoints` reads descriptions from `lhm.plugin.json`, so the
+   order matters. `npm run verify:generated` fails when either file is stale.
+3. Run `npm run ci`, which includes `verify:generated`.
+4. Open a PR and merge it to `main`.
+
+The `dev/<minor>` branch is also Renovate's base branch (`baseBranchPatterns`
+in `renovate.json`). When a new minor line starts, cut the new `dev/<minor>`
+branch and roll `baseBranchPatterns` forward to it.
+
+### Reconcile the dev branch after promotion
+
+`main` only takes a squash or merge through a PR with two approvals. A squash
+promotion leaves `dev/<minor>` without main's new commit in its history, so the
+next promotion PR shows as conflicting even though the content matches. After
+the promotion lands, reconcile:
+
+1. Fetch, then confirm the trees are identical with
+   `git diff --quiet origin/main origin/dev/<minor>`. If it exits non-zero, stop;
+   the content differs and an ours-merge would discard main's changes.
+2. On a branch off `origin/dev/<minor>`, run `git merge -s ours origin/main`.
+3. Open a PR into `dev/<minor>` and merge it with a merge commit, not a squash.
+   A squash would drop the second parent and the problem comes back.
 
 The CI run includes `npm run verify:tool-quality`, a deterministic preflight
 based on Glama's [Tool Definition Quality Score
@@ -82,10 +106,9 @@ verify that `codeswhat-portkey-admin-mcp` appears in:
 npx -y @lobehub/market-cli plugin list --output json
 ```
 
-The old `scttbnsn-portkey-admin-mcp` listing predates the CodesWhat transfer.
-Once the canonical listing is current, remove that duplicate with `plugin
-unpublish` and use `plugin list --output json` to confirm that only
-`codeswhat-portkey-admin-mcp` remains published.
+The old `scttbnsn-portkey-admin-mcp` listing predates the CodesWhat transfer
+and was unpublished on 2026-09-08. `plugin list --output json` should show only
+`codeswhat-portkey-admin-mcp` as published.
 
 ## Refresh Glama
 
@@ -96,7 +119,8 @@ tool schemas, and scores after the release tag reaches GitHub. No source file
 should be uploaded through the Glama UI.
 
 After release, verify that the indexed commit, active-development notice,
-181-tool inventory, and TDQS score breakdown have refreshed at:
+tool inventory (compare the count with `ENDPOINTS.md`), and TDQS score
+breakdown have refreshed at:
 
 ```text
 https://glama.ai/mcp/servers/CodesWhat/portkey-admin-mcp

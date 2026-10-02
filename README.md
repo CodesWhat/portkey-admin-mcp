@@ -238,17 +238,22 @@ For local-only HTTP use, leave `MCP_HOST` at its default `127.0.0.1`. Set `MCP_H
 | `PORTKEY_ALLOW_PRIVATE_BASE_URL` | — | Set to `true` to allow a literal loopback/private `PORTKEY_BASE_URL` |
 | `PORTKEY_ALLOW_INSECURE_HTTP` | — | Separately set to `true` only when a trusted self-hosted gateway cannot use HTTPS |
 | `PORTKEY_TOOL_DOMAINS` | — | Server-side allowlist of the 20 domains: `users`, `workspaces`, `configs`, `deployments`, `keys`, `collections`, `prompts`, `analytics`, `guardrails`, `limits`, `audit`, `labels`, `partials`, `tracing`, `logging`, `providers`, `secret-references`, `integrations`, `mcp-integrations`, `mcp-servers`. HTTP `?tools=` may narrow it but cannot expand it |
+| `MCP_TOOL_DOMAINS` | — | Fallback for `PORTKEY_TOOL_DOMAINS`, used only when that is unset |
+| `MCP_TRANSPORT` | `stdio` | `stdio` or `http`; the Docker image picks its entrypoint from this (set `http` for the HTTP server) |
 | `MCP_HOST` | `127.0.0.1` | Bind address |
 | `MCP_PORT` | `3000` | Port |
+| `PORT` | — | Port override; takes precedence over `MCP_PORT` when set |
 | `MCP_PUBLIC_BASE_URL` | — | Public absolute base URL to advertise from `/auth/info` and the status page; recommended for hosted deployments |
 | `MCP_AUTH_MODE` | `none` | `none`, `bearer`, or `clerk` (`none` is blocked for HTTP unless explicitly overridden) |
 | `MCP_AUTH_TOKEN` | — | Secret for bearer auth |
 | `CLERK_ISSUER` / `CLERK_AUDIENCE` | — | Required issuer and audience when `MCP_AUTH_MODE=clerk` |
+| `CLERK_JWKS_URL` | `<CLERK_ISSUER>/.well-known/jwks.json` | JWKS endpoint for Clerk JWT verification; must be HTTPS. Set it only when the JWKS isn't at the default path |
 | `CLERK_ALLOWED_SUBJECTS` | — | Optional CSV subject allowlist for Clerk; at least one Clerk authorization policy is required |
 | `CLERK_ALLOWED_ORGANIZATION_IDS` / `CLERK_ALLOWED_ROLES` | — | Optional CSV organization and role constraints; every configured constraint must match |
 | `CLERK_REQUIRED_PERMISSIONS` | — | Optional CSV permissions that must all be present in the verified Clerk JWT |
 | `MCP_ALLOW_UNAUTHENTICATED_HTTP` | — | Set to `true` only for intentional local unauthenticated HTTP debugging |
 | `MCP_SESSION_MODE` | `stateful` | `stateful` or `stateless` |
+| `MCP_SESSION_TIMEOUT` | `3600000` | Idle timeout for stateful sessions, in milliseconds; `0` or more |
 | `MCP_MAX_SESSIONS` | `100` | Maximum concurrent stateful sessions or active stateless request handlers |
 | `MCP_EVENT_STORE` | `off` | `off`, `memory`, or `redis`; stateless `GET /mcp` replay requires `memory` or `redis` |
 | `MCP_EVENT_TTL_SECONDS` | `300` | Replay retention in seconds |
@@ -260,11 +265,22 @@ For local-only HTTP use, leave `MCP_HOST` at its default `127.0.0.1`. Set `MCP_H
 | `MCP_REDIS_KEY_PREFIX` | `mcp:event-store` | Dedicated Redis namespace for replay data |
 | `MCP_TLS_KEY_PATH` | — | TLS key for native HTTPS |
 | `MCP_TLS_CERT_PATH` | — | TLS cert for native HTTPS |
+| `MCP_TLS_CA_PATH` | — | Optional CA bundle for native HTTPS; only used when the TLS key and cert are set |
+| `MCP_SHUTDOWN_TIMEOUT_MS` | `10000` | How long graceful shutdown waits before the process is forced to exit, in milliseconds; must be positive |
+| `MCP_MAX_REQUEST_SIZE` | `1mb` | Maximum HTTP request body size |
+| `MCP_READY_CHECK_MODE` | `local` | `local` or `portkey`; `portkey` makes `/ready` also check Portkey connectivity |
+| `LOG_LEVEL` | `info` | `debug`, `info`, `warn`, or `error` |
 | `ALLOWED_ORIGINS` | — | CORS allow-list; also used to validate the `Host` header (DNS-rebinding protection) when `MCP_AUTH_MODE=none` |
+| `CORS_ORIGIN` | — | Legacy fallback for `ALLOWED_ORIGINS`, used only when that is unset |
 | `MCP_TRUST_PROXY` | `loopback` | Express trust-proxy policy. Use an exact nonnegative hop count or trusted proxy subnet; `true` is rejected because it trusts forwarding headers from every peer |
 | `RATE_LIMIT_STORE` | `memory` | `redis` for multi-instance/serverless deployments; production memory mode requires `RATE_LIMIT_SINGLE_PROCESS=true` |
+| `RATE_LIMIT_ENABLED` | `true` | Set to `false` to turn the pre-authentication rate limiter off |
+| `RATE_LIMIT_SINGLE_PROCESS` | — | Set to `true` to acknowledge a single-process deployment when using in-memory limiting in production |
 | `RATE_LIMIT_REDIS_URL` | — | Shared limiter Redis URL, falling back to `MCP_REDIS_URL`/`REDIS_URL`; production requires `rediss://` |
 | `RATE_LIMIT_REDIS_KEY_PREFIX` | `mcp:rate-limit` | Redis namespace for atomic pre-authentication IP and principal-plus-IP token buckets |
+| `RATE_LIMIT_MAX` | `60` | Maximum tokens in each pre-authentication IP and principal-plus-IP bucket |
+| `RATE_LIMIT_WINDOW_MS` | `60000` | Rate-limit window in milliseconds |
+| `RATE_LIMIT_REFILL` | `60` | Tokens refilled each window |
 | `RATE_LIMIT_MAX_BUCKETS` | `10000` | Maximum local buckets in explicit memory mode before new clients share overflow capacity |
 
 Production containers must choose their rate-limit topology explicitly: set
@@ -332,6 +348,9 @@ The live smoke suite reports expected credential-scope denials and the explicitl
 tracked hosted control-plane route gaps as skips. Unexpected HTTP responses,
 network errors, and response-contract failures still fail the run.
 
+`list_audit_logs` is Enterprise-only, so the smoke suite skips its check unless
+`PORTKEY_ORGANISATION_ID` is set. Set it to your organisation ID to exercise that route.
+
 The required CI and release gates measure every TypeScript source file and fail
 below 80% line coverage. The current full report is 98.19% lines, 91.92%
 branches, and 98.58% functions.
@@ -361,7 +380,7 @@ tool catalog in this repository as authoritative when a third-party index lags.
 ### Built With
 
 [![TypeScript](https://img.shields.io/badge/TypeScript_7.0-3178C6?logo=typescript&logoColor=fff)](https://www.typescriptlang.org/)
-[![MCP SDK](https://img.shields.io/badge/MCP_SDK_1.30-000?logo=modelcontextprotocol&logoColor=fff)](https://github.com/modelcontextprotocol/typescript-sdk)
+[![MCP SDK](https://img.shields.io/badge/MCP_SDK_1.31-000?logo=modelcontextprotocol&logoColor=fff)](https://github.com/modelcontextprotocol/typescript-sdk)
 [![Zod 4](https://img.shields.io/badge/Zod_4-3E67B1?logo=zod&logoColor=fff)](https://zod.dev/)
 [![Biome](https://img.shields.io/badge/Biome_2.5-60a5fa?logo=biome&logoColor=fff)](https://biomejs.dev/)
 [![Node 24](https://img.shields.io/badge/Node_24-339933?logo=nodedotjs&logoColor=fff)](https://nodejs.org/)
