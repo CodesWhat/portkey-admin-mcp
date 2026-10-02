@@ -341,35 +341,57 @@ describe("AuditService", () => {
 	it("forwards the full audit filter and pagination contract", async () => {
 		const service = new AuditService("test-key", BASE_URL);
 		await service.listAuditLogs({
-			workspace_id: "workspace-1",
-			actor_id: "user-1",
-			action: "workspace.updated",
-			resource_type: "workspace",
-			resource_id: "workspace-1",
 			start_time: "2026-08-01T00:00:00Z",
 			end_time: "2026-08-02T00:00:00Z",
+			organisation_id: "org-1",
+			workspace_id: "workspace-1",
+			user_id: "user-1",
+			user_type: "api_key",
+			request_id: "req-1",
+			method: "DELETE",
+			uri: "/v1/workspaces/workspace-1",
+			client_ip: "203.0.113.10",
+			country: "US",
+			response_status_code: 403,
+			action: "delete",
+			resource_type: "workspace",
 			current_page: 2,
 			page_size: 50,
 		});
 
 		assert.equal(capturedUrl(0).pathname, "/v1/audit-logs");
 		assert.deepEqual(Object.fromEntries(capturedUrl(0).searchParams), {
-			workspace_id: "workspace-1",
-			actor_id: "user-1",
-			action: "workspace.updated",
-			resource_type: "workspace",
-			resource_id: "workspace-1",
 			start_time: "2026-08-01T00:00:00Z",
 			end_time: "2026-08-02T00:00:00Z",
+			organisation_id: "org-1",
+			workspace_id: "workspace-1",
+			user_id: "user-1",
+			user_type: "api_key",
+			request_id: "req-1",
+			method: "DELETE",
+			uri: "/v1/workspaces/workspace-1",
+			client_ip: "203.0.113.10",
+			country: "US",
+			response_status_code: "403",
+			action: "delete",
+			resource_type: "workspace",
 			current_page: "2",
 			page_size: "50",
 		});
 	});
 
-	it("supports an unfiltered audit log request", async () => {
+	it("sends only the required audit log parameters when no filters are set", async () => {
 		const service = new AuditService("test-key", BASE_URL);
-		await service.listAuditLogs();
-		assert.equal(capturedUrl(0).search, "");
+		await service.listAuditLogs({
+			start_time: "2026-08-01T00:00:00Z",
+			end_time: "2026-08-02T00:00:00Z",
+			organisation_id: "org-1",
+		});
+		assert.deepEqual(Object.fromEntries(capturedUrl(0).searchParams), {
+			start_time: "2026-08-01T00:00:00Z",
+			end_time: "2026-08-02T00:00:00Z",
+			organisation_id: "org-1",
+		});
 	});
 });
 

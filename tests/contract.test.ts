@@ -562,6 +562,7 @@ describe("Contract: fixtures manifest", () => {
 			"api-keys-rotate",
 			"analytics-cache-summary",
 			"analytics-providers-group",
+			"audit-logs-list",
 			"deployments-list",
 			"mcp-integrations-list",
 			"rate-limits-list",
