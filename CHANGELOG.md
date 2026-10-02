@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.12.1] - 2026-10-01
+## [0.12.1] - 2026-10-02
 
 Audit-log contract fix and dependency maintenance. The catalog stays at 181
 tools, but `list_audit_logs` has a new input and output schema, so MCP clients

@@ -61,7 +61,7 @@ No release candidate is in progress.
   groups, organisation guardrail defaults, workspace exclusions, log-export
   field restrictions, and the `/v2` deployments base) in ENDPOINTS.md.
 
-## Completed 2026-10-01 (0.12.1)
+## Completed 2026-10-02 (0.12.1)
 
 - Cleared the two moderate advisories in transitive runtime dependencies with a
   lockfile update: `ip-address` 10.7.3 and `fast-uri` 3.1.8.
