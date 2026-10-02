@@ -61,6 +61,15 @@ the open dependency updates, and a full local run of the CI checks on 0.12.1.
   groups, organisation guardrail defaults, workspace exclusions, log-export
   field restrictions, and the `/v2` deployments base) in ENDPOINTS.md.
 
+## Completed 2026-10-02 (0.12.2)
+
+- Corrected the `list_audit_logs` row in ENDPOINTS.md, which ships in the npm
+  package, and added `npm run verify:generated` so a stale ENDPOINTS.md or
+  LobeHub manifest fails CI.
+- Raised the MCP SDK and zod floors to the tested versions and brought the
+  README environment reference, distribution inventory, and release guide up
+  to date.
+
 ## Completed 2026-10-02 (0.12.1)
 
 - Cleared the two moderate advisories in transitive runtime dependencies with a
