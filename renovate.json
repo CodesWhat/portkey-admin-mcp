@@ -42,14 +42,16 @@
 			"matchDepNames": ["@biomejs/biome"],
 			"matchUpdateTypes": ["minor", "patch"],
 			"groupName": "non-major (npm)",
-			"groupSlug": "non-major-npm"
+			"groupSlug": "non-major-npm",
+			"minimumReleaseAge": "7 days"
 		},
 		{
 			"description": "Keep Biome majors in one PR across the package, schema URL and Qlty pin",
 			"matchDepNames": ["@biomejs/biome"],
 			"matchUpdateTypes": ["major"],
 			"groupName": "biome major",
-			"groupSlug": "biome-major"
+			"groupSlug": "biome-major",
+			"minimumReleaseAge": "7 days"
 		}
 	]
 }
