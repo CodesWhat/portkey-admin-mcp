@@ -275,7 +275,7 @@ Routes:
 
 | Tool | Selection guidance and result |
 |---|---|
-| `list_audit_logs` | List audit log events for a Portkey workspace or organization. Returns paginated action-level records with actor, resource, metadata, and timestamps for compliance or incident review; use this instead of analytics when you need individual events, not aggregates. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans. |
+| `list_audit_logs` | List audit log records for a Portkey organization within a time range (Enterprise plan only; other plans get a permissions error). Each record is a state-changing API request (POST, PUT, or DELETE) with timestamp, method, uri, request_id, user_id, user_type (user or api_key), organisation_id, workspace_id, response_status_code, resource_type, action, client_ip, country, plus request_body, query_params, and request_headers as JSON strings. Use it for compliance or incident review of individual events; use analytics instead for aggregates. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans. |
 
 ## labels (5)
 

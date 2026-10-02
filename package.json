@@ -25,8 +25,9 @@
 		"record:fixtures": "tsx tests/fixtures/record.ts",
 		"verify:tool-quality": "node scripts/check-tool-definition-quality.mjs",
 		"verify:readme-tools": "node scripts/verify-readme-tools.mjs",
+		"verify:generated": "node scripts/verify-generated.mjs",
 		"knip": "knip",
-		"ci": "npm run lint && npm run knip && npm run typecheck && npm run typecheck:tests && npm run test:coverage && npm run build && npm run verify:tool-quality && npm run test:e2e && npm run verify:readme-tools",
+		"ci": "npm run lint && npm run knip && npm run typecheck && npm run typecheck:tests && npm run test:coverage && npm run build && npm run verify:tool-quality && npm run test:e2e && npm run verify:readme-tools && npm run verify:generated",
 		"start:http": "node build/server.js",
 		"generate:lobehub-tools": "npm run build && node scripts/generate-lobehub-tools.mjs && biome format --write lhm.plugin.json",
 		"generate:endpoints": "node scripts/generate-endpoints.mjs",
@@ -47,18 +48,18 @@
 		"docs/VERCEL_DEPLOYMENT.md"
 	],
 	"dependencies": {
-		"@modelcontextprotocol/sdk": "^1.30.0",
+		"@modelcontextprotocol/sdk": "^1.31.0",
 		"cors": "^2.8.6",
 		"express": "^5.2.1",
 		"express-rate-limit": "^8.2.1",
 		"helmet": "^8.3.0",
 		"jose": "^6.2.2",
 		"redis": "^6.1.0",
-		"zod": "^4.3.6"
+		"zod": "^4.6.5"
 	},
 	"name": "portkey-admin-mcp",
 	"mcpName": "io.github.CodesWhat/portkey-admin-mcp",
-	"version": "0.12.1",
+	"version": "0.12.2",
 	"main": "build/index.js",
 	"keywords": [
 		"mcp",

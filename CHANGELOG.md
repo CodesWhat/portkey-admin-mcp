@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.2] - 2026-10-02
+
+Documentation and packaging follow-up to 0.12.1. No runtime behavior changes.
+
+### Added
+
+- `npm run verify:generated` fails when regenerating would change
+  `ENDPOINTS.md` or `lhm.plugin.json`. It runs in `npm run ci` and in the CI
+  workflow.
+
+### Changed
+
+- Raise the dependency floors to the tested versions: `@modelcontextprotocol/sdk`
+  `^1.31.0` and `zod` `^4.6.5`. Resolved versions don't change.
+- Document `PORTKEY_ORGANISATION_ID` for the live smoke suite, add the missing
+  variables to the README environment reference, and describe the actual
+  release flow in `docs/RELEASE.md`.
+
+### Fixed
+
+- `ENDPOINTS.md`, which ships in the npm package, now carries the current
+  `list_audit_logs` description. The row still described the old workspace or
+  organization contract.
+
 ## [0.12.1] - 2026-10-02
 
 Audit-log contract fix and dependency maintenance. The catalog stays at 181
@@ -26,6 +50,13 @@ should refresh `tools/list`.
   Docker stages to Node.js 24.21.
 - Track the Biome schema URL and the Qlty Biome plugin version in Renovate so
   they move with the Biome package.
+- The zod 4.6 update tightens two generated input patterns. ISO 8601 timestamp
+  inputs now need seconds (`2026-01-01T00:00:00Z`, not `2026-01-01T00:00Z`),
+  and the email pattern is rewritten without lookaheads. Nullable string
+  inputs are now emitted as `"type": ["string", "null"]`. This note was added
+  after 0.12.1 was published. The npm package doesn't include `lhm.plugin.json`;
+  the `v0.12.1` tag carries the older manifest, while the LobeHub listing was
+  published from the regenerated one.
 
 ### Fixed
 
@@ -794,7 +825,8 @@ First stable release. Graduates from beta with 151 tools covering ~98% of the Po
 - Vercel deployment support
 - Contract tests, E2E tests, security tests
 
-[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.12.1...HEAD
+[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.12.2...HEAD
+[0.12.2]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.12.1...v0.12.2
 [0.12.1]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.11.6...v0.12.0
 [0.11.6]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.11.5...v0.11.6

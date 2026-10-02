@@ -1,6 +1,6 @@
 # Portkey Admin MCP roadmap
 
-> Last reviewed: 2026-10-01
+> Last reviewed: 2026-10-02
 > Status: active compatibility maintenance
 > Current catalog: 181 tools across 20 domains, including 53 Enterprise-gated tools
 
@@ -40,9 +40,9 @@ README, endpoint catalog, domain counts, and Enterprise-gated inventory together
 
 ## Planned
 
-Reviewed 2026-10-01 against the Portkey OpenAPI through its 2026-09-16 commits,
-the open dependency updates, and a full local run of the CI checks on 0.12.0.
-No release candidate is in progress.
+Reviewed 2026-10-02 against the Portkey OpenAPI through its 2026-09-16 commits,
+the open dependency updates, and a full local run of the CI checks on 0.12.1.
+0.12.1 is out and no release candidate is in progress.
 
 ### 0.13.0
 
@@ -61,6 +61,15 @@ No release candidate is in progress.
   groups, organisation guardrail defaults, workspace exclusions, log-export
   field restrictions, and the `/v2` deployments base) in ENDPOINTS.md.
 
+## Completed 2026-10-02 (0.12.2)
+
+- Corrected the `list_audit_logs` row in ENDPOINTS.md, which ships in the npm
+  package, and added `npm run verify:generated` so a stale ENDPOINTS.md or
+  LobeHub manifest fails CI.
+- Raised the MCP SDK and zod floors to the tested versions and brought the
+  README environment reference, distribution inventory, and release guide up
+  to date.
+
 ## Completed 2026-10-02 (0.12.1)
 
 - Cleared the two moderate advisories in transitive runtime dependencies with a
@@ -73,6 +82,8 @@ No release candidate is in progress.
 - Took the pending dependency updates, including MCP SDK 1.31.0 and the
   Node 24.21 image, and taught Renovate to move the Biome schema URL and Qlty
   plugin pin with the Biome package.
+- ISO 8601 timestamp inputs need seconds (`2026-01-01T00:00:00Z`) since the zod
+  4.6 update, and minute precision is rejected. That stays on purpose.
 
 ## Completed 2026-09-08
 
@@ -184,7 +195,7 @@ stable and public:
 - Awesome MCP Servers: [#13074](https://github.com/punkpeye/awesome-mcp-servers/pull/13074)
   merged on 2026-09-13.
 - Glama: the listing's catalog build still reports 0.11.5 and 178 tools. Rebuild
-  it and verify 0.12.0 with 181 tools.
+  it and verify 0.12.1 with 181 tools.
 - Recheck PulseMCP after listing changes reopen. Its legacy record still uses the
   pre-organization namespace and is not currently editable.
 - Claim or refresh the stale mcp.so record when its owner workflow is available.
