@@ -26,6 +26,13 @@ should refresh `tools/list`.
   Docker stages to Node.js 24.21.
 - Track the Biome schema URL and the Qlty Biome plugin version in Renovate so
   they move with the Biome package.
+- The zod 4.6 update tightens two generated input patterns. ISO 8601 timestamp
+  inputs now need seconds (`2026-01-01T00:00:00Z`, not `2026-01-01T00:00Z`),
+  and the email pattern is rewritten without lookaheads. Nullable string
+  inputs are now emitted as `"type": ["string", "null"]`. This note was added
+  after 0.12.1 was published; `lhm.plugin.json` in the 0.12.1 package predates
+  the regeneration, while the LobeHub listing was published from the
+  regenerated manifest.
 
 ### Fixed
 
