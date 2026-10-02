@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.1] - 2026-10-01
+
+Audit-log contract fix and dependency maintenance. The catalog stays at 181
+tools, but `list_audit_logs` has a new input and output schema, so MCP clients
+should refresh `tools/list`.
+
+### Changed
+
+- `list_audit_logs` now requires `start_time`, `end_time`, and
+  `organisation_id`, as Portkey's OpenAPI does. It filters by `user_id`,
+  `user_type`, `request_id`, `method`, `uri`, `client_ip`, `country`, and
+  `response_status_code`; the `actor_id` and `resource_id` inputs are removed
+  because the API has no such filters.
+- Update the MCP SDK to 1.31.0, which includes the 1.30.1 request-body and
+  JSON-RPC batch-length limits, along with zod, jose, express-rate-limit, the
+  development toolchain, pinned workflow actions, the Redis CI image, and both
+  Docker stages to Node.js 24.21.
+- Track the Biome schema URL and the Qlty Biome plugin version in Renovate so
+  they move with the Biome package.
+
+### Fixed
+
+- Read audit-log records from the `records` key and return the fields the
+  published contract defines (`timestamp`, `method`, `uri`, `request_id`,
+  `user_id`, `user_type`, `response_status_code`, `client_ip`, `country`, and
+  the request body, query, and headers). The tool previously read `data` and
+  mapped fields that aren't in the contract. The route is Enterprise-gated, so
+  this is verified against the specification and a documentation-derived
+  fixture, not a live capture.
+
+### Security
+
+- Update `ip-address` to 10.7.3 and `fast-uri` to 3.1.8, clearing the moderate
+  advisories in the HTTP rate limiter's and the MCP SDK's dependency trees
+  (GHSA-2vr4-cq9g-pvrc, GHSA-rpw4-54j3-4h4q, GHSA-hrr3-gc8f-f4qj).
+
 ## [0.12.0] - 2026-09-08
 
 Portkey control-plane compatibility and runtime-hardening release. The catalog
@@ -758,7 +794,8 @@ First stable release. Graduates from beta with 151 tools covering ~98% of the Po
 - Vercel deployment support
 - Contract tests, E2E tests, security tests
 
-[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.12.0...HEAD
+[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.12.1...HEAD
+[0.12.1]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.11.6...v0.12.0
 [0.11.6]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.11.5...v0.11.6
 [0.11.5]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.11.4...v0.11.5
