@@ -7,6 +7,28 @@
 		"enabled": true,
 		"automerge": false
 	},
+	"customManagers": [
+		{
+			"customType": "regex",
+			"description": "Biome schema URL in biome.json",
+			"managerFilePatterns": ["/^biome\\.json$/"],
+			"matchStrings": [
+				"\"\\$schema\": \"https://biomejs\\.dev/schemas/(?<currentValue>[^/\"]+)/schema\\.json\""
+			],
+			"datasourceTemplate": "npm",
+			"depNameTemplate": "@biomejs/biome"
+		},
+		{
+			"customType": "regex",
+			"description": "Biome plugin version in Qlty config",
+			"managerFilePatterns": ["/^\\.qlty/qlty\\.toml$/"],
+			"matchStrings": [
+				"name = \"biome\"\\s+version = \"(?<currentValue>[^\"]+)\""
+			],
+			"datasourceTemplate": "npm",
+			"depNameTemplate": "@biomejs/biome"
+		}
+	],
 	"packageRules": [
 		{
 			"description": "Require review for non-major devDependency updates",
@@ -14,6 +36,20 @@
 			"matchUpdateTypes": ["minor", "patch"],
 			"minimumReleaseAge": "7 days",
 			"automerge": false
+		},
+		{
+			"description": "Keep the Biome npm package, biome.json schema URL and Qlty plugin pin in one non-major PR (tests/release-readiness.test.ts requires them to match)",
+			"matchDepNames": ["@biomejs/biome"],
+			"matchUpdateTypes": ["minor", "patch"],
+			"groupName": "non-major (npm)",
+			"groupSlug": "non-major-npm"
+		},
+		{
+			"description": "Keep Biome majors in one PR across the package, schema URL and Qlty pin",
+			"matchDepNames": ["@biomejs/biome"],
+			"matchUpdateTypes": ["major"],
+			"groupName": "biome major",
+			"groupSlug": "biome-major"
 		}
 	]
 }
