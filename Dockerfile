@@ -4,7 +4,7 @@
 # ============================================
 # Stage 1: Builder
 # ============================================
-FROM node:24.20-alpine@sha256:e67514e5d0f6c46656005e1b693b2ec9d52e80b641307de684d4a015ba7a4eaf AS builder
+FROM node:24.21-alpine@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1 AS builder
 
 WORKDIR /app
 
@@ -24,7 +24,7 @@ RUN npm run build
 # ============================================
 # Stage 2: Production
 # ============================================
-FROM node:24.20-alpine@sha256:e67514e5d0f6c46656005e1b693b2ec9d52e80b641307de684d4a015ba7a4eaf AS production
+FROM node:24.21-alpine@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1 AS production
 
 WORKDIR /app
 

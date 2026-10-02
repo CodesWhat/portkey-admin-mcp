@@ -1,46 +1,59 @@
 import { BaseService } from "./base.service.js";
 
-// Audit Log Types
-export interface AuditLogEntry {
-	id: string;
-	action: string;
-	actor_id: string;
-	actor_email?: string;
-	actor_name?: string;
-	resource_type: string;
-	resource_id: string;
-	resource_name?: string;
+// Audit Log Types (Portkey-AI/openapi: GET /audit-logs, AuditLogObjectList)
+export type AuditLogMethod = "POST" | "PUT" | "DELETE";
+export type AuditLogUserType = "user" | "api_key";
+
+export interface AuditLogRecord {
+	timestamp?: string;
+	method?: AuditLogMethod;
+	uri?: string;
+	request_id?: string;
+	/** JSON string of the request body */
+	request_body?: string;
+	/** JSON string of the query parameters */
+	query_params?: string;
+	/** JSON string of the request headers (partially masked) */
+	request_headers?: string;
+	user_id?: string;
+	user_type?: AuditLogUserType;
+	organisation_id?: string;
 	workspace_id?: string;
-	organisation_id: string;
-	metadata?: Record<string, unknown>;
-	ip_address?: string;
-	user_agent?: string;
-	created_at: string;
+	response_status_code?: number;
+	resource_type?: string;
+	action?: string;
+	client_ip?: string;
+	country?: string;
 }
 
 export interface ListAuditLogsParams {
+	start_time: string;
+	end_time: string;
+	organisation_id: string;
+	method?: AuditLogMethod;
+	uri?: string;
+	request_id?: string;
+	user_id?: string;
+	user_type?: AuditLogUserType;
 	workspace_id?: string;
-	actor_id?: string;
-	action?: string;
+	response_status_code?: number;
 	resource_type?: string;
-	resource_id?: string;
-	start_time?: string;
-	end_time?: string;
+	action?: string;
+	client_ip?: string;
+	country?: string;
 	current_page?: number;
 	page_size?: number;
 }
 
 export interface ListAuditLogsResponse {
-	object: "list";
-	data: AuditLogEntry[];
+	records?: AuditLogRecord[];
 	total: number;
-	current_page?: number;
-	page_size?: number;
+	object?: string;
 }
 
 export class AuditService extends BaseService {
 	async listAuditLogs(
-		params?: ListAuditLogsParams,
+		params: ListAuditLogsParams,
 	): Promise<ListAuditLogsResponse> {
 		return this.get<ListAuditLogsResponse>("/audit-logs", params);
 	}
