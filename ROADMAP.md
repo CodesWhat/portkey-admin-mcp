@@ -1,6 +1,6 @@
 # Portkey Admin MCP roadmap
 
-> Last reviewed: 2026-09-08
+> Last reviewed: 2026-10-01
 > Status: active compatibility maintenance
 > Current catalog: 181 tools across 20 domains, including 53 Enterprise-gated tools
 
@@ -37,6 +37,42 @@ track and is not treated as a compatible `PORTKEY_BASE_URL`.
 The complete generated tool catalog and route matrix lives in
 [ENDPOINTS.md](./ENDPOINTS.md). `npm run verify:readme-tools` checks the source,
 README, endpoint catalog, domain counts, and Enterprise-gated inventory together.
+
+## Planned
+
+Reviewed 2026-10-01 against the Portkey OpenAPI through its 2026-09-16 commits,
+the open dependency updates, and a full local run of the CI checks on 0.12.0.
+No release candidate is in progress.
+
+### 0.12.1
+
+- Clear the two moderate advisories in transitive runtime dependencies:
+  `ip-address` (through `express-rate-limit`) and `fast-uri` (through the MCP
+  SDK's `ajv`). A lockfile bump is enough for both.
+- Bring `list_audit_logs` in line with the published contract. The OpenAPI
+  returns `records` with request-level fields and filters by `user_id`; the tool
+  reads `data` and sends `actor_id` and `resource_id`. This rests on the
+  specification only, since the route is Enterprise-gated and hasn't been
+  observed live.
+- Take the pending non-major dependency updates, including MCP SDK 1.31.0 with
+  its request-body and batch-length limits, and the Node 24.21 image.
+
+### 0.13.0
+
+- Analytics: add the `deployment_id` filter and the MCP, A2A, and workspace
+  grouped views published upstream on 2026-09-16.
+- Integrations: add the `tags` list filter.
+- Collections: accept `parent_collection_id` on create and return the parent
+  and child collections on read.
+
+### Later
+
+- Evaluate the MCP 2026-07-28 specification and the v2 TypeScript SDK. The HTTP
+  transport is already stateless, so the open questions are support for clients
+  still on 2025-11-25 and whether the replay and session stores stay.
+- Mark the routes this server calls that the public OpenAPI doesn't list (SCIM
+  groups, organisation guardrail defaults, workspace exclusions, log-export
+  field restrictions, and the `/v2` deployments base) in ENDPOINTS.md.
 
 ## Completed 2026-09-08
 
@@ -142,8 +178,13 @@ stable and public:
 
 ## Distribution follow-up
 
-- Submit the existing containerized stdio server to the curated Docker MCP
-  Catalog and keep the catalog manifest pinned to a released source revision.
+- Docker MCP Catalog: submitted as
+  [docker/mcp-registry #5026](https://github.com/docker/mcp-registry/pull/5026),
+  pinned to the 0.12.0 release commit and awaiting maintainer review.
+- Awesome MCP Servers: [#13074](https://github.com/punkpeye/awesome-mcp-servers/pull/13074)
+  merged on 2026-09-13.
+- Glama: the listing's catalog build still reports 0.11.5 and 178 tools. Rebuild
+  it and verify 0.12.0 with 181 tools.
 - Recheck PulseMCP after listing changes reopen. Its legacy record still uses the
   pre-organization namespace and is not currently editable.
 - Claim or refresh the stale mcp.so record when its owner workflow is available.
