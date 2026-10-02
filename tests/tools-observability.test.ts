@@ -1181,4 +1181,27 @@ describe("list_audit_logs curated response shape", () => {
 		assert.equal(payload.data, undefined);
 		assert.deepEqual(payload.audit_logs, AUDIT_FIXTURE.records);
 	});
+
+	it("returns an empty list when the response omits records", async () => {
+		const callbacks = registerToolCallbacks((server) => {
+			registerAuditTools(
+				server as never,
+				{
+					audit: { listAuditLogs: async () => ({ total: 0 }) },
+				} as never,
+			);
+		});
+
+		const callback = callbacks.get("list_audit_logs");
+		assert.ok(callback);
+
+		const result = (await callback({})) as { content: Array<{ text: string }> };
+		const payload = JSON.parse(result.content[0]?.text || "{}") as {
+			total?: number;
+			audit_logs?: unknown[];
+		};
+
+		assert.equal(payload.total, 0);
+		assert.deepEqual(payload.audit_logs, []);
+	});
 });
