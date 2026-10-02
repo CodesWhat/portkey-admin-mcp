@@ -8827,36 +8827,68 @@
 		},
 		{
 			"name": "list_audit_logs",
-			"description": "List audit log events for a Portkey workspace or organization. Returns paginated action-level records with actor, resource, metadata, and timestamps for compliance or incident review; use this instead of analytics when you need individual events, not aggregates. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
+			"description": "List audit log records for a Portkey organization within a time range (Enterprise plan only; other plans get a permissions error). Each record is a state-changing API request (POST, PUT, or DELETE) with timestamp, method, uri, request_id, user_id, user_type (user or api_key), organisation_id, workspace_id, response_status_code, resource_type, action, client_ip, country, plus request_body, query_params, and request_headers as JSON strings. Use it for compliance or incident review of individual events; use analytics instead for aggregates. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
+					"start_time": {
+						"type": "string",
+						"description": "Start of time range filter (ISO 8601 format, e.g., '2024-01-01T00:00:00Z')"
+					},
+					"end_time": {
+						"type": "string",
+						"description": "End of time range filter (ISO 8601 format, e.g., '2024-01-31T23:59:59Z')"
+					},
+					"organisation_id": {
+						"type": "string",
+						"description": "Organisation ID whose audit logs to list"
+					},
 					"workspace_id": {
 						"description": "Filter audit logs by workspace ID",
 						"type": "string"
 					},
-					"actor_id": {
-						"description": "Filter by the user ID who performed the action",
+					"user_id": {
+						"description": "Filter by the ID of the user or API key that made the request",
 						"type": "string"
 					},
+					"user_type": {
+						"description": "Filter by whether the request came from a user or an API key",
+						"type": "string",
+						"enum": ["user", "api_key"]
+					},
+					"request_id": {
+						"description": "Filter by request ID",
+						"type": "string"
+					},
+					"method": {
+						"description": "Filter by HTTP method of the audited request",
+						"type": "string",
+						"enum": ["POST", "PUT", "DELETE"]
+					},
+					"uri": {
+						"description": "Filter by request URI path",
+						"type": "string"
+					},
+					"client_ip": {
+						"description": "Filter by client IP address",
+						"type": "string"
+					},
+					"country": {
+						"description": "Filter by country derived from the client IP",
+						"type": "string"
+					},
+					"response_status_code": {
+						"description": "Filter by HTTP response status code (e.g., 200, 403)",
+						"type": "integer",
+						"minimum": -9007199254740991,
+						"maximum": 9007199254740991
+					},
 					"action": {
-						"description": "Filter by action type (e.g., 'create', 'update', 'delete', 'login')",
+						"description": "Filter by action type (e.g., 'create', 'update', 'delete')",
 						"type": "string"
 					},
 					"resource_type": {
-						"description": "Filter by resource type (e.g., 'user', 'workspace', 'config', 'virtual_key')",
-						"type": "string"
-					},
-					"resource_id": {
-						"description": "Filter by specific resource ID",
-						"type": "string"
-					},
-					"start_time": {
-						"description": "Start of time range filter (ISO 8601 format, e.g., '2024-01-01T00:00:00Z')",
-						"type": "string"
-					},
-					"end_time": {
-						"description": "End of time range filter (ISO 8601 format, e.g., '2024-01-31T23:59:59Z')",
+						"description": "Filter by resource type (e.g., 'workspace', 'config', 'virtual_key')",
 						"type": "string"
 					},
 					"current_page": {
@@ -8872,6 +8904,7 @@
 						"maximum": 100
 					}
 				},
+				"required": ["start_time", "end_time", "organisation_id"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
 			},
 			"annotations": {

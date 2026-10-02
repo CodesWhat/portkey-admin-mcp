@@ -11,7 +11,10 @@
  */
 
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { describe, it } from "node:test";
+import { fileURLToPath } from "node:url";
 import {
 	buildRateLimits,
 	buildRateLimitsRpm,
@@ -1093,6 +1096,18 @@ describe("tracing service path encoding", () => {
 // audit.tools.ts — list_audit_logs payload assembly + curated response shape
 // ---------------------------------------------------------------------------
 
+const AUDIT_FIXTURE = JSON.parse(
+	readFileSync(
+		join(
+			dirname(fileURLToPath(import.meta.url)),
+			"fixtures",
+			"responses",
+			"audit-logs-list.json",
+		),
+		"utf-8",
+	),
+) as { object: string; total: number; records: Array<Record<string, unknown>> };
+
 describe("list_audit_logs payload assembly", () => {
 	it("passes all filter parameters to the service", async () => {
 		let receivedParams: unknown;
@@ -1103,13 +1118,7 @@ describe("list_audit_logs payload assembly", () => {
 					audit: {
 						listAuditLogs: async (params: unknown) => {
 							receivedParams = params;
-							return {
-								total: 0,
-								current_page: 1,
-								page_size: 20,
-								object: "list" as const,
-								data: [],
-							};
+							return { object: "analytics-graph", total: 0, records: [] };
 						},
 					},
 				} as never,
@@ -1119,64 +1128,37 @@ describe("list_audit_logs payload assembly", () => {
 		const callback = callbacks.get("list_audit_logs");
 		assert.ok(callback, "expected list_audit_logs to be registered");
 
-		await callback({
-			workspace_id: "ws_1",
-			actor_id: "user_abc",
-			action: "delete",
-			resource_type: "virtual_key",
-			resource_id: "vk_123",
+		const params = {
 			start_time: "2026-01-01T00:00:00Z",
 			end_time: "2026-01-31T23:59:59Z",
+			organisation_id: "a1b2c3d4-e5f6-4a5b-8c7d-9e0f1a2b3c4d",
+			workspace_id: "ws_1",
+			user_id: "3f1c2d4e-5a6b-4c7d-8e9f-0a1b2c3d4e5f",
+			user_type: "api_key",
+			request_id: "req_1",
+			method: "DELETE",
+			uri: "/v1/virtual-keys/vk_123",
+			client_ip: "203.0.113.10",
+			country: "US",
+			response_status_code: 403,
+			action: "delete",
+			resource_type: "virtual_key",
 			current_page: 2,
 			page_size: 50,
-		});
+		};
+		await callback(params);
 
-		assert.deepEqual(receivedParams, {
-			workspace_id: "ws_1",
-			actor_id: "user_abc",
-			action: "delete",
-			resource_type: "virtual_key",
-			resource_id: "vk_123",
-			start_time: "2026-01-01T00:00:00Z",
-			end_time: "2026-01-31T23:59:59Z",
-			current_page: 2,
-			page_size: 50,
-		});
+		assert.deepEqual(receivedParams, params);
 	});
 });
 
 describe("list_audit_logs curated response shape", () => {
-	it("returns total, current_page, page_size, and audit_logs array", async () => {
+	it("maps the published AuditLogObjectList records", async () => {
 		const callbacks = registerToolCallbacks((server) => {
 			registerAuditTools(
 				server as never,
 				{
-					audit: {
-						listAuditLogs: async () => ({
-							total: 1,
-							current_page: 1,
-							page_size: 20,
-							object: "list" as const,
-							data: [
-								{
-									id: "log_1",
-									action: "create",
-									actor_id: "user_1",
-									actor_email: "admin@example.com",
-									actor_name: "Admin User",
-									resource_type: "workspace",
-									resource_id: "ws_1",
-									resource_name: "My Workspace",
-									workspace_id: "ws_1",
-									organisation_id: "org_1",
-									metadata: { reason: "setup" },
-									ip_address: "1.2.3.4",
-									user_agent: "MCP/1.0",
-									created_at: "2026-01-01T00:00:00.000Z",
-								},
-							],
-						}),
-					},
+					audit: { listAuditLogs: async () => AUDIT_FIXTURE },
 				} as never,
 			);
 		});
@@ -1187,33 +1169,16 @@ describe("list_audit_logs curated response shape", () => {
 		const result = (await callback({})) as { content: Array<{ text: string }> };
 		const payload = JSON.parse(result.content[0]?.text || "{}") as {
 			total?: number;
-			current_page?: number;
-			page_size?: number;
-			audit_logs?: Array<{
-				id: string;
-				action: string;
-				actor_id: string;
-				resource_type: string;
-			}>;
+			audit_logs?: Array<Record<string, unknown>>;
 			object?: string;
+			records?: unknown[];
 			data?: unknown[];
 		};
 
-		assert.equal(payload.total, 1);
-		assert.equal(payload.current_page, 1);
-		assert.equal(payload.page_size, 20);
-		assert.equal(
-			payload.object,
-			undefined,
-			"raw 'object' field should not appear",
-		);
-		assert.equal(payload.data, undefined, "raw 'data' field should not appear");
-		assert.ok(
-			Array.isArray(payload.audit_logs) && payload.audit_logs.length === 1,
-		);
-		assert.equal(payload.audit_logs[0]?.id, "log_1");
-		assert.equal(payload.audit_logs[0]?.action, "create");
-		assert.equal(payload.audit_logs[0]?.actor_id, "user_1");
-		assert.equal(payload.audit_logs[0]?.resource_type, "workspace");
+		assert.equal(payload.total, 2);
+		assert.equal(payload.object, undefined, "raw 'object' should not appear");
+		assert.equal(payload.records, undefined, "raw 'records' should not appear");
+		assert.equal(payload.data, undefined);
+		assert.deepEqual(payload.audit_logs, AUDIT_FIXTURE.records);
 	});
 });

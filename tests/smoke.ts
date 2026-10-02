@@ -262,9 +262,21 @@ async function main() {
 		await portkey.workspaces.listScimGroups({ page_size: 1 });
 	});
 
-	await test("listAuditLogs", async () => {
-		await portkey.audit.listAuditLogs();
-	});
+	await test(
+		"listAuditLogs",
+		async () => {
+			await portkey.audit.listAuditLogs({
+				start_time: new Date(Date.now() - 86_400_000).toISOString(),
+				end_time: new Date().toISOString(),
+				organisation_id: process.env.PORTKEY_ORGANISATION_ID ?? "",
+				page_size: 1,
+			});
+		},
+		() =>
+			process.env.PORTKEY_ORGANISATION_ID
+				? null
+				: "set PORTKEY_ORGANISATION_ID (Enterprise-only route)",
+	);
 
 	// ============================================================
 	// Phase 2: Read Operations (get endpoints)

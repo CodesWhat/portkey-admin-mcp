@@ -7,13 +7,14 @@
 		"api-keys-rotate",
 		"analytics-cache-summary",
 		"analytics-providers-group",
+		"audit-logs-list",
 		"deployments-list",
 		"secret-references-create",
 		"secret-references-get",
 		"secret-references-list",
 		"usage-limit-entities-list"
 	],
-	"liveCaptureStatus": "The configured credential returned HTTP 403 for organisation users, API-key creation, and Secret Reference list/create on 2026-07-14. On 2026-08-27, rate-limit, usage-limit, and MCP-integration lists were captured successfully; the hosted deployments route returned the data-plane HTTP 400 missing-provider response, while analytics and usage-limit-entity fixtures remain documentation-derived.",
+	"liveCaptureStatus": "The configured credential returned HTTP 403 for organisation users, API-key creation, and Secret Reference list/create on 2026-07-14. On 2026-08-27, rate-limit, usage-limit, and MCP-integration lists were captured successfully; the hosted deployments route returned the data-plane HTTP 400 missing-provider response, while analytics and usage-limit-entity fixtures remain documentation-derived. The audit-logs-list fixture is derived from the published AuditLogObjectList schema in Portkey-AI/openapi (GET /audit-logs is Enterprise-gated and the configured credential gets a permissions error, so it was never captured live).",
 	"captureOutcomes": {
 		"api-key-rotation": {
 			"status": "permission-blocked",
@@ -54,6 +55,7 @@
 		"api-keys-get",
 		"api-keys-list",
 		"api-keys-rotate",
+		"audit-logs-list",
 		"configs-get",
 		"configs-list",
 		"deployments-list",
