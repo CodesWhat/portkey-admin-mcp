@@ -46,7 +46,7 @@ export interface ListAuditLogsParams {
 }
 
 export interface ListAuditLogsResponse {
-	records: AuditLogRecord[];
+	records?: AuditLogRecord[];
 	total: number;
 	object?: string;
 }

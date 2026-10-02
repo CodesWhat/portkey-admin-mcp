@@ -94,7 +94,7 @@ export function registerAuditTools(
 			});
 			return jsonResult({
 				total: result.total,
-				audit_logs: result.records.map((log) => ({
+				audit_logs: (result.records ?? []).map((log) => ({
 					timestamp: log.timestamp,
 					method: log.method,
 					uri: log.uri,
