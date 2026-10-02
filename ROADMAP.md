@@ -44,19 +44,6 @@ Reviewed 2026-10-01 against the Portkey OpenAPI through its 2026-09-16 commits,
 the open dependency updates, and a full local run of the CI checks on 0.12.0.
 No release candidate is in progress.
 
-### 0.12.1
-
-- Clear the two moderate advisories in transitive runtime dependencies:
-  `ip-address` (through `express-rate-limit`) and `fast-uri` (through the MCP
-  SDK's `ajv`). A lockfile bump is enough for both.
-- Bring `list_audit_logs` in line with the published contract. The OpenAPI
-  returns `records` with request-level fields and filters by `user_id`; the tool
-  reads `data` and sends `actor_id` and `resource_id`. This rests on the
-  specification only, since the route is Enterprise-gated and hasn't been
-  observed live.
-- Take the pending non-major dependency updates, including MCP SDK 1.31.0 with
-  its request-body and batch-length limits, and the Node 24.21 image.
-
 ### 0.13.0
 
 - Analytics: add the `deployment_id` filter and the MCP, A2A, and workspace
@@ -73,6 +60,19 @@ No release candidate is in progress.
 - Mark the routes this server calls that the public OpenAPI doesn't list (SCIM
   groups, organisation guardrail defaults, workspace exclusions, log-export
   field restrictions, and the `/v2` deployments base) in ENDPOINTS.md.
+
+## Completed 2026-10-01 (0.12.1)
+
+- Cleared the two moderate advisories in transitive runtime dependencies with a
+  lockfile update: `ip-address` 10.7.3 and `fast-uri` 3.1.8.
+- Brought `list_audit_logs` in line with the published contract: it reads
+  `records`, returns the request-level fields, requires the time range and
+  organisation ID, and filters by `user_id` and the other documented
+  parameters. The route is Enterprise-gated, so the fixture is
+  documentation-derived and a live capture is still outstanding.
+- Took the pending dependency updates, including MCP SDK 1.31.0 and the
+  Node 24.21 image, and taught Renovate to move the Biome schema URL and Qlty
+  plugin pin with the Biome package.
 
 ## Completed 2026-09-08
 
