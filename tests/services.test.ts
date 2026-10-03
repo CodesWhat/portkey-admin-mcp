@@ -194,6 +194,46 @@ describe("AnalyticsService request routing", () => {
 		assert.equal(capturedFetches.length, 3);
 	});
 
+	it("sends deployment_id on graph, summary, and group routes and routes the MCP, A2A, and workspace groups", async () => {
+		const service = new AnalyticsService("test-key", BASE_URL);
+		const deploymentId =
+			"123e4567-e89b-12d3-a456-426614174000,223e4567-e89b-12d3-a456-426614174001";
+		const params = {
+			time_of_generation_min: "2026-08-01T00:00:00Z",
+			time_of_generation_max: "2026-08-02T00:00:00Z",
+			deployment_id: deploymentId,
+			current_page: 1,
+			page_size: 10,
+		};
+
+		await service.getCostAnalytics(params);
+		await service.getCacheSummary({ ...params, workspace_slug: "workspace" });
+		await service.getAnalyticsGroupUsers(params);
+		await service.getAnalyticsGroupMcp(params);
+		await service.getAnalyticsGroupA2a(params);
+		await service.getAnalyticsGroupWorkspaces(params);
+
+		assert.deepEqual(
+			capturedFetches.map((_, index) => capturedUrl(index).pathname),
+			[
+				"/v1/analytics/graphs/cost",
+				"/v1/analytics/summary/cache",
+				"/v1/analytics/groups/users",
+				"/v1/analytics/groups/mcp",
+				"/v1/analytics/groups/a2a",
+				"/v1/analytics/groups/workspaces",
+			],
+		);
+		for (let index = 0; index < capturedFetches.length; index += 1) {
+			assert.equal(
+				capturedUrl(index).searchParams.get("deployment_id"),
+				deploymentId,
+			);
+		}
+		assert.equal(capturedUrl(3).searchParams.get("current_page"), "1");
+		assert.equal(capturedUrl(5).searchParams.get("page_size"), "10");
+	});
+
 	it("routes cache summary and provider grouped analytics with current options", async () => {
 		const service = new AnalyticsService("test-key", BASE_URL);
 		const base = {

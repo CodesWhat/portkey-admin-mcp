@@ -25,6 +25,7 @@ export interface BaseAnalyticsParams {
 	api_key_ids?: string;
 	metadata?: string;
 	ai_org_model?: string;
+	deployment_id?: string;
 	trace_id?: string;
 	span_id?: string;
 	prompt_slug?: string;
@@ -220,6 +221,30 @@ export interface GroupAnalyticsResponse {
 	total: number;
 }
 
+export interface McpGroupAnalyticsResponse {
+	object: "list";
+	total?: number;
+	data: Array<{ name: string; requests: number } & Record<string, unknown>>;
+}
+
+export interface A2aGroupAnalyticsResponse {
+	object: "list";
+	total?: number;
+	data: Array<{ name: string; requests: number } & Record<string, unknown>>;
+}
+
+export interface WorkspaceGroupAnalyticsResponse {
+	object: "list";
+	total?: number;
+	is_quota_exceeded?: boolean;
+	data: Array<
+		{ workspace_slug: string; requests: number; cost: number } & Record<
+			string,
+			unknown
+		>
+	>;
+}
+
 export interface CacheSummaryParams extends BaseAnalyticsParams {
 	workspace_slug: string;
 }
@@ -278,6 +303,7 @@ export class AnalyticsService extends BaseService {
 			api_key_ids: params.api_key_ids,
 			metadata: params.metadata,
 			ai_org_model: params.ai_org_model,
+			deployment_id: params.deployment_id,
 			trace_id: params.trace_id,
 			span_id: params.span_id,
 			prompt_slug: params.prompt_slug,
@@ -518,6 +544,33 @@ export class AnalyticsService extends BaseService {
 		}
 		return this.get<GroupAnalyticsResponse>(
 			`/analytics/groups/metadata/${encodeURIComponent(metadataKey)}`,
+			this.buildAnalyticsParams(params),
+		);
+	}
+
+	async getAnalyticsGroupMcp(
+		params: PaginatedAnalyticsParams,
+	): Promise<McpGroupAnalyticsResponse> {
+		return this.get<McpGroupAnalyticsResponse>(
+			"/analytics/groups/mcp",
+			this.buildAnalyticsParams(params),
+		);
+	}
+
+	async getAnalyticsGroupA2a(
+		params: PaginatedAnalyticsParams,
+	): Promise<A2aGroupAnalyticsResponse> {
+		return this.get<A2aGroupAnalyticsResponse>(
+			"/analytics/groups/a2a",
+			this.buildAnalyticsParams(params),
+		);
+	}
+
+	async getAnalyticsGroupWorkspaces(
+		params: PaginatedAnalyticsParams,
+	): Promise<WorkspaceGroupAnalyticsResponse> {
+		return this.get<WorkspaceGroupAnalyticsResponse>(
+			"/analytics/groups/workspaces",
 			this.buildAnalyticsParams(params),
 		);
 	}

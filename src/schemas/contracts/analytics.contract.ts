@@ -24,3 +24,36 @@ export const ProviderGroupAnalyticsResponseSchema = z.object({
 			.passthrough(),
 	),
 });
+
+export const McpGroupAnalyticsResponseSchema = z.object({
+	object: z.literal("list"),
+	total: z.number().int().nonnegative().optional(),
+	data: z.array(
+		z
+			.object({
+				object: z.literal("analytics-group").optional(),
+				name: z.string(),
+				requests: z.number().int().nonnegative(),
+			})
+			.passthrough(),
+	),
+});
+
+export const A2aGroupAnalyticsResponseSchema =
+	McpGroupAnalyticsResponseSchema.extend({});
+
+export const WorkspaceGroupAnalyticsResponseSchema = z.object({
+	object: z.literal("list"),
+	total: z.number().int().nonnegative().optional(),
+	is_quota_exceeded: z.boolean().optional(),
+	data: z.array(
+		z
+			.object({
+				object: z.literal("analytics-group").optional(),
+				workspace_slug: z.string(),
+				requests: z.number().int().nonnegative(),
+				cost: z.number().nonnegative(),
+			})
+			.passthrough(),
+	),
+});

@@ -1,0 +1,16 @@
+{
+	"object": "list",
+	"total": 2,
+	"data": [
+		{
+			"object": "analytics-group",
+			"name": "github-mcp",
+			"requests": 120
+		},
+		{
+			"object": "analytics-group",
+			"name": "search-mcp",
+			"requests": 45
+		}
+	]
+}
