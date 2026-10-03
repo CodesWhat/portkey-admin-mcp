@@ -21,6 +21,12 @@ const COLLECTIONS_TOOL_SCHEMAS = {
 			.string()
 			.optional()
 			.describe("Workspace ID to create collection in"),
+		parent_collection_id: z
+			.string()
+			.optional()
+			.describe(
+				"ID or slug of the parent collection to nest under; omit for a top-level collection",
+			),
 	},
 	getCollection: {
 		collection_id: z.string().describe("Collection ID or slug to retrieve"),
@@ -45,7 +51,7 @@ export function registerCollectionsTools(
 	// List collections tool
 	server.tool(
 		"list_collections",
-		"List prompt collections in the workspace, optionally filtering by name or workspace. Returns ids, names, slugs, and timestamps so you can choose a collection_id before create_prompt, get_collection, or list_prompts.",
+		"List prompt collections in the workspace, optionally filtering by name or workspace. Returns ids, names, slugs, parent collection ids, and timestamps so you can choose a collection_id before create_prompt, get_collection, or list_prompts.",
 		COLLECTIONS_TOOL_SCHEMAS.listCollections,
 		async (params) => {
 			const collections = await service.collections.listCollections(params);
@@ -56,6 +62,7 @@ export function registerCollectionsTools(
 					name: collection.name,
 					slug: collection.slug,
 					workspace_id: collection.workspace_id,
+					parent_collection_id: collection.parent_collection_id,
 					created_at: collection.created_at,
 					last_updated_at: collection.last_updated_at,
 				})),
@@ -66,7 +73,7 @@ export function registerCollectionsTools(
 	// Create collection tool
 	server.tool(
 		"create_collection",
-		"Create a new prompt collection for organizing prompts by app. Use this when you need a new namespace before create_prompt; returns the collection id and slug, and does not move any prompts.",
+		"Create a new prompt collection for organizing prompts by app. Use this when you need a new namespace before create_prompt; set parent_collection_id to nest it under an existing collection. Returns the collection id and slug, and does not move any prompts.",
 		COLLECTIONS_TOOL_SCHEMAS.createCollection,
 		async (params) => {
 			const result = await service.collections.createCollection(params);
@@ -81,7 +88,7 @@ export function registerCollectionsTools(
 	// Get collection tool
 	server.tool(
 		"get_collection",
-		"Fetch one collection by id or slug and return its name, slug, workspace, and timestamps. Use list_collections when browsing and get_collection when you already know the target.",
+		"Fetch one collection by id or slug and return its name, slug, workspace, parent collection id, child collections with prompt counts, and timestamps. Use list_collections when browsing and get_collection when you already know the target.",
 		COLLECTIONS_TOOL_SCHEMAS.getCollection,
 		async (params) => {
 			const collection = await service.collections.getCollection(
@@ -92,6 +99,8 @@ export function registerCollectionsTools(
 				name: collection.name,
 				slug: collection.slug,
 				workspace_id: collection.workspace_id,
+				parent_collection_id: collection.parent_collection_id,
+				child_collections: collection.child_collections,
 				created_at: collection.created_at,
 				last_updated_at: collection.last_updated_at,
 			});
