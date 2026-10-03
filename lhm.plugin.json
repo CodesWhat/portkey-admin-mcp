@@ -7785,7 +7785,7 @@
 		},
 		{
 			"name": "list_guardrail_mcp_servers",
-			"description": "List every MCP-server mapping for one guardrail, including the input/output phases and mapped capability IDs. Use this before replace_guardrail_mcp_servers because replacement removes every mapping omitted from its request.",
+			"description": "List every MCP-server mapping for one guardrail, including the input/output phases and mapped capability IDs. Requires a guardrail with target mcp_tools. Use this before replace_guardrail_mcp_servers because replacement removes every mapping omitted from its request.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
@@ -7808,7 +7808,7 @@
 		},
 		{
 			"name": "replace_guardrail_mcp_servers",
-			"description": "Replace the complete MCP-server mapping set for one guardrail. Any existing server omitted from mcp_servers is removed, and an empty object clears all mappings. Read list_guardrail_mcp_servers first. Repeating the same complete map is safe.",
+			"description": "Replace the complete MCP-server mapping set for one guardrail. Requires a guardrail with target mcp_tools. Any existing server omitted from mcp_servers is removed, and an empty object clears all mappings. Read list_guardrail_mcp_servers first. Repeating the same complete map is safe.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
@@ -7864,7 +7864,7 @@
 		},
 		{
 			"name": "upsert_guardrail_mcp_server",
-			"description": "Create or replace one guardrail mapping for one MCP server without changing mappings for other servers. run_on defaults to both input and output. Use list_guardrail_mcp_servers to inspect the current mapping set first. Repeating the same mapping is safe.",
+			"description": "Create or replace one guardrail mapping for one MCP server without changing mappings for other servers. Requires a guardrail with target mcp_tools. run_on defaults to both input and output. Use list_guardrail_mcp_servers to inspect the current mapping set first. Repeating the same mapping is safe.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {

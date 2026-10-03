@@ -14,6 +14,9 @@ MCP catalog and preserve the actual selection guidance exposed through
 `tools/list`. A tool can perform a workflow across several listed routes rather
 than mapping one-to-one to one HTTP endpoint.
 
+Routes marked "undocumented upstream" are called by this server but are not in
+the public Portkey OpenAPI, so their contracts can change without a spec diff.
+
 ## Workflow-only and multi-request tools
 
 | Tool | Behavior |
@@ -79,7 +82,7 @@ Routes:
 
 - GET/POST `/admin/workspaces`; GET/PUT/DELETE `/admin/workspaces/{workspaceId}`
 - GET/POST `/admin/workspaces/{workspaceId}/users`; GET/PUT/DELETE `/admin/workspaces/{workspaceId}/users/{userId}`
-- GET/POST `/scim/workspaces`; DELETE `/scim/workspaces/{mappingId}`; GET `/scim/groups`
+- GET/POST `/scim/workspaces`; DELETE `/scim/workspaces/{mappingId}`; GET `/scim/groups` (undocumented upstream; served from the `/v2` base)
 
 | Tool | Selection guidance and result |
 |---|---|
@@ -118,6 +121,7 @@ Routes:
 Routes:
 
 - GET/POST `/deployments`; GET/PUT/DELETE `/deployments/{id}`. DELETE archives; deprecated `/ping` is intentionally omitted.
+- Undocumented upstream: these tools call the `/v2` base (the `/v1` base with its suffix swapped to `/v2`), while the public OpenAPI lists `/deployments` under `/v1`.
 
 | Tool | Selection guidance and result |
 |---|---|
@@ -222,8 +226,8 @@ Routes:
 
 Routes:
 
-- GET/PUT `/admin/organisation/defaults`
-- GET/PUT `/workspace-exclusions/{input-guardrails|output-guardrails}`
+- GET/PUT `/admin/organisation/defaults` (undocumented upstream)
+- GET/PUT `/workspace-exclusions/{input-guardrails|output-guardrails}` (undocumented upstream)
 - GET/POST `/guardrails`; GET/PUT/DELETE `/guardrails/{guardrailId}`
 - GET/PUT `/guardrails/{guardrailId}/mcp-servers`; PUT `/guardrails/{guardrailId}/mcp-servers/{mcpServerId}`
 
@@ -238,9 +242,9 @@ Routes:
 | `list_guardrails` | List guardrails in the org with id, slug, status, ownership, and optional workspace/org filters. Use this to find IDs and slugs before get_guardrail, update_guardrail, or delete_guardrail. |
 | `get_guardrail` | Fetch one guardrail by id or slug with its full checks and actions; use list_guardrails to discover ids first. Use before update_guardrail or delete_guardrail when you need the exact enforcement policy, and returns the full check and action configuration alongside status and ownership. |
 | `create_guardrail` | Create an LLM or MCP-tool guardrail. LLM guardrails require checks and actions; MCP-tool guardrails can be created first and mapped to servers afterward. The new version becomes the policy anchor for downstream use. |
-| `list_guardrail_mcp_servers` | List every MCP-server mapping for one guardrail, including the input/output phases and mapped capability IDs. Use this before replace_guardrail_mcp_servers because replacement removes every mapping omitted from its request. |
-| `replace_guardrail_mcp_servers` | Replace the complete MCP-server mapping set for one guardrail. Any existing server omitted from mcp_servers is removed, and an empty object clears all mappings. Read list_guardrail_mcp_servers first. Repeating the same complete map is safe. |
-| `upsert_guardrail_mcp_server` | Create or replace one guardrail mapping for one MCP server without changing mappings for other servers. run_on defaults to both input and output. Use list_guardrail_mcp_servers to inspect the current mapping set first. Repeating the same mapping is safe. |
+| `list_guardrail_mcp_servers` | List every MCP-server mapping for one guardrail, including the input/output phases and mapped capability IDs. Requires a guardrail with target mcp_tools. Use this before replace_guardrail_mcp_servers because replacement removes every mapping omitted from its request. |
+| `replace_guardrail_mcp_servers` | Replace the complete MCP-server mapping set for one guardrail. Requires a guardrail with target mcp_tools. Any existing server omitted from mcp_servers is removed, and an empty object clears all mappings. Read list_guardrail_mcp_servers first. Repeating the same complete map is safe. |
+| `upsert_guardrail_mcp_server` | Create or replace one guardrail mapping for one MCP server without changing mappings for other servers. Requires a guardrail with target mcp_tools. run_on defaults to both input and output. Use list_guardrail_mcp_servers to inspect the current mapping set first. Repeating the same mapping is safe. |
 | `update_guardrail` | Update a guardrail's name, checks, or actions, unlike create_guardrail which registers a new one or delete_guardrail which removes it. This creates a new version that takes effect immediately for dependent configs, so review list_guardrails first; returns the updated id, slug, and version_id. |
 | `delete_guardrail` | Delete a guardrail by id or slug. This is irreversible and removes the check from any configs that reference it, so review dependent configs first. |
 
@@ -324,7 +328,7 @@ Routes:
 Routes:
 
 - POST `/logs`; GET `/logs/{logId}`
-- GET `/logs/exports/field-restrictions`; GET/POST `/logs/exports`; GET/PUT `/logs/exports/{exportId}`
+- GET `/logs/exports/field-restrictions` (undocumented upstream); GET/POST `/logs/exports`; GET/PUT `/logs/exports/{exportId}`
 - POST `/logs/exports/{exportId}/{start|cancel}`; GET `/logs/exports/{exportId}/download`
 
 | Tool | Selection guidance and result |

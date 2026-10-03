@@ -389,7 +389,7 @@ export function registerGuardrailsTools(
 
 	server.tool(
 		"list_guardrail_mcp_servers",
-		"List every MCP-server mapping for one guardrail, including the input/output phases and mapped capability IDs. Use this before replace_guardrail_mcp_servers because replacement removes every mapping omitted from its request.",
+		"List every MCP-server mapping for one guardrail, including the input/output phases and mapped capability IDs. Requires a guardrail with target mcp_tools. Use this before replace_guardrail_mcp_servers because replacement removes every mapping omitted from its request.",
 		GUARDRAILS_TOOL_SCHEMAS.listGuardrailMcpServerMappings,
 		{
 			title: "List Guardrail MCP Servers",
@@ -407,7 +407,7 @@ export function registerGuardrailsTools(
 
 	server.tool(
 		"replace_guardrail_mcp_servers",
-		"Replace the complete MCP-server mapping set for one guardrail. Any existing server omitted from mcp_servers is removed, and an empty object clears all mappings. Read list_guardrail_mcp_servers first. Repeating the same complete map is safe.",
+		"Replace the complete MCP-server mapping set for one guardrail. Requires a guardrail with target mcp_tools. Any existing server omitted from mcp_servers is removed, and an empty object clears all mappings. Read list_guardrail_mcp_servers first. Repeating the same complete map is safe.",
 		GUARDRAILS_TOOL_SCHEMAS.replaceGuardrailMcpServerMappings,
 		{
 			title: "Replace Guardrail MCP Servers",
@@ -430,7 +430,7 @@ export function registerGuardrailsTools(
 
 	server.tool(
 		"upsert_guardrail_mcp_server",
-		"Create or replace one guardrail mapping for one MCP server without changing mappings for other servers. run_on defaults to both input and output. Use list_guardrail_mcp_servers to inspect the current mapping set first. Repeating the same mapping is safe.",
+		"Create or replace one guardrail mapping for one MCP server without changing mappings for other servers. Requires a guardrail with target mcp_tools. run_on defaults to both input and output. Use list_guardrail_mcp_servers to inspect the current mapping set first. Repeating the same mapping is safe.",
 		GUARDRAILS_TOOL_SCHEMAS.upsertGuardrailMcpServerMapping,
 		{
 			title: "Upsert Guardrail MCP Server",

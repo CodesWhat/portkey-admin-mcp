@@ -50,6 +50,31 @@ function namesForDomain(domain) {
 	return [...literalNames, ...findTableDrivenNames(source)];
 }
 
+// Routes this server calls that the public Portkey OpenAPI
+// (github.com/Portkey-AI/openapi, openapi.yaml) does not document. Each key is
+// the exact backticked route text used in DOMAINS; the value is appended after
+// it. Confirmed absent from the spec on 2026-10-02.
+const UNDOCUMENTED_UPSTREAM = new Map([
+	["/scim/groups", "undocumented upstream; served from the `/v2` base"],
+	["/admin/organisation/defaults", "undocumented upstream"],
+	[
+		"/workspace-exclusions/{input-guardrails|output-guardrails}",
+		"undocumented upstream",
+	],
+	["/logs/exports/field-restrictions", "undocumented upstream"],
+]);
+
+function markUndocumented(route) {
+	let marked = route;
+	for (const [routePath, note] of UNDOCUMENTED_UPSTREAM) {
+		marked = marked.replaceAll(
+			`\`${routePath}\``,
+			`\`${routePath}\` (${note})`,
+		);
+	}
+	return marked;
+}
+
 const DOMAINS = [
 	{
 		name: "users",
@@ -77,6 +102,7 @@ const DOMAINS = [
 		name: "deployments",
 		routes: [
 			"GET/POST `/deployments`; GET/PUT/DELETE `/deployments/{id}`. DELETE archives; deprecated `/ping` is intentionally omitted.",
+			"Undocumented upstream: these tools call the `/v2` base (the `/v1` base with its suffix swapped to `/v2`), while the public OpenAPI lists `/deployments` under `/v1`.",
 		],
 	},
 	{
@@ -219,7 +245,7 @@ for (const domain of DOMAINS) {
 		return `| \`${name}\` | ${escapeCell(tool.description)} |`;
 	});
 	sections.push(
-		`## ${domain.name} (${names.length})\n\nRoutes:\n\n${domain.routes.map((route) => `- ${route}`).join("\n")}\n\n| Tool | Selection guidance and result |\n|---|---|\n${rows.join("\n")}`,
+		`## ${domain.name} (${names.length})\n\nRoutes:\n\n${domain.routes.map((route) => `- ${markUndocumented(route)}`).join("\n")}\n\n| Tool | Selection guidance and result |\n|---|---|\n${rows.join("\n")}`,
 	);
 }
 
@@ -251,6 +277,9 @@ The route lists are domain-level service routes. The tool tables are the complet
 MCP catalog and preserve the actual selection guidance exposed through
 \`tools/list\`. A tool can perform a workflow across several listed routes rather
 than mapping one-to-one to one HTTP endpoint.
+
+Routes marked "undocumented upstream" are called by this server but are not in
+the public Portkey OpenAPI, so their contracts can change without a spec diff.
 
 ## Workflow-only and multi-request tools
 
