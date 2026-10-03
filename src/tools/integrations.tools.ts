@@ -7,7 +7,7 @@ import {
 	createSecretMappingSchema,
 	uniqueSecretMappingsSchema,
 } from "./secret-mapping.schemas.js";
-import { resourceTagsSchema } from "./tags.schemas.js";
+import { integrationTagsSchema } from "./tags.schemas.js";
 import { jsonResult } from "./utils.js";
 
 const integrationSecretMappingSchema = createSecretMappingSchema({
@@ -155,7 +155,7 @@ const INTEGRATIONS_TOOL_SCHEMAS = {
 			.describe(
 				"Filter by integration type: 'workspace', 'organisation', or 'all' (default)",
 			),
-		tags: resourceTagsSchema
+		tags: integrationTagsSchema
 			.optional()
 			.describe("Match integrations that carry all supplied tags"),
 	},
@@ -236,7 +236,7 @@ const INTEGRATIONS_TOOL_SCHEMAS = {
 			.describe(
 				"Negotiated discount or markup multipliers for cost accounting",
 			),
-		tags: resourceTagsSchema
+		tags: integrationTagsSchema
 			.nullable()
 			.optional()
 			.describe("Integration tags, or null to create without tags"),
@@ -303,7 +303,7 @@ const INTEGRATIONS_TOOL_SCHEMAS = {
 			.describe(
 				"Replacement cost multiplier configuration, or null to clear adjustments",
 			),
-		tags: resourceTagsSchema
+		tags: integrationTagsSchema
 			.nullable()
 			.optional()
 			.describe("Replacement integration tags, or null to clear all tags"),

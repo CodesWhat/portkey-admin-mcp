@@ -254,7 +254,7 @@ describe("Gateway deployments", () => {
 });
 
 describe("Integration tags", () => {
-	it("forwards tag filters and mutations and validates tag keys", async () => {
+	it("forwards tag filters and mutations without restricting tag keys", async () => {
 		let listParams: unknown;
 		let created: unknown;
 		const updates: unknown[] = [];
@@ -309,7 +309,8 @@ describe("Integration tags", () => {
 		const createTags = schemas.get("create_integration")?.tags;
 		const updateTags = schemas.get("update_integration")?.tags;
 		assert.equal(listTags?.safeParse({ env: "prod" }).success, true);
-		assert.equal(listTags?.safeParse({ "bad key": "prod" }).success, false);
+		// The OpenAPI places no constraint on integration tag keys.
+		assert.equal(listTags?.safeParse({ "team.name": "a b" }).success, true);
 		assert.equal(listTags?.safeParse(null).success, false);
 		assert.equal(createTags?.safeParse({ env: "prod" }).success, true);
 		assert.equal(createTags?.safeParse(null).success, true);

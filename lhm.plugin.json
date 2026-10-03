@@ -10635,8 +10635,7 @@
 						"description": "Match integrations that carry all supplied tags",
 						"type": "object",
 						"propertyNames": {
-							"type": "string",
-							"pattern": "^[a-zA-Z0-9_-]+$"
+							"type": "string"
 						},
 						"additionalProperties": {
 							"type": "string"
@@ -11065,8 +11064,7 @@
 							{
 								"type": "object",
 								"propertyNames": {
-									"type": "string",
-									"pattern": "^[a-zA-Z0-9_-]+$"
+									"type": "string"
 								},
 								"additionalProperties": {
 									"type": "string"
@@ -11505,8 +11503,7 @@
 							{
 								"type": "object",
 								"propertyNames": {
-									"type": "string",
-									"pattern": "^[a-zA-Z0-9_-]+$"
+									"type": "string"
 								},
 								"additionalProperties": {
 									"type": "string"
