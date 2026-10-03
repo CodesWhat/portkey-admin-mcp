@@ -22,6 +22,8 @@ export interface IntegrationConfigurations {
 	[key: string]: unknown;
 }
 
+export type IntegrationTags = Record<string, string>;
+
 export interface IntegrationUsageLimits {
 	type?: "cost" | "tokens";
 	credit_limit?: number;
@@ -100,6 +102,7 @@ export interface ListIntegrationsParams {
 	page_size?: number;
 	workspace_id?: string;
 	type?: "workspace" | "organisation" | "all";
+	tags?: IntegrationTags;
 }
 
 export interface CreateIntegrationRequest {
@@ -114,6 +117,7 @@ export interface CreateIntegrationRequest {
 	default_provider_slug?: string;
 	secret_mappings?: SecretMapping[];
 	pricing_adjustments?: PricingAdjustments | null;
+	tags?: IntegrationTags | null;
 }
 
 export interface CreateIntegrationResponse {
@@ -128,6 +132,7 @@ export interface UpdateIntegrationRequest {
 	configurations?: IntegrationConfigurations;
 	secret_mappings?: SecretMapping[];
 	pricing_adjustments?: PricingAdjustments | null;
+	tags?: IntegrationTags | null;
 }
 
 // Integration Model Types
@@ -263,6 +268,8 @@ export class IntegrationsService extends BaseService {
 			page_size: params?.page_size,
 			workspace_id: params?.workspace_id,
 			type: params?.type,
+			tags:
+				params?.tags === undefined ? undefined : JSON.stringify(params.tags),
 		});
 	}
 

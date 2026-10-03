@@ -1,20 +1,13 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { PortkeyService } from "../services/index.js";
+import { resourceTagsSchema } from "./tags.schemas.js";
 import { jsonResult } from "./utils.js";
 
 const binaryFlagSchema = z.union([z.literal(0), z.literal(1)]);
 const deploymentTypeSchema = z.enum(["production", "non_production"]);
 const deploymentStatusSchema = z.enum(["active", "archived"]);
-const deploymentTagsSchema = z.record(
-	z
-		.string()
-		.regex(
-			/^[a-zA-Z0-9_-]+$/,
-			"Tag keys may contain only letters, numbers, underscores, and hyphens",
-		),
-	z.string(),
-);
+const deploymentTagsSchema = resourceTagsSchema;
 
 const authSettingsSchema = {
 	gateway_base_url: z.url().optional().describe("Self-hosted Gateway base URL"),
