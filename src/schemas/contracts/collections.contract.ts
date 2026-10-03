@@ -35,10 +35,12 @@ export const ChildCollectionSchema = z
 export const ListCollectionsResponseSchema = z.object({
 	total: z.number().int().nonnegative(),
 	data: z.array(
-		CollectionSchema.extend({ collection_details: CollectionDetailsSchema }),
+		CollectionSchema.extend({
+			collection_details: CollectionDetailsSchema.optional(),
+		}),
 	),
 });
 
 export const GetCollectionResponseSchema = CollectionSchema.extend({
-	child_collections: z.array(ChildCollectionSchema),
+	child_collections: z.array(ChildCollectionSchema).optional(),
 });
