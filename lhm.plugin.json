@@ -2,7 +2,7 @@
 	"identifier": "codeswhat-portkey-admin-mcp",
 	"name": "Portkey Admin MCP Server",
 	"version": "0.12.2",
-	"description": "Portkey Admin API MCP server with current control-plane coverage, 181 tools, and Prisma AIRS interoperability guidance.",
+	"description": "Portkey Admin API MCP server with current control-plane coverage, 184 tools, and Prisma AIRS interoperability guidance.",
 	"author": "CodesWhat",
 	"authorUrl": "https://github.com/CodesWhat",
 	"category": "development",
@@ -3761,6 +3761,17 @@
 							"type": "string"
 						}
 					},
+					"deployment_id": {
+						"description": "Comma-separated list of deployment IDs (UUIDs) to filter by. Prefer deployment_ids for structured inputs.",
+						"type": "string"
+					},
+					"deployment_ids": {
+						"description": "Structured alias for deployment_id. Use an array of deployment UUIDs; normalized to the comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
 					"trace_id": {
 						"description": "Legacy Portkey query param for trace IDs. Comma-separated string; prefer trace_ids for structured inputs.",
 						"type": "string"
@@ -3923,6 +3934,17 @@
 					},
 					"provider_models": {
 						"description": "Structured alias for ai_org_model. Use provider__model strings in an array; normalized to the legacy comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"deployment_id": {
+						"description": "Comma-separated list of deployment IDs (UUIDs) to filter by. Prefer deployment_ids for structured inputs.",
+						"type": "string"
+					},
+					"deployment_ids": {
+						"description": "Structured alias for deployment_id. Use an array of deployment UUIDs; normalized to the comma-separated Portkey query param.",
 						"type": "array",
 						"items": {
 							"type": "string"
@@ -4095,6 +4117,17 @@
 							"type": "string"
 						}
 					},
+					"deployment_id": {
+						"description": "Comma-separated list of deployment IDs (UUIDs) to filter by. Prefer deployment_ids for structured inputs.",
+						"type": "string"
+					},
+					"deployment_ids": {
+						"description": "Structured alias for deployment_id. Use an array of deployment UUIDs; normalized to the comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
 					"trace_id": {
 						"description": "Legacy Portkey query param for trace IDs. Comma-separated string; prefer trace_ids for structured inputs.",
 						"type": "string"
@@ -4257,6 +4290,17 @@
 					},
 					"provider_models": {
 						"description": "Structured alias for ai_org_model. Use provider__model strings in an array; normalized to the legacy comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"deployment_id": {
+						"description": "Comma-separated list of deployment IDs (UUIDs) to filter by. Prefer deployment_ids for structured inputs.",
+						"type": "string"
+					},
+					"deployment_ids": {
+						"description": "Structured alias for deployment_id. Use an array of deployment UUIDs; normalized to the comma-separated Portkey query param.",
 						"type": "array",
 						"items": {
 							"type": "string"
@@ -4429,6 +4473,17 @@
 							"type": "string"
 						}
 					},
+					"deployment_id": {
+						"description": "Comma-separated list of deployment IDs (UUIDs) to filter by. Prefer deployment_ids for structured inputs.",
+						"type": "string"
+					},
+					"deployment_ids": {
+						"description": "Structured alias for deployment_id. Use an array of deployment UUIDs; normalized to the comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
 					"trace_id": {
 						"description": "Legacy Portkey query param for trace IDs. Comma-separated string; prefer trace_ids for structured inputs.",
 						"type": "string"
@@ -4591,6 +4646,17 @@
 					},
 					"provider_models": {
 						"description": "Structured alias for ai_org_model. Use provider__model strings in an array; normalized to the legacy comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"deployment_id": {
+						"description": "Comma-separated list of deployment IDs (UUIDs) to filter by. Prefer deployment_ids for structured inputs.",
+						"type": "string"
+					},
+					"deployment_ids": {
+						"description": "Structured alias for deployment_id. Use an array of deployment UUIDs; normalized to the comma-separated Portkey query param.",
 						"type": "array",
 						"items": {
 							"type": "string"
@@ -4763,6 +4829,17 @@
 							"type": "string"
 						}
 					},
+					"deployment_id": {
+						"description": "Comma-separated list of deployment IDs (UUIDs) to filter by. Prefer deployment_ids for structured inputs.",
+						"type": "string"
+					},
+					"deployment_ids": {
+						"description": "Structured alias for deployment_id. Use an array of deployment UUIDs; normalized to the comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
 					"trace_id": {
 						"description": "Legacy Portkey query param for trace IDs. Comma-separated string; prefer trace_ids for structured inputs.",
 						"type": "string"
@@ -4925,6 +5002,17 @@
 					},
 					"provider_models": {
 						"description": "Structured alias for ai_org_model. Use provider__model strings in an array; normalized to the legacy comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"deployment_id": {
+						"description": "Comma-separated list of deployment IDs (UUIDs) to filter by. Prefer deployment_ids for structured inputs.",
+						"type": "string"
+					},
+					"deployment_ids": {
+						"description": "Structured alias for deployment_id. Use an array of deployment UUIDs; normalized to the comma-separated Portkey query param.",
 						"type": "array",
 						"items": {
 							"type": "string"
@@ -5093,6 +5181,17 @@
 					},
 					"provider_models": {
 						"description": "Structured alias for ai_org_model. Use provider__model strings in an array; normalized to the legacy comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"deployment_id": {
+						"description": "Comma-separated list of deployment IDs (UUIDs) to filter by. Prefer deployment_ids for structured inputs.",
+						"type": "string"
+					},
+					"deployment_ids": {
+						"description": "Structured alias for deployment_id. Use an array of deployment UUIDs; normalized to the comma-separated Portkey query param.",
 						"type": "array",
 						"items": {
 							"type": "string"
@@ -5269,6 +5368,17 @@
 							"type": "string"
 						}
 					},
+					"deployment_id": {
+						"description": "Comma-separated list of deployment IDs (UUIDs) to filter by. Prefer deployment_ids for structured inputs.",
+						"type": "string"
+					},
+					"deployment_ids": {
+						"description": "Structured alias for deployment_id. Use an array of deployment UUIDs; normalized to the comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
 					"trace_id": {
 						"description": "Legacy Portkey query param for trace IDs. Comma-separated string; prefer trace_ids for structured inputs.",
 						"type": "string"
@@ -5431,6 +5541,17 @@
 					},
 					"provider_models": {
 						"description": "Structured alias for ai_org_model. Use provider__model strings in an array; normalized to the legacy comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"deployment_id": {
+						"description": "Comma-separated list of deployment IDs (UUIDs) to filter by. Prefer deployment_ids for structured inputs.",
+						"type": "string"
+					},
+					"deployment_ids": {
+						"description": "Structured alias for deployment_id. Use an array of deployment UUIDs; normalized to the comma-separated Portkey query param.",
 						"type": "array",
 						"items": {
 							"type": "string"
@@ -5603,6 +5724,17 @@
 							"type": "string"
 						}
 					},
+					"deployment_id": {
+						"description": "Comma-separated list of deployment IDs (UUIDs) to filter by. Prefer deployment_ids for structured inputs.",
+						"type": "string"
+					},
+					"deployment_ids": {
+						"description": "Structured alias for deployment_id. Use an array of deployment UUIDs; normalized to the comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
 					"trace_id": {
 						"description": "Legacy Portkey query param for trace IDs. Comma-separated string; prefer trace_ids for structured inputs.",
 						"type": "string"
@@ -5765,6 +5897,17 @@
 					},
 					"provider_models": {
 						"description": "Structured alias for ai_org_model. Use provider__model strings in an array; normalized to the legacy comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"deployment_id": {
+						"description": "Comma-separated list of deployment IDs (UUIDs) to filter by. Prefer deployment_ids for structured inputs.",
+						"type": "string"
+					},
+					"deployment_ids": {
+						"description": "Structured alias for deployment_id. Use an array of deployment UUIDs; normalized to the comma-separated Portkey query param.",
 						"type": "array",
 						"items": {
 							"type": "string"
@@ -5937,6 +6080,17 @@
 							"type": "string"
 						}
 					},
+					"deployment_id": {
+						"description": "Comma-separated list of deployment IDs (UUIDs) to filter by. Prefer deployment_ids for structured inputs.",
+						"type": "string"
+					},
+					"deployment_ids": {
+						"description": "Structured alias for deployment_id. Use an array of deployment UUIDs; normalized to the comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
 					"trace_id": {
 						"description": "Legacy Portkey query param for trace IDs. Comma-separated string; prefer trace_ids for structured inputs.",
 						"type": "string"
@@ -6099,6 +6253,17 @@
 					},
 					"provider_models": {
 						"description": "Structured alias for ai_org_model. Use provider__model strings in an array; normalized to the legacy comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"deployment_id": {
+						"description": "Comma-separated list of deployment IDs (UUIDs) to filter by. Prefer deployment_ids for structured inputs.",
+						"type": "string"
+					},
+					"deployment_ids": {
+						"description": "Structured alias for deployment_id. Use an array of deployment UUIDs; normalized to the comma-separated Portkey query param.",
 						"type": "array",
 						"items": {
 							"type": "string"
@@ -6271,6 +6436,17 @@
 							"type": "string"
 						}
 					},
+					"deployment_id": {
+						"description": "Comma-separated list of deployment IDs (UUIDs) to filter by. Prefer deployment_ids for structured inputs.",
+						"type": "string"
+					},
+					"deployment_ids": {
+						"description": "Structured alias for deployment_id. Use an array of deployment UUIDs; normalized to the comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
 					"trace_id": {
 						"description": "Legacy Portkey query param for trace IDs. Comma-separated string; prefer trace_ids for structured inputs.",
 						"type": "string"
@@ -6433,6 +6609,17 @@
 					},
 					"provider_models": {
 						"description": "Structured alias for ai_org_model. Use provider__model strings in an array; normalized to the legacy comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"deployment_id": {
+						"description": "Comma-separated list of deployment IDs (UUIDs) to filter by. Prefer deployment_ids for structured inputs.",
+						"type": "string"
+					},
+					"deployment_ids": {
+						"description": "Structured alias for deployment_id. Use an array of deployment UUIDs; normalized to the comma-separated Portkey query param.",
 						"type": "array",
 						"items": {
 							"type": "string"
@@ -6605,6 +6792,17 @@
 							"type": "string"
 						}
 					},
+					"deployment_id": {
+						"description": "Comma-separated list of deployment IDs (UUIDs) to filter by. Prefer deployment_ids for structured inputs.",
+						"type": "string"
+					},
+					"deployment_ids": {
+						"description": "Structured alias for deployment_id. Use an array of deployment UUIDs; normalized to the comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
 					"trace_id": {
 						"description": "Legacy Portkey query param for trace IDs. Comma-separated string; prefer trace_ids for structured inputs.",
 						"type": "string"
@@ -6767,6 +6965,17 @@
 					},
 					"provider_models": {
 						"description": "Structured alias for ai_org_model. Use provider__model strings in an array; normalized to the legacy comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"deployment_id": {
+						"description": "Comma-separated list of deployment IDs (UUIDs) to filter by. Prefer deployment_ids for structured inputs.",
+						"type": "string"
+					},
+					"deployment_ids": {
+						"description": "Structured alias for deployment_id. Use an array of deployment UUIDs; normalized to the comma-separated Portkey query param.",
 						"type": "array",
 						"items": {
 							"type": "string"
@@ -6951,6 +7160,17 @@
 							"type": "string"
 						}
 					},
+					"deployment_id": {
+						"description": "Comma-separated list of deployment IDs (UUIDs) to filter by. Prefer deployment_ids for structured inputs.",
+						"type": "string"
+					},
+					"deployment_ids": {
+						"description": "Structured alias for deployment_id. Use an array of deployment UUIDs; normalized to the comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
 					"trace_id": {
 						"description": "Legacy Portkey query param for trace IDs. Comma-separated string; prefer trace_ids for structured inputs.",
 						"type": "string"
@@ -7126,6 +7346,17 @@
 					},
 					"provider_models": {
 						"description": "Structured alias for ai_org_model. Use provider__model strings in an array; normalized to the legacy comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"deployment_id": {
+						"description": "Comma-separated list of deployment IDs (UUIDs) to filter by. Prefer deployment_ids for structured inputs.",
+						"type": "string"
+					},
+					"deployment_ids": {
+						"description": "Structured alias for deployment_id. Use an array of deployment UUIDs; normalized to the comma-separated Portkey query param.",
 						"type": "array",
 						"items": {
 							"type": "string"
@@ -7349,6 +7580,17 @@
 							"type": "string"
 						}
 					},
+					"deployment_id": {
+						"description": "Comma-separated list of deployment IDs (UUIDs) to filter by. Prefer deployment_ids for structured inputs.",
+						"type": "string"
+					},
+					"deployment_ids": {
+						"description": "Structured alias for deployment_id. Use an array of deployment UUIDs; normalized to the comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
 					"trace_id": {
 						"description": "Legacy Portkey query param for trace IDs. Comma-separated string; prefer trace_ids for structured inputs.",
 						"type": "string"
@@ -7405,6 +7647,576 @@
 					"time_of_generation_max",
 					"metadata_key"
 				],
+				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
+			}
+		},
+		{
+			"name": "get_analytics_group_mcp",
+			"description": "Get a paginated per-MCP-server breakdown with total_groups, group_count, and an mcp_servers array containing each server name and its request count. Use this to see which MCP servers receive the most traffic; use get_analytics_group_a2a for A2A agents or get_analytics_group_users and get_analytics_group_models for other breakdowns. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
+			"inputSchema": {
+				"type": "object",
+				"properties": {
+					"time_of_generation_min": {
+						"type": "string",
+						"description": "Start time for the analytics period (ISO8601 format, e.g., '2024-01-01T00:00:00Z')"
+					},
+					"time_of_generation_max": {
+						"type": "string",
+						"description": "End time for the analytics period (ISO8601 format, e.g., '2024-02-01T00:00:00Z')"
+					},
+					"total_units_min": {
+						"description": "Minimum number of total tokens to filter by",
+						"type": "number",
+						"minimum": 0
+					},
+					"total_units_max": {
+						"description": "Maximum number of total tokens to filter by",
+						"type": "number",
+						"minimum": 0
+					},
+					"cost_min": {
+						"description": "Minimum cost in cents to filter by",
+						"type": "number",
+						"minimum": 0
+					},
+					"cost_max": {
+						"description": "Maximum cost in cents to filter by",
+						"type": "number",
+						"minimum": 0
+					},
+					"prompt_token_min": {
+						"description": "Minimum number of prompt tokens",
+						"type": "number",
+						"minimum": 0
+					},
+					"prompt_token_max": {
+						"description": "Maximum number of prompt tokens",
+						"type": "number",
+						"minimum": 0
+					},
+					"completion_token_min": {
+						"description": "Minimum number of completion tokens",
+						"type": "number",
+						"minimum": 0
+					},
+					"completion_token_max": {
+						"description": "Maximum number of completion tokens",
+						"type": "number",
+						"minimum": 0
+					},
+					"status_code": {
+						"description": "Legacy Portkey query param for HTTP status codes. Comma-separated string; prefer status_codes for structured inputs.",
+						"type": "string"
+					},
+					"weighted_feedback_min": {
+						"description": "Minimum weighted feedback score (-10 to 10)",
+						"type": "number",
+						"minimum": -10,
+						"maximum": 10
+					},
+					"weighted_feedback_max": {
+						"description": "Maximum weighted feedback score (-10 to 10)",
+						"type": "number",
+						"minimum": -10,
+						"maximum": 10
+					},
+					"virtual_keys": {
+						"description": "Legacy Portkey query param for virtual key slugs. Comma-separated string; prefer virtual_key_slugs for structured inputs.",
+						"type": "string"
+					},
+					"configs": {
+						"description": "Legacy Portkey query param for config slugs. Comma-separated string; prefer config_slugs for structured inputs.",
+						"type": "string"
+					},
+					"status_codes": {
+						"description": "Structured alias for status_code. Use an array of HTTP status codes; normalized to the legacy comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"virtual_key_slugs": {
+						"description": "Structured alias for virtual_keys. Use an array of virtual key slugs; normalized to the legacy comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"config_slugs": {
+						"description": "Structured alias for configs. Use an array of config slugs; normalized to the legacy comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"workspace_slug": {
+						"description": "Filter by specific workspace",
+						"type": "string"
+					},
+					"api_key_ids": {
+						"description": "Legacy Portkey query param for API key UUIDs. Comma-separated string; request_analytics also accepts an array and normalizes it to this form.",
+						"type": "string"
+					},
+					"metadata": {
+						"description": "Legacy Portkey query param for metadata filtering. Stringified JSON object, e.g. '{\"env\":\"prod\",\"app\":\"myapp\"}'; prefer metadata_filter for structured inputs.",
+						"type": "string"
+					},
+					"ai_org_model": {
+						"description": "Legacy Portkey query param for provider/model pairs. Format: 'provider__model' with double underscore, e.g. 'openai__gpt-4' or 'anthropic__claude-3-opus'. Comma-separated string; prefer provider_models for structured inputs.",
+						"type": "string"
+					},
+					"provider_models": {
+						"description": "Structured alias for ai_org_model. Use provider__model strings in an array; normalized to the legacy comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"deployment_id": {
+						"description": "Comma-separated list of deployment IDs (UUIDs) to filter by. Prefer deployment_ids for structured inputs.",
+						"type": "string"
+					},
+					"deployment_ids": {
+						"description": "Structured alias for deployment_id. Use an array of deployment UUIDs; normalized to the comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"trace_id": {
+						"description": "Legacy Portkey query param for trace IDs. Comma-separated string; prefer trace_ids for structured inputs.",
+						"type": "string"
+					},
+					"trace_ids": {
+						"description": "Structured alias for trace_id. Use an array of trace IDs; normalized to the legacy comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"span_id": {
+						"description": "Legacy Portkey query param for span IDs. Comma-separated string; prefer span_ids for structured inputs.",
+						"type": "string"
+					},
+					"span_ids": {
+						"description": "Structured alias for span_id. Use an array of span IDs; normalized to the legacy comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"metadata_filter": {
+						"description": "Structured alias for metadata. Use an object such as { env: 'prod' }; normalized to a JSON string before the request is sent.",
+						"type": "object",
+						"propertyNames": {
+							"type": "string"
+						},
+						"additionalProperties": {}
+					},
+					"prompt_slug": {
+						"description": "Filter by prompt slug",
+						"type": "string"
+					},
+					"current_page": {
+						"description": "Zero-based page number; the first page is 0",
+						"type": "integer",
+						"minimum": 0,
+						"maximum": 9007199254740991
+					},
+					"page_size": {
+						"description": "Results per page (max 100)",
+						"type": "integer",
+						"exclusiveMinimum": 0,
+						"maximum": 100
+					}
+				},
+				"required": ["time_of_generation_min", "time_of_generation_max"],
+				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
+			}
+		},
+		{
+			"name": "get_analytics_group_a2a",
+			"description": "Get a paginated per-agent breakdown with total_groups, group_count, and an agents array containing each A2A (agent-to-agent) agent name and its request count. Use this to see which agents receive the most traffic; use get_analytics_group_mcp for MCP servers instead. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
+			"inputSchema": {
+				"type": "object",
+				"properties": {
+					"time_of_generation_min": {
+						"type": "string",
+						"description": "Start time for the analytics period (ISO8601 format, e.g., '2024-01-01T00:00:00Z')"
+					},
+					"time_of_generation_max": {
+						"type": "string",
+						"description": "End time for the analytics period (ISO8601 format, e.g., '2024-02-01T00:00:00Z')"
+					},
+					"total_units_min": {
+						"description": "Minimum number of total tokens to filter by",
+						"type": "number",
+						"minimum": 0
+					},
+					"total_units_max": {
+						"description": "Maximum number of total tokens to filter by",
+						"type": "number",
+						"minimum": 0
+					},
+					"cost_min": {
+						"description": "Minimum cost in cents to filter by",
+						"type": "number",
+						"minimum": 0
+					},
+					"cost_max": {
+						"description": "Maximum cost in cents to filter by",
+						"type": "number",
+						"minimum": 0
+					},
+					"prompt_token_min": {
+						"description": "Minimum number of prompt tokens",
+						"type": "number",
+						"minimum": 0
+					},
+					"prompt_token_max": {
+						"description": "Maximum number of prompt tokens",
+						"type": "number",
+						"minimum": 0
+					},
+					"completion_token_min": {
+						"description": "Minimum number of completion tokens",
+						"type": "number",
+						"minimum": 0
+					},
+					"completion_token_max": {
+						"description": "Maximum number of completion tokens",
+						"type": "number",
+						"minimum": 0
+					},
+					"status_code": {
+						"description": "Legacy Portkey query param for HTTP status codes. Comma-separated string; prefer status_codes for structured inputs.",
+						"type": "string"
+					},
+					"weighted_feedback_min": {
+						"description": "Minimum weighted feedback score (-10 to 10)",
+						"type": "number",
+						"minimum": -10,
+						"maximum": 10
+					},
+					"weighted_feedback_max": {
+						"description": "Maximum weighted feedback score (-10 to 10)",
+						"type": "number",
+						"minimum": -10,
+						"maximum": 10
+					},
+					"virtual_keys": {
+						"description": "Legacy Portkey query param for virtual key slugs. Comma-separated string; prefer virtual_key_slugs for structured inputs.",
+						"type": "string"
+					},
+					"configs": {
+						"description": "Legacy Portkey query param for config slugs. Comma-separated string; prefer config_slugs for structured inputs.",
+						"type": "string"
+					},
+					"status_codes": {
+						"description": "Structured alias for status_code. Use an array of HTTP status codes; normalized to the legacy comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"virtual_key_slugs": {
+						"description": "Structured alias for virtual_keys. Use an array of virtual key slugs; normalized to the legacy comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"config_slugs": {
+						"description": "Structured alias for configs. Use an array of config slugs; normalized to the legacy comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"workspace_slug": {
+						"description": "Filter by specific workspace",
+						"type": "string"
+					},
+					"api_key_ids": {
+						"description": "Legacy Portkey query param for API key UUIDs. Comma-separated string; request_analytics also accepts an array and normalizes it to this form.",
+						"type": "string"
+					},
+					"metadata": {
+						"description": "Legacy Portkey query param for metadata filtering. Stringified JSON object, e.g. '{\"env\":\"prod\",\"app\":\"myapp\"}'; prefer metadata_filter for structured inputs.",
+						"type": "string"
+					},
+					"ai_org_model": {
+						"description": "Legacy Portkey query param for provider/model pairs. Format: 'provider__model' with double underscore, e.g. 'openai__gpt-4' or 'anthropic__claude-3-opus'. Comma-separated string; prefer provider_models for structured inputs.",
+						"type": "string"
+					},
+					"provider_models": {
+						"description": "Structured alias for ai_org_model. Use provider__model strings in an array; normalized to the legacy comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"deployment_id": {
+						"description": "Comma-separated list of deployment IDs (UUIDs) to filter by. Prefer deployment_ids for structured inputs.",
+						"type": "string"
+					},
+					"deployment_ids": {
+						"description": "Structured alias for deployment_id. Use an array of deployment UUIDs; normalized to the comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"trace_id": {
+						"description": "Legacy Portkey query param for trace IDs. Comma-separated string; prefer trace_ids for structured inputs.",
+						"type": "string"
+					},
+					"trace_ids": {
+						"description": "Structured alias for trace_id. Use an array of trace IDs; normalized to the legacy comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"span_id": {
+						"description": "Legacy Portkey query param for span IDs. Comma-separated string; prefer span_ids for structured inputs.",
+						"type": "string"
+					},
+					"span_ids": {
+						"description": "Structured alias for span_id. Use an array of span IDs; normalized to the legacy comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"metadata_filter": {
+						"description": "Structured alias for metadata. Use an object such as { env: 'prod' }; normalized to a JSON string before the request is sent.",
+						"type": "object",
+						"propertyNames": {
+							"type": "string"
+						},
+						"additionalProperties": {}
+					},
+					"prompt_slug": {
+						"description": "Filter by prompt slug",
+						"type": "string"
+					},
+					"current_page": {
+						"description": "Zero-based page number; the first page is 0",
+						"type": "integer",
+						"minimum": 0,
+						"maximum": 9007199254740991
+					},
+					"page_size": {
+						"description": "Results per page (max 100)",
+						"type": "integer",
+						"exclusiveMinimum": 0,
+						"maximum": 100
+					}
+				},
+				"required": ["time_of_generation_min", "time_of_generation_max"],
+				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
+			}
+		},
+		{
+			"name": "get_analytics_group_workspaces",
+			"description": "Get a paginated per-workspace breakdown with total_groups, group_count, is_quota_exceeded when reported, and a workspaces array containing each workspace_slug with request count and cost. Use this for org-wide chargeback or comparing workspaces; pass workspace_slug to other analytics tools to drill into one workspace. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
+			"inputSchema": {
+				"type": "object",
+				"properties": {
+					"time_of_generation_min": {
+						"type": "string",
+						"description": "Start time for the analytics period (ISO8601 format, e.g., '2024-01-01T00:00:00Z')"
+					},
+					"time_of_generation_max": {
+						"type": "string",
+						"description": "End time for the analytics period (ISO8601 format, e.g., '2024-02-01T00:00:00Z')"
+					},
+					"total_units_min": {
+						"description": "Minimum number of total tokens to filter by",
+						"type": "number",
+						"minimum": 0
+					},
+					"total_units_max": {
+						"description": "Maximum number of total tokens to filter by",
+						"type": "number",
+						"minimum": 0
+					},
+					"cost_min": {
+						"description": "Minimum cost in cents to filter by",
+						"type": "number",
+						"minimum": 0
+					},
+					"cost_max": {
+						"description": "Maximum cost in cents to filter by",
+						"type": "number",
+						"minimum": 0
+					},
+					"prompt_token_min": {
+						"description": "Minimum number of prompt tokens",
+						"type": "number",
+						"minimum": 0
+					},
+					"prompt_token_max": {
+						"description": "Maximum number of prompt tokens",
+						"type": "number",
+						"minimum": 0
+					},
+					"completion_token_min": {
+						"description": "Minimum number of completion tokens",
+						"type": "number",
+						"minimum": 0
+					},
+					"completion_token_max": {
+						"description": "Maximum number of completion tokens",
+						"type": "number",
+						"minimum": 0
+					},
+					"status_code": {
+						"description": "Legacy Portkey query param for HTTP status codes. Comma-separated string; prefer status_codes for structured inputs.",
+						"type": "string"
+					},
+					"weighted_feedback_min": {
+						"description": "Minimum weighted feedback score (-10 to 10)",
+						"type": "number",
+						"minimum": -10,
+						"maximum": 10
+					},
+					"weighted_feedback_max": {
+						"description": "Maximum weighted feedback score (-10 to 10)",
+						"type": "number",
+						"minimum": -10,
+						"maximum": 10
+					},
+					"virtual_keys": {
+						"description": "Legacy Portkey query param for virtual key slugs. Comma-separated string; prefer virtual_key_slugs for structured inputs.",
+						"type": "string"
+					},
+					"configs": {
+						"description": "Legacy Portkey query param for config slugs. Comma-separated string; prefer config_slugs for structured inputs.",
+						"type": "string"
+					},
+					"status_codes": {
+						"description": "Structured alias for status_code. Use an array of HTTP status codes; normalized to the legacy comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"virtual_key_slugs": {
+						"description": "Structured alias for virtual_keys. Use an array of virtual key slugs; normalized to the legacy comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"config_slugs": {
+						"description": "Structured alias for configs. Use an array of config slugs; normalized to the legacy comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"workspace_slug": {
+						"description": "Filter by specific workspace",
+						"type": "string"
+					},
+					"api_key_ids": {
+						"description": "Legacy Portkey query param for API key UUIDs. Comma-separated string; request_analytics also accepts an array and normalizes it to this form.",
+						"type": "string"
+					},
+					"metadata": {
+						"description": "Legacy Portkey query param for metadata filtering. Stringified JSON object, e.g. '{\"env\":\"prod\",\"app\":\"myapp\"}'; prefer metadata_filter for structured inputs.",
+						"type": "string"
+					},
+					"ai_org_model": {
+						"description": "Legacy Portkey query param for provider/model pairs. Format: 'provider__model' with double underscore, e.g. 'openai__gpt-4' or 'anthropic__claude-3-opus'. Comma-separated string; prefer provider_models for structured inputs.",
+						"type": "string"
+					},
+					"provider_models": {
+						"description": "Structured alias for ai_org_model. Use provider__model strings in an array; normalized to the legacy comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"deployment_id": {
+						"description": "Comma-separated list of deployment IDs (UUIDs) to filter by. Prefer deployment_ids for structured inputs.",
+						"type": "string"
+					},
+					"deployment_ids": {
+						"description": "Structured alias for deployment_id. Use an array of deployment UUIDs; normalized to the comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"trace_id": {
+						"description": "Legacy Portkey query param for trace IDs. Comma-separated string; prefer trace_ids for structured inputs.",
+						"type": "string"
+					},
+					"trace_ids": {
+						"description": "Structured alias for trace_id. Use an array of trace IDs; normalized to the legacy comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"span_id": {
+						"description": "Legacy Portkey query param for span IDs. Comma-separated string; prefer span_ids for structured inputs.",
+						"type": "string"
+					},
+					"span_ids": {
+						"description": "Structured alias for span_id. Use an array of span IDs; normalized to the legacy comma-separated Portkey query param.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"metadata_filter": {
+						"description": "Structured alias for metadata. Use an object such as { env: 'prod' }; normalized to a JSON string before the request is sent.",
+						"type": "object",
+						"propertyNames": {
+							"type": "string"
+						},
+						"additionalProperties": {}
+					},
+					"prompt_slug": {
+						"description": "Filter by prompt slug",
+						"type": "string"
+					},
+					"current_page": {
+						"description": "Zero-based page number; the first page is 0",
+						"type": "integer",
+						"minimum": 0,
+						"maximum": 9007199254740991
+					},
+					"page_size": {
+						"description": "Results per page (max 100)",
+						"type": "integer",
+						"exclusiveMinimum": 0,
+						"maximum": 100
+					}
+				},
+				"required": ["time_of_generation_min", "time_of_generation_max"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
 			},
 			"annotations": {

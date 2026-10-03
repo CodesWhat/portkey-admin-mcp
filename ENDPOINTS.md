@@ -6,7 +6,7 @@ Route mappings were reviewed against the official Portkey OpenAPI on 2026-09-08.
 - Base URL: `https://api.portkey.ai/v1`
 - Authentication: `x-portkey-api-key`
 - Public catalog exception: `get_model_pricing` uses `https://api.portkey.ai` without authentication
-- Total: 181 tools across 20 domains
+- Total: 184 tools across 20 domains
 - Enterprise-gated names and counts are maintained in `src/tools/index.ts` and verified against README by `npm run verify:readme-tools`
 
 The route lists are domain-level service routes. The tool tables are the complete
@@ -53,6 +53,9 @@ the public Portkey OpenAPI, so their contracts can change without a spec diff.
 | `get_analytics_group_models` | GET `/analytics/groups/ai-models` |
 | `get_analytics_group_metadata` | GET `/analytics/groups/metadata/{key}` |
 | `get_analytics_group_providers` | GET `/analytics/groups/provider` |
+| `get_analytics_group_mcp` | GET `/analytics/groups/mcp` |
+| `get_analytics_group_a2a` | GET `/analytics/groups/a2a` |
+| `get_analytics_group_workspaces` | GET `/analytics/groups/workspaces` |
 
 <!-- tool-catalog:start -->
 ## users (10)
@@ -191,7 +194,7 @@ Routes:
 | `get_prompt_version` | Retrieve a specific prompt version by its version UUID. Use list_prompt_versions to find the id first; returns the template, parameters, and model config for that version. |
 | `update_prompt_version` | Update a specific prompt version's label assignment. This only assigns or removes a label, and null clears the label after you look up ids with list_prompt_labels. |
 
-## analytics (22)
+## analytics (25)
 
 Routes:
 
@@ -213,6 +216,9 @@ Routes:
 | `get_analytics_group_models` | Get a paginated per-model breakdown with total_groups, group_count, and a models array containing request count, cost, and token usage. Use this to compare model cost, popularity, and efficiency; use get_token_analytics or get_cost_analytics for time-series trends instead. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans. |
 | `get_analytics_group_providers` | Enterprise-gated. Get provider-grouped analytics for one workspace and time range with selectable metrics, ordering, pagination, and optional total count. Use this when comparing provider traffic or reliability; requested metric fields are preserved in each provider row. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans. |
 | `get_analytics_group_metadata` | Get a paginated metadata breakdown with total_groups, group_count, and a metadata_groups array grouped by the required metadata_key. Use this for custom breakdowns like per-environment or per-feature analysis; pass metadata_key in addition to the time window. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans. |
+| `get_analytics_group_mcp` | Get a paginated per-MCP-server breakdown with total_groups, group_count, and an mcp_servers array containing each server name and its request count. Use this to see which MCP servers receive the most traffic; use get_analytics_group_a2a for A2A agents or get_analytics_group_users and get_analytics_group_models for other breakdowns. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans. |
+| `get_analytics_group_a2a` | Get a paginated per-agent breakdown with total_groups, group_count, and an agents array containing each A2A (agent-to-agent) agent name and its request count. Use this to see which agents receive the most traffic; use get_analytics_group_mcp for MCP servers instead. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans. |
+| `get_analytics_group_workspaces` | Get a paginated per-workspace breakdown with total_groups, group_count, is_quota_exceeded when reported, and a workspaces array containing each workspace_slug with request count and cost. Use this for org-wide chargeback or comparing workspaces; pass workspace_slug to other analytics tools to drill into one workspace. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans. |
 | `get_error_stacks_analytics` | Get stacked error-series data grouped by HTTP status code over time, with summary and per-code series. Use this to see which error classes dominate; use get_error_status_codes_analytics for distinct-code distribution instead. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans. |
 | `get_error_status_codes_analytics` | Get HTTP error-code distribution time-series data with summary and per-code series. Use this to see which codes occur most often; use get_error_stacks_analytics for stacked or cumulative breakdowns. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans. |
 | `get_user_requests_analytics` | Get per-user request-count time-series data with counts grouped by user. Use this to find heavy users and traffic concentration; use get_users_analytics for aggregate active and new user trends instead. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans. |

@@ -228,6 +228,91 @@ describe("distinct analytics callbacks", () => {
 	});
 });
 
+describe("MCP, A2A, and workspace analytics group tools", () => {
+	it("passes deployment_ids as a comma-separated deployment_id and curates each response", async () => {
+		const calls: unknown[] = [];
+		const callbacks = callbacksFor(registerAnalyticsTools, "analytics", {
+			getAnalyticsGroupMcp: async (params: unknown) => {
+				calls.push(["mcp", params]);
+				return {
+					object: "list",
+					total: 1,
+					data: [
+						{ object: "analytics-group", name: "github-mcp", requests: 7 },
+					],
+				};
+			},
+			getAnalyticsGroupA2a: async (params: unknown) => {
+				calls.push(["a2a", params]);
+				return {
+					object: "list",
+					total: 1,
+					data: [{ object: "analytics-group", name: "agent-1", requests: 3 }],
+				};
+			},
+			getAnalyticsGroupWorkspaces: async (params: unknown) => {
+				calls.push(["workspaces", params]);
+				return {
+					object: "list",
+					total: 1,
+					is_quota_exceeded: false,
+					data: [
+						{
+							object: "analytics-group",
+							workspace_slug: "engineering",
+							requests: 9,
+							cost: 1.5,
+						},
+					],
+				};
+			},
+		});
+		const mcp = callbacks.get("get_analytics_group_mcp");
+		const a2a = callbacks.get("get_analytics_group_a2a");
+		const workspaces = callbacks.get("get_analytics_group_workspaces");
+		assert.ok(mcp && a2a && workspaces);
+
+		const mcpPayload = parseToolResult(
+			await mcp({ ...ANALYTICS_RANGE, deployment_ids: ["dep-1", "dep-2"] }),
+		);
+		const a2aPayload = parseToolResult(
+			await a2a({ ...ANALYTICS_RANGE, deployment_id: "dep-1", page_size: 5 }),
+		);
+		const workspacePayload = parseToolResult(await workspaces(ANALYTICS_RANGE));
+
+		assert.deepEqual(mcpPayload, {
+			total_groups: 1,
+			group_count: 1,
+			mcp_servers: [
+				{ object: "analytics-group", name: "github-mcp", requests: 7 },
+			],
+		});
+		assert.deepEqual(a2aPayload, {
+			total_groups: 1,
+			group_count: 1,
+			agents: [{ object: "analytics-group", name: "agent-1", requests: 3 }],
+		});
+		assert.deepEqual(workspacePayload, {
+			total_groups: 1,
+			group_count: 1,
+			is_quota_exceeded: false,
+			workspaces: [
+				{
+					object: "analytics-group",
+					workspace_slug: "engineering",
+					requests: 9,
+					cost: 1.5,
+				},
+			],
+		});
+		assert.deepEqual(calls, [
+			["mcp", { ...ANALYTICS_RANGE, deployment_id: "dep-1,dep-2" }],
+			["a2a", { ...ANALYTICS_RANGE, deployment_id: "dep-1", page_size: 5 }],
+			["workspaces", ANALYTICS_RANGE],
+		]);
+	});
+});
+
 const USER = {
 	id: "user-1",
 	first_name: "Ada",

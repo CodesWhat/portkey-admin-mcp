@@ -1,0 +1,19 @@
+{
+	"object": "list",
+	"total": 2,
+	"is_quota_exceeded": false,
+	"data": [
+		{
+			"object": "analytics-group",
+			"workspace_slug": "engineering",
+			"requests": 900,
+			"cost": 12.5
+		},
+		{
+			"object": "analytics-group",
+			"workspace_slug": "support",
+			"requests": 150,
+			"cost": 1.75
+		}
+	]
+}

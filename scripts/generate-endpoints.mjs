@@ -228,6 +228,9 @@ const ANALYTICS = [
 	["get_analytics_group_models", "/analytics/groups/ai-models"],
 	["get_analytics_group_metadata", "/analytics/groups/metadata/{key}"],
 	["get_analytics_group_providers", "/analytics/groups/provider"],
+	["get_analytics_group_mcp", "/analytics/groups/mcp"],
+	["get_analytics_group_a2a", "/analytics/groups/a2a"],
+	["get_analytics_group_workspaces", "/analytics/groups/workspaces"],
 ];
 
 function escapeCell(value) {

@@ -2597,6 +2597,9 @@ describe("Tool callback error handling", () => {
 			"get_analytics_group_users",
 			"get_analytics_group_models",
 			"get_analytics_group_metadata",
+			"get_analytics_group_mcp",
+			"get_analytics_group_a2a",
+			"get_analytics_group_workspaces",
 		] as const;
 
 		for (const toolName of analyticsTools) {
