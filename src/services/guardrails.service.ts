@@ -44,7 +44,8 @@ export interface Guardrail {
 	owner_id: string;
 	organisation_id: string;
 	workspace_id: string | null;
-	target: GuardrailTarget;
+	/** Optional in the OpenAPI; the server treats a missing value as "llm". */
+	target?: GuardrailTarget;
 	status: "active" | "archived";
 	updated_by: string | null;
 }
