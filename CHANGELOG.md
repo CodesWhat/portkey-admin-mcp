@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-10-02
+
+Portkey control-plane additions from the 2026-09-16 OpenAPI. The catalog grows
+from 181 to 184 tools, so MCP clients should refresh `tools/list`.
+
+### Added
+
+- `get_analytics_group_mcp`, `get_analytics_group_a2a`, and
+  `get_analytics_group_workspaces` grouped analytics views. They're
+  Enterprise-gated like the other group tools.
+- `deployment_id` filter on every analytics tool (comma-separated deployment
+  UUIDs), with a `deployment_ids` array alias.
+- `tags` on `list_integrations` (filter), `create_integration`, and
+  `update_integration` (omit to leave alone, a map to replace, `null` to clear).
+  Integration tag keys aren't restricted, because the API doesn't restrict them.
+- Nested collections: `create_collection` takes `parent_collection_id`;
+  `get_collection` returns `parent_collection_id` and `child_collections`, and
+  `list_collections` returns `parent_collection_id`.
+
+### Changed
+
+- The guardrail MCP-server mapping tools say they need a guardrail with target
+  `mcp_tools`, and `GuardrailSummary.target` is optional as in the OpenAPI.
+- ENDPOINTS.md marks routes the public OpenAPI doesn't document (SCIM groups,
+  organisation guardrail defaults, workspace exclusions, log-export field
+  restrictions) and notes that deployments use the `/v2` base.
+- `SECURITY.md` names the supported line: the latest published minor on npm.
+- Renovate's base branch moves to `dev/0.13`.
+
+### Fixed
+
+- The Redis availability probe in the integration tests times out when Redis
+  accepts a connection but never answers, and ordinary-response fetch tests no
+  longer share the 50 ms deadline meant for delayed-response cases.
+- The live smoke run checks guardrail MCP-server mappings only against an
+  `mcp_tools` guardrail.
+
 ## [0.12.2] - 2026-10-02
 
 Documentation and packaging follow-up to 0.12.1. No runtime behavior changes.
@@ -825,7 +862,8 @@ First stable release. Graduates from beta with 151 tools covering ~98% of the Po
 - Vercel deployment support
 - Contract tests, E2E tests, security tests
 
-[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.12.2...HEAD
+[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.13.0...HEAD
+[0.13.0]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.12.2...v0.13.0
 [0.12.2]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.12.1...v0.12.2
 [0.12.1]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.11.6...v0.12.0
