@@ -1,0 +1,39 @@
+{
+	"total": 2,
+	"data": [
+		{
+			"id": "0b1c2d3e-0000-4000-8000-000000000001",
+			"name": "Support",
+			"workspace_id": "0b1c2d3e-0000-4000-8000-0000000000aa",
+			"slug": "support",
+			"parent_collection_id": null,
+			"is_default": false,
+			"status": "active",
+			"created_at": "2026-09-01T00:00:00.000Z",
+			"last_updated_at": "2026-09-02T00:00:00.000Z",
+			"collection_details": {
+				"child_collections_count": 1,
+				"prompts_count": 3,
+				"child_collections_last_updated_at": "2026-09-03T00:00:00.000Z",
+				"prompts_last_updated_at": "2026-09-02T00:00:00.000Z"
+			}
+		},
+		{
+			"id": "0b1c2d3e-0000-4000-8000-000000000002",
+			"name": "Escalations",
+			"workspace_id": "0b1c2d3e-0000-4000-8000-0000000000aa",
+			"slug": "escalations",
+			"parent_collection_id": "0b1c2d3e-0000-4000-8000-000000000001",
+			"is_default": false,
+			"status": "active",
+			"created_at": "2026-09-03T00:00:00.000Z",
+			"last_updated_at": "2026-09-03T00:00:00.000Z",
+			"collection_details": {
+				"child_collections_count": 0,
+				"prompts_count": 1,
+				"child_collections_last_updated_at": null,
+				"prompts_last_updated_at": "2026-09-03T00:00:00.000Z"
+			}
+		}
+	]
+}

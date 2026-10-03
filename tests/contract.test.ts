@@ -19,6 +19,10 @@ import {
 	CacheSummaryResponseSchema,
 	ProviderGroupAnalyticsResponseSchema,
 } from "../src/schemas/contracts/analytics.contract.js";
+import {
+	GetCollectionResponseSchema,
+	ListCollectionsResponseSchema,
+} from "../src/schemas/contracts/collections.contract.js";
 // Contract schemas
 import {
 	ConfigDetailsSchema,
@@ -502,6 +506,26 @@ describe("Contract: current control-plane read fixtures", () => {
 		);
 	});
 
+	it("validates nested collection list and detail fixtures", () => {
+		assert.equal(
+			ListCollectionsResponseSchema.safeParse(loadFixture("collections-list"))
+				.success,
+			true,
+		);
+		const detail = GetCollectionResponseSchema.safeParse(
+			loadFixture("collections-get"),
+		);
+		assert.equal(detail.success, true);
+		assert.equal(detail.data?.child_collections.length, 1);
+		assert.equal(
+			GetCollectionResponseSchema.safeParse({
+				...(loadFixture("collections-get") as object),
+				child_collections: [{ id: 1 }],
+			}).success,
+			false,
+		);
+	});
+
 	it("validates current rate and usage policy shapes", () => {
 		assert.equal(
 			ListRateLimitsResponseSchema.safeParse(loadFixture("rate-limits-list"))
@@ -563,6 +587,8 @@ describe("Contract: fixtures manifest", () => {
 			"analytics-cache-summary",
 			"analytics-providers-group",
 			"audit-logs-list",
+			"collections-get",
+			"collections-list",
 			"deployments-list",
 			"mcp-integrations-list",
 			"rate-limits-list",
