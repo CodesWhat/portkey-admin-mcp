@@ -4,7 +4,7 @@
 
 <h1>Portkey Admin MCP Server</h1>
 
-**The [Portkey](https://portkey.ai/) Admin API as an MCP server — 181 tools across prompts, configs, keys, analytics, governance, deployments, and more.**
+**The [Portkey](https://portkey.ai/) Admin API as an MCP server — 184 tools across prompts, configs, keys, analytics, governance, deployments, and more.**
 
 </div>
 
@@ -96,7 +96,7 @@ npx -y portkey-admin-mcp
 ```
 
 Scoping domains is also the biggest lever on context cost, not just access. `tools/list`
-is paginated, and the complete 181-tool catalog is roughly 400 KB once a
+is paginated, and the complete 184-tool catalog is roughly 400 KB once a
 client follows `nextCursor` through every page. Narrowing to the domains a client
 actually needs cuts that roughly proportionally.
 
@@ -148,13 +148,13 @@ Then use this config:
 | **Guardrails** | 14 | LLM and MCP-tool policies, server mappings, organisation defaults, workspace exclusions |
 | **Usage Limits** | 7 | Cost and token consumption limits |
 | **Rate Limits** | 5 | Request frequency controls |
-| **Analytics** | 22 | Cost, latency, errors, tokens, cache, feedback, provider groups |
+| **Analytics** | 25 | Cost, latency, errors, tokens, cache, feedback, provider, MCP, A2A, and workspace groups |
 | **Logging** | 10 | Log retrieval, ingestion, export, and field restrictions |
 | **Tracing** | 2 | Feedback creation and updates on traces |
 | **Users & Workspaces** | 24 | User management, invites, workspace members, SCIM group mappings |
 | **Audit** | 1 | Audit log access |
 
-**181 tools total across 20 tool domains.** See [ENDPOINTS.md](./ENDPOINTS.md) for the full list with descriptions.
+**184 tools total across 20 tool domains.** See [ENDPOINTS.md](./ENDPOINTS.md) for the full list with descriptions.
 
 Portkey's newer product language increasingly presents provider credentials as
 Providers, while the current Admin API still exposes both `/virtual-keys` and
@@ -172,13 +172,13 @@ If a tool returns a `403` with Portkey error `AB03`, it means missing scopes —
 <details>
 <summary><strong>Enterprise-gated tools and other scope requirements</strong></summary>
 
-### Enterprise-gated tools (53)
+### Enterprise-gated tools (56)
 
 The following tools require an **organisation-level scope that is only available on Portkey Enterprise plans**. They return `403 You do not have enough permissions to execute this request` on workspace plans. Their descriptions include an `Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.` suffix so MCP clients know upfront.
 
 | Area | Tools | Required scope |
 |---|---|---|
-| Analytics (22) | `get_cost_analytics`, `get_request_analytics`, `get_token_analytics`, `get_latency_analytics`, `get_error_analytics`, `get_error_rate_analytics`, `get_cache_hit_latency`, `get_cache_hit_rate`, `get_cache_summary`, `get_users_analytics`, `get_error_stacks_analytics`, `get_error_status_codes_analytics`, `get_user_requests_analytics`, `get_rescued_requests_analytics`, `get_feedback_analytics`, `get_feedback_models_analytics`, `get_feedback_scores_analytics`, `get_feedback_weighted_analytics`, `get_analytics_group_users`, `get_analytics_group_models`, `get_analytics_group_metadata`, `get_analytics_group_providers` | org-level `analytics.view` |
+| Analytics (25) | `get_cost_analytics`, `get_request_analytics`, `get_token_analytics`, `get_latency_analytics`, `get_error_analytics`, `get_error_rate_analytics`, `get_cache_hit_latency`, `get_cache_hit_rate`, `get_cache_summary`, `get_users_analytics`, `get_error_stacks_analytics`, `get_error_status_codes_analytics`, `get_user_requests_analytics`, `get_rescued_requests_analytics`, `get_feedback_analytics`, `get_feedback_models_analytics`, `get_feedback_scores_analytics`, `get_feedback_weighted_analytics`, `get_analytics_group_users`, `get_analytics_group_models`, `get_analytics_group_metadata`, `get_analytics_group_providers`, `get_analytics_group_mcp`, `get_analytics_group_a2a`, `get_analytics_group_workspaces` | org-level `analytics.view` |
 | Deployments (5) | `list_deployments`, `register_deployment`, `get_deployment`, `update_deployment`, `archive_deployment` | Enterprise deployment administration |
 | Audit | `list_audit_logs` | `audit_logs.list` |
 | Org-level integrations | `get_integration`, `list_integration_models`, `list_integration_workspaces` | `organisation_integrations.read` |
