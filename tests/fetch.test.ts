@@ -13,7 +13,7 @@ const ORDINARY_REQUEST_DEADLINE_MS = 5_000;
 const DELAYED_RESPONSE_MS = 400;
 
 class DeadlineTestService extends BaseService {
-	protected override readonly timeout = REQUEST_DEADLINE_MS;
+	protected override readonly timeout: number = REQUEST_DEADLINE_MS;
 
 	read(path: string): Promise<unknown> {
 		return this.get(path);
