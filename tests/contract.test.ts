@@ -519,7 +519,24 @@ describe("Contract: current control-plane read fixtures", () => {
 			loadFixture("collections-get"),
 		);
 		assert.equal(detail.success, true);
-		assert.equal(detail.data?.child_collections.length, 1);
+		assert.equal(detail.data?.child_collections?.length, 1);
+		// The published schemas don't mark these fields required.
+		const withoutNested = { ...(loadFixture("collections-get") as object) };
+		delete (withoutNested as { child_collections?: unknown }).child_collections;
+		assert.equal(
+			GetCollectionResponseSchema.safeParse(withoutNested).success,
+			true,
+		);
+		const list = loadFixture("collections-list") as {
+			data: Array<Record<string, unknown>>;
+		};
+		assert.equal(
+			ListCollectionsResponseSchema.safeParse({
+				...list,
+				data: list.data.map(({ collection_details: _omit, ...rest }) => rest),
+			}).success,
+			true,
+		);
 		assert.equal(
 			GetCollectionResponseSchema.safeParse({
 				...(loadFixture("collections-get") as object),
