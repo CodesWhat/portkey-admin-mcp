@@ -324,6 +324,37 @@ describe("DeploymentsService request routing", () => {
 	});
 });
 
+describe("IntegrationsService tags", () => {
+	it("serializes the list tags filter as JSON and forwards tag bodies", async () => {
+		const service = new IntegrationsService("test-key", BASE_URL);
+		await service.listIntegrations({ tags: { env: "prod", team: "ml" } });
+		await service.listIntegrations({ page_size: 5 });
+		await service.createIntegration({
+			name: "OpenAI",
+			ai_provider_id: "openai",
+			tags: { env: "prod" },
+		});
+		await service.updateIntegration("integration/one", {
+			tags: { env: "staging" },
+		});
+		await service.updateIntegration("integration/one", { tags: null });
+
+		assert.equal(capturedUrl(0).pathname, "/v1/integrations");
+		assert.equal(
+			capturedUrl(0).searchParams.get("tags"),
+			JSON.stringify({ env: "prod", team: "ml" }),
+		);
+		assert.equal(capturedUrl(1).searchParams.has("tags"), false);
+		assert.deepEqual(capturedBody(2), {
+			name: "OpenAI",
+			ai_provider_id: "openai",
+			tags: { env: "prod" },
+		});
+		assert.deepEqual(capturedBody(3), { tags: { env: "staging" } });
+		assert.deepEqual(capturedBody(4), { tags: null });
+	});
+});
+
 describe("PromptsService workflows", () => {
 	it("maps the direct prompt API and normalizes responses", async () => {
 		const service = new PromptsService("test-key", BASE_URL);
@@ -1120,6 +1151,7 @@ describe("Catalog service request contracts", () => {
 		await service.createCollection({
 			name: "Support",
 			workspace_id: "workspace-1",
+			parent_collection_id: "parent-1",
 		});
 		await service.getCollection("collection/one");
 		await service.updateCollection("collection/one", {
@@ -1128,6 +1160,11 @@ describe("Catalog service request contracts", () => {
 		enqueue(undefined, 204);
 		assert.deepEqual(await service.deleteCollection("collection/one"), {
 			success: true,
+		});
+		assert.deepEqual(capturedBody(1), {
+			name: "Support",
+			workspace_id: "workspace-1",
+			parent_collection_id: "parent-1",
 		});
 		assert.equal(capturedUrl(2).pathname, "/v1/collections/collection%2Fone");
 		assert.deepEqual(capturedBody(3), { description: "Production" });

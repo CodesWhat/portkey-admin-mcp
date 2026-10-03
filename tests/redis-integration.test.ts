@@ -14,6 +14,7 @@ async function redisIsAvailable(): Promise<boolean> {
 		commandOptions: { timeout: redisAvailabilityTimeoutMs },
 		socket: {
 			connectTimeout: redisAvailabilityTimeoutMs,
+			socketTimeout: redisAvailabilityTimeoutMs,
 			reconnectStrategy: false,
 		},
 	});

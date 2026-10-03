@@ -14,6 +14,9 @@ MCP catalog and preserve the actual selection guidance exposed through
 `tools/list`. A tool can perform a workflow across several listed routes rather
 than mapping one-to-one to one HTTP endpoint.
 
+Routes marked "undocumented upstream" are called by this server but are not in
+the public Portkey OpenAPI, so their contracts can change without a spec diff.
+
 ## Workflow-only and multi-request tools
 
 | Tool | Behavior |
@@ -82,7 +85,7 @@ Routes:
 
 - GET/POST `/admin/workspaces`; GET/PUT/DELETE `/admin/workspaces/{workspaceId}`
 - GET/POST `/admin/workspaces/{workspaceId}/users`; GET/PUT/DELETE `/admin/workspaces/{workspaceId}/users/{userId}`
-- GET/POST `/scim/workspaces`; DELETE `/scim/workspaces/{mappingId}`; GET `/scim/groups`
+- GET/POST `/scim/workspaces`; DELETE `/scim/workspaces/{mappingId}`; GET `/scim/groups` (undocumented upstream; served from the `/v2` base)
 
 | Tool | Selection guidance and result |
 |---|---|
@@ -121,6 +124,7 @@ Routes:
 Routes:
 
 - GET/POST `/deployments`; GET/PUT/DELETE `/deployments/{id}`. DELETE archives; deprecated `/ping` is intentionally omitted.
+- Undocumented upstream: these tools call the `/v2` base (the `/v1` base with its suffix swapped to `/v2`), while the public OpenAPI lists `/deployments` under `/v1`.
 
 | Tool | Selection guidance and result |
 |---|---|
@@ -159,9 +163,9 @@ Routes:
 
 | Tool | Selection guidance and result |
 |---|---|
-| `list_collections` | List prompt collections in the workspace, optionally filtering by name or workspace. Returns ids, names, slugs, and timestamps so you can choose a collection_id before create_prompt, get_collection, or list_prompts. |
-| `create_collection` | Create a new prompt collection for organizing prompts by app. Use this when you need a new namespace before create_prompt; returns the collection id and slug, and does not move any prompts. |
-| `get_collection` | Fetch one collection by id or slug and return its name, slug, workspace, and timestamps. Use list_collections when browsing and get_collection when you already know the target. |
+| `list_collections` | List prompt collections in the workspace, optionally filtering by name or workspace. Returns ids, names, slugs, parent collection ids, and timestamps so you can choose a collection_id before create_prompt, get_collection, or list_prompts. |
+| `create_collection` | Create a new prompt collection for organizing prompts by app. Use this when you need a new namespace before create_prompt; set parent_collection_id to nest it under an existing collection. Returns the collection id and slug, and does not move any prompts. |
+| `get_collection` | Fetch one collection by id or slug and return its name, slug, workspace, parent collection id, child collections with prompt counts, and timestamps. Use list_collections when browsing and get_collection when you already know the target. |
 | `update_collection` | Update a collection's name or description only. This does not move prompts or change membership, so use it for metadata changes rather than reorganization. |
 | `delete_collection` | Delete a prompt collection by ID. This cannot be undone; prompts stay in the workspace but lose their collection grouping, so reassign them first if organization matters. |
 
@@ -228,8 +232,8 @@ Routes:
 
 Routes:
 
-- GET/PUT `/admin/organisation/defaults`
-- GET/PUT `/workspace-exclusions/{input-guardrails|output-guardrails}`
+- GET/PUT `/admin/organisation/defaults` (undocumented upstream)
+- GET/PUT `/workspace-exclusions/{input-guardrails|output-guardrails}` (undocumented upstream)
 - GET/POST `/guardrails`; GET/PUT/DELETE `/guardrails/{guardrailId}`
 - GET/PUT `/guardrails/{guardrailId}/mcp-servers`; PUT `/guardrails/{guardrailId}/mcp-servers/{mcpServerId}`
 
@@ -244,9 +248,9 @@ Routes:
 | `list_guardrails` | List guardrails in the org with id, slug, status, ownership, and optional workspace/org filters. Use this to find IDs and slugs before get_guardrail, update_guardrail, or delete_guardrail. |
 | `get_guardrail` | Fetch one guardrail by id or slug with its full checks and actions; use list_guardrails to discover ids first. Use before update_guardrail or delete_guardrail when you need the exact enforcement policy, and returns the full check and action configuration alongside status and ownership. |
 | `create_guardrail` | Create an LLM or MCP-tool guardrail. LLM guardrails require checks and actions; MCP-tool guardrails can be created first and mapped to servers afterward. The new version becomes the policy anchor for downstream use. |
-| `list_guardrail_mcp_servers` | List every MCP-server mapping for one guardrail, including the input/output phases and mapped capability IDs. Use this before replace_guardrail_mcp_servers because replacement removes every mapping omitted from its request. |
-| `replace_guardrail_mcp_servers` | Replace the complete MCP-server mapping set for one guardrail. Any existing server omitted from mcp_servers is removed, and an empty object clears all mappings. Read list_guardrail_mcp_servers first. Repeating the same complete map is safe. |
-| `upsert_guardrail_mcp_server` | Create or replace one guardrail mapping for one MCP server without changing mappings for other servers. run_on defaults to both input and output. Use list_guardrail_mcp_servers to inspect the current mapping set first. Repeating the same mapping is safe. |
+| `list_guardrail_mcp_servers` | List every MCP-server mapping for one guardrail, including the input/output phases and mapped capability IDs. Requires a guardrail with target mcp_tools. Use this before replace_guardrail_mcp_servers because replacement removes every mapping omitted from its request. |
+| `replace_guardrail_mcp_servers` | Replace the complete MCP-server mapping set for one guardrail. Requires a guardrail with target mcp_tools. Any existing server omitted from mcp_servers is removed, and an empty object clears all mappings. Read list_guardrail_mcp_servers first. Repeating the same complete map is safe. |
+| `upsert_guardrail_mcp_server` | Create or replace one guardrail mapping for one MCP server without changing mappings for other servers. Requires a guardrail with target mcp_tools. run_on defaults to both input and output. Use list_guardrail_mcp_servers to inspect the current mapping set first. Repeating the same mapping is safe. |
 | `update_guardrail` | Update a guardrail's name, checks, or actions, unlike create_guardrail which registers a new one or delete_guardrail which removes it. This creates a new version that takes effect immediately for dependent configs, so review list_guardrails first; returns the updated id, slug, and version_id. |
 | `delete_guardrail` | Delete a guardrail by id or slug. This is irreversible and removes the check from any configs that reference it, so review dependent configs first. |
 
@@ -330,7 +334,7 @@ Routes:
 Routes:
 
 - POST `/logs`; GET `/logs/{logId}`
-- GET `/logs/exports/field-restrictions`; GET/POST `/logs/exports`; GET/PUT `/logs/exports/{exportId}`
+- GET `/logs/exports/field-restrictions` (undocumented upstream); GET/POST `/logs/exports`; GET/PUT `/logs/exports/{exportId}`
 - POST `/logs/exports/{exportId}/{start|cancel}`; GET `/logs/exports/{exportId}/download`
 
 | Tool | Selection guidance and result |
@@ -385,10 +389,10 @@ Routes:
 | Tool | Selection guidance and result |
 |---|---|
 | `get_model_pricing` | Get Portkey's current public pricing configuration for one exact provider/model pair. Prices are returned in USD cents per token or provider-specific unit and may include cache, audio, image, fine-tuning, and calculation metadata. Use this read-only catalog lookup before setting integration pricing_adjustments or custom-model pricing; it does not return your negotiated integration multiplier or require Portkey authentication. |
-| `list_integrations` | List org-level AI provider connections with optional workspace or type filters. Use this to find integration slugs before model or workspace updates. Returns total plus id, name, slug, provider, status, description, workspace counts, and config summary. |
-| `create_integration` | Create an AI-provider integration that becomes the source for workspace providers. ai_provider_id identifies the backend; provider-specific fields configure Azure, Bedrock, Vertex, or custom hosts. For workspace-scoped integrations, create_default_provider controls automatic provider creation. key is write-only, but secret_mappings can resolve it or configuration fields from Secret References at runtime. pricing_adjustments apply negotiated discounts or markups to cost accounting. Use update_integration_models and update_integration_workspaces after creation; returns the new integration id and slug. |
+| `list_integrations` | List org-level AI provider connections with optional workspace, type, or tag filters. Use this to find integration slugs before model or workspace updates. Returns total plus id, name, slug, provider, status, description, workspace counts, and config summary. |
+| `create_integration` | Create an AI-provider integration that becomes the source for workspace providers. ai_provider_id identifies the backend; provider-specific fields configure Azure, Bedrock, Vertex, or custom hosts. For workspace-scoped integrations, create_default_provider controls automatic provider creation. key is write-only, but secret_mappings can resolve it or configuration fields from Secret References at runtime. pricing_adjustments apply negotiated discounts or markups to cost accounting; tags attach key-value labels that list_integrations can filter on. Use update_integration_models and update_integration_workspaces after creation; returns the new integration id and slug. |
 | `get_integration` | Fetch one integration by slug, including masked key, workspace access, allowed models, and configuration metadata. Use this before editing provider-specific settings or auditing access. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans. |
-| `update_integration` | Update an integration's name, description, API key, provider config, Secret Reference mappings, or pricing adjustments by slug. Only provided fields change; key, secret mapping, and config changes take effect immediately and can disrupt dependent providers or live requests, while pricing multipliers change cost analytics and budget accounting. Review get_integration first. Model availability and workspace access remain separate in update_integration_models and update_integration_workspaces. |
+| `update_integration` | Update an integration's name, description, API key, provider config, Secret Reference mappings, pricing adjustments, or tags by slug. Only provided fields change; tags replaces the whole map and null clears it; key, secret mapping, and config changes take effect immediately and can disrupt dependent providers or live requests, while pricing multipliers change cost analytics and budget accounting. Review get_integration first. Model availability and workspace access remain separate in update_integration_models and update_integration_workspaces. |
 | `delete_integration` | Delete an integration by slug. This is irreversible and stops the org-level connection, which will break dependent virtual keys, providers, and workspace access. |
 | `list_integration_models` | List models enabled on an integration. Use this to verify model availability before creating prompts or configs. Returns total plus model ids, display names, enabled state, and custom-model markers. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans. |
 | `update_integration_models` | Bulk enable or disable integration models, register custom or fine-tuned models, set per-model hosts and headers, and attach static token pricing. allow_all_models controls whether future provider models start enabled. These changes affect every workspace using the integration; inspect list_integration_models first and use get_model_pricing when deriving custom rates. Returns success and the number of models updated. |

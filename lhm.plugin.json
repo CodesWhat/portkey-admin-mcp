@@ -2486,7 +2486,7 @@
 		},
 		{
 			"name": "list_collections",
-			"description": "List prompt collections in the workspace, optionally filtering by name or workspace. Returns ids, names, slugs, and timestamps so you can choose a collection_id before create_prompt, get_collection, or list_prompts.",
+			"description": "List prompt collections in the workspace, optionally filtering by name or workspace. Returns ids, names, slugs, parent collection ids, and timestamps so you can choose a collection_id before create_prompt, get_collection, or list_prompts.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
@@ -2522,7 +2522,7 @@
 		},
 		{
 			"name": "create_collection",
-			"description": "Create a new prompt collection for organizing prompts by app. Use this when you need a new namespace before create_prompt; returns the collection id and slug, and does not move any prompts.",
+			"description": "Create a new prompt collection for organizing prompts by app. Use this when you need a new namespace before create_prompt; set parent_collection_id to nest it under an existing collection. Returns the collection id and slug, and does not move any prompts.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
@@ -2532,6 +2532,10 @@
 					},
 					"workspace_id": {
 						"description": "Workspace ID to create collection in",
+						"type": "string"
+					},
+					"parent_collection_id": {
+						"description": "ID or slug of the parent collection to nest under; omit for a top-level collection",
 						"type": "string"
 					}
 				},
@@ -2547,7 +2551,7 @@
 		},
 		{
 			"name": "get_collection",
-			"description": "Fetch one collection by id or slug and return its name, slug, workspace, and timestamps. Use list_collections when browsing and get_collection when you already know the target.",
+			"description": "Fetch one collection by id or slug and return its name, slug, workspace, parent collection id, child collections with prompt counts, and timestamps. Use list_collections when browsing and get_collection when you already know the target.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
@@ -8593,7 +8597,7 @@
 		},
 		{
 			"name": "list_guardrail_mcp_servers",
-			"description": "List every MCP-server mapping for one guardrail, including the input/output phases and mapped capability IDs. Use this before replace_guardrail_mcp_servers because replacement removes every mapping omitted from its request.",
+			"description": "List every MCP-server mapping for one guardrail, including the input/output phases and mapped capability IDs. Requires a guardrail with target mcp_tools. Use this before replace_guardrail_mcp_servers because replacement removes every mapping omitted from its request.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
@@ -8616,7 +8620,7 @@
 		},
 		{
 			"name": "replace_guardrail_mcp_servers",
-			"description": "Replace the complete MCP-server mapping set for one guardrail. Any existing server omitted from mcp_servers is removed, and an empty object clears all mappings. Read list_guardrail_mcp_servers first. Repeating the same complete map is safe.",
+			"description": "Replace the complete MCP-server mapping set for one guardrail. Requires a guardrail with target mcp_tools. Any existing server omitted from mcp_servers is removed, and an empty object clears all mappings. Read list_guardrail_mcp_servers first. Repeating the same complete map is safe.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
@@ -8672,7 +8676,7 @@
 		},
 		{
 			"name": "upsert_guardrail_mcp_server",
-			"description": "Create or replace one guardrail mapping for one MCP server without changing mappings for other servers. run_on defaults to both input and output. Use list_guardrail_mcp_servers to inspect the current mapping set first. Repeating the same mapping is safe.",
+			"description": "Create or replace one guardrail mapping for one MCP server without changing mappings for other servers. Requires a guardrail with target mcp_tools. run_on defaults to both input and output. Use list_guardrail_mcp_servers to inspect the current mapping set first. Repeating the same mapping is safe.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
@@ -11414,7 +11418,7 @@
 		},
 		{
 			"name": "list_integrations",
-			"description": "List org-level AI provider connections with optional workspace or type filters. Use this to find integration slugs before model or workspace updates. Returns total plus id, name, slug, provider, status, description, workspace counts, and config summary.",
+			"description": "List org-level AI provider connections with optional workspace, type, or tag filters. Use this to find integration slugs before model or workspace updates. Returns total plus id, name, slug, provider, status, description, workspace counts, and config summary.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
@@ -11438,6 +11442,16 @@
 						"description": "Filter by integration type: 'workspace', 'organisation', or 'all' (default)",
 						"type": "string",
 						"enum": ["workspace", "organisation", "all"]
+					},
+					"tags": {
+						"description": "Match integrations that carry all supplied tags",
+						"type": "object",
+						"propertyNames": {
+							"type": "string"
+						},
+						"additionalProperties": {
+							"type": "string"
+						}
 					}
 				},
 				"$schema": "http://json-schema.org/draft-07/schema#"
@@ -11451,7 +11465,7 @@
 		},
 		{
 			"name": "create_integration",
-			"description": "Create an AI-provider integration that becomes the source for workspace providers. ai_provider_id identifies the backend; provider-specific fields configure Azure, Bedrock, Vertex, or custom hosts. For workspace-scoped integrations, create_default_provider controls automatic provider creation. key is write-only, but secret_mappings can resolve it or configuration fields from Secret References at runtime. pricing_adjustments apply negotiated discounts or markups to cost accounting. Use update_integration_models and update_integration_workspaces after creation; returns the new integration id and slug.",
+			"description": "Create an AI-provider integration that becomes the source for workspace providers. ai_provider_id identifies the backend; provider-specific fields configure Azure, Bedrock, Vertex, or custom hosts. For workspace-scoped integrations, create_default_provider controls automatic provider creation. key is write-only, but secret_mappings can resolve it or configuration fields from Secret References at runtime. pricing_adjustments apply negotiated discounts or markups to cost accounting; tags attach key-value labels that list_integrations can filter on. Use update_integration_models and update_integration_workspaces after creation; returns the new integration id and slug.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
@@ -11855,6 +11869,23 @@
 								"type": "null"
 							}
 						]
+					},
+					"tags": {
+						"description": "Integration tags, or null to create without tags",
+						"anyOf": [
+							{
+								"type": "object",
+								"propertyNames": {
+									"type": "string"
+								},
+								"additionalProperties": {
+									"type": "string"
+								}
+							},
+							{
+								"type": "null"
+							}
+						]
 					}
 				},
 				"required": ["name", "ai_provider_id"],
@@ -11891,7 +11922,7 @@
 		},
 		{
 			"name": "update_integration",
-			"description": "Update an integration's name, description, API key, provider config, Secret Reference mappings, or pricing adjustments by slug. Only provided fields change; key, secret mapping, and config changes take effect immediately and can disrupt dependent providers or live requests, while pricing multipliers change cost analytics and budget accounting. Review get_integration first. Model availability and workspace access remain separate in update_integration_models and update_integration_workspaces.",
+			"description": "Update an integration's name, description, API key, provider config, Secret Reference mappings, pricing adjustments, or tags by slug. Only provided fields change; tags replaces the whole map and null clears it; key, secret mapping, and config changes take effect immediately and can disrupt dependent providers or live requests, while pricing multipliers change cost analytics and budget accounting. Review get_integration first. Model availability and workspace access remain separate in update_integration_models and update_integration_workspaces.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
@@ -12271,6 +12302,23 @@
 											}
 										}
 									}
+								}
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"tags": {
+						"description": "Replacement integration tags, or null to clear all tags",
+						"anyOf": [
+							{
+								"type": "object",
+								"propertyNames": {
+									"type": "string"
+								},
+								"additionalProperties": {
+									"type": "string"
 								}
 							},
 							{

@@ -9,10 +9,11 @@ import {
 } from "../src/services/base.service.js";
 
 const REQUEST_DEADLINE_MS = 50;
+const ORDINARY_REQUEST_DEADLINE_MS = 5_000;
 const DELAYED_RESPONSE_MS = 400;
 
 class DeadlineTestService extends BaseService {
-	protected override readonly timeout = REQUEST_DEADLINE_MS;
+	protected override readonly timeout: number = REQUEST_DEADLINE_MS;
 
 	read(path: string): Promise<unknown> {
 		return this.get(path);
@@ -21,6 +22,10 @@ class DeadlineTestService extends BaseService {
 	remove(path: string): Promise<unknown | NoContent> {
 		return this.delete(path);
 	}
+}
+
+class OrdinaryResponseTestService extends DeadlineTestService {
+	protected override readonly timeout = ORDINARY_REQUEST_DEADLINE_MS;
 }
 
 let server: Server;
@@ -148,7 +153,7 @@ describe("BaseService request deadline", () => {
 	});
 
 	it("preserves prompt JSON responses", async () => {
-		const service = new DeadlineTestService("test-key", baseUrl);
+		const service = new OrdinaryResponseTestService("test-key", baseUrl);
 
 		assert.deepEqual(await service.read("/prompt"), {
 			method: "GET",
@@ -157,7 +162,7 @@ describe("BaseService request deadline", () => {
 	});
 
 	it("preserves allowed 204 responses", async () => {
-		const service = new DeadlineTestService("test-key", baseUrl);
+		const service = new OrdinaryResponseTestService("test-key", baseUrl);
 
 		assert.equal(isNoContent(await service.remove("/no-content")), true);
 	});
