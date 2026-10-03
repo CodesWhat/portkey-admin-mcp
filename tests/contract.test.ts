@@ -16,9 +16,16 @@ import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 
 import {
+	A2aGroupAnalyticsResponseSchema,
 	CacheSummaryResponseSchema,
+	McpGroupAnalyticsResponseSchema,
 	ProviderGroupAnalyticsResponseSchema,
+	WorkspaceGroupAnalyticsResponseSchema,
 } from "../src/schemas/contracts/analytics.contract.js";
+import {
+	GetCollectionResponseSchema,
+	ListCollectionsResponseSchema,
+} from "../src/schemas/contracts/collections.contract.js";
 // Contract schemas
 import {
 	ConfigDetailsSchema,
@@ -502,6 +509,43 @@ describe("Contract: current control-plane read fixtures", () => {
 		);
 	});
 
+	it("validates nested collection list and detail fixtures", () => {
+		assert.equal(
+			ListCollectionsResponseSchema.safeParse(loadFixture("collections-list"))
+				.success,
+			true,
+		);
+		const detail = GetCollectionResponseSchema.safeParse(
+			loadFixture("collections-get"),
+		);
+		assert.equal(detail.success, true);
+		assert.equal(detail.data?.child_collections?.length, 1);
+		// The published schemas don't mark these fields required.
+		const withoutNested = { ...(loadFixture("collections-get") as object) };
+		delete (withoutNested as { child_collections?: unknown }).child_collections;
+		assert.equal(
+			GetCollectionResponseSchema.safeParse(withoutNested).success,
+			true,
+		);
+		const list = loadFixture("collections-list") as {
+			data: Array<Record<string, unknown>>;
+		};
+		assert.equal(
+			ListCollectionsResponseSchema.safeParse({
+				...list,
+				data: list.data.map(({ collection_details: _omit, ...rest }) => rest),
+			}).success,
+			true,
+		);
+		assert.equal(
+			GetCollectionResponseSchema.safeParse({
+				...(loadFixture("collections-get") as object),
+				child_collections: [{ id: 1 }],
+			}).success,
+			false,
+		);
+	});
+
 	it("validates current rate and usage policy shapes", () => {
 		assert.equal(
 			ListRateLimitsResponseSchema.safeParse(loadFixture("rate-limits-list"))
@@ -535,6 +579,34 @@ describe("Contract: current control-plane read fixtures", () => {
 			true,
 		);
 	});
+
+	it("validates documentation-derived MCP, A2A, and workspace group shapes", () => {
+		assert.equal(
+			McpGroupAnalyticsResponseSchema.safeParse(
+				loadFixture("analytics-mcp-group"),
+			).success,
+			true,
+		);
+		assert.equal(
+			A2aGroupAnalyticsResponseSchema.safeParse(
+				loadFixture("analytics-a2a-group"),
+			).success,
+			true,
+		);
+		assert.equal(
+			WorkspaceGroupAnalyticsResponseSchema.safeParse(
+				loadFixture("analytics-workspaces-group"),
+			).success,
+			true,
+		);
+		assert.equal(
+			WorkspaceGroupAnalyticsResponseSchema.safeParse({
+				object: "list",
+				data: [{ workspace_slug: "engineering", requests: 1 }],
+			}).success,
+			false,
+		);
+	});
 });
 
 // ==================== Fixture provenance ====================
@@ -560,9 +632,14 @@ describe("Contract: fixtures manifest", () => {
 		};
 		const allowedDocumentationDerivedFixtures = [
 			"api-keys-rotate",
+			"analytics-a2a-group",
 			"analytics-cache-summary",
+			"analytics-mcp-group",
 			"analytics-providers-group",
+			"analytics-workspaces-group",
 			"audit-logs-list",
+			"collections-get",
+			"collections-list",
 			"deployments-list",
 			"mcp-integrations-list",
 			"rate-limits-list",

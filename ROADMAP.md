@@ -2,7 +2,7 @@
 
 > Last reviewed: 2026-10-02
 > Status: active compatibility maintenance
-> Current catalog: 181 tools across 20 domains, including 53 Enterprise-gated tools
+> Current catalog: 184 tools across 20 domains, including 56 Enterprise-gated tools
 
 Portkey continues to publish control-plane additions after its acquisition by
 Palo Alto Networks. This project follows the stable public Portkey OpenAPI and
@@ -18,9 +18,9 @@ track and is not treated as a compatible `PORTKEY_BASE_URL`.
 | Configs | 6 | Gateway configuration lifecycle and versions |
 | Deployments | 5 | Self-hosted Gateway registration, tags, reads, updates, archival |
 | Keys | 11 | Virtual Keys and API keys, rotation, current limits/defaults |
-| Collections | 5 | Prompt collections |
+| Collections | 5 | Prompt collections, including nested collections |
 | Prompts | 14 | Lifecycle, versions, render, completion, migration, promotion |
-| Analytics | 22 | Graphs, cache summary, and grouped user/model/provider/metadata views |
+| Analytics | 25 | Graphs, cache summary, and grouped user/model/provider/metadata/MCP/A2A/workspace views, filterable by deployment |
 | Guardrails | 14 | LLM and MCP-tool policies, server mappings, organisation defaults, workspace exclusions |
 | Limits | 12 | Rate/usage policies, tracked entities, counter reset |
 | Audit | 1 | Audit-log reads |
@@ -30,7 +30,7 @@ track and is not treated as a compatible `PORTKEY_BASE_URL`.
 | Logging | 10 | Logs, export jobs, downloads, field restrictions |
 | Providers | 5 | Workspace provider configurations |
 | Secret References | 5 | External-secret reference lifecycle |
-| Integrations | 11 | Provider integrations, models, workspace access, public pricing |
+| Integrations | 11 | Provider integrations, tags, models, workspace access, public pricing |
 | MCP Integrations | 10 | External MCP integration lifecycle and access |
 | MCP Servers | 12 | Registry, tests, capabilities, access, live connections |
 
@@ -40,26 +40,31 @@ README, endpoint catalog, domain counts, and Enterprise-gated inventory together
 
 ## Planned
 
-Reviewed 2026-10-02 against the Portkey OpenAPI through its 2026-09-16 commits,
-the open dependency updates, and a full local run of the CI checks on 0.12.1.
-0.12.1 is out and no release candidate is in progress.
-
-### 0.13.0
-
-- Analytics: add the `deployment_id` filter and the MCP, A2A, and workspace
-  grouped views published upstream on 2026-09-16.
-- Integrations: add the `tags` list filter.
-- Collections: accept `parent_collection_id` on create and return the parent
-  and child collections on read.
+Reviewed 2026-10-02 against the Portkey OpenAPI through its 2026-09-16 commits.
+Every stable admin route in the published specification now has a tool, so
+nothing is scheduled until upstream publishes more.
 
 ### Later
 
-- Evaluate the MCP 2026-07-28 specification and the v2 TypeScript SDK. The HTTP
-  transport is already stateless, so the open questions are support for clients
-  still on 2025-11-25 and whether the replay and session stores stay.
-- Mark the routes this server calls that the public OpenAPI doesn't list (SCIM
-  groups, organisation guardrail defaults, workspace exclusions, log-export
-  field restrictions, and the `/v2` deployments base) in ENDPOINTS.md.
+- Move to the MCP 2026-07-28 specification and the v2 TypeScript SDK, serving
+  modern and older clients from the same endpoint. Evaluated on 2026-10-02:
+  the current server already works with clients that negotiate 2026-07-28, most
+  clients still open with the older handshake, and the v2 SDK is still changing
+  between minor releases. Work starts by 2026-12-01, or sooner if a v1 SDK
+  security fix stops coming or a client drops support for the older handshake.
+  It retires the replay and session stores, so it ships as a minor release.
+
+## Completed 2026-10-02 (0.13.0)
+
+- Analytics: the `deployment_id` filter on every analytics tool, and the MCP,
+  A2A, and workspace grouped views.
+- Integrations: `tags` on list, create, and update.
+- Collections: `parent_collection_id` on create, and parent and child
+  collections on read.
+- ENDPOINTS.md marks the routes the public OpenAPI doesn't document.
+- Closed the review comments deferred from 0.12.1: guardrail mapping
+  prerequisites, the optional guardrail target, and three test reliability
+  fixes.
 
 ## Completed 2026-10-02 (0.12.2)
 
@@ -194,8 +199,9 @@ stable and public:
   pinned to the 0.12.0 release commit and awaiting maintainer review.
 - Awesome MCP Servers: [#13074](https://github.com/punkpeye/awesome-mcp-servers/pull/13074)
   merged on 2026-09-13.
-- Glama: the listing's catalog build still reports 0.11.5 and 178 tools. Rebuild
-  it and verify 0.12.1 with 181 tools.
+- Glama: rebuilt on 2026-10-02 and published 0.12.2 with 181 tools. After each
+  release, sync the repository and run Build & Release on the listing (see
+  docs/RELEASE.md). Its generated description still lags the tool count.
 - Recheck PulseMCP after listing changes reopen. Its legacy record still uses the
   pre-organization namespace and is not currently editable.
 - Claim or refresh the stale mcp.so record when its owner workflow is available.

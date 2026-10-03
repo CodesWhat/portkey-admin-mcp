@@ -67,7 +67,7 @@ const PKG = JSON.parse(
 	readFileSync(new URL("../package.json", import.meta.url), "utf-8"),
 );
 
-// All 181 expected tool names across 20 domains
+// All 184 expected tool names across 20 domains
 const EXPECTED_TOOLS = [
 	// users (10)
 	"list_all_users",
@@ -147,7 +147,7 @@ const EXPECTED_TOOLS = [
 	"migrate_prompt",
 	"promote_prompt",
 	"validate_completion_metadata",
-	// analytics (22)
+	// analytics (25)
 	"get_cost_analytics",
 	"get_request_analytics",
 	"get_token_analytics",
@@ -170,6 +170,9 @@ const EXPECTED_TOOLS = [
 	"get_analytics_group_models",
 	"get_analytics_group_metadata",
 	"get_analytics_group_providers",
+	"get_analytics_group_mcp",
+	"get_analytics_group_a2a",
+	"get_analytics_group_workspaces",
 	// guardrails (14)
 	"get_organisation_defaults",
 	"update_organisation_defaults",

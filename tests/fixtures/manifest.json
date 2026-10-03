@@ -5,16 +5,21 @@
 	"recorderScript": "tests/fixtures/record.ts",
 	"documentationDerivedFixtures": [
 		"api-keys-rotate",
+		"analytics-a2a-group",
 		"analytics-cache-summary",
+		"analytics-mcp-group",
 		"analytics-providers-group",
+		"analytics-workspaces-group",
 		"audit-logs-list",
+		"collections-get",
+		"collections-list",
 		"deployments-list",
 		"secret-references-create",
 		"secret-references-get",
 		"secret-references-list",
 		"usage-limit-entities-list"
 	],
-	"liveCaptureStatus": "The configured credential returned HTTP 403 for organisation users, API-key creation, and Secret Reference list/create on 2026-07-14. On 2026-08-27, rate-limit, usage-limit, and MCP-integration lists were captured successfully; the hosted deployments route returned the data-plane HTTP 400 missing-provider response, while analytics and usage-limit-entity fixtures remain documentation-derived. The audit-logs-list fixture is derived from the published AuditLogObjectList schema in Portkey-AI/openapi (GET /audit-logs is Enterprise-gated and the configured credential gets a permissions error, so it was never captured live).",
+	"liveCaptureStatus": "The configured credential returned HTTP 403 for organisation users, API-key creation, and Secret Reference list/create on 2026-07-14. On 2026-08-27, rate-limit, usage-limit, and MCP-integration lists were captured successfully; the hosted deployments route returned the data-plane HTTP 400 missing-provider response, while analytics and usage-limit-entity fixtures remain documentation-derived. The analytics-mcp-group, analytics-a2a-group, and analytics-workspaces-group fixtures are derived from the published GET /analytics/groups/{mcp,a2a,workspaces} response schemas in Portkey-AI/openapi (added 2026-09-16) and were never captured live. The audit-logs-list fixture is derived from the published AuditLogObjectList schema in Portkey-AI/openapi (GET /audit-logs is Enterprise-gated and the configured credential gets a permissions error, so it was never captured live). The collections-list and collections-get fixtures are derived from the published CollectionWithDetails and CollectionWithChildCollections schemas in Portkey-AI/openapi, covering nested collections (parent_collection_id, child_collections), and were not captured live.",
 	"captureOutcomes": {
 		"api-key-rotation": {
 			"status": "permission-blocked",
@@ -50,13 +55,18 @@
 		}
 	},
 	"fixtures": [
+		"analytics-a2a-group",
 		"analytics-cache-summary",
+		"analytics-mcp-group",
 		"analytics-providers-group",
+		"analytics-workspaces-group",
 		"api-keys-get",
 		"api-keys-list",
 		"api-keys-rotate",
 		"audit-logs-list",
 		"configs-get",
+		"collections-get",
+		"collections-list",
 		"configs-list",
 		"deployments-list",
 		"mcp-integrations-list",

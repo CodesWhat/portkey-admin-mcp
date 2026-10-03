@@ -150,6 +150,18 @@ const baseAnalyticsSchema = {
 		.describe(
 			"Structured alias for ai_org_model. Use provider__model strings in an array; normalized to the legacy comma-separated Portkey query param.",
 		),
+	deployment_id: z
+		.string()
+		.optional()
+		.describe(
+			"Comma-separated list of deployment IDs (UUIDs) to filter by. Prefer deployment_ids for structured inputs.",
+		),
+	deployment_ids: z
+		.array(z.string())
+		.optional()
+		.describe(
+			"Structured alias for deployment_id. Use an array of deployment UUIDs; normalized to the comma-separated Portkey query param.",
+		),
 	trace_id: z
 		.string()
 		.optional()
@@ -334,7 +346,7 @@ const GENERIC_GRAPH_ANALYTICS_TOOLS: ReadonlyArray<{
 ];
 
 function formatGroupedAnalytics(
-	analytics: GroupAnalyticsResponse,
+	analytics: Pick<GroupAnalyticsResponse, "data"> & { total?: number },
 	groupLabel: string,
 ): Record<string, unknown> {
 	return {
@@ -381,6 +393,7 @@ function normalizeAnalyticsParams<T extends Record<string, unknown>>(
 		trace_ids,
 		span_ids,
 		provider_models,
+		deployment_ids,
 		metadata_filter,
 		...legacyParams
 	} = params;
@@ -429,6 +442,13 @@ function normalizeAnalyticsParams<T extends Record<string, unknown>>(
 		normalizeCommaSeparatedParam(legacyParams.ai_org_model);
 	if (providerModels !== undefined) {
 		normalizedParams.ai_org_model = providerModels;
+	}
+
+	const deploymentId =
+		normalizeCommaSeparatedParam(deployment_ids) ??
+		normalizeCommaSeparatedParam(legacyParams.deployment_id);
+	if (deploymentId !== undefined) {
+		normalizedParams.deployment_id = deploymentId;
 	}
 
 	const traceId =
@@ -777,6 +797,45 @@ export function registerAnalyticsTools(
 				normalizeAnalyticsParams(analyticsParams),
 			);
 			return jsonResult(formatGroupedAnalytics(analytics, "metadata_groups"));
+		},
+	);
+
+	server.tool(
+		"get_analytics_group_mcp",
+		"Get a paginated per-MCP-server breakdown with total_groups, group_count, and an mcp_servers array containing each server name and its request count. Use this to see which MCP servers receive the most traffic; use get_analytics_group_a2a for A2A agents or get_analytics_group_users and get_analytics_group_models for other breakdowns.",
+		paginatedAnalyticsSchema,
+		async (params) => {
+			const analytics = await service.analytics.getAnalyticsGroupMcp(
+				normalizeAnalyticsParams(params),
+			);
+			return jsonResult(formatGroupedAnalytics(analytics, "mcp_servers"));
+		},
+	);
+
+	server.tool(
+		"get_analytics_group_a2a",
+		"Get a paginated per-agent breakdown with total_groups, group_count, and an agents array containing each A2A (agent-to-agent) agent name and its request count. Use this to see which agents receive the most traffic; use get_analytics_group_mcp for MCP servers instead.",
+		paginatedAnalyticsSchema,
+		async (params) => {
+			const analytics = await service.analytics.getAnalyticsGroupA2a(
+				normalizeAnalyticsParams(params),
+			);
+			return jsonResult(formatGroupedAnalytics(analytics, "agents"));
+		},
+	);
+
+	server.tool(
+		"get_analytics_group_workspaces",
+		"Get a paginated per-workspace breakdown with total_groups, group_count, is_quota_exceeded when reported, and a workspaces array containing each workspace_slug with request count and cost. Use this for org-wide chargeback or comparing workspaces; pass workspace_slug to other analytics tools to drill into one workspace.",
+		paginatedAnalyticsSchema,
+		async (params) => {
+			const analytics = await service.analytics.getAnalyticsGroupWorkspaces(
+				normalizeAnalyticsParams(params),
+			);
+			return jsonResult({
+				...formatGroupedAnalytics(analytics, "workspaces"),
+				is_quota_exceeded: analytics.is_quota_exceeded,
+			});
 		},
 	);
 }

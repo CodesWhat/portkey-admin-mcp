@@ -9,7 +9,23 @@ export interface Collection {
 	created_at: string;
 	last_updated_at: string;
 	description?: string;
+	parent_collection_id?: string | null;
+	child_collections?: ChildCollection[];
 	object: "collection";
+}
+
+export interface CollectionDetails {
+	child_collections_count: number;
+	prompts_count: number;
+	child_collections_last_updated_at: string | null;
+	prompts_last_updated_at: string | null;
+}
+
+export interface ChildCollection {
+	id: string;
+	name: string;
+	last_updated_at: string;
+	collection_details: CollectionDetails;
 }
 
 export interface ListCollectionsParams {
@@ -28,6 +44,7 @@ export interface ListCollectionsResponse {
 export interface CreateCollectionRequest {
 	name: string;
 	workspace_id?: string;
+	parent_collection_id?: string;
 }
 
 export interface CreateCollectionResponse {

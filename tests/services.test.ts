@@ -194,6 +194,46 @@ describe("AnalyticsService request routing", () => {
 		assert.equal(capturedFetches.length, 3);
 	});
 
+	it("sends deployment_id on graph, summary, and group routes and routes the MCP, A2A, and workspace groups", async () => {
+		const service = new AnalyticsService("test-key", BASE_URL);
+		const deploymentId =
+			"123e4567-e89b-12d3-a456-426614174000,223e4567-e89b-12d3-a456-426614174001";
+		const params = {
+			time_of_generation_min: "2026-08-01T00:00:00Z",
+			time_of_generation_max: "2026-08-02T00:00:00Z",
+			deployment_id: deploymentId,
+			current_page: 1,
+			page_size: 10,
+		};
+
+		await service.getCostAnalytics(params);
+		await service.getCacheSummary({ ...params, workspace_slug: "workspace" });
+		await service.getAnalyticsGroupUsers(params);
+		await service.getAnalyticsGroupMcp(params);
+		await service.getAnalyticsGroupA2a(params);
+		await service.getAnalyticsGroupWorkspaces(params);
+
+		assert.deepEqual(
+			capturedFetches.map((_, index) => capturedUrl(index).pathname),
+			[
+				"/v1/analytics/graphs/cost",
+				"/v1/analytics/summary/cache",
+				"/v1/analytics/groups/users",
+				"/v1/analytics/groups/mcp",
+				"/v1/analytics/groups/a2a",
+				"/v1/analytics/groups/workspaces",
+			],
+		);
+		for (let index = 0; index < capturedFetches.length; index += 1) {
+			assert.equal(
+				capturedUrl(index).searchParams.get("deployment_id"),
+				deploymentId,
+			);
+		}
+		assert.equal(capturedUrl(3).searchParams.get("current_page"), "1");
+		assert.equal(capturedUrl(5).searchParams.get("page_size"), "10");
+	});
+
 	it("routes cache summary and provider grouped analytics with current options", async () => {
 		const service = new AnalyticsService("test-key", BASE_URL);
 		const base = {
@@ -281,6 +321,37 @@ describe("DeploymentsService request routing", () => {
 		assert.equal(capturedFetches[3]?.init?.method, "PUT");
 		assert.deepEqual(capturedBody(3), { rotate_auth: true, tags: null });
 		assert.equal(capturedFetches[4]?.init?.method, "DELETE");
+	});
+});
+
+describe("IntegrationsService tags", () => {
+	it("serializes the list tags filter as JSON and forwards tag bodies", async () => {
+		const service = new IntegrationsService("test-key", BASE_URL);
+		await service.listIntegrations({ tags: { env: "prod", team: "ml" } });
+		await service.listIntegrations({ page_size: 5 });
+		await service.createIntegration({
+			name: "OpenAI",
+			ai_provider_id: "openai",
+			tags: { env: "prod" },
+		});
+		await service.updateIntegration("integration/one", {
+			tags: { env: "staging" },
+		});
+		await service.updateIntegration("integration/one", { tags: null });
+
+		assert.equal(capturedUrl(0).pathname, "/v1/integrations");
+		assert.equal(
+			capturedUrl(0).searchParams.get("tags"),
+			JSON.stringify({ env: "prod", team: "ml" }),
+		);
+		assert.equal(capturedUrl(1).searchParams.has("tags"), false);
+		assert.deepEqual(capturedBody(2), {
+			name: "OpenAI",
+			ai_provider_id: "openai",
+			tags: { env: "prod" },
+		});
+		assert.deepEqual(capturedBody(3), { tags: { env: "staging" } });
+		assert.deepEqual(capturedBody(4), { tags: null });
 	});
 });
 
@@ -1080,6 +1151,7 @@ describe("Catalog service request contracts", () => {
 		await service.createCollection({
 			name: "Support",
 			workspace_id: "workspace-1",
+			parent_collection_id: "parent-1",
 		});
 		await service.getCollection("collection/one");
 		await service.updateCollection("collection/one", {
@@ -1088,6 +1160,11 @@ describe("Catalog service request contracts", () => {
 		enqueue(undefined, 204);
 		assert.deepEqual(await service.deleteCollection("collection/one"), {
 			success: true,
+		});
+		assert.deepEqual(capturedBody(1), {
+			name: "Support",
+			workspace_id: "workspace-1",
+			parent_collection_id: "parent-1",
 		});
 		assert.equal(capturedUrl(2).pathname, "/v1/collections/collection%2Fone");
 		assert.deepEqual(capturedBody(3), { description: "Production" });

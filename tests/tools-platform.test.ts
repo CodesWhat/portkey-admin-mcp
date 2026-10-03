@@ -19,14 +19,19 @@ import { McpIntegrationsService } from "../src/services/mcp-integrations.service
 import { McpServersService } from "../src/services/mcp-servers.service.js";
 import { SecretReferencesService } from "../src/services/secret-references.service.js";
 import { WorkspacesService } from "../src/services/workspaces.service.js";
+import { registerCollectionsTools } from "../src/tools/collections.tools.js";
 import { registerDeploymentsTools } from "../src/tools/deployments.tools.js";
 import { TOOL_DOMAIN_NAMES } from "../src/tools/index.js";
+import { registerIntegrationsTools } from "../src/tools/integrations.tools.js";
 import { registerKeysTools } from "../src/tools/keys.tools.js";
 import { registerMcpIntegrationsTools } from "../src/tools/mcp-integrations.tools.js";
 import { registerMcpServersTools } from "../src/tools/mcp-servers.tools.js";
 import { registerSecretReferencesTools } from "../src/tools/secret-references.tools.js";
 import { registerWorkspacesTools } from "../src/tools/workspaces.tools.js";
-import { registerToolCallbacks } from "./helpers/tool-registry.js";
+import {
+	parseToolResult,
+	registerToolCallbacks,
+} from "./helpers/tool-registry.js";
 
 // ---------------------------------------------------------------------------
 // Shared helpers (mirrors unit.test.ts pattern exactly)
@@ -245,6 +250,183 @@ describe("Gateway deployments", () => {
 		assert.equal(getRequest.path, "/deployments/dep%2Fone");
 		assert.equal(archiveRequest.method, "DELETE");
 		assert.equal(archiveRequest.path, "/deployments/dep%2Fone");
+	});
+});
+
+describe("Integration tags", () => {
+	it("forwards tag filters and mutations without restricting tag keys", async () => {
+		let listParams: unknown;
+		let created: unknown;
+		const updates: unknown[] = [];
+		const service = {
+			integrations: {
+				listIntegrations: async (params: unknown) => {
+					listParams = params;
+					return { object: "list", total: 0, data: [] };
+				},
+				createIntegration: async (data: unknown) => {
+					created = data;
+					return { id: "int-1", slug: "openai-prod" };
+				},
+				updateIntegration: async (_slug: string, data: unknown) => {
+					updates.push(data);
+					return { success: true };
+				},
+			},
+		};
+		const callbacks = registerToolCallbacks((server) => {
+			registerIntegrationsTools(server as never, service as never);
+		});
+
+		await callbacks.get("list_integrations")?.({ tags: { env: "prod" } });
+		await callbacks.get("create_integration")?.({
+			name: "OpenAI",
+			ai_provider_id: "openai",
+			tags: { env: "prod" },
+		});
+		await callbacks.get("update_integration")?.({
+			slug: "openai-prod",
+			tags: { env: "staging" },
+		});
+		await callbacks.get("update_integration")?.({
+			slug: "openai-prod",
+			tags: null,
+		});
+		await callbacks.get("update_integration")?.({ slug: "openai-prod" });
+
+		assert.deepEqual((listParams as { tags?: unknown }).tags, { env: "prod" });
+		assert.deepEqual((created as { tags?: unknown }).tags, { env: "prod" });
+		assert.deepEqual((updates[0] as { tags?: unknown }).tags, {
+			env: "staging",
+		});
+		assert.equal((updates[1] as { tags?: unknown }).tags, null);
+		assert.equal("tags" in (updates[2] as object), false);
+
+		const schemas = registerToolSchemas((server) =>
+			registerIntegrationsTools(server as never, {} as never),
+		);
+		const listTags = schemas.get("list_integrations")?.tags;
+		const createTags = schemas.get("create_integration")?.tags;
+		const updateTags = schemas.get("update_integration")?.tags;
+		assert.equal(listTags?.safeParse({ env: "prod" }).success, true);
+		// The OpenAPI places no constraint on integration tag keys.
+		assert.equal(listTags?.safeParse({ "team.name": "a b" }).success, true);
+		assert.equal(listTags?.safeParse(null).success, false);
+		assert.equal(createTags?.safeParse({ env: "prod" }).success, true);
+		assert.equal(createTags?.safeParse(null).success, true);
+		assert.equal(updateTags?.safeParse(null).success, true);
+		assert.equal(updateTags?.safeParse({ env: 1 }).success, false);
+	});
+
+	it("omits tags from the list query when no filter is given", async () => {
+		let listParams: unknown;
+		const callbacks = registerToolCallbacks((server) => {
+			registerIntegrationsTools(
+				server as never,
+				{
+					integrations: {
+						listIntegrations: async (params: unknown) => {
+							listParams = params;
+							return { object: "list", total: 0, data: [] };
+						},
+					},
+				} as never,
+			);
+		});
+		await callbacks.get("list_integrations")?.({ page_size: 5 });
+		assert.equal((listParams as { tags?: unknown }).tags, undefined);
+	});
+});
+
+describe("Nested collections", () => {
+	const detail = {
+		id: "col-1",
+		name: "Parent",
+		slug: "parent",
+		workspace_id: "ws-1",
+		parent_collection_id: null,
+		created_at: "2026-09-01T00:00:00Z",
+		last_updated_at: "2026-09-02T00:00:00Z",
+		child_collections: [
+			{
+				id: "col-2",
+				name: "Child",
+				last_updated_at: "2026-09-03T00:00:00Z",
+				collection_details: {
+					child_collections_count: 0,
+					prompts_count: 4,
+					child_collections_last_updated_at: null,
+					prompts_last_updated_at: "2026-09-03T00:00:00Z",
+				},
+			},
+		],
+	};
+
+	it("forwards parent_collection_id on create", async () => {
+		let created: unknown;
+		const callbacks = registerToolCallbacks((server) => {
+			registerCollectionsTools(
+				server as never,
+				{
+					collections: {
+						createCollection: async (data: unknown) => {
+							created = data;
+							return { id: "col-3", slug: "child" };
+						},
+					},
+				} as never,
+			);
+		});
+		await callbacks.get("create_collection")?.({
+			name: "Child",
+			workspace_id: "ws-1",
+			parent_collection_id: "parent",
+		});
+		assert.deepEqual(created, {
+			name: "Child",
+			workspace_id: "ws-1",
+			parent_collection_id: "parent",
+		});
+	});
+
+	it("surfaces parent and child collections from get and list", async () => {
+		const callbacks = registerToolCallbacks((server) => {
+			registerCollectionsTools(
+				server as never,
+				{
+					collections: {
+						getCollection: async () => detail,
+						listCollections: async () => ({
+							object: "list",
+							total: 1,
+							data: [
+								{
+									...detail,
+									parent_collection_id: "col-0",
+									child_collections: undefined,
+									collection_details:
+										detail.child_collections[0]?.collection_details,
+								},
+							],
+						}),
+					},
+				} as never,
+			);
+		});
+		const got = parseToolResult(
+			await callbacks.get("get_collection")?.({ collection_id: "col-1" }),
+		);
+		const body = (got.data ?? got) as Record<string, unknown>;
+		assert.equal(body.parent_collection_id, null);
+		assert.deepEqual(body.child_collections, detail.child_collections);
+
+		const listed = parseToolResult(
+			await callbacks.get("list_collections")?.({}),
+		);
+		const listBody = (listed.data ?? listed) as {
+			collections: Array<Record<string, unknown>>;
+		};
+		assert.equal(listBody.collections[0]?.parent_collection_id, "col-0");
 	});
 });
 

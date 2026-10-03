@@ -34,6 +34,7 @@ interface TestContext {
 	virtualKeySlug?: string;
 	configSlug?: string;
 	guardrailId?: string;
+	mcpGuardrailId?: string;
 	integrationSlug?: string;
 	usageLimitId?: string;
 	rateLimitId?: string;
@@ -177,10 +178,22 @@ async function main() {
 	await test(
 		"listGuardrails",
 		async () => {
-			const res = await portkey.guardrails.listGuardrails({
-				workspace_id: ctx.workspaceId!,
-			});
-			if (res.data?.[0]) ctx.guardrailId = res.data[0].id;
+			const pageSize = 100;
+			for (let page = 0; page < 50; page++) {
+				const res = await portkey.guardrails.listGuardrails({
+					workspace_id: ctx.workspaceId!,
+					current_page: page,
+					page_size: pageSize,
+				});
+				const data = res.data ?? [];
+				if (page === 0 && data[0]) ctx.guardrailId = data[0].id;
+				const mcpGuardrail = data.find((g) => g.target === "mcp_tools");
+				if (mcpGuardrail) {
+					ctx.mcpGuardrailId = mcpGuardrail.id;
+					break;
+				}
+				if (data.length < pageSize) break;
+			}
 		},
 		() => (ctx.workspaceId ? null : "no workspaceId"),
 	);
@@ -395,9 +408,11 @@ async function main() {
 	await test(
 		"listGuardrailMcpServerMappings",
 		async () => {
-			await portkey.guardrails.listGuardrailMcpServerMappings(ctx.guardrailId!);
+			await portkey.guardrails.listGuardrailMcpServerMappings(
+				ctx.mcpGuardrailId!,
+			);
 		},
-		() => (ctx.guardrailId ? null : "no guardrailId"),
+		() => (ctx.mcpGuardrailId ? null : "no guardrail with target mcp_tools"),
 	);
 
 	await test(

@@ -5,7 +5,7 @@ and catalog scanners can detect published versions.
 
 ## Publish a New Stable Release (automated)
 
-1. On the `dev/<minor>` branch (currently `dev/0.12`), update `package.json`,
+1. On the `dev/<minor>` branch (currently `dev/0.13`), update `package.json`,
    `package-lock.json`, `server.json`, `lhm.plugin.json`, and `CHANGELOG.md`
    for the new version. The release readiness test keeps all four
    version-bearing JSON files synchronized.

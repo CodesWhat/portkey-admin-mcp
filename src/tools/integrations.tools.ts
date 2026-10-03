@@ -7,6 +7,7 @@ import {
 	createSecretMappingSchema,
 	uniqueSecretMappingsSchema,
 } from "./secret-mapping.schemas.js";
+import { integrationTagsSchema } from "./tags.schemas.js";
 import { jsonResult } from "./utils.js";
 
 const integrationSecretMappingSchema = createSecretMappingSchema({
@@ -154,6 +155,9 @@ const INTEGRATIONS_TOOL_SCHEMAS = {
 			.describe(
 				"Filter by integration type: 'workspace', 'organisation', or 'all' (default)",
 			),
+		tags: integrationTagsSchema
+			.optional()
+			.describe("Match integrations that carry all supplied tags"),
 	},
 	createIntegration: {
 		name: z.string().describe("Human-readable name for the integration"),
@@ -232,6 +236,10 @@ const INTEGRATIONS_TOOL_SCHEMAS = {
 			.describe(
 				"Negotiated discount or markup multipliers for cost accounting",
 			),
+		tags: integrationTagsSchema
+			.nullable()
+			.optional()
+			.describe("Integration tags, or null to create without tags"),
 	},
 	getIntegration: {
 		slug: z
@@ -295,6 +303,10 @@ const INTEGRATIONS_TOOL_SCHEMAS = {
 			.describe(
 				"Replacement cost multiplier configuration, or null to clear adjustments",
 			),
+		tags: integrationTagsSchema
+			.nullable()
+			.optional()
+			.describe("Replacement integration tags, or null to clear all tags"),
 	},
 	deleteIntegration: {
 		slug: z.string().describe("The slug of the integration to delete"),
@@ -517,7 +529,7 @@ export function registerIntegrationsTools(
 	// List integrations tool
 	server.tool(
 		"list_integrations",
-		"List org-level AI provider connections with optional workspace or type filters. Use this to find integration slugs before model or workspace updates. Returns total plus id, name, slug, provider, status, description, workspace counts, and config summary.",
+		"List org-level AI provider connections with optional workspace, type, or tag filters. Use this to find integration slugs before model or workspace updates. Returns total plus id, name, slug, provider, status, description, workspace counts, and config summary.",
 		INTEGRATIONS_TOOL_SCHEMAS.listIntegrations,
 		async (params) => {
 			const integrations = await service.integrations.listIntegrations({
@@ -525,6 +537,7 @@ export function registerIntegrationsTools(
 				page_size: params.page_size,
 				workspace_id: params.workspace_id,
 				type: params.type,
+				...(params.tags !== undefined ? { tags: params.tags } : {}),
 			});
 
 			return jsonResult({
@@ -547,7 +560,7 @@ export function registerIntegrationsTools(
 	// Create integration tool
 	server.tool(
 		"create_integration",
-		"Create an AI-provider integration that becomes the source for workspace providers. ai_provider_id identifies the backend; provider-specific fields configure Azure, Bedrock, Vertex, or custom hosts. For workspace-scoped integrations, create_default_provider controls automatic provider creation. key is write-only, but secret_mappings can resolve it or configuration fields from Secret References at runtime. pricing_adjustments apply negotiated discounts or markups to cost accounting. Use update_integration_models and update_integration_workspaces after creation; returns the new integration id and slug.",
+		"Create an AI-provider integration that becomes the source for workspace providers. ai_provider_id identifies the backend; provider-specific fields configure Azure, Bedrock, Vertex, or custom hosts. For workspace-scoped integrations, create_default_provider controls automatic provider creation. key is write-only, but secret_mappings can resolve it or configuration fields from Secret References at runtime. pricing_adjustments apply negotiated discounts or markups to cost accounting; tags attach key-value labels that list_integrations can filter on. Use update_integration_models and update_integration_workspaces after creation; returns the new integration id and slug.",
 		INTEGRATIONS_TOOL_SCHEMAS.createIntegration,
 		{
 			title: "Create AI Provider Integration",
@@ -577,6 +590,7 @@ export function registerIntegrationsTools(
 				...(params.pricing_adjustments !== undefined
 					? { pricing_adjustments: params.pricing_adjustments }
 					: {}),
+				...(params.tags !== undefined ? { tags: params.tags } : {}),
 			});
 
 			return jsonResult({
@@ -622,7 +636,7 @@ export function registerIntegrationsTools(
 	// Update integration tool
 	server.tool(
 		"update_integration",
-		"Update an integration's name, description, API key, provider config, Secret Reference mappings, or pricing adjustments by slug. Only provided fields change; key, secret mapping, and config changes take effect immediately and can disrupt dependent providers or live requests, while pricing multipliers change cost analytics and budget accounting. Review get_integration first. Model availability and workspace access remain separate in update_integration_models and update_integration_workspaces.",
+		"Update an integration's name, description, API key, provider config, Secret Reference mappings, pricing adjustments, or tags by slug. Only provided fields change; tags replaces the whole map and null clears it; key, secret mapping, and config changes take effect immediately and can disrupt dependent providers or live requests, while pricing multipliers change cost analytics and budget accounting. Review get_integration first. Model availability and workspace access remain separate in update_integration_models and update_integration_workspaces.",
 		INTEGRATIONS_TOOL_SCHEMAS.updateIntegration,
 		{
 			title: "Update AI Provider Integration",
@@ -639,6 +653,7 @@ export function registerIntegrationsTools(
 				configurations: buildIntegrationConfigurations(params),
 				secret_mappings: params.secret_mappings,
 				pricing_adjustments: params.pricing_adjustments,
+				...(params.tags !== undefined ? { tags: params.tags } : {}),
 			});
 
 			return jsonResult({

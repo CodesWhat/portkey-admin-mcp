@@ -1,0 +1,11 @@
+{
+	"object": "list",
+	"total": 1,
+	"data": [
+		{
+			"object": "analytics-group",
+			"name": "support-agent",
+			"requests": 33
+		}
+	]
+}

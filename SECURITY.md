@@ -2,7 +2,9 @@
 
 ## Supported Versions
 
-The latest `main` branch is supported for security fixes.
+The latest `main` branch is supported for security fixes. In release terms,
+that is the latest published minor line on npm (currently 0.12.x); fixes ship
+as a patch release on that line, and older lines don't get backports.
 
 ## Reporting a Vulnerability
 
