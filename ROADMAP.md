@@ -199,8 +199,8 @@ stable and public:
   pinned to the 0.12.0 release commit and awaiting maintainer review.
 - Awesome MCP Servers: [#13074](https://github.com/punkpeye/awesome-mcp-servers/pull/13074)
   merged on 2026-09-13.
-- Glama: rebuilt on 2026-10-02 and published 0.12.2 with 181 tools. After each
-  release, sync the repository and run Build & Release on the listing (see
+- Glama: rebuilt after 0.13.0 and showing that release with 184 tools as of
+  2026-10-04. After each release, sync the repository and run Build & Release on the listing (see
   docs/RELEASE.md). Its generated description still lags the tool count.
 - Recheck PulseMCP after listing changes reopen. Its legacy record still uses the
   pre-organization namespace and is not currently editable.
