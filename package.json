@@ -39,7 +39,7 @@
 	"engines": {
 		"node": ">=24"
 	},
-	"packageManager": "npm@12.1.0",
+	"packageManager": "npm@12.2.0",
 	"files": [
 		"build",
 		"ENDPOINTS.md",
@@ -88,14 +88,14 @@
 		"url": "https://github.com/CodesWhat/portkey-admin-mcp/issues"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "2.5.14",
+		"@biomejs/biome": "2.5.15",
 		"@types/cors": "2.8.19",
 		"@types/express": "5.0.6",
-		"@types/node": "24.19.0",
-		"dotenv": "18.0.4",
+		"@types/node": "24.19.1",
+		"dotenv": "18.0.5",
 		"esbuild": "0.28.2",
-		"knip": "6.38.0",
-		"lefthook": "2.1.14",
+		"knip": "6.39.0",
+		"lefthook": "2.1.16",
 		"tsx": "4.23.15",
 		"typescript": "7.0.2"
 	}
