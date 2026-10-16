@@ -254,7 +254,9 @@ const WORKSPACES_TOOL_SCHEMAS = {
 		workspace_id: z
 			.string()
 			.optional()
-			.describe("Return only mappings for this Portkey workspace ID"),
+			.describe(
+				"Return only mappings for this Portkey workspace UUID (the id from list_workspaces, not its slug)",
+			),
 		scim_group_id: z
 			.string()
 			.optional()

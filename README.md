@@ -4,7 +4,7 @@
 
 <h1>Portkey Admin MCP Server</h1>
 
-**The [Portkey](https://portkey.ai/) Admin API as an MCP server — 184 tools across prompts, configs, keys, analytics, governance, deployments, and more.**
+**The [Portkey](https://portkey.ai/) Admin API as an MCP server — 194 tools across prompts, configs, keys, analytics, governance, deployments, and more.**
 
 </div>
 
@@ -32,7 +32,7 @@
 <hr>
 
 > [!IMPORTANT]
-> **Active compatibility development.** Palo Alto Networks completed its Portkey acquisition on 2026‑05‑29 and now presents Portkey as the core of Prisma AIRS AI Gateway. The Portkey Admin API remains live, and its official OpenAPI and product changelog continued adding control-plane surfaces through September 2026; this project has therefore resumed API-coverage work. It targets the Portkey-compatible API (`x-portkey-api-key`), not Prisma AIRS/Strata Cloud Manager directly. Prisma AIRS AI Gateway currently has a different management and authentication surface, so it is not a `PORTKEY_BASE_URL` swap. See the short [Prisma AIRS interoperability guide](./docs/PRISMA_AIRS_INTEROPERABILITY.md) for the supported side-by-side model and adapter criteria.
+> **Active compatibility development.** Palo Alto Networks completed its Portkey acquisition on 2026‑05‑29 and now presents Portkey as the core of Prisma AIRS AI Gateway. The Portkey Admin API remains live, and its official OpenAPI and product changelog continued adding control-plane surfaces through October 2026; this project has therefore resumed API-coverage work. It targets the Portkey-compatible API (`x-portkey-api-key`), not Prisma AIRS/Strata Cloud Manager directly. Palo Alto now publishes a Prisma AIRS management specification, but it uses different authentication, multiple management bases, and a smaller domain set, so it is not a `PORTKEY_BASE_URL` swap. See the short [Prisma AIRS interoperability guide](./docs/PRISMA_AIRS_INTEROPERABILITY.md) for the supported side-by-side model and adapter criteria.
 
 <h2 align="center">Contents</h2>
 
@@ -96,7 +96,7 @@ npx -y portkey-admin-mcp
 ```
 
 Scoping domains is also the biggest lever on context cost, not just access. `tools/list`
-is paginated, and the complete 184-tool catalog is roughly 400 KB once a
+is paginated, and the complete 194-tool catalog is roughly 400 KB once a
 client follows `nextCursor` through every page. Narrowing to the domains a client
 actually needs cuts that roughly proportionally.
 
@@ -146,6 +146,8 @@ Then use this config:
 | **MCP Integrations** | 10 | External MCP tool integrations |
 | **MCP Servers** | 12 | MCP server registry, capabilities, and live connections |
 | **Guardrails** | 14 | LLM and MCP-tool policies, server mappings, organisation defaults, workspace exclusions |
+| **Access Policies** | 5 | Allow/deny users, groups, and agents access to MCP tools and provider models |
+| **Egress Allowlist** | 5 | Organisation trust for custom outbound hosts |
 | **Usage Limits** | 7 | Cost and token consumption limits |
 | **Rate Limits** | 5 | Request frequency controls |
 | **Analytics** | 25 | Cost, latency, errors, tokens, cache, feedback, provider, MCP, A2A, and workspace groups |
@@ -154,7 +156,7 @@ Then use this config:
 | **Users & Workspaces** | 24 | User management, invites, workspace members, SCIM group mappings |
 | **Audit** | 1 | Audit log access |
 
-**184 tools total across 20 tool domains.** See [ENDPOINTS.md](./ENDPOINTS.md) for the full list with descriptions.
+**194 tools total across 22 tool domains.** See [ENDPOINTS.md](./ENDPOINTS.md) for the full list with descriptions.
 
 Portkey's newer product language increasingly presents provider credentials as
 Providers, while the current Admin API still exposes both `/virtual-keys` and
@@ -237,7 +239,7 @@ For local-only HTTP use, leave `MCP_HOST` at its default `127.0.0.1`. Set `MCP_H
 | `PORTKEY_BASE_URL` | `https://api.portkey.ai/v1` | Portkey Admin API base URL. Prisma AIRS/SCM URLs are not compatible; credentialed requests never auto-follow redirects |
 | `PORTKEY_ALLOW_PRIVATE_BASE_URL` | — | Set to `true` to allow a literal loopback/private `PORTKEY_BASE_URL` |
 | `PORTKEY_ALLOW_INSECURE_HTTP` | — | Separately set to `true` only when a trusted self-hosted gateway cannot use HTTPS |
-| `PORTKEY_TOOL_DOMAINS` | — | Server-side allowlist of the 20 domains: `users`, `workspaces`, `configs`, `deployments`, `keys`, `collections`, `prompts`, `analytics`, `guardrails`, `limits`, `audit`, `labels`, `partials`, `tracing`, `logging`, `providers`, `secret-references`, `integrations`, `mcp-integrations`, `mcp-servers`. HTTP `?tools=` may narrow it but cannot expand it |
+| `PORTKEY_TOOL_DOMAINS` | — | Server-side allowlist of the 22 domains: `users`, `workspaces`, `configs`, `deployments`, `keys`, `collections`, `prompts`, `analytics`, `guardrails`, `limits`, `audit`, `labels`, `partials`, `tracing`, `logging`, `providers`, `secret-references`, `integrations`, `mcp-integrations`, `mcp-servers`, `access-policies`, `egress-allowlist`. HTTP `?tools=` may narrow it but cannot expand it |
 | `MCP_TOOL_DOMAINS` | — | Fallback for `PORTKEY_TOOL_DOMAINS`, used only when that is unset |
 | `MCP_TRANSPORT` | `stdio` | `stdio` or `http`; the Docker image picks its entrypoint from this (set `http` for the HTTP server) |
 | `MCP_HOST` | `127.0.0.1` | Bind address |
@@ -267,7 +269,7 @@ For local-only HTTP use, leave `MCP_HOST` at its default `127.0.0.1`. Set `MCP_H
 | `MCP_TLS_CERT_PATH` | — | TLS cert for native HTTPS |
 | `MCP_TLS_CA_PATH` | — | Optional CA bundle for native HTTPS; only used when the TLS key and cert are set |
 | `MCP_SHUTDOWN_TIMEOUT_MS` | `10000` | How long graceful shutdown waits before the process is forced to exit, in milliseconds; must be positive |
-| `MCP_MAX_REQUEST_SIZE` | `1mb` | Maximum HTTP request body size |
+| `MCP_MAX_REQUEST_SIZE` | `1mb` | Maximum HTTP request body size; tool arguments also have a fixed budget of 10,000 array elements and object members, counted across nested input |
 | `MCP_READY_CHECK_MODE` | `local` | `local` or `portkey`; `portkey` makes `/ready` also check Portkey connectivity |
 | `LOG_LEVEL` | `info` | `debug`, `info`, `warn`, or `error` |
 | `ALLOWED_ORIGINS` | — | CORS allow-list; also used to validate the `Host` header (DNS-rebinding protection) when `MCP_AUTH_MODE=none` |
@@ -352,8 +354,8 @@ network errors, and response-contract failures still fail the run.
 `PORTKEY_ORGANISATION_ID` is set. Set it to your organisation ID to exercise that route.
 
 The required CI and release gates measure every TypeScript source file and fail
-below 80% line coverage. The current full report is 98.19% lines, 91.92%
-branches, and 98.58% functions.
+below 80% line coverage. The CI and Coverage workflow reports show the current
+line, branch, and function coverage.
 
 `npm run dev:http` now requires `MCP_AUTH_MODE=bearer` or `MCP_AUTH_MODE=clerk` by default. For deliberate local-only unauthenticated testing, set `MCP_ALLOW_UNAUTHENTICATED_HTTP=true`.
 
@@ -380,7 +382,7 @@ tool catalog in this repository as authoritative when a third-party index lags.
 ### Built With
 
 [![TypeScript](https://img.shields.io/badge/TypeScript_7.0-3178C6?logo=typescript&logoColor=fff)](https://www.typescriptlang.org/)
-[![MCP SDK](https://img.shields.io/badge/MCP_SDK_1.31-000?logo=modelcontextprotocol&logoColor=fff)](https://github.com/modelcontextprotocol/typescript-sdk)
+[![MCP SDK](https://img.shields.io/badge/MCP_SDK_1.32-000?logo=modelcontextprotocol&logoColor=fff)](https://github.com/modelcontextprotocol/typescript-sdk)
 [![Zod 4](https://img.shields.io/badge/Zod_4-3E67B1?logo=zod&logoColor=fff)](https://zod.dev/)
 [![Biome](https://img.shields.io/badge/Biome_2.5-60a5fa?logo=biome&logoColor=fff)](https://biomejs.dev/)
 [![Node 24](https://img.shields.io/badge/Node_24-339933?logo=nodedotjs&logoColor=fff)](https://nodejs.org/)

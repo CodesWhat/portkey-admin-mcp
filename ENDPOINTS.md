@@ -6,7 +6,7 @@ Route mappings were reviewed against the official Portkey OpenAPI on 2026-09-08.
 - Base URL: `https://api.portkey.ai/v1`
 - Authentication: `x-portkey-api-key`
 - Public catalog exception: `get_model_pricing` uses `https://api.portkey.ai` without authentication
-- Total: 184 tools across 20 domains
+- Total: 194 tools across 22 domains
 - Enterprise-gated names and counts are maintained in `src/tools/index.ts` and verified against README by `npm run verify:readme-tools`
 
 The route lists are domain-level service routes. The tool tables are the complete
@@ -58,6 +58,34 @@ the public Portkey OpenAPI, so their contracts can change without a spec diff.
 | `get_analytics_group_workspaces` | GET `/analytics/groups/workspaces` |
 
 <!-- tool-catalog:start -->
+## access-policies (5)
+
+Routes:
+
+- GET/POST `/policies/access`; GET/PUT/DELETE `/policies/access/{accessPolicyId}`
+
+| Tool | Selection guidance and result |
+|---|---|
+| `create_access_policy` | Create a workspace access policy for users, groups, and agents targeting MCP tools or provider models. Changes who may access those targets. An omitted effect becomes deny only when both user ANY and agent ANY are present; otherwise allow, which requires a specific subject. Returns the policy UUID; use get_access_policy before later updates. |
+| `list_access_policies` | Inspect active workspace access policies, newest first, without changing permissions. Filter by subject, MCP server, effect, enabled state, or creation time. Returns total and the current page of policy summaries with versions; use get_access_policy for complete subjects and targets. |
+| `get_access_policy` | Read one access policy's complete subjects, targets, effect, and current version. Use this before update_access_policy so replacement lists and optimistic concurrency use the latest state. Returns policy details; a missing policy returns HTTP 404. |
+| `update_access_policy` | Replace an access policy's complete subjects and targets, changing access permissions. Requires the current version from get_access_policy; a stale version returns HTTP 409 without retrying. Omitted name, description, effect, and enabled retain their stored values. Returns Portkey's acknowledgement; reread before retrying a conflict. |
+| `delete_access_policy` | Delete an access policy by UUID, removing its allow or deny rule and changing access permissions. This cannot be undone by this tool. Inspect get_access_policy first; returns Portkey's acknowledgement, or HTTP 404 when the policy is missing. |
+
+## egress-allowlist (5)
+
+Routes:
+
+- GET/POST `/egress-allowlist`; GET/PUT/DELETE `/egress-allowlist/{egressAllowlistId}`. Uses the `/v2` base: hosted `/v1` returns the inference gateway fallback, while `/v2` reaches the organisation permission check; the public OpenAPI still lists `/v1`.
+
+| Tool | Selection guidance and result |
+|---|---|
+| `list_egress_allowlist` | Inspect the organisation's trusted custom-host egress allowlist without changing destinations. Returns total and the current page of entries; filter by domain before creating duplicates, and use get_egress_allowlist_entry to inspect one entry. Requires organisation permission. |
+| `create_egress_allowlist_entry` | Trust a custom hostname, IP literal, or wildcard for organisation egress, widening permitted outbound destinations. Use list_egress_allowlist to inspect existing trust first. Portkey rejects metadata destinations and duplicates. Returns the new UUID and normalized domain; requires organisation permission. |
+| `get_egress_allowlist_entry` | Read one organisation egress allowlist entry's trusted domain, description, and audit fields. Use this before changing or deleting a destination. Returns entry details, or HTTP 404 if it is missing; requires organisation permission. |
+| `update_egress_allowlist_entry` | Change an organisation egress allowlist domain or description, potentially changing trusted outbound destinations. Inspect get_egress_allowlist_entry first. Omitted fields stay unchanged; description null clears it. At least one changed field is required. Returns Portkey's acknowledgement; requires organisation permission. |
+| `delete_egress_allowlist_entry` | Remove an organisation egress allowlist entry, revoking trust in its outbound destination and potentially breaking integrations that use it. Inspect get_egress_allowlist_entry first. Deletion cannot be undone by this tool. Returns Portkey's acknowledgement or HTTP 404; requires organisation permission. |
+
 ## users (10)
 
 Routes:

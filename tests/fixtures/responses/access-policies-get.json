@@ -1,0 +1,30 @@
+{
+	"id": "49b9b38d-c9c8-453d-bd93-a4717168ea32",
+	"organisation_id": "a1b2c3d4-e5f6-4890-abcd-ef1234567890",
+	"status": "active",
+	"created_by": null,
+	"created_at": "2026-10-13T12:00:00Z",
+	"last_updated_at": "2026-10-13T12:00:00Z",
+	"name": "Engineering tools",
+	"description": null,
+	"enabled": true,
+	"effect": "allow",
+	"version": 1,
+	"workspace_id": "c4131683-7a4f-4d80-9c4a-af899a556666",
+	"object": "access",
+	"subjects": [
+		{
+			"type": "user",
+			"id": "sample-user",
+			"name": "Example User",
+			"email": null
+		}
+	],
+	"targets": [
+		{
+			"type": "mcp_server",
+			"server_id": "sample-server",
+			"tools": ["list_issues"]
+		}
+	]
+}

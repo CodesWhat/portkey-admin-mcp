@@ -1,6 +1,9 @@
 # Docker only needs package.json, package-lock.json, tsconfig.json, and src/
 .git/
 .github/
+.claude/
+.planning/
+.mcp.json
 node_modules/
 build/
 coverage/

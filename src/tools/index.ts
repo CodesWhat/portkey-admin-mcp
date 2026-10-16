@@ -6,13 +6,25 @@ import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import { Logger } from "../lib/logger.js";
 import { isRecord } from "../lib/type-guards.js";
+import {
+	AccessPolicySchema,
+	CreateAccessPolicyResponseSchema,
+	ListAccessPoliciesResponseSchema,
+} from "../schemas/contracts/access-policies.contract.js";
+import {
+	CreateEgressAllowlistResponseSchema,
+	EgressAllowlistEntrySchema,
+	ListEgressAllowlistResponseSchema,
+} from "../schemas/contracts/egress-allowlist.contract.js";
 import { SecretManagerTypeSchema } from "../schemas/contracts/secret-references.contract.js";
 import type { PortkeyService } from "../services/index.js";
+import { registerAccessPoliciesTools } from "./access-policies.tools.js";
 import { registerAnalyticsTools } from "./analytics.tools.js";
 import { registerAuditTools } from "./audit.tools.js";
 import { registerCollectionsTools } from "./collections.tools.js";
 import { registerConfigsTools } from "./configs.tools.js";
 import { registerDeploymentsTools } from "./deployments.tools.js";
+import { registerEgressAllowlistTools } from "./egress-allowlist.tools.js";
 import { registerGuardrailsTools } from "./guardrails.tools.js";
 import { registerIntegrationsTools } from "./integrations.tools.js";
 import { registerKeysTools } from "./keys.tools.js";
@@ -32,6 +44,8 @@ import { registerWorkspacesTools } from "./workspaces.tools.js";
 type ToolRegistrar = (server: McpServer, service: PortkeyService) => void;
 
 const TOOL_DOMAIN_REGISTRARS = [
+	["access-policies", registerAccessPoliciesTools],
+	["egress-allowlist", registerEgressAllowlistTools],
 	["users", registerUsersTools],
 	["workspaces", registerWorkspacesTools],
 	["configs", registerConfigsTools],
@@ -338,6 +352,16 @@ const STANDARD_TOOL_OUTPUT_SCHEMA = {
  * payloads that don't need one.
  */
 const TOOL_SUCCESS_DATA_SCHEMAS: Partial<Record<string, z.ZodType>> = {
+	create_access_policy: CreateAccessPolicyResponseSchema,
+	list_access_policies: ListAccessPoliciesResponseSchema,
+	get_access_policy: AccessPolicySchema,
+	update_access_policy: z.object({}),
+	delete_access_policy: z.object({}),
+	create_egress_allowlist_entry: CreateEgressAllowlistResponseSchema,
+	list_egress_allowlist: ListEgressAllowlistResponseSchema,
+	get_egress_allowlist_entry: EgressAllowlistEntrySchema,
+	update_egress_allowlist_entry: z.object({}),
+	delete_egress_allowlist_entry: z.object({}),
 	rotate_api_key: z.object({
 		message: z.string().describe("Rotation confirmation"),
 		warning: z
