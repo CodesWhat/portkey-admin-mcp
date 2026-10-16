@@ -2,10 +2,69 @@ import assert from "node:assert/strict";
 import { afterEach, describe, it } from "node:test";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+import { z } from "zod";
 import { createMcpServer, resolveToolDomains } from "../src/lib/mcp-server.js";
 import { SessionStore } from "../src/lib/session-store.js";
 
 const ORIGINAL_ENV = { ...process.env };
+
+describe("MCP argument complexity limit", () => {
+	it("rejects excessive arrays and records before schema validation or execution", async () => {
+		const { server } = createMcpServer({ toolDomains: ["configs"] });
+		const client = new Client({ name: "input-budget-test", version: "1.0.0" });
+		let validations = 0;
+		let calls = 0;
+		server.registerTool(
+			"inspect_inputs",
+			{
+				inputSchema: {
+					values: z.unknown().transform((value) => {
+						validations += 1;
+						return value;
+					}),
+				},
+			},
+			async () => {
+				calls += 1;
+				return { content: [{ type: "text", text: "accepted" }] };
+			},
+		);
+		const [clientTransport, serverTransport] =
+			InMemoryTransport.createLinkedPair();
+		try {
+			await server.connect(serverTransport);
+			await client.connect(clientTransport);
+			for (const values of [
+				Array(10_001).fill(0),
+				Object.fromEntries(
+					Array.from({ length: 10_001 }, (_, i) => [`k${i}`, 0]),
+				),
+				Array.from({ length: 100 }, () => Array(101).fill(0)),
+			]) {
+				const result = await client.callTool({
+					name: "inspect_inputs",
+					arguments: { values },
+				});
+				assert.equal(result.isError, true);
+				assert.match(
+					JSON.stringify(result.content),
+					/limit|elements|complexity/i,
+				);
+			}
+			assert.equal(validations, 0);
+			assert.equal(calls, 0);
+			const accepted = await client.callTool({
+				name: "inspect_inputs",
+				arguments: { values: Array(1_000).fill(0) },
+			});
+			assert.notEqual(accepted.isError, true);
+			assert.equal(validations, 1);
+			assert.equal(calls, 1);
+		} finally {
+			await Promise.allSettled([client.close(), server.close()]);
+		}
+	});
+});
 
 afterEach(() => {
 	process.env = { ...ORIGINAL_ENV };
