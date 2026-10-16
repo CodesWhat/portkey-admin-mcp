@@ -46,6 +46,8 @@ interface TestContext {
 	mcpServerId?: string;
 	mcpIntegrationId?: string;
 	deploymentId?: string;
+	accessPolicyId?: string;
+	egressAllowlistId?: string;
 }
 
 interface TestResult {
@@ -138,6 +140,34 @@ async function main() {
 		if (res.data?.[0]) ctx.userInviteId = res.data[0].id;
 	});
 
+	await test("listAccessPolicies", async () => {
+		const res = await portkey.accessPolicies.listAccessPolicies({
+			page_size: 1,
+		});
+		ctx.accessPolicyId = res.data?.[0]?.id;
+	});
+	await test("listEgressAllowlist", async () => {
+		const res = await portkey.egressAllowlist.listEgressAllowlist({
+			page_size: 1,
+		});
+		ctx.egressAllowlistId = res.data?.[0]?.id;
+	});
+	await test(
+		"getAccessPolicy",
+		async () => {
+			await portkey.accessPolicies.getAccessPolicy(ctx.accessPolicyId!);
+		},
+		() => (ctx.accessPolicyId ? null : "no accessPolicyId"),
+	);
+	await test(
+		"getEgressAllowlistEntry",
+		async () => {
+			await portkey.egressAllowlist.getEgressAllowlistEntry(
+				ctx.egressAllowlistId!,
+			);
+		},
+		() => (ctx.egressAllowlistId ? null : "no egressAllowlistId"),
+	);
 	await test("listConfigs", async () => {
 		const res = await portkey.configs.listConfigs();
 		if (res.data?.[0]) ctx.configSlug = res.data[0].slug;
