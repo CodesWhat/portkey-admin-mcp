@@ -1,6 +1,7 @@
 # Portkey Admin MCP Security Assurance Case
 
-Last reviewed: 2026-08-11
+Baseline assurance review: 2026-08-11.
+Input-budget and compatibility claims reviewed for 0.14.0: 2026-10-16.
 
 This document maps the project's security requirements to its threat model,
 implementation controls, and public verification evidence. It complements

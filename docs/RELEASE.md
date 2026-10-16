@@ -34,13 +34,13 @@ support and any assigned deprecation or removal releases.
 `main` only takes a squash or merge through a PR with two approvals. A squash
 promotion leaves `dev/<minor>` without main's new commit in its history, so the
 next promotion PR shows as conflicting even though the content matches. After
-the promotion lands, reconcile:
+the promotion lands, reconcile. These examples use the active `dev/0.14` line:
 
 1. Fetch, then confirm the trees are identical with
-   `git diff --quiet origin/main origin/dev/<minor>`. If it exits non-zero, stop;
+   `git diff --quiet origin/main origin/dev/0.14`. If it exits non-zero, stop;
    the content differs and an ours-merge would discard main's changes.
-2. On a branch off `origin/dev/<minor>`, run `git merge -s ours origin/main`.
-3. Open a PR into `dev/<minor>` and merge it with a merge commit, not a squash.
+2. On a branch off `origin/dev/0.14`, run `git merge -s ours origin/main`.
+3. Open a PR into `dev/0.14` and merge it with a merge commit, not a squash.
    A squash would drop the second parent and the problem comes back.
 
 The CI run includes `npm run verify:tool-quality`, a deterministic preflight
