@@ -5,7 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+[COMPATIBILITY.md](COMPATIBILITY.md) records supported protocol revisions and
+configuration lifecycle status. Planned migrations have no assigned removal
+release until that reference and the release notes say so.
+
 ## [Unreleased]
+
+### Changed
+- Aligned the README, roadmap, contribution flow, release guide, and catalog records after 0.14.0. Added a packaged compatibility and deprecation reference that keeps current settings distinct from the unassigned MCP migration.
+- Corrected the single-container Docker HTTP example to explicitly acknowledge in-memory production rate limiting.
+- Updated the release-only MCP publisher to 1.8.1 and pinned the LobeHub maintenance CLI to 0.0.41. Runtime dependencies and the published package version are unchanged.
 
 ## [0.14.0] - 2026-10-16
 
@@ -912,7 +921,8 @@ First stable release. Graduates from beta with 151 tools covering ~98% of the Po
 - Vercel deployment support
 - Contract tests, E2E tests, security tests
 
-[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.13.0...HEAD
+[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.14.0...HEAD
+[0.14.0]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.12.2...v0.13.0
 [0.12.2]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.12.1...v0.12.2
 [0.12.1]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.12.0...v0.12.1

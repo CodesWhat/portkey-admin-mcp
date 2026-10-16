@@ -33,7 +33,10 @@ reports follow [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).
 
 ## Change and release control
 
-Changes branch from and merge back into `main` through pull requests. CI runs
+Changes branch from and merge back into the active `dev/<minor>` line through
+pull requests. Maintainers promote that reviewed line to protected `main`
+through a separate pull request. [The release guide](docs/RELEASE.md) records
+the active line and when it advances; Renovate uses the same base branch. CI runs
 linting, type checks, dependency review, tests, build verification, MCP protocol
 checks, and tool-definition quality checks. A version change merged to `main`
 starts the automated tag and release flow. The tagged commit is re-tested before

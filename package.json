@@ -31,7 +31,7 @@
 		"start:http": "node build/server.js",
 		"generate:lobehub-tools": "npm run build && node scripts/generate-lobehub-tools.mjs && biome format --write lhm.plugin.json",
 		"generate:endpoints": "node scripts/generate-endpoints.mjs",
-		"update:lobehub": "npm run generate:lobehub-tools && npx -y @lobehub/market-cli plugin update --dir \"$PWD\"",
+		"update:lobehub": "npm run generate:lobehub-tools && npx -y @lobehub/market-cli@0.0.41 plugin update --dir \"$PWD\"",
 		"publish:lobehub": "npm run update:lobehub",
 		"prepare": "[ -n \"$CI\" ] || [ -f /.dockerenv ] || [ ! -d .git ] || lefthook install",
 		"prepublishOnly": "npm run ci"
@@ -43,6 +43,7 @@
 	"files": [
 		"build",
 		"ENDPOINTS.md",
+		"COMPATIBILITY.md",
 		"docs/DISTRIBUTION.md",
 		"docs/PRISMA_AIRS_INTEROPERABILITY.md",
 		"docs/VERCEL_DEPLOYMENT.md"

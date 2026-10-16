@@ -4,6 +4,12 @@
 
 This guide describes how to self-deploy this MCP server on Vercel.
 
+These session and Redis replay settings remain active in 0.14.0. The planned
+MCP migration has no assigned warning or removal release. Keep this deployment
+configuration until a versioned upgrade guide replaces it; Redis rate limiting
+remains a separate requirement. See [compatibility and
+deprecations](../COMPATIBILITY.md).
+
 ## Recommended Architecture
 
 - Runtime: Vercel Node.js Function (`api/index.ts`)

@@ -36,26 +36,51 @@
 
 <h2 align="center">Contents</h2>
 
+- [Documentation](#documentation)
 - [Quick Start](#quick-start)
 - [What You Can Do](#what-you-can-do)
 - [API Key Scopes](#api-key-scopes)
 - [HTTP Server (Experimental)](#http-server)
-- [Architecture](./docs/ARCHITECTURE.md)
+- [Architecture](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/docs/ARCHITECTURE.md)
 - [Distribution and directories](./docs/DISTRIBUTION.md)
 - [Prisma AIRS interoperability](./docs/PRISMA_AIRS_INTEROPERABILITY.md)
-- [Verify a release](./docs/VERIFY_RELEASE.md)
+- [Verify a release](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/docs/VERIFY_RELEASE.md)
 - [Development](#development)
+- [Roadmap](#roadmap)
 - [Community](#community)
-- [Contributing](./CONTRIBUTING.md)
-- [Governance](./GOVERNANCE.md)
-- [Security assurance](./SECURITY-ASSURANCE.md)
+- [Built With](#built-with)
+- [Contributing](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/CONTRIBUTING.md)
+- [Governance](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/GOVERNANCE.md)
+- [Security assurance](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/SECURITY-ASSURANCE.md)
 - [Full tool list — ENDPOINTS.md](./ENDPOINTS.md)
+
+<hr>
+
+<h2 align="center" id="documentation">Documentation</h2>
+
+| Resource | Link |
+| --- | --- |
+| Tool reference | [ENDPOINTS.md](./ENDPOINTS.md) |
+| Compatibility and deprecations | [COMPATIBILITY.md](./COMPATIBILITY.md) |
+| Changelog | [CHANGELOG.md](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/CHANGELOG.md) |
+| Roadmap | [ROADMAP.md](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/ROADMAP.md) |
+| Architecture | [Architecture](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/docs/ARCHITECTURE.md) |
+| Deployment | [HTTP configuration](#http-server), [Vercel guide](./docs/VERCEL_DEPLOYMENT.md) |
+| Distribution | [Directories and release records](./docs/DISTRIBUTION.md), [verify a release](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/docs/VERIFY_RELEASE.md) |
+| Prisma AIRS | [Interoperability guide](./docs/PRISMA_AIRS_INTEROPERABILITY.md) |
+| Contributing and governance | [CONTRIBUTING.md](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/CONTRIBUTING.md), [GOVERNANCE.md](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/GOVERNANCE.md), [Code of Conduct](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/CODE_OF_CONDUCT.md) |
+| Security | [Reporting policy](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/SECURITY.md), [assurance case](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/SECURITY-ASSURANCE.md) |
 
 <hr>
 
 <h2 align="center" id="quick-start">Quick Start</h2>
 
 You need a **Portkey API key** with appropriate scopes. Get one from your [Portkey dashboard](https://app.portkey.ai/) under API Keys.
+
+Version 0.14.0 uses MCP SDK v1 and supports protocol revisions through
+`2025-11-25`. Session and replay settings remain active. See
+[compatibility and deprecations](./COMPATIBILITY.md) before upgrading; the
+planned MCP v2 migration has no assigned release number or removal date.
 
 ### Claude Code
 
@@ -317,9 +342,13 @@ docker run \
   -e MCP_PORT=3000 \
   -e MCP_AUTH_MODE=bearer \
   -e MCP_AUTH_TOKEN=your_secret \
+  -e RATE_LIMIT_SINGLE_PROCESS=true \
   -p 3000:3000 \
   portkey-admin-mcp
 ```
+
+This example runs one long-lived container with in-memory rate limiting. Use
+`RATE_LIMIT_STORE=redis` and a TLS Redis URL for multiple instances.
 
 </details>
 
@@ -360,10 +389,20 @@ line, branch, and function coverage.
 `npm run dev:http` now requires `MCP_AUTH_MODE=bearer` or `MCP_AUTH_MODE=clerk` by default. For deliberate local-only unauthenticated testing, set `MCP_ALLOW_UNAUTHENTICATED_HTTP=true`.
 
 Contributions use pull requests and the checks documented in
-[`CONTRIBUTING.md`](CONTRIBUTING.md). Project decisions and maintainer roles are
-documented in [`GOVERNANCE.md`](GOVERNANCE.md). Report vulnerabilities through
-[`SECURITY.md`](SECURITY.md), and see [`SECURITY-ASSURANCE.md`](SECURITY-ASSURANCE.md)
+[`CONTRIBUTING.md`](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/CONTRIBUTING.md). Project decisions and maintainer roles are
+documented in [`GOVERNANCE.md`](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/GOVERNANCE.md). Report vulnerabilities through
+[`SECURITY.md`](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/SECURITY.md), and see [`SECURITY-ASSURANCE.md`](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/SECURITY-ASSURANCE.md)
 for the public threat model and assurance case.
+
+<hr>
+
+<h2 align="center" id="roadmap">Roadmap</h2>
+
+Release 0.14.0 adds access policies, egress allowlists, and security maintenance.
+The [roadmap](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/ROADMAP.md) separates completed work from upstream contract and
+tenant-verification gates. The planned MCP v2 migration keeps older clients on
+the same endpoint; its package version and configuration-removal releases are
+still unassigned. See [compatibility and deprecations](./COMPATIBILITY.md).
 
 <hr>
 
@@ -379,7 +418,7 @@ tool catalog in this repository as authoritative when a third-party index lags.
 
 <div align="center">
 
-### Built With
+<h2 align="center" id="built-with">Built With</h2>
 
 [![TypeScript](https://img.shields.io/badge/TypeScript_7.0-3178C6?logo=typescript&logoColor=fff)](https://www.typescriptlang.org/)
 [![MCP SDK](https://img.shields.io/badge/MCP_SDK_1.32-000?logo=modelcontextprotocol&logoColor=fff)](https://github.com/modelcontextprotocol/typescript-sdk)
@@ -392,6 +431,14 @@ tool catalog in this repository as authoritative when a third-party index lags.
 [![Conventional Commits](https://img.shields.io/badge/commits-conventional-fe5196?logo=conventionalcommits&logoColor=fff)](https://www.conventionalcommits.org/)
 [![Keep a Changelog](https://img.shields.io/badge/changelog-Keep%20a%20Changelog-E05735)](https://keepachangelog.com/)
 
+Marketplace listings on [LobeHub](https://lobehub.com/mcp/codeswhat-portkey-admin-mcp) and [Glama](https://glama.ai/mcp/servers/CodesWhat/portkey-admin-mcp):
+
+[![LobeHub MCP](https://lobehub.com/badge/mcp/codeswhat-portkey-admin-mcp)](https://lobehub.com/mcp/codeswhat-portkey-admin-mcp)
+
+<a href="https://glama.ai/mcp/servers/CodesWhat/portkey-admin-mcp"><img src="https://glama.ai/mcp/servers/CodesWhat/portkey-admin-mcp/badges/card.svg" alt="portkey-admin-mcp MCP server"></a>
+
+---
+
 **[MIT License](LICENSE)** · Inspired by [r-huijts/portkey-admin-mcp-server](https://github.com/r-huijts/portkey-admin-mcp-server)
 
 <a href="https://github.com/CodesWhat">
@@ -401,12 +448,6 @@ tool catalog in this repository as authoritative when a third-party index lags.
     <img src="assets/codeswhat-logo-original.svg" alt="CodesWhat" height="28">
   </picture>
 </a>
-
-Marketplace listings on [LobeHub](https://lobehub.com/mcp/codeswhat-portkey-admin-mcp) and [Glama](https://glama.ai/mcp/servers/CodesWhat/portkey-admin-mcp):
-
-[![LobeHub MCP](https://lobehub.com/badge/mcp/codeswhat-portkey-admin-mcp)](https://lobehub.com/mcp/codeswhat-portkey-admin-mcp)
-
-<a href="https://glama.ai/mcp/servers/CodesWhat/portkey-admin-mcp"><img src="https://glama.ai/mcp/servers/CodesWhat/portkey-admin-mcp/badges/card.svg" alt="portkey-admin-mcp MCP server"></a>
 
 <a href="#portkey-admin-mcp-server">Back to top</a>
 
