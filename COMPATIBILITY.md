@@ -17,9 +17,9 @@ revision can use this server; that fallback does not mean the server natively
 supports `2026-07-28`. The migration must verify both modern and older clients
 over HTTP and stdio before release.
 
-[SECURITY.md](SECURITY.md) owns the security-support policy: fixes ship on the
+[SECURITY.md](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/SECURITY.md) owns the security-support policy: fixes ship on the
 latest published minor line; older minor lines do not receive backports.
-See [CHANGELOG.md](CHANGELOG.md) for changes in each published release.
+See [CHANGELOG.md](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/CHANGELOG.md) for changes in each published release.
 
 ## Configuration lifecycle
 
@@ -51,7 +51,7 @@ security fix or announces end of life, a targeted client drops the older
 handshake or fails when pinned to `2026-07-28`, or 30 days pass without a v2
 server release carrying upgrade notes. Target completion is before 2027-01-27.
 These are project planning dates, not announced configuration-removal dates or
-an SDK end-of-life guarantee. [ROADMAP.md](ROADMAP.md) tracks the work.
+an SDK end-of-life guarantee. [ROADMAP.md](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/ROADMAP.md) tracks the work.
 
 Before that release, operators need a versioned upgrade guide covering:
 
@@ -63,5 +63,5 @@ Before that release, operators need a versioned upgrade guide covering:
 - client, reverse-proxy, Vercel, and marketplace compatibility checks.
 
 The release must update this table, the README configuration reference,
-[architecture](docs/ARCHITECTURE.md), [Vercel guide](docs/VERCEL_DEPLOYMENT.md),
-[security assurance case](SECURITY-ASSURANCE.md), and changelog together.
+[architecture](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/docs/ARCHITECTURE.md), [Vercel guide](docs/VERCEL_DEPLOYMENT.md),
+[security assurance case](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/SECURITY-ASSURANCE.md), and changelog together.

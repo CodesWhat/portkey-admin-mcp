@@ -43,6 +43,7 @@
 	"files": [
 		"build",
 		"ENDPOINTS.md",
+		"COMPATIBILITY.md",
 		"docs/DISTRIBUTION.md",
 		"docs/PRISMA_AIRS_INTEROPERABILITY.md",
 		"docs/VERCEL_DEPLOYMENT.md"

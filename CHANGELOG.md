@@ -12,7 +12,7 @@ release until that reference and the release notes say so.
 ## [Unreleased]
 
 ### Changed
-- Aligned the README, roadmap, contribution flow, release guide, and catalog records after 0.14.0. Added a compatibility and deprecation reference that keeps current settings distinct from the unassigned MCP migration.
+- Aligned the README, roadmap, contribution flow, release guide, and catalog records after 0.14.0. Added a packaged compatibility and deprecation reference that keeps current settings distinct from the unassigned MCP migration.
 - Corrected the single-container Docker HTTP example to explicitly acknowledge in-memory production rate limiting.
 - Updated the release-only MCP publisher to 1.8.1 and pinned the LobeHub maintenance CLI to 0.0.41. Runtime dependencies and the published package version are unchanged.
 

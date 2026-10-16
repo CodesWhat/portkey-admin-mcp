@@ -61,7 +61,7 @@
 | Resource | Link |
 | --- | --- |
 | Tool reference | [ENDPOINTS.md](./ENDPOINTS.md) |
-| Compatibility and deprecations | [COMPATIBILITY.md](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/COMPATIBILITY.md) |
+| Compatibility and deprecations | [COMPATIBILITY.md](./COMPATIBILITY.md) |
 | Changelog | [CHANGELOG.md](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/CHANGELOG.md) |
 | Roadmap | [ROADMAP.md](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/ROADMAP.md) |
 | Architecture | [Architecture](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/docs/ARCHITECTURE.md) |
@@ -79,7 +79,7 @@ You need a **Portkey API key** with appropriate scopes. Get one from your [Portk
 
 Version 0.14.0 uses MCP SDK v1 and supports protocol revisions through
 `2025-11-25`. Session and replay settings remain active. See
-[compatibility and deprecations](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/COMPATIBILITY.md) before upgrading; the
+[compatibility and deprecations](./COMPATIBILITY.md) before upgrading; the
 planned MCP v2 migration has no assigned release number or removal date.
 
 ### Claude Code
@@ -402,7 +402,7 @@ Release 0.14.0 adds access policies, egress allowlists, and security maintenance
 The [roadmap](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/ROADMAP.md) separates completed work from upstream contract and
 tenant-verification gates. The planned MCP v2 migration keeps older clients on
 the same endpoint; its package version and configuration-removal releases are
-still unassigned. See [compatibility and deprecations](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/COMPATIBILITY.md).
+still unassigned. See [compatibility and deprecations](./COMPATIBILITY.md).
 
 <hr>
 
