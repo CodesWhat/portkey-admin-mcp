@@ -77,6 +77,18 @@ function markUndocumented(route) {
 
 const DOMAINS = [
 	{
+		name: "access-policies",
+		routes: [
+			"GET/POST `/policies/access`; GET/PUT/DELETE `/policies/access/{accessPolicyId}`",
+		],
+	},
+	{
+		name: "egress-allowlist",
+		routes: [
+			"GET/POST `/egress-allowlist`; GET/PUT/DELETE `/egress-allowlist/{egressAllowlistId}`. Uses the `/v2` base: hosted `/v1` returns the inference gateway fallback, while `/v2` reaches the organisation permission check; the public OpenAPI still lists `/v1`.",
+		],
+	},
+	{
 		name: "users",
 		routes: [
 			"GET/PUT/DELETE `/admin/users/{userId}`; GET `/admin/users`",

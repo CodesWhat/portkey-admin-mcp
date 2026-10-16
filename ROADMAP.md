@@ -1,8 +1,8 @@
 # Portkey Admin MCP roadmap
 
-> Last reviewed: 2026-10-02
+> Last reviewed: 2026-10-16
 > Status: active compatibility maintenance
-> Current catalog: 184 tools across 20 domains, including 56 Enterprise-gated tools
+> Current catalog: 194 tools across 22 domains, including 56 Enterprise-gated tools
 
 Portkey continues to publish control-plane additions after its acquisition by
 Palo Alto Networks. This project follows the stable public Portkey OpenAPI and
@@ -22,6 +22,8 @@ track and is not treated as a compatible `PORTKEY_BASE_URL`.
 | Prompts | 14 | Lifecycle, versions, render, completion, migration, promotion |
 | Analytics | 25 | Graphs, cache summary, and grouped user/model/provider/metadata/MCP/A2A/workspace views, filterable by deployment |
 | Guardrails | 14 | LLM and MCP-tool policies, server mappings, organisation defaults, workspace exclusions |
+| Access Policies | 5 | Versioned allow/deny policies for users, groups, agents, MCP tools, and provider models |
+| Egress Allowlist | 5 | Organisation trust for custom outbound hosts |
 | Limits | 12 | Rate/usage policies, tracked entities, counter reset |
 | Audit | 1 | Audit-log reads |
 | Labels | 5 | Prompt version labels |
@@ -40,9 +42,19 @@ README, endpoint catalog, domain counts, and Enterprise-gated inventory together
 
 ## Planned
 
-Reviewed 2026-10-02 against the Portkey OpenAPI through its 2026-09-16 commits.
-Every stable admin route in the published specification now has a tool, so
-nothing is scheduled until upstream publishes more.
+Reviewed 2026-10-16 against Portkey OpenAPI commit `700ece6` (October 13).
+Access policies and egress allowlists are covered. Existing published contracts
+are unchanged from the September baseline. Egress calls use the hosted `/v2`
+base: `/v1` returns the inference gateway fallback, while `/v2` reaches the
+organisation permission check. The configured credential can list access
+policies but cannot read the egress allowlist; access-policy create/read/replace/version-conflict/delete behavior was verified
+with a disposable disabled policy. Egress read and mutation contracts remain
+documentation-derived pending an appropriately scoped tenant.
+
+Prisma AIRS now publishes management contracts. The interoperability guide
+records the authentication, route, domain, and verification differences. Native
+adapter work waits for a credentialed tenant to verify those contracts; a base
+URL substitution remains unsupported.
 
 ### Later
 
@@ -51,7 +63,8 @@ nothing is scheduled until upstream publishes more.
   the current server already works with clients that negotiate 2026-07-28, most
   clients still open with the older handshake, and the v2 SDK is still changing
   between minor releases. Work starts by 2026-12-01, or sooner if a v1 SDK
-  security fix stops coming or a client drops support for the older handshake.
+  security fix stops coming, a client drops support for the older handshake, or
+  30 days pass without a v2 server release carrying upgrade notes.
   It retires the replay and session stores, so it ships as a minor release.
 
 ## Completed 2026-10-02 (0.13.0)

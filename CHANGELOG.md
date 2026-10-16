@@ -7,6 +7,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-10-16
+
+Security maintenance and Portkey October control-plane coverage. The catalog
+increases from 184 to 194 tools across 22 domains; MCP clients should refresh
+`tools/list`. The supported wire protocol remains unchanged.
+
+### Security
+
+- Upgrade the MCP SDK to 1.32.1 and enable a 10,000-element tool input budget
+  before schema validation, covering nested arrays and object members. This
+  addresses GHSA-46jr-4wx8-v453 for HTTP deployments; the existing 1 MB HTTP
+  body limit and authentication gate remain in place.
+- Upgrade Express to 5.3.0 and refresh the dependency lock, including patched
+  `proxy-addr` and development-only `smol-toml`. The full npm audit is clear.
+
+### Added
+
+- Five access-policy tools to create, list, inspect, replace, and delete
+  workspace allow/deny rules for users, groups, agents, MCP tools, and provider
+  models. Updates require current versions and complete subjects and targets;
+  version conflicts return errors without retrying.
+- Five organisation egress-allowlist tools for custom-host trust. Nullable
+  descriptions can be cleared; updates require a recognized field. These use
+  the hosted `/v2` management base, where the configured credential reaches
+  the permission check; `/v1` returns the inference gateway fallback despite
+  the public OpenAPI declaring that base.
+- Contract fixtures, protocol inventory, read-only smoke discovery, and fixture
+  recording support for both new domains.
+
+### Fixed
+
+- Normalize hosted access-policy numeric boolean fields and the `acces` object
+  spelling to the published contract. Keep compiler internals out of returned
+  policy summaries and details. Verified create/read/update/version-conflict/
+  delete behavior with a disposable disabled policy, then removed it.
+- Normalize integration custom-model markers `0`/`1` to booleans and preserve
+  explicit null markers; clarify that SCIM workspace filters use UUIDs.
+
+### Changed
+
+- Correct the Prisma AIRS interoperability guide: a public management
+  specification is now available, with separate authentication and management
+  bases and fewer supported domains. A credentialed adapter remains separate
+  work; changing `PORTKEY_BASE_URL` is insufficient.
+- Refresh the Node 24.22 Docker image, pinned workflow actions, npm/toolchain
+  dependencies, and Biome/Qlty alignment. Move Renovate to `dev/0.14` with a
+  consistent dependency manifest and lockfile.
+- Keep the existing MCP v2 migration schedule and its earlier triggers.
+
+
 ## [0.13.0] - 2026-10-02
 
 Portkey control-plane additions from the 2026-09-16 OpenAPI. The catalog grows

@@ -233,6 +233,7 @@ export function createMcpServer(
 			version: PACKAGE_VERSION,
 		},
 		{
+			maxToolInputElements: 10_000,
 			capabilities: {
 				prompts: { listChanged: true },
 				resources: { listChanged: true },

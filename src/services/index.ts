@@ -1,5 +1,7 @@
 // Service Exports
 
+export type * from "./access-policies.service.js";
+export { AccessPoliciesService } from "./access-policies.service.js";
 export type * from "./analytics.service.js";
 export { AnalyticsService } from "./analytics.service.js";
 export type * from "./audit.service.js";
@@ -10,6 +12,8 @@ export type * from "./configs.service.js";
 export { ConfigsService } from "./configs.service.js";
 export type * from "./deployments.service.js";
 export { DeploymentsService } from "./deployments.service.js";
+export type * from "./egress-allowlist.service.js";
+export { EgressAllowlistService } from "./egress-allowlist.service.js";
 export type * from "./guardrails.service.js";
 export { GuardrailsService } from "./guardrails.service.js";
 export type * from "./health.service.js";
@@ -44,12 +48,14 @@ export type * from "./workspaces.service.js";
 export { WorkspacesService } from "./workspaces.service.js";
 
 import { createHmac, randomBytes } from "node:crypto";
+import { AccessPoliciesService } from "./access-policies.service.js";
 import { AnalyticsService } from "./analytics.service.js";
 import { AuditService } from "./audit.service.js";
 import { MISSING_API_KEY_PLACEHOLDER, validateUrl } from "./base.service.js";
 import { CollectionsService } from "./collections.service.js";
 import { ConfigsService } from "./configs.service.js";
 import { DeploymentsService } from "./deployments.service.js";
+import { EgressAllowlistService } from "./egress-allowlist.service.js";
 import { GuardrailsService } from "./guardrails.service.js";
 import { HealthService } from "./health.service.js";
 import { IntegrationsService } from "./integrations.service.js";
@@ -103,6 +109,8 @@ const sharedPortkeyServices = new Map<string, PortkeyService>();
  * PortkeyService - container for domain-specific service clients
  */
 export class PortkeyService {
+	public readonly accessPolicies: AccessPoliciesService;
+	public readonly egressAllowlist: EgressAllowlistService;
 	public readonly users: UsersService;
 	public readonly workspaces: WorkspacesService;
 	public readonly configs: ConfigsService;
@@ -130,6 +138,14 @@ export class PortkeyService {
 		const resolvedBaseUrl =
 			process.env.PORTKEY_BASE_URL ?? "https://api.portkey.ai/v1";
 		validateUrl(resolvedBaseUrl);
+		this.accessPolicies = new AccessPoliciesService(
+			resolvedApiKey,
+			resolvedBaseUrl,
+		);
+		this.egressAllowlist = new EgressAllowlistService(
+			resolvedApiKey,
+			resolvedBaseUrl,
+		);
 		this.users = new UsersService(resolvedApiKey, resolvedBaseUrl);
 		this.workspaces = new WorkspacesService(resolvedApiKey, resolvedBaseUrl);
 		this.configs = new ConfigsService(resolvedApiKey, resolvedBaseUrl);

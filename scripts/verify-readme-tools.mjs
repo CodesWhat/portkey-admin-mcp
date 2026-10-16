@@ -92,6 +92,8 @@ const README_CATEGORY_SOURCES = new Map([
 	["MCP Integrations", ["mcp-integrations.tools.ts"]],
 	["MCP Servers", ["mcp-servers.tools.ts"]],
 	["Guardrails", ["guardrails.tools.ts"]],
+	["Access Policies", ["access-policies.tools.ts"]],
+	["Egress Allowlist", ["egress-allowlist.tools.ts"]],
 	["Usage Limits", ["limits.tools.ts", /usage_limit/]],
 	["Rate Limits", ["limits.tools.ts", /rate_limit/]],
 	["Analytics", ["analytics.tools.ts"]],

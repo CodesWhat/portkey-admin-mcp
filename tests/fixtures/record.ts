@@ -93,9 +93,12 @@ mkdirSync(RESPONSES_DIR, { recursive: true });
 interface Endpoint {
 	name: string;
 	path: string;
+	version?: "v2";
 }
 
 const ENDPOINTS: Endpoint[] = [
+	{ name: "access-policies-list", path: "/policies/access" },
+	{ name: "egress-allowlist-list", path: "/egress-allowlist", version: "v2" },
 	{ name: "configs-list", path: "/configs" },
 	{ name: "prompts-list", path: "/prompts" },
 	{ name: "virtual-keys-list", path: "/virtual-keys" },
@@ -217,7 +220,9 @@ async function recordDisposableSecretReference(): Promise<void> {
 }
 
 async function fetchEndpoint(endpoint: Endpoint): Promise<void> {
-	const url = `${BASE_URL}${endpoint.path}`;
+	const endpointBase =
+		endpoint.version === "v2" ? BASE_URL.replace(/\/v1\/?$/, "/v2") : BASE_URL;
+	const url = `${endpointBase}${endpoint.path}`;
 	console.log(`  GET ${endpoint.path} ...`);
 
 	const response = await fetch(url, {
@@ -255,7 +260,7 @@ async function fetchEndpoint(endpoint: Endpoint): Promise<void> {
 			const detailPath = `${endpoint.path}/${id}`;
 			console.log(`  GET ${detailPath} ...`);
 
-			const detailResponse = await fetch(`${BASE_URL}${detailPath}`, {
+			const detailResponse = await fetch(`${endpointBase}${detailPath}`, {
 				headers: {
 					"x-portkey-api-key": API_KEY as string,
 					Accept: "application/json",

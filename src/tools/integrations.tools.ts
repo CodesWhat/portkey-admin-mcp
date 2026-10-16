@@ -700,7 +700,8 @@ export function registerIntegrationsTools(
 					slug: model.slug ?? model.model_id,
 					name: model.name ?? model.model_name,
 					enabled: model.enabled,
-					is_custom: model.is_custom ?? model.custom,
+					is_custom:
+						model.is_custom !== undefined ? model.is_custom : model.custom,
 					is_finetune: model.is_finetune,
 					base_model_slug: model.base_model_slug,
 					configurations: model.configurations,

@@ -43,9 +43,11 @@ See deployment hardening guidance:
 
 - [`docs/VERCEL_DEPLOYMENT.md`](./docs/VERCEL_DEPLOYMENT.md)
 
-## Implementation notes (updated 2026-06-11)
+## Implementation notes (updated 2026-10-16)
 
 The following describes the current security posture of the HTTP server (`src/lib/http-app.ts`) and service layer.
+
+**Request bounds.** HTTP body parsing follows authentication and defaults to 1 MB. Tool arguments also have a fixed budget of 10,000 array elements and object members across nested input, checked by the MCP SDK before schema validation. These limits address different validation costs; changing `MCP_MAX_REQUEST_SIZE` does not raise the element budget.
 
 **HSTS.** The `Strict-Transport-Security` header is only emitted when `config.tls.enabled` is true — i.e., when the app is serving native HTTPS. When TLS is handled externally (reverse proxy, Vercel, etc.) the header is suppressed to avoid downgrade issues in mixed-mode deployments. There is no HSTS header in plain-HTTP mode.
 

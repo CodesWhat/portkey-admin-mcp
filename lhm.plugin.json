@@ -1,8 +1,8 @@
 {
 	"identifier": "codeswhat-portkey-admin-mcp",
 	"name": "Portkey Admin MCP Server",
-	"version": "0.13.0",
-	"description": "Portkey Admin API MCP server with current control-plane coverage, 184 tools, and Prisma AIRS interoperability guidance.",
+	"version": "0.14.0",
+	"description": "Portkey Admin API MCP server with current control-plane coverage, 194 tools, and Prisma AIRS interoperability guidance.",
 	"author": "CodesWhat",
 	"authorUrl": "https://github.com/CodesWhat",
 	"category": "development",
@@ -50,6 +50,582 @@
 		}
 	],
 	"tools": [
+		{
+			"name": "create_access_policy",
+			"description": "Create a workspace access policy for users, groups, and agents targeting MCP tools or provider models. Changes who may access those targets. An omitted effect becomes deny only when both user ANY and agent ANY are present; otherwise allow, which requires a specific subject. Returns the policy UUID; use get_access_policy before later updates.",
+			"inputSchema": {
+				"type": "object",
+				"properties": {
+					"workspace_id": {
+						"description": "Workspace UUID or slug; required with an organisation-level API key",
+						"type": "string"
+					},
+					"name": {
+						"type": "string",
+						"minLength": 1,
+						"maxLength": 64,
+						"description": "Policy name, unique within the workspace (1-64 characters)"
+					},
+					"description": {
+						"description": "Policy description; null clears it",
+						"anyOf": [
+							{
+								"type": "string",
+								"maxLength": 256
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"effect": {
+						"description": "Allow or deny access; omitted create effect is inferred, while omitted update effect keeps its stored value",
+						"type": "string",
+						"enum": ["allow", "deny"]
+					},
+					"subjects": {
+						"minItems": 1,
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"type": {
+									"type": "string",
+									"enum": ["user", "group", "agent"],
+									"description": "Subject kind; users and agents are matched independently"
+								},
+								"id": {
+									"type": "string",
+									"minLength": 1,
+									"description": "Subject ID; ANY matches all users or all agents, but cannot identify a group"
+								}
+							},
+							"required": ["type", "id"]
+						},
+						"description": "Complete subject list; updates replace the existing subjects. A side without entries matches requests without that principal"
+					},
+					"targets": {
+						"minItems": 1,
+						"type": "array",
+						"items": {
+							"oneOf": [
+								{
+									"type": "object",
+									"properties": {
+										"type": {
+											"type": "string",
+											"const": "mcp_server",
+											"description": "Target an MCP server"
+										},
+										"server_id": {
+											"type": "string",
+											"minLength": 1,
+											"description": "MCP server UUID or slug in the workspace; responses return the UUID"
+										},
+										"tools": {
+											"anyOf": [
+												{
+													"type": "string",
+													"const": "ALL"
+												},
+												{
+													"minItems": 1,
+													"type": "array",
+													"items": {
+														"type": "string",
+														"minLength": 1
+													}
+												}
+											],
+											"description": "ALL tools on the server, or a nonempty list of tool names"
+										}
+									},
+									"required": ["type", "server_id", "tools"]
+								},
+								{
+									"type": "object",
+									"properties": {
+										"type": {
+											"type": "string",
+											"const": "provider",
+											"description": "Target a provider"
+										},
+										"provider_id": {
+											"type": "string",
+											"minLength": 1,
+											"description": "Provider UUID or slug in the workspace; responses return the UUID"
+										},
+										"models": {
+											"description": "ALL models or a nonempty list of model slugs; omitted defaults to ALL in Portkey",
+											"anyOf": [
+												{
+													"type": "string",
+													"const": "ALL"
+												},
+												{
+													"minItems": 1,
+													"type": "array",
+													"items": {
+														"type": "string",
+														"minLength": 1
+													}
+												}
+											]
+										}
+									},
+									"required": ["type", "provider_id"]
+								}
+							]
+						},
+						"description": "Complete target list; updates replace the existing targets"
+					},
+					"enabled": {
+						"description": "Whether the policy is enabled; creates default to true, updates preserve the stored value when omitted",
+						"type": "boolean"
+					}
+				},
+				"required": ["name", "subjects", "targets"],
+				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
+			}
+		},
+		{
+			"name": "list_access_policies",
+			"description": "Inspect active workspace access policies, newest first, without changing permissions. Filter by subject, MCP server, effect, enabled state, or creation time. Returns total and the current page of policy summaries with versions; use get_access_policy for complete subjects and targets.",
+			"inputSchema": {
+				"type": "object",
+				"properties": {
+					"workspace_id": {
+						"description": "Workspace UUID or slug",
+						"type": "string"
+					},
+					"effect": {
+						"description": "Filter by allow or deny effect",
+						"type": "string",
+						"enum": ["allow", "deny"]
+					},
+					"enabled": {
+						"description": "Filter enabled or disabled policies; false is preserved",
+						"type": "boolean"
+					},
+					"user_id": {
+						"description": "Policies naming this user or matching all users",
+						"type": "string",
+						"maxLength": 36
+					},
+					"agent_id": {
+						"description": "Policies naming this agent or matching all agents",
+						"type": "string",
+						"maxLength": 36
+					},
+					"server_id": {
+						"description": "Policies targeting this MCP server ID",
+						"type": "string",
+						"maxLength": 100
+					},
+					"search": {
+						"description": "Search policy names",
+						"type": "string",
+						"maxLength": 64
+					},
+					"created_by": {
+						"description": "Filter by creator user ID",
+						"type": "string",
+						"maxLength": 255
+					},
+					"start_time": {
+						"description": "Policies created at or after this ISO 8601 timestamp",
+						"type": "string",
+						"format": "date-time",
+						"pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+					},
+					"end_time": {
+						"description": "Policies created at or before this ISO 8601 timestamp",
+						"type": "string",
+						"format": "date-time",
+						"pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+					},
+					"current_page": {
+						"description": "Zero-based page number; the first page is 0",
+						"type": "integer",
+						"minimum": 0,
+						"maximum": 9007199254740991
+					},
+					"page_size": {
+						"description": "Items per page; the published API permits zero",
+						"type": "integer",
+						"minimum": 0,
+						"maximum": 9007199254740991
+					}
+				},
+				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
+			}
+		},
+		{
+			"name": "get_access_policy",
+			"description": "Read one access policy's complete subjects, targets, effect, and current version. Use this before update_access_policy so replacement lists and optimistic concurrency use the latest state. Returns policy details; a missing policy returns HTTP 404.",
+			"inputSchema": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string",
+						"format": "uuid",
+						"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+						"description": "Access policy UUID from list_access_policies or create_access_policy"
+					}
+				},
+				"required": ["id"],
+				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
+			}
+		},
+		{
+			"name": "update_access_policy",
+			"description": "Replace an access policy's complete subjects and targets, changing access permissions. Requires the current version from get_access_policy; a stale version returns HTTP 409 without retrying. Omitted name, description, effect, and enabled retain their stored values. Returns Portkey's acknowledgement; reread before retrying a conflict.",
+			"inputSchema": {
+				"type": "object",
+				"properties": {
+					"name": {
+						"type": "string",
+						"minLength": 1,
+						"maxLength": 64,
+						"description": "Policy name, unique within the workspace (1-64 characters)"
+					},
+					"description": {
+						"description": "Policy description; null clears it",
+						"anyOf": [
+							{
+								"type": "string",
+								"maxLength": 256
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"effect": {
+						"description": "Allow or deny access; omitted create effect is inferred, while omitted update effect keeps its stored value",
+						"type": "string",
+						"enum": ["allow", "deny"]
+					},
+					"subjects": {
+						"minItems": 1,
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"type": {
+									"type": "string",
+									"enum": ["user", "group", "agent"],
+									"description": "Subject kind; users and agents are matched independently"
+								},
+								"id": {
+									"type": "string",
+									"minLength": 1,
+									"description": "Subject ID; ANY matches all users or all agents, but cannot identify a group"
+								}
+							},
+							"required": ["type", "id"]
+						},
+						"description": "Complete subject list; updates replace the existing subjects. A side without entries matches requests without that principal"
+					},
+					"targets": {
+						"minItems": 1,
+						"type": "array",
+						"items": {
+							"oneOf": [
+								{
+									"type": "object",
+									"properties": {
+										"type": {
+											"type": "string",
+											"const": "mcp_server",
+											"description": "Target an MCP server"
+										},
+										"server_id": {
+											"type": "string",
+											"minLength": 1,
+											"description": "MCP server UUID or slug in the workspace; responses return the UUID"
+										},
+										"tools": {
+											"anyOf": [
+												{
+													"type": "string",
+													"const": "ALL"
+												},
+												{
+													"minItems": 1,
+													"type": "array",
+													"items": {
+														"type": "string",
+														"minLength": 1
+													}
+												}
+											],
+											"description": "ALL tools on the server, or a nonempty list of tool names"
+										}
+									},
+									"required": ["type", "server_id", "tools"]
+								},
+								{
+									"type": "object",
+									"properties": {
+										"type": {
+											"type": "string",
+											"const": "provider",
+											"description": "Target a provider"
+										},
+										"provider_id": {
+											"type": "string",
+											"minLength": 1,
+											"description": "Provider UUID or slug in the workspace; responses return the UUID"
+										},
+										"models": {
+											"description": "ALL models or a nonempty list of model slugs; omitted defaults to ALL in Portkey",
+											"anyOf": [
+												{
+													"type": "string",
+													"const": "ALL"
+												},
+												{
+													"minItems": 1,
+													"type": "array",
+													"items": {
+														"type": "string",
+														"minLength": 1
+													}
+												}
+											]
+										}
+									},
+									"required": ["type", "provider_id"]
+								}
+							]
+						},
+						"description": "Complete target list; updates replace the existing targets"
+					},
+					"enabled": {
+						"description": "Whether the policy is enabled; creates default to true, updates preserve the stored value when omitted",
+						"type": "boolean"
+					},
+					"version": {
+						"type": "integer",
+						"minimum": 1,
+						"maximum": 9007199254740991,
+						"description": "Current version from get_access_policy; a stale version returns HTTP 409"
+					},
+					"id": {
+						"type": "string",
+						"format": "uuid",
+						"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+						"description": "Access policy UUID from list_access_policies or create_access_policy"
+					}
+				},
+				"required": ["subjects", "targets", "version", "id"],
+				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": true,
+				"idempotentHint": false,
+				"openWorldHint": true
+			}
+		},
+		{
+			"name": "delete_access_policy",
+			"description": "Delete an access policy by UUID, removing its allow or deny rule and changing access permissions. This cannot be undone by this tool. Inspect get_access_policy first; returns Portkey's acknowledgement, or HTTP 404 when the policy is missing.",
+			"inputSchema": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string",
+						"format": "uuid",
+						"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+						"description": "Access policy UUID from list_access_policies or create_access_policy"
+					}
+				},
+				"required": ["id"],
+				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": true,
+				"idempotentHint": false,
+				"openWorldHint": true
+			}
+		},
+		{
+			"name": "list_egress_allowlist",
+			"description": "Inspect the organisation's trusted custom-host egress allowlist without changing destinations. Returns total and the current page of entries; filter by domain before creating duplicates, and use get_egress_allowlist_entry to inspect one entry. Requires organisation permission.",
+			"inputSchema": {
+				"type": "object",
+				"properties": {
+					"search": {
+						"description": "Search allowlisted domains",
+						"type": "string",
+						"minLength": 1,
+						"maxLength": 255
+					},
+					"current_page": {
+						"description": "Zero-based page number; the first page is 0",
+						"type": "integer",
+						"minimum": 0,
+						"maximum": 9007199254740991
+					},
+					"page_size": {
+						"description": "Items per page, 1-100; Portkey defaults to 20",
+						"type": "integer",
+						"exclusiveMinimum": 0,
+						"maximum": 100
+					}
+				},
+				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
+			}
+		},
+		{
+			"name": "create_egress_allowlist_entry",
+			"description": "Trust a custom hostname, IP literal, or wildcard for organisation egress, widening permitted outbound destinations. Use list_egress_allowlist to inspect existing trust first. Portkey rejects metadata destinations and duplicates. Returns the new UUID and normalized domain; requires organisation permission.",
+			"inputSchema": {
+				"type": "object",
+				"properties": {
+					"domain": {
+						"type": "string",
+						"minLength": 1,
+						"maxLength": 255,
+						"description": "Exact hostname, IPv4/IPv6 literal (optionally bracketed), or *. wildcard. No scheme, path, credentials, or port. Portkey trims/lowercases it and rejects cloud-metadata destinations"
+					},
+					"description": {
+						"description": "Optional description (up to 500 characters); null clears it",
+						"anyOf": [
+							{
+								"type": "string",
+								"maxLength": 500
+							},
+							{
+								"type": "null"
+							}
+						]
+					}
+				},
+				"required": ["domain"],
+				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": true
+			}
+		},
+		{
+			"name": "get_egress_allowlist_entry",
+			"description": "Read one organisation egress allowlist entry's trusted domain, description, and audit fields. Use this before changing or deleting a destination. Returns entry details, or HTTP 404 if it is missing; requires organisation permission.",
+			"inputSchema": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string",
+						"format": "uuid",
+						"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+						"description": "Egress allowlist entry UUID from list_egress_allowlist or create_egress_allowlist_entry"
+					}
+				},
+				"required": ["id"],
+				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true
+			}
+		},
+		{
+			"name": "update_egress_allowlist_entry",
+			"description": "Change an organisation egress allowlist domain or description, potentially changing trusted outbound destinations. Inspect get_egress_allowlist_entry first. Omitted fields stay unchanged; description null clears it. At least one changed field is required. Returns Portkey's acknowledgement; requires organisation permission.",
+			"inputSchema": {
+				"type": "object",
+				"properties": {
+					"domain": {
+						"type": "string",
+						"minLength": 1,
+						"maxLength": 255,
+						"description": "Exact hostname, IPv4/IPv6 literal (optionally bracketed), or *. wildcard. No scheme, path, credentials, or port. Portkey trims/lowercases it and rejects cloud-metadata destinations"
+					},
+					"description": {
+						"description": "Optional description (up to 500 characters); null clears it",
+						"anyOf": [
+							{
+								"type": "string",
+								"maxLength": 500
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"id": {
+						"type": "string",
+						"format": "uuid",
+						"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+						"description": "Egress allowlist entry UUID from list_egress_allowlist or create_egress_allowlist_entry"
+					}
+				},
+				"required": ["id"],
+				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": true,
+				"idempotentHint": false,
+				"openWorldHint": true
+			}
+		},
+		{
+			"name": "delete_egress_allowlist_entry",
+			"description": "Remove an organisation egress allowlist entry, revoking trust in its outbound destination and potentially breaking integrations that use it. Inspect get_egress_allowlist_entry first. Deletion cannot be undone by this tool. Returns Portkey's acknowledgement or HTTP 404; requires organisation permission.",
+			"inputSchema": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string",
+						"format": "uuid",
+						"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+						"description": "Egress allowlist entry UUID from list_egress_allowlist or create_egress_allowlist_entry"
+					}
+				},
+				"required": ["id"],
+				"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"annotations": {
+				"readOnlyHint": false,
+				"destructiveHint": true,
+				"idempotentHint": false,
+				"openWorldHint": true
+			}
+		},
 		{
 			"name": "list_all_users",
 			"description": "List accepted org users with id, name, email, role, and timestamps. Use this to find a user_id before get_user, update_user, delete_user, or add_workspace_member; use list_user_invites for pending invitations. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
@@ -425,7 +1001,7 @@
 				"type": "object",
 				"properties": {
 					"workspace_id": {
-						"description": "Return only mappings for this Portkey workspace ID",
+						"description": "Return only mappings for this Portkey workspace UUID (the id from list_workspaces, not its slug)",
 						"type": "string"
 					},
 					"scim_group_id": {
