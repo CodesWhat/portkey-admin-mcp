@@ -55,7 +55,7 @@ const listSchema = {
 		.optional()
 		.describe("Policies created at or before this ISO 8601 timestamp"),
 	current_page: CurrentPageSchema,
-	page_size: z
+	page_size: z.coerce
 		.number()
 		.int()
 		.nonnegative()
@@ -107,6 +107,7 @@ export function registerAccessPoliciesTools(
 			description:
 				"Replace an access policy's complete subjects and targets, changing access permissions. Requires the current version from get_access_policy; a stale version returns HTTP 409 without retrying. Omitted name, description, effect, and enabled retain their stored values. Returns Portkey's acknowledgement; reread before retrying a conflict.",
 			inputSchema: updateSchema,
+			annotations: { destructiveHint: true },
 		},
 		async ({ id, ...params }) =>
 			jsonResult(await service.accessPolicies.updateAccessPolicy(id, params)),

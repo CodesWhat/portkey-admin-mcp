@@ -354,8 +354,8 @@ network errors, and response-contract failures still fail the run.
 `PORTKEY_ORGANISATION_ID` is set. Set it to your organisation ID to exercise that route.
 
 The required CI and release gates measure every TypeScript source file and fail
-below 80% line coverage. The current full report is 98.19% lines, 91.92%
-branches, and 98.58% functions.
+below 80% line coverage. The CI and Coverage workflow reports show the current
+line, branch, and function coverage.
 
 `npm run dev:http` now requires `MCP_AUTH_MODE=bearer` or `MCP_AUTH_MODE=clerk` by default. For deliberate local-only unauthenticated testing, set `MCP_ALLOW_UNAUTHENTICATED_HTTP=true`.
 

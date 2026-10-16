@@ -74,6 +74,7 @@ export function registerEgressAllowlistTools(
 			description:
 				"Change an organisation egress allowlist domain or description, potentially changing trusted outbound destinations. Inspect get_egress_allowlist_entry first. Omitted fields stay unchanged; description null clears it. At least one changed field is required. Returns Portkey's acknowledgement; requires organisation permission.",
 			inputSchema: updateSchema,
+			annotations: { destructiveHint: true },
 		},
 		async ({ id, ...params }) =>
 			jsonResult(

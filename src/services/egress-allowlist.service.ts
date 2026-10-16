@@ -1,10 +1,10 @@
 import type { z } from "zod";
-import type {
-	CreateEgressAllowlistRequestSchema,
+import {
+	type CreateEgressAllowlistRequestSchema,
 	CreateEgressAllowlistResponseSchema,
 	EgressAllowlistEntrySchema,
 	ListEgressAllowlistResponseSchema,
-	UpdateEgressAllowlistRequestSchema,
+	type UpdateEgressAllowlistRequestSchema,
 } from "../schemas/contracts/egress-allowlist.contract.js";
 import { BaseService } from "./base.service.js";
 
@@ -18,17 +18,23 @@ export class EgressAllowlistService extends BaseService {
 	async createEgressAllowlistEntry(
 		data: z.infer<typeof CreateEgressAllowlistRequestSchema>,
 	): Promise<z.infer<typeof CreateEgressAllowlistResponseSchema>> {
-		return this.postV2("/egress-allowlist", data);
+		return CreateEgressAllowlistResponseSchema.parse(
+			await this.postV2("/egress-allowlist", data),
+		);
 	}
 	async listEgressAllowlist(
 		params?: ListEgressAllowlistParams,
 	): Promise<z.infer<typeof ListEgressAllowlistResponseSchema>> {
-		return this.getV2("/egress-allowlist", params);
+		return ListEgressAllowlistResponseSchema.parse(
+			await this.getV2("/egress-allowlist", params),
+		);
 	}
 	async getEgressAllowlistEntry(
 		id: string,
 	): Promise<z.infer<typeof EgressAllowlistEntrySchema>> {
-		return this.getV2(`/egress-allowlist/${this.encodePathSegment(id)}`);
+		return EgressAllowlistEntrySchema.parse(
+			await this.getV2(`/egress-allowlist/${this.encodePathSegment(id)}`),
+		);
 	}
 	async updateEgressAllowlistEntry(
 		id: string,

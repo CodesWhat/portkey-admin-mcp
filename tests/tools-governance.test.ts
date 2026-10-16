@@ -44,14 +44,21 @@ describe("published governance response contracts", () => {
 function governanceTools() {
 	const tools = new Map<
 		string,
-		{ schema: z.ZodType; call: (args: never) => Promise<unknown> }
+		{
+			schema: z.ZodType;
+			call: (args: never) => Promise<unknown>;
+			annotations?: Record<string, unknown>;
+		}
 	>();
 	registerAllTools(
 		{
 			tool() {},
 			registerTool(
 				name: string,
-				config: { inputSchema: z.ZodType | z.ZodRawShape },
+				config: {
+					inputSchema: z.ZodType | z.ZodRawShape;
+					annotations?: Record<string, unknown>;
+				},
 				call: (args: never) => Promise<unknown>,
 			) {
 				tools.set(name, {
@@ -60,6 +67,7 @@ function governanceTools() {
 							? config.inputSchema
 							: z.object(config.inputSchema),
 					call,
+					annotations: config.annotations,
 				});
 			},
 		} as never,
@@ -73,6 +81,16 @@ function governanceTools() {
 }
 
 describe("governance tool discovery", () => {
+	it("marks permission and trusted-destination replacements as destructive", () => {
+		for (const name of [
+			"update_access_policy",
+			"update_egress_allowlist_entry",
+		]) {
+			const { annotations } = governanceTools()(name);
+			assert.equal(annotations?.readOnlyHint, false);
+			assert.equal(annotations?.destructiveHint, true);
+		}
+	});
 	it("exposes access policies and egress allowlists as selectable domains", () => {
 		assert.ok(TOOL_DOMAIN_NAMES.includes("access-policies" as never));
 		assert.ok(TOOL_DOMAIN_NAMES.includes("egress-allowlist" as never));
@@ -111,6 +129,14 @@ describe("integration custom-model compatibility", () => {
 });
 
 describe("access policy validation", () => {
+	it("coerces pagination consistently while preserving zero and integer bounds", () => {
+		const { schema } = governanceTools()("list_access_policies");
+		const parsed = schema.safeParse({ current_page: "0", page_size: "0" });
+		assert.ok(parsed.success);
+		assert.deepEqual(parsed.data, { current_page: 0, page_size: 0 });
+		for (const page_size of ["-1", "1.5", "invalid"])
+			assert.equal(schema.safeParse({ page_size }).success, false);
+	});
 	it("normalizes hosted numeric flags and object spelling without exposing compiler internals", async () => {
 		const originalFetch = globalThis.fetch;
 		const raw = {
@@ -232,6 +258,43 @@ describe("access policy validation", () => {
 });
 
 describe("egress allowlist validation", () => {
+	it("returns declared response fields without passing through upstream extras", async () => {
+		const originalFetch = globalThis.fetch;
+		const raw = {
+			id: ID,
+			domain: "example.com",
+			object: "egress-allowlist",
+			internal_notes: "not part of the published response",
+		};
+		try {
+			for (const [name, args] of [
+				["create_egress_allowlist_entry", { domain: "example.com" }],
+				["get_egress_allowlist_entry", { id: ID }],
+				["list_egress_allowlist", {}],
+			] as const) {
+				globalThis.fetch = async () =>
+					new Response(
+						JSON.stringify(
+							name === "list_egress_allowlist"
+								? { object: "list", total: 1, data: [raw] }
+								: raw,
+						),
+						{ status: 200 },
+					);
+				const { schema, call } = governanceTools()(name);
+				const result = parseToolResult(await call(schema.parse(args) as never));
+				const data = result.data as Record<string, unknown>;
+				const entry =
+					name === "list_egress_allowlist"
+						? (data.data as Array<Record<string, unknown>>)[0]
+						: data;
+				assert.equal(entry.domain, "example.com");
+				assert.equal(entry.internal_notes, undefined);
+			}
+		} finally {
+			globalThis.fetch = originalFetch;
+		}
+	});
 	it("accepts hostnames, IP literals, and wildcard hosts with server-side normalization", () => {
 		const { schema } = governanceTools()("create_egress_allowlist_entry");
 		for (const domain of [
