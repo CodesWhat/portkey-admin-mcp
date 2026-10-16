@@ -16,7 +16,7 @@ legacy repository owner, so they should not be used to validate the runtime.
 | [npm](https://www.npmjs.com/package/portkey-admin-mcp) | Canonical package distribution | Automated from a protected release tag using `package.json` |
 | [Official MCP Registry](https://registry.modelcontextprotocol.io/v0/servers?search=io.github.CodesWhat/portkey-admin-mcp) | Canonical MCP metadata under `io.github.CodesWhat/portkey-admin-mcp` | Automated after npm publication using `server.json` |
 | [LobeHub](https://lobehub.com/mcp/codeswhat-portkey-admin-mcp) | Claimed marketplace listing | Run `npm run update:lobehub` after release; `lhm.plugin.json` is owner-declared metadata |
-| [Glama](https://glama.ai/mcp/servers/CodesWhat/portkey-admin-mcp) | Claimed directory and quality listing. On 2026-10-16 the page showed release 0.13.0 and current 184-tool README metadata. Its generated description and FAQ still said 150 and 151 tools; the public inventory API returned 401 | Indexes GitHub; after each release, use **Repository > Sync Server**, then **Dockerfile > Build & Release**, and verify the version and tool count it shows. The generated description and FAQ text are Glama's and refresh on their own schedule |
+| [Glama](https://glama.ai/mcp/servers/CodesWhat/portkey-admin-mcp) | Claimed directory and quality listing; the 2026-10-16 post-release build serves package 0.14.0 with 194 tools | Indexes GitHub; after each release, use **Repository > Sync Server**, then **Dockerfile > Build & Release**, and verify the version and tool count it shows. The generated description and FAQ text are Glama's and refresh on their own schedule |
 | [Awesome MCP Servers](https://github.com/punkpeye/awesome-mcp-servers/pull/13074) | Community list entry; the CodesWhat correction (PR #13074) merged on 2026-09-13 | Update the entry through a new PR when the repository owner, Glama badge, or released catalog count changes |
 
 The canonical description for owner-controlled records is:
@@ -28,11 +28,30 @@ Counts belong only in generated or release-specific records. `README.md`,
 `ENDPOINTS.md`, and `lhm.plugin.json` are regenerated or verified from the
 runtime catalog before release.
 
+### 0.14.0 publication checks, 2026-10-16
+
+- GitHub [v0.14.0](https://github.com/CodesWhat/portkey-admin-mcp/releases/tag/v0.14.0),
+  npm, and the official MCP Registry report 0.14.0. The release workflow passed.
+- The authenticated LobeHub owner CLI reports `codeswhat-portkey-admin-mcp`
+  published at 0.14.0 across 15 locales, with the English summary updated to
+  194 tools. Its public page still showed cached 0.13.0 during the post-publish
+  check; owner publication and public-page cache refresh are separate states.
+- Glama synced release commit
+  [`ccaaaf5593d6ab923a6538a15b018845c91560b0`](https://github.com/CodesWhat/portkey-admin-mcp/commit/ccaaaf5593d6ab923a6538a15b018845c91560b0)
+  and completed a successful build. Its server version is 0.14.0 and indexed
+  inventory is 194 tools. Glama's separate hosted release number is 1.0.8.
+  Before that sync, the same day's check showed 0.13.0 and 184 tools; generated
+  description/FAQ text still said 150/151, and the public inventory API returned
+  401. Those observations describe the earlier scan, not the released server.
+- Docker submission [#5026](https://github.com/docker/mcp-registry/pull/5026)
+  was refreshed to that release commit with successful validation and
+  194-tool discovery. Upstream maintainer review remains outstanding.
+
 ## Observed downstream listings
 
-| Surface | State on 2026-09-08 | Maintenance decision |
+| Surface | Last verified state | Maintenance decision |
 |---|---|---|
-| [LobeHub legacy listing](https://lobehub.com/mcp/scttbnsn-portkey-admin-mcp) | Unpublished on 2026-09-08. On 2026-10-16 the authenticated market CLI listed it as `unpublished` at version 0.3.5, while the canonical `codeswhat-portkey-admin-mcp` listing was claimed and `published` at 0.13.0 | Nothing to do; only the canonical listing is published |
+| [LobeHub legacy listing](https://lobehub.com/mcp/scttbnsn-portkey-admin-mcp) | Unpublished on 2026-09-08. The 2026-10-16 pre-release owner check still showed it unpublished at 0.3.5 while the canonical listing was published at 0.13.0; the canonical listing advanced to 0.14.0 in the post-release check above | Nothing to do; only the canonical listing is published |
 | [PulseMCP](https://www.pulsemcp.com/servers) | A legacy record uses `io.github.s-b-e-n-s-o-n/portkey-admin-mcp` and an old count; listing changes are paused | Recheck when its submission and correction flow reopens; prefer MCP Registry ingestion |
 | [mcp.so](https://mcp.so/servers/portkey-admin-mcp) | Live but stale under the previous owner, with a visible claim control and conflicting counts | Claim and refresh only through its owner workflow; do not automate an undocumented interface |
 | [mcpservers.org](https://mcpservers.org/servers/s-b-e-n-s-o-n/portkey-admin-mcp) | Scrapes the current README but retains the previous owner slug and a 151-tool headline | Use its **Request update** flow, then treat the result as downstream indexing rather than a release gate |

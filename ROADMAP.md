@@ -56,23 +56,6 @@ records the authentication, route, domain, and verification differences. Native
 adapter work waits for a credentialed tenant to verify those contracts; a base
 URL substitution remains unsupported.
 
-### Documentation alignment after 0.14.0
-
-- Repair `CHANGELOG.md` comparison links: `[Unreleased]` still starts at
-  `v0.13.0`, and `[0.14.0]` has no link definition. Add a completed 0.14.0
-  roadmap entry so the released security and governance work is distinct from
-  future work. Keep earlier release notes and dated audits as historical records.
-- Align `CONTRIBUTING.md` and `GOVERNANCE.md` with `docs/RELEASE.md` and
-  Renovate: changes go through the active `dev/<minor>` line before promotion
-  to protected `main`. Explain when that line advances without assigning an
-  unplanned next minor. Keep `SECURITY.md`'s latest-published-minor support
-  policy consistent with that process; older lines do not get backports.
-- Record the post-release 0.14.0 catalog checks in `docs/DISTRIBUTION.md`,
-  distinguishing published owner metadata from public-page cache lag and
-  preserving dated earlier observations. Align `docs/RELEASE.md`'s Glama steps
-  with the documented **Repository > Sync Server**, then
-  **Dockerfile > Build & Release** procedure before escalating to support.
-
 ### Later
 
 - Move to the MCP 2026-07-28 specification and the v2 TypeScript SDK, serving
@@ -86,11 +69,10 @@ URL substitution remains unsupported.
   an announced SDK end-of-life or a user-facing removal date. It retires the
   replay and session stores, so it ships as a minor release whose number is
   still to be assigned.
-- Before that MCP migration ships, publish a versioned compatibility and
-  deprecation table linked from the README and CHANGELOG. Separate the package
-  release, SDK major, and negotiated wire protocol: 0.14.0 uses SDK v1 with
-  2025-11-25 as its latest supported revision; modern-client fallback does not
-  mean native 2026-07-28 support. Name the releases that first deprecate,
+- Before that MCP migration ships, finalize the versioned compatibility and
+  deprecation table in [COMPATIBILITY.md](COMPATIBILITY.md), linked from the
+  README and CHANGELOG. Current behavior and the unassigned migration are
+  documented separately. Name the releases that first deprecate,
   ignore, or remove `MCP_SESSION_MODE`,
   `MCP_SESSION_TIMEOUT`, and `MCP_EVENT_*`, with warning behavior and operator
   migration steps. Explain loss of sessions, GET-stream/replay, and
@@ -99,6 +81,43 @@ URL substitution remains unsupported.
   `SECURITY-ASSURANCE.md` together. Distinguish retiring replay Redis settings
   from the retained Redis rate limiter, its URL fallbacks, and the stateless
   concurrency cap. These settings remain active in 0.14.0.
+
+## Completed 2026-10-16 (0.14.0)
+
+- Added five versioned access-policy tools and five organisation egress-allowlist
+  tools, bringing the catalog to 194 tools across 22 domains. Access-policy
+  mutations were verified with a disabled disposable policy; egress contracts
+  remain documentation-derived behind the available credential's 403 response.
+- Updated the MCP SDK to 1.32.1 and enabled its 10,000-element input budget
+  before schema validation. Refreshed Express, runtime and development
+  dependencies, the Node image, and pinned workflow actions.
+- Corrected the Prisma AIRS management-contract guidance while retaining the
+  credentialed-tenant gate for a separate adapter.
+- Verified npm, MCP Registry, and owner-controlled marketplace publication at
+  0.14.0, rebuilt Glama's 194-tool inventory, and refreshed the Docker submission.
+  [Distribution records](docs/DISTRIBUTION.md) distinguish publication from
+  downstream caches and pending upstream review.
+
+## Completed 2026-10-16 (documentation and maintenance audit)
+
+- Repaired changelog comparison links and aligned contribution, governance,
+  release, and Renovate branching guidance around the active development line
+  and reviewed promotion to protected `main`.
+- Published [compatibility and deprecation status](COMPATIBILITY.md), separating
+  current 0.14.0 behavior from the unassigned MCP migration. Exact future
+  warning/removal releases and the operator cutover guide remain migration work.
+- Added README documentation and roadmap navigation, retained the themed
+  CodesWhat footer, and corrected the single-container HTTP example's explicit
+  in-memory rate-limit acknowledgement.
+- Recorded post-release catalog evidence and the Glama sync/build procedure,
+  preserving dated earlier observations and audits.
+- Checked GitHub security alerts and dependency health after 0.14.0: no open
+  Dependabot, code-scanning, secret-scanning, or repository advisory findings;
+  full and production npm audits reported no vulnerabilities. Direct packages
+  are current within the supported Node.js 24 line. Updated the release-only
+  MCP publisher to 1.8.1 and pinned the LobeHub maintenance CLI to 0.0.41.
+  CodeQL action 4.39.0 remains queued under Renovate's seven-day release-age
+  policy; security updates bypass that delay.
 
 ## Completed 2026-10-02 (0.13.0)
 

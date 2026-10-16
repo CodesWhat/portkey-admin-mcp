@@ -7,6 +7,11 @@ implementation controls, and public verification evidence. It complements
 [`SECURITY.md`](SECURITY.md) and the deployment guidance in
 [`docs/VERCEL_DEPLOYMENT.md`](docs/VERCEL_DEPLOYMENT.md).
 
+The session and replay controls below remain active in 0.14.0. The planned MCP
+migration has no assigned removal release; [compatibility and
+deprecations](COMPATIBILITY.md) tracks that boundary separately from retained
+Redis rate limiting.
+
 ## Security requirements and limits
 
 Portkey Admin MCP is intended to:
@@ -65,8 +70,10 @@ Evidence: [`src/lib/http-app.ts`](src/lib/http-app.ts),
 
 ### Input validation and credential handling
 
-Registered tools use explicit schemas, descriptions, and annotations. Cross-
-field rules are normalized into the same error envelope. Path segments are
+Registered tools use explicit schemas, descriptions, and annotations. Version
+0.14.0 adds an SDK-enforced budget of 10,000 array elements and object members
+across nested tool input before schema validation, alongside the HTTP body-size
+limit. Cross-field rules are normalized into the same error envelope. Path segments are
 encoded, query parameters are constructed from validated values, and service
 errors are converted without exposing configured credentials. The in-process
 service cache stores a SHA-256 key digest rather than a plaintext API key.

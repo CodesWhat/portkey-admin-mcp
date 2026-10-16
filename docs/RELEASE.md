@@ -5,7 +5,8 @@ and catalog scanners can detect published versions.
 
 ## Publish a New Stable Release (automated)
 
-1. On the `dev/<minor>` branch (currently `dev/0.14`), update `package.json`,
+1. On a focused branch from the active `dev/<minor>` line (currently
+   `dev/0.14`), update `package.json`,
    `package-lock.json`, `server.json`, `lhm.plugin.json`, and `CHANGELOG.md`
    for the new version. The release readiness test keeps all four
    version-bearing JSON files synchronized.
@@ -15,11 +16,18 @@ and catalog scanners can detect published versions.
    `generate:endpoints` reads descriptions from `lhm.plugin.json`, so the
    order matters. `npm run verify:generated` fails when either file is stale.
 3. Run `npm run ci`, which includes `verify:generated`.
-4. Open a PR and merge it to `main`.
+4. Open a PR into the active development line. After required checks and review
+   pass, merge it there, then promote that line to protected `main` through a
+   separate reviewed PR. Confirm both trees match before publication.
 
 The `dev/<minor>` branch is also Renovate's base branch (`baseBranchPatterns`
 in `renovate.json`). When a new minor line starts, cut the new `dev/<minor>`
-branch and roll `baseBranchPatterns` forward to it.
+branch from protected `main` and roll `baseBranchPatterns` forward to it through
+a reviewed PR. Assign the new minor's scope first; a planned migration does not
+reserve a release number. Keep patch maintenance on the current line while it
+remains the latest published minor, consistent with [the security support
+policy](../SECURITY.md). [COMPATIBILITY.md](../COMPATIBILITY.md) records current
+support and any assigned deprecation or removal releases.
 
 ### Reconcile the dev branch after promotion
 
@@ -95,7 +103,7 @@ npm run update:lobehub
 ```
 
 That script regenerates tools, prompts, resources, and resource templates from
-the built server before running `npx -y @lobehub/market-cli plugin update
+the built server before running `npx -y @lobehub/market-cli@0.0.41 plugin update
 --dir "$PWD"`. `npm run publish:lobehub` remains a backwards-compatible alias.
 
 The command requires a logged-in LobeHub account with the GitHub `CodesWhat`
@@ -103,7 +111,7 @@ org listing claimed. If ownership is lost, reconnect GitHub in LobeHub and
 verify that `codeswhat-portkey-admin-mcp` appears in:
 
 ```bash
-npx -y @lobehub/market-cli plugin list --output json
+npx -y @lobehub/market-cli@0.0.41 plugin list --output json
 ```
 
 The old `scttbnsn-portkey-admin-mcp` listing predates the CodesWhat transfer
@@ -126,10 +134,16 @@ breakdown have refreshed at:
 https://glama.ai/mcp/servers/CodesWhat/portkey-admin-mcp
 ```
 
-If the tagged release has not appeared after Glama's normal crawler window,
-use the claimed listing's support/report flow or Glama Discord and provide the
-GitHub release URL. The files under `docs/glama-score/` remain dated audit
-artifacts; Glama's live Score and Schema tabs are authoritative for a release.
+On the claimed listing, open **Repository > Sync Server**, confirm the indexed
+commit matches the release, then run **Dockerfile > Build & Release**. Verify
+the successful build, server version, and discovered tool inventory. Glama's
+hosted release number is separate from the npm package version. Generated FAQ
+text and quality-score evaluations may lag the indexed schemas.
+
+If sync or build still fails after Glama's normal processing window, use the
+listing's support/report flow or Glama Discord and provide the GitHub release
+URL and failed build details. The files under `docs/glama-score/` remain dated
+audit artifacts; Glama's live Score and Schema tabs describe its current scan.
 
 ## Post-release catalog verification
 
