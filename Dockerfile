@@ -62,7 +62,7 @@ EXPOSE 3000
 # Health check for HTTP mode
 # Only effective when MCP_TRANSPORT=http
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD ["node", "-e", "if (process.env.MCP_TRANSPORT !== 'http') process.exit(0); const port=process.env.PORT||process.env.MCP_PORT||3000; require('http').get('http://127.0.0.1:' + port + '/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+    CMD ["node", "-e", "const transport=process.env.MCP_TRANSPORT?.trim() || 'stdio'; if (transport !== 'http') process.exit(0); const port=process.env.PORT?.trim() || process.env.MCP_PORT?.trim() || 3000; require('http').get('http://127.0.0.1:' + port + '/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
 
 # Switch to non-root user
 USER 1001:1001

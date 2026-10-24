@@ -114,6 +114,7 @@ jobs:
         run: npm ci
 
       - name: Install Qlty CLI
+        id: install-qlty
         env:
           QLTY_VERSION: 0.657.0
           QLTY_SHA256: 25a37d639c73468267cbb86abeed7d39199b416e3e3288afdb24edcb967c02c5
@@ -132,6 +133,7 @@ jobs:
         run: npm run --silent quality -- --json > "${RUNNER_TEMP}/qlty-check.json"
 
       - name: Qlty maintainability report
+        if: ${{ !cancelled() && steps.install-qlty.outcome == 'success' }}
         run: |
           qlty smells --all --no-snippets --no-upgrade-check > "${RUNNER_TEMP}/qlty-smells.txt"
           qlty metrics --all --exclude-tests --no-upgrade-check > "${RUNNER_TEMP}/qlty-metrics.txt"

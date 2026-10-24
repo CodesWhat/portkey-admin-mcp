@@ -1,9 +1,51 @@
 import assert from "node:assert/strict";
+import { spawn } from "node:child_process";
 import { readFileSync } from "node:fs";
+import { createServer } from "node:http";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
+
+test("Docker health check uses the server's normalized transport and port", async (t) => {
+	let requests = 0;
+	let status = 200;
+	const server = createServer((_request, response) => {
+		requests += 1;
+		response.writeHead(status).end();
+	});
+	await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+	t.after(() => server.close());
+	const address = server.address();
+	assert.ok(address && typeof address !== "string");
+	const dockerfile = readFileSync(`${root}Dockerfile`, "utf8");
+	const command = dockerfile.match(/HEALTHCHECK[\s\S]*?\n\s*CMD (\[.*\])/)?.[1];
+	assert.ok(command);
+	const [executable, ...args] = JSON.parse(command) as string[];
+	assert.ok(executable);
+	const check = (environment: Record<string, string>) =>
+		new Promise<number | null>((resolve, reject) => {
+			const child = spawn(executable, args, {
+				env: { ...process.env, PORT: "", MCP_PORT: "", ...environment },
+				stdio: "ignore",
+				timeout: 5000,
+			});
+			child.once("error", reject);
+			child.once("exit", resolve);
+		});
+	const port = String(address.port);
+	assert.equal(await check({ MCP_TRANSPORT: " http ", PORT: ` ${port} ` }), 0);
+	assert.equal(requests, 1, "HTTP mode must actually request /health");
+	assert.equal(
+		await check({ MCP_TRANSPORT: "http", PORT: " ", MCP_PORT: ` ${port} ` }),
+		0,
+	);
+	assert.equal(requests, 2, "blank PORT must fall back to trimmed MCP_PORT");
+	status = 503;
+	assert.equal(await check({ MCP_TRANSPORT: "http", PORT: port }), 1);
+	assert.equal(await check({ MCP_TRANSPORT: "stdio", PORT: port }), 0);
+	assert.equal(requests, 3, "stdio health checks must not make HTTP requests");
+});
 
 function readJson(path: string): Record<string, unknown> {
 	return JSON.parse(readFileSync(`${root}${path}`, "utf8"));
