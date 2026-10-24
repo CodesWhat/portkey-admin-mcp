@@ -194,6 +194,38 @@ describe("AnalyticsService request routing", () => {
 		assert.equal(capturedFetches.length, 3);
 	});
 
+	it("serializes organisation workspace scope on graph, summary, and grouped analytics", async () => {
+		const service = new AnalyticsService("test-key", BASE_URL);
+		const params = {
+			time_of_generation_min: "2026-10-01T00:00:00Z",
+			time_of_generation_max: "2026-10-02T00:00:00Z",
+			include_all_workspaces: true,
+			exclude_workspace_slugs: "ws-legacy,ws-archived",
+		};
+		await service.getCostAnalytics(params);
+		await service.getCacheSummary(params);
+		await service.getAnalyticsGroupProviders(params);
+		await service.getRequestAnalytics({
+			...params,
+			include_all_workspaces: false,
+			workspace_slug: "ws-current",
+		});
+		for (let index = 0; index < capturedFetches.length; index += 1) {
+			assert.equal(
+				capturedUrl(index).searchParams.get("include_all_workspaces"),
+				index === 3 ? "false" : "true",
+			);
+			assert.equal(
+				capturedUrl(index).searchParams.get("exclude_workspace_slugs"),
+				"ws-legacy,ws-archived",
+			);
+		}
+		assert.equal(
+			capturedUrl(3).searchParams.get("workspace_slug"),
+			"ws-current",
+		);
+	});
+
 	it("sends deployment_id on graph, summary, and group routes and routes the MCP, A2A, and workspace groups", async () => {
 		const service = new AnalyticsService("test-key", BASE_URL);
 		const deploymentId =

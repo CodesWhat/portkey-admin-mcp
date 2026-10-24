@@ -11,6 +11,9 @@ release until that reference and the release notes say so.
 
 ## [Unreleased]
 
+### Added
+- Analytics workspace scoping through `include_all_workspaces` and `exclude_workspace_slugs` on all 25 analytics tools. Organisation keys can aggregate across workspaces; an explicit `workspace_slug` keeps precedence. Cache summary and provider groups accept organisation scope as an alternative to a single workspace.
+
 ## [0.14.1] - 2026-10-25
 
 ### Security

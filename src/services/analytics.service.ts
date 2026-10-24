@@ -22,6 +22,8 @@ export interface BaseAnalyticsParams {
 	virtual_keys?: string;
 	configs?: string;
 	workspace_slug?: string;
+	include_all_workspaces?: boolean;
+	exclude_workspace_slugs?: string;
 	api_key_ids?: string;
 	metadata?: string;
 	ai_org_model?: string;
@@ -245,9 +247,7 @@ export interface WorkspaceGroupAnalyticsResponse {
 	>;
 }
 
-export interface CacheSummaryParams extends BaseAnalyticsParams {
-	workspace_slug: string;
-}
+export type CacheSummaryParams = BaseAnalyticsParams;
 
 export interface CacheSummaryResponse {
 	object: "analytics-summary";
@@ -260,7 +260,6 @@ export interface CacheSummaryResponse {
 }
 
 export interface ProviderGroupAnalyticsParams extends PaginatedAnalyticsParams {
-	workspace_slug: string;
 	order_by?: string;
 	order_by_type?: string;
 	columns?: string;
@@ -300,6 +299,11 @@ export class AnalyticsService extends BaseService {
 			virtual_keys: params.virtual_keys,
 			configs: params.configs,
 			workspace_slug: params.workspace_slug,
+			include_all_workspaces:
+				params.include_all_workspaces === undefined
+					? undefined
+					: String(params.include_all_workspaces),
+			exclude_workspace_slugs: params.exclude_workspace_slugs,
 			api_key_ids: params.api_key_ids,
 			metadata: params.metadata,
 			ai_org_model: params.ai_org_model,

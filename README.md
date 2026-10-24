@@ -175,7 +175,7 @@ Then use this config:
 | **Egress Allowlist** | 5 | Organisation trust for custom outbound hosts |
 | **Usage Limits** | 7 | Cost and token consumption limits |
 | **Rate Limits** | 5 | Request frequency controls |
-| **Analytics** | 25 | Cost, latency, errors, tokens, cache, feedback, provider, MCP, A2A, and workspace groups |
+| **Analytics** | 25 | Cost, latency, errors, tokens, cache, feedback, provider, MCP, A2A, and workspace groups; organisation scope and workspace exclusions |
 | **Logging** | 10 | Log retrieval, ingestion, export, and field restrictions |
 | **Tracing** | 2 | Feedback creation and updates on traces |
 | **Users & Workspaces** | 24 | User management, invites, workspace members, SCIM group mappings |

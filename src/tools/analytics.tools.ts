@@ -118,7 +118,22 @@ const baseAnalyticsSchema = {
 	workspace_slug: z
 		.string()
 		.optional()
-		.describe("Filter by specific workspace"),
+		.describe(
+			"Filter by one workspace. Takes precedence over include_all_workspaces and exclude_workspace_slugs when provided.",
+		),
+	include_all_workspaces: z
+		.boolean()
+		.optional()
+		.describe(
+			"Aggregate across all organisation workspaces with an organisation API key. Ignored for workspace API keys or when workspace_slug is provided. Supply workspace_slug, include_all_workspaces=true, or exclude_workspace_slugs to choose a scope.",
+		),
+	exclude_workspace_slugs: z
+		.string()
+		.min(1)
+		.optional()
+		.describe(
+			"Comma-separated workspace slugs to exclude from organisation-wide analytics, for example ws-legacy,ws-archived. Only applies to organisation API keys; workspace_slug takes precedence.",
+		),
 	api_key_ids: z
 		.preprocess((value) => {
 			if (value == null) {
@@ -203,8 +218,26 @@ const paginatedAnalyticsSchema = {
 
 const cacheSummarySchema = {
 	...baseAnalyticsSchema,
-	workspace_slug: z.string().min(1).describe("Workspace slug to analyze"),
+	workspace_slug: z
+		.string()
+		.min(1)
+		.optional()
+		.describe(
+			"Filter by one workspace. Takes precedence over include_all_workspaces and exclude_workspace_slugs when provided.",
+		),
 };
+
+function requireAnalyticsWorkspaceScope(params: BaseAnalyticsParams): void {
+	if (
+		!params.workspace_slug &&
+		params.include_all_workspaces !== true &&
+		!params.exclude_workspace_slugs
+	) {
+		throw new Error(
+			"Provide workspace_slug, include_all_workspaces=true, or exclude_workspace_slugs to choose an analytics scope",
+		);
+	}
+}
 
 const providerMetricSchema = z.enum([
 	"requests",
@@ -686,9 +719,10 @@ export function registerAnalyticsTools(
 
 	server.tool(
 		"get_cache_summary",
-		"Enterprise-gated. Get cache summary metrics for one workspace and time range: hits, average cache-hit latency, total requests, and percentage speedup. Use the graph cache tools when you need changes over time instead of one aggregate.",
+		"Enterprise-gated. Get cache summary metrics for a workspace or organisation and time range: hits, average cache-hit latency, total requests, and percentage speedup. Choose workspace_slug, include_all_workspaces=true, or exclude_workspace_slugs. Use the graph cache tools when you need changes over time instead of one aggregate.",
 		cacheSummarySchema,
 		async (params) => {
+			requireAnalyticsWorkspaceScope(params);
 			const analytics = await service.analytics.getCacheSummary(
 				normalizeAnalyticsParams(params) as CacheSummaryParams,
 			);
@@ -771,6 +805,7 @@ export function registerAnalyticsTools(
 		"Enterprise-gated. Get provider-grouped analytics for one workspace and time range with selectable metrics, ordering, pagination, and optional total count. Use this when comparing provider traffic or reliability; requested metric fields are preserved in each provider row.",
 		providerGroupAnalyticsSchema,
 		async (params) => {
+			requireAnalyticsWorkspaceScope(params);
 			const normalized = normalizeAnalyticsParams({
 				...params,
 				columns: params.columns?.join(","),

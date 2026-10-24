@@ -4315,8 +4315,17 @@
 						}
 					},
 					"workspace_slug": {
-						"description": "Filter by specific workspace",
+						"description": "Filter by one workspace. Takes precedence over include_all_workspaces and exclude_workspace_slugs when provided.",
 						"type": "string"
+					},
+					"include_all_workspaces": {
+						"description": "Aggregate across all organisation workspaces with an organisation API key. Ignored for workspace API keys or when workspace_slug is provided. Supply workspace_slug, include_all_workspaces=true, or exclude_workspace_slugs to choose a scope.",
+						"type": "boolean"
+					},
+					"exclude_workspace_slugs": {
+						"description": "Comma-separated workspace slugs to exclude from organisation-wide analytics, for example ws-legacy,ws-archived. Only applies to organisation API keys; workspace_slug takes precedence.",
+						"type": "string",
+						"minLength": 1
 					},
 					"api_key_ids": {
 						"description": "Legacy Portkey query param for API key UUIDs. Comma-separated string; request_analytics also accepts an array and normalizes it to this form.",
@@ -4493,8 +4502,17 @@
 						}
 					},
 					"workspace_slug": {
-						"description": "Filter by specific workspace",
+						"description": "Filter by one workspace. Takes precedence over include_all_workspaces and exclude_workspace_slugs when provided.",
 						"type": "string"
+					},
+					"include_all_workspaces": {
+						"description": "Aggregate across all organisation workspaces with an organisation API key. Ignored for workspace API keys or when workspace_slug is provided. Supply workspace_slug, include_all_workspaces=true, or exclude_workspace_slugs to choose a scope.",
+						"type": "boolean"
+					},
+					"exclude_workspace_slugs": {
+						"description": "Comma-separated workspace slugs to exclude from organisation-wide analytics, for example ws-legacy,ws-archived. Only applies to organisation API keys; workspace_slug takes precedence.",
+						"type": "string",
+						"minLength": 1
 					},
 					"api_key_ids": {
 						"description": "Legacy Portkey query param for API key UUIDs. Comma-separated string; request_analytics also accepts an array and normalizes it to this form.",
@@ -4671,8 +4689,17 @@
 						}
 					},
 					"workspace_slug": {
-						"description": "Filter by specific workspace",
+						"description": "Filter by one workspace. Takes precedence over include_all_workspaces and exclude_workspace_slugs when provided.",
 						"type": "string"
+					},
+					"include_all_workspaces": {
+						"description": "Aggregate across all organisation workspaces with an organisation API key. Ignored for workspace API keys or when workspace_slug is provided. Supply workspace_slug, include_all_workspaces=true, or exclude_workspace_slugs to choose a scope.",
+						"type": "boolean"
+					},
+					"exclude_workspace_slugs": {
+						"description": "Comma-separated workspace slugs to exclude from organisation-wide analytics, for example ws-legacy,ws-archived. Only applies to organisation API keys; workspace_slug takes precedence.",
+						"type": "string",
+						"minLength": 1
 					},
 					"api_key_ids": {
 						"description": "Legacy Portkey query param for API key UUIDs. Comma-separated string; request_analytics also accepts an array and normalizes it to this form.",
@@ -4849,8 +4876,17 @@
 						}
 					},
 					"workspace_slug": {
-						"description": "Filter by specific workspace",
+						"description": "Filter by one workspace. Takes precedence over include_all_workspaces and exclude_workspace_slugs when provided.",
 						"type": "string"
+					},
+					"include_all_workspaces": {
+						"description": "Aggregate across all organisation workspaces with an organisation API key. Ignored for workspace API keys or when workspace_slug is provided. Supply workspace_slug, include_all_workspaces=true, or exclude_workspace_slugs to choose a scope.",
+						"type": "boolean"
+					},
+					"exclude_workspace_slugs": {
+						"description": "Comma-separated workspace slugs to exclude from organisation-wide analytics, for example ws-legacy,ws-archived. Only applies to organisation API keys; workspace_slug takes precedence.",
+						"type": "string",
+						"minLength": 1
 					},
 					"api_key_ids": {
 						"description": "Legacy Portkey query param for API key UUIDs. Comma-separated string; request_analytics also accepts an array and normalizes it to this form.",
@@ -5027,8 +5063,17 @@
 						}
 					},
 					"workspace_slug": {
-						"description": "Filter by specific workspace",
+						"description": "Filter by one workspace. Takes precedence over include_all_workspaces and exclude_workspace_slugs when provided.",
 						"type": "string"
+					},
+					"include_all_workspaces": {
+						"description": "Aggregate across all organisation workspaces with an organisation API key. Ignored for workspace API keys or when workspace_slug is provided. Supply workspace_slug, include_all_workspaces=true, or exclude_workspace_slugs to choose a scope.",
+						"type": "boolean"
+					},
+					"exclude_workspace_slugs": {
+						"description": "Comma-separated workspace slugs to exclude from organisation-wide analytics, for example ws-legacy,ws-archived. Only applies to organisation API keys; workspace_slug takes precedence.",
+						"type": "string",
+						"minLength": 1
 					},
 					"api_key_ids": {
 						"description": "Legacy Portkey query param for API key UUIDs. Comma-separated string; request_analytics also accepts an array and normalizes it to this form.",
@@ -5205,8 +5250,17 @@
 						}
 					},
 					"workspace_slug": {
-						"description": "Filter by specific workspace",
+						"description": "Filter by one workspace. Takes precedence over include_all_workspaces and exclude_workspace_slugs when provided.",
 						"type": "string"
+					},
+					"include_all_workspaces": {
+						"description": "Aggregate across all organisation workspaces with an organisation API key. Ignored for workspace API keys or when workspace_slug is provided. Supply workspace_slug, include_all_workspaces=true, or exclude_workspace_slugs to choose a scope.",
+						"type": "boolean"
+					},
+					"exclude_workspace_slugs": {
+						"description": "Comma-separated workspace slugs to exclude from organisation-wide analytics, for example ws-legacy,ws-archived. Only applies to organisation API keys; workspace_slug takes precedence.",
+						"type": "string",
+						"minLength": 1
 					},
 					"api_key_ids": {
 						"description": "Legacy Portkey query param for API key UUIDs. Comma-separated string; request_analytics also accepts an array and normalizes it to this form.",
@@ -5383,8 +5437,17 @@
 						}
 					},
 					"workspace_slug": {
-						"description": "Filter by specific workspace",
+						"description": "Filter by one workspace. Takes precedence over include_all_workspaces and exclude_workspace_slugs when provided.",
 						"type": "string"
+					},
+					"include_all_workspaces": {
+						"description": "Aggregate across all organisation workspaces with an organisation API key. Ignored for workspace API keys or when workspace_slug is provided. Supply workspace_slug, include_all_workspaces=true, or exclude_workspace_slugs to choose a scope.",
+						"type": "boolean"
+					},
+					"exclude_workspace_slugs": {
+						"description": "Comma-separated workspace slugs to exclude from organisation-wide analytics, for example ws-legacy,ws-archived. Only applies to organisation API keys; workspace_slug takes precedence.",
+						"type": "string",
+						"minLength": 1
 					},
 					"api_key_ids": {
 						"description": "Legacy Portkey query param for API key UUIDs. Comma-separated string; request_analytics also accepts an array and normalizes it to this form.",
@@ -5561,8 +5624,17 @@
 						}
 					},
 					"workspace_slug": {
-						"description": "Filter by specific workspace",
+						"description": "Filter by one workspace. Takes precedence over include_all_workspaces and exclude_workspace_slugs when provided.",
 						"type": "string"
+					},
+					"include_all_workspaces": {
+						"description": "Aggregate across all organisation workspaces with an organisation API key. Ignored for workspace API keys or when workspace_slug is provided. Supply workspace_slug, include_all_workspaces=true, or exclude_workspace_slugs to choose a scope.",
+						"type": "boolean"
+					},
+					"exclude_workspace_slugs": {
+						"description": "Comma-separated workspace slugs to exclude from organisation-wide analytics, for example ws-legacy,ws-archived. Only applies to organisation API keys; workspace_slug takes precedence.",
+						"type": "string",
+						"minLength": 1
 					},
 					"api_key_ids": {
 						"description": "Legacy Portkey query param for API key UUIDs. Comma-separated string; request_analytics also accepts an array and normalizes it to this form.",
@@ -5641,7 +5713,7 @@
 		},
 		{
 			"name": "get_cache_summary",
-			"description": "Enterprise-gated. Get cache summary metrics for one workspace and time range: hits, average cache-hit latency, total requests, and percentage speedup. Use the graph cache tools when you need changes over time instead of one aggregate. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
+			"description": "Enterprise-gated. Get cache summary metrics for a workspace or organisation and time range: hits, average cache-hit latency, total requests, and percentage speedup. Choose workspace_slug, include_all_workspaces=true, or exclude_workspace_slugs. Use the graph cache tools when you need changes over time instead of one aggregate. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
@@ -5739,9 +5811,18 @@
 						}
 					},
 					"workspace_slug": {
+						"description": "Filter by one workspace. Takes precedence over include_all_workspaces and exclude_workspace_slugs when provided.",
 						"type": "string",
-						"minLength": 1,
-						"description": "Workspace slug to analyze"
+						"minLength": 1
+					},
+					"include_all_workspaces": {
+						"description": "Aggregate across all organisation workspaces with an organisation API key. Ignored for workspace API keys or when workspace_slug is provided. Supply workspace_slug, include_all_workspaces=true, or exclude_workspace_slugs to choose a scope.",
+						"type": "boolean"
+					},
+					"exclude_workspace_slugs": {
+						"description": "Comma-separated workspace slugs to exclude from organisation-wide analytics, for example ws-legacy,ws-archived. Only applies to organisation API keys; workspace_slug takes precedence.",
+						"type": "string",
+						"minLength": 1
 					},
 					"api_key_ids": {
 						"description": "Legacy Portkey query param for API key UUIDs. Comma-separated string; request_analytics also accepts an array and normalizes it to this form.",
@@ -5808,11 +5889,7 @@
 						"type": "string"
 					}
 				},
-				"required": [
-					"time_of_generation_min",
-					"time_of_generation_max",
-					"workspace_slug"
-				],
+				"required": ["time_of_generation_min", "time_of_generation_max"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
 			},
 			"annotations": {
@@ -5922,8 +5999,17 @@
 						}
 					},
 					"workspace_slug": {
-						"description": "Filter by specific workspace",
+						"description": "Filter by one workspace. Takes precedence over include_all_workspaces and exclude_workspace_slugs when provided.",
 						"type": "string"
+					},
+					"include_all_workspaces": {
+						"description": "Aggregate across all organisation workspaces with an organisation API key. Ignored for workspace API keys or when workspace_slug is provided. Supply workspace_slug, include_all_workspaces=true, or exclude_workspace_slugs to choose a scope.",
+						"type": "boolean"
+					},
+					"exclude_workspace_slugs": {
+						"description": "Comma-separated workspace slugs to exclude from organisation-wide analytics, for example ws-legacy,ws-archived. Only applies to organisation API keys; workspace_slug takes precedence.",
+						"type": "string",
+						"minLength": 1
 					},
 					"api_key_ids": {
 						"description": "Legacy Portkey query param for API key UUIDs. Comma-separated string; request_analytics also accepts an array and normalizes it to this form.",
@@ -6100,8 +6186,17 @@
 						}
 					},
 					"workspace_slug": {
-						"description": "Filter by specific workspace",
+						"description": "Filter by one workspace. Takes precedence over include_all_workspaces and exclude_workspace_slugs when provided.",
 						"type": "string"
+					},
+					"include_all_workspaces": {
+						"description": "Aggregate across all organisation workspaces with an organisation API key. Ignored for workspace API keys or when workspace_slug is provided. Supply workspace_slug, include_all_workspaces=true, or exclude_workspace_slugs to choose a scope.",
+						"type": "boolean"
+					},
+					"exclude_workspace_slugs": {
+						"description": "Comma-separated workspace slugs to exclude from organisation-wide analytics, for example ws-legacy,ws-archived. Only applies to organisation API keys; workspace_slug takes precedence.",
+						"type": "string",
+						"minLength": 1
 					},
 					"api_key_ids": {
 						"description": "Legacy Portkey query param for API key UUIDs. Comma-separated string; request_analytics also accepts an array and normalizes it to this form.",
@@ -6278,8 +6373,17 @@
 						}
 					},
 					"workspace_slug": {
-						"description": "Filter by specific workspace",
+						"description": "Filter by one workspace. Takes precedence over include_all_workspaces and exclude_workspace_slugs when provided.",
 						"type": "string"
+					},
+					"include_all_workspaces": {
+						"description": "Aggregate across all organisation workspaces with an organisation API key. Ignored for workspace API keys or when workspace_slug is provided. Supply workspace_slug, include_all_workspaces=true, or exclude_workspace_slugs to choose a scope.",
+						"type": "boolean"
+					},
+					"exclude_workspace_slugs": {
+						"description": "Comma-separated workspace slugs to exclude from organisation-wide analytics, for example ws-legacy,ws-archived. Only applies to organisation API keys; workspace_slug takes precedence.",
+						"type": "string",
+						"minLength": 1
 					},
 					"api_key_ids": {
 						"description": "Legacy Portkey query param for API key UUIDs. Comma-separated string; request_analytics also accepts an array and normalizes it to this form.",
@@ -6456,8 +6560,17 @@
 						}
 					},
 					"workspace_slug": {
-						"description": "Filter by specific workspace",
+						"description": "Filter by one workspace. Takes precedence over include_all_workspaces and exclude_workspace_slugs when provided.",
 						"type": "string"
+					},
+					"include_all_workspaces": {
+						"description": "Aggregate across all organisation workspaces with an organisation API key. Ignored for workspace API keys or when workspace_slug is provided. Supply workspace_slug, include_all_workspaces=true, or exclude_workspace_slugs to choose a scope.",
+						"type": "boolean"
+					},
+					"exclude_workspace_slugs": {
+						"description": "Comma-separated workspace slugs to exclude from organisation-wide analytics, for example ws-legacy,ws-archived. Only applies to organisation API keys; workspace_slug takes precedence.",
+						"type": "string",
+						"minLength": 1
 					},
 					"api_key_ids": {
 						"description": "Legacy Portkey query param for API key UUIDs. Comma-separated string; request_analytics also accepts an array and normalizes it to this form.",
@@ -6634,8 +6747,17 @@
 						}
 					},
 					"workspace_slug": {
-						"description": "Filter by specific workspace",
+						"description": "Filter by one workspace. Takes precedence over include_all_workspaces and exclude_workspace_slugs when provided.",
 						"type": "string"
+					},
+					"include_all_workspaces": {
+						"description": "Aggregate across all organisation workspaces with an organisation API key. Ignored for workspace API keys or when workspace_slug is provided. Supply workspace_slug, include_all_workspaces=true, or exclude_workspace_slugs to choose a scope.",
+						"type": "boolean"
+					},
+					"exclude_workspace_slugs": {
+						"description": "Comma-separated workspace slugs to exclude from organisation-wide analytics, for example ws-legacy,ws-archived. Only applies to organisation API keys; workspace_slug takes precedence.",
+						"type": "string",
+						"minLength": 1
 					},
 					"api_key_ids": {
 						"description": "Legacy Portkey query param for API key UUIDs. Comma-separated string; request_analytics also accepts an array and normalizes it to this form.",
@@ -6812,8 +6934,17 @@
 						}
 					},
 					"workspace_slug": {
-						"description": "Filter by specific workspace",
+						"description": "Filter by one workspace. Takes precedence over include_all_workspaces and exclude_workspace_slugs when provided.",
 						"type": "string"
+					},
+					"include_all_workspaces": {
+						"description": "Aggregate across all organisation workspaces with an organisation API key. Ignored for workspace API keys or when workspace_slug is provided. Supply workspace_slug, include_all_workspaces=true, or exclude_workspace_slugs to choose a scope.",
+						"type": "boolean"
+					},
+					"exclude_workspace_slugs": {
+						"description": "Comma-separated workspace slugs to exclude from organisation-wide analytics, for example ws-legacy,ws-archived. Only applies to organisation API keys; workspace_slug takes precedence.",
+						"type": "string",
+						"minLength": 1
 					},
 					"api_key_ids": {
 						"description": "Legacy Portkey query param for API key UUIDs. Comma-separated string; request_analytics also accepts an array and normalizes it to this form.",
@@ -6990,8 +7121,17 @@
 						}
 					},
 					"workspace_slug": {
-						"description": "Filter by specific workspace",
+						"description": "Filter by one workspace. Takes precedence over include_all_workspaces and exclude_workspace_slugs when provided.",
 						"type": "string"
+					},
+					"include_all_workspaces": {
+						"description": "Aggregate across all organisation workspaces with an organisation API key. Ignored for workspace API keys or when workspace_slug is provided. Supply workspace_slug, include_all_workspaces=true, or exclude_workspace_slugs to choose a scope.",
+						"type": "boolean"
+					},
+					"exclude_workspace_slugs": {
+						"description": "Comma-separated workspace slugs to exclude from organisation-wide analytics, for example ws-legacy,ws-archived. Only applies to organisation API keys; workspace_slug takes precedence.",
+						"type": "string",
+						"minLength": 1
 					},
 					"api_key_ids": {
 						"description": "Legacy Portkey query param for API key UUIDs. Comma-separated string; request_analytics also accepts an array and normalizes it to this form.",
@@ -7168,8 +7308,17 @@
 						}
 					},
 					"workspace_slug": {
-						"description": "Filter by specific workspace",
+						"description": "Filter by one workspace. Takes precedence over include_all_workspaces and exclude_workspace_slugs when provided.",
 						"type": "string"
+					},
+					"include_all_workspaces": {
+						"description": "Aggregate across all organisation workspaces with an organisation API key. Ignored for workspace API keys or when workspace_slug is provided. Supply workspace_slug, include_all_workspaces=true, or exclude_workspace_slugs to choose a scope.",
+						"type": "boolean"
+					},
+					"exclude_workspace_slugs": {
+						"description": "Comma-separated workspace slugs to exclude from organisation-wide analytics, for example ws-legacy,ws-archived. Only applies to organisation API keys; workspace_slug takes precedence.",
+						"type": "string",
+						"minLength": 1
 					},
 					"api_key_ids": {
 						"description": "Legacy Portkey query param for API key UUIDs. Comma-separated string; request_analytics also accepts an array and normalizes it to this form.",
@@ -7346,8 +7495,17 @@
 						}
 					},
 					"workspace_slug": {
-						"description": "Filter by specific workspace",
+						"description": "Filter by one workspace. Takes precedence over include_all_workspaces and exclude_workspace_slugs when provided.",
 						"type": "string"
+					},
+					"include_all_workspaces": {
+						"description": "Aggregate across all organisation workspaces with an organisation API key. Ignored for workspace API keys or when workspace_slug is provided. Supply workspace_slug, include_all_workspaces=true, or exclude_workspace_slugs to choose a scope.",
+						"type": "boolean"
+					},
+					"exclude_workspace_slugs": {
+						"description": "Comma-separated workspace slugs to exclude from organisation-wide analytics, for example ws-legacy,ws-archived. Only applies to organisation API keys; workspace_slug takes precedence.",
+						"type": "string",
+						"minLength": 1
 					},
 					"api_key_ids": {
 						"description": "Legacy Portkey query param for API key UUIDs. Comma-separated string; request_analytics also accepts an array and normalizes it to this form.",
@@ -7524,8 +7682,17 @@
 						}
 					},
 					"workspace_slug": {
-						"description": "Filter by specific workspace",
+						"description": "Filter by one workspace. Takes precedence over include_all_workspaces and exclude_workspace_slugs when provided.",
 						"type": "string"
+					},
+					"include_all_workspaces": {
+						"description": "Aggregate across all organisation workspaces with an organisation API key. Ignored for workspace API keys or when workspace_slug is provided. Supply workspace_slug, include_all_workspaces=true, or exclude_workspace_slugs to choose a scope.",
+						"type": "boolean"
+					},
+					"exclude_workspace_slugs": {
+						"description": "Comma-separated workspace slugs to exclude from organisation-wide analytics, for example ws-legacy,ws-archived. Only applies to organisation API keys; workspace_slug takes precedence.",
+						"type": "string",
+						"minLength": 1
 					},
 					"api_key_ids": {
 						"description": "Legacy Portkey query param for API key UUIDs. Comma-separated string; request_analytics also accepts an array and normalizes it to this form.",
@@ -7714,8 +7881,17 @@
 						}
 					},
 					"workspace_slug": {
-						"description": "Filter by specific workspace",
+						"description": "Filter by one workspace. Takes precedence over include_all_workspaces and exclude_workspace_slugs when provided.",
 						"type": "string"
+					},
+					"include_all_workspaces": {
+						"description": "Aggregate across all organisation workspaces with an organisation API key. Ignored for workspace API keys or when workspace_slug is provided. Supply workspace_slug, include_all_workspaces=true, or exclude_workspace_slugs to choose a scope.",
+						"type": "boolean"
+					},
+					"exclude_workspace_slugs": {
+						"description": "Comma-separated workspace slugs to exclude from organisation-wide analytics, for example ws-legacy,ws-archived. Only applies to organisation API keys; workspace_slug takes precedence.",
+						"type": "string",
+						"minLength": 1
 					},
 					"api_key_ids": {
 						"description": "Legacy Portkey query param for API key UUIDs. Comma-separated string; request_analytics also accepts an array and normalizes it to this form.",
@@ -7904,9 +8080,18 @@
 						}
 					},
 					"workspace_slug": {
+						"description": "Filter by one workspace. Takes precedence over include_all_workspaces and exclude_workspace_slugs when provided.",
 						"type": "string",
-						"minLength": 1,
-						"description": "Workspace slug to analyze"
+						"minLength": 1
+					},
+					"include_all_workspaces": {
+						"description": "Aggregate across all organisation workspaces with an organisation API key. Ignored for workspace API keys or when workspace_slug is provided. Supply workspace_slug, include_all_workspaces=true, or exclude_workspace_slugs to choose a scope.",
+						"type": "boolean"
+					},
+					"exclude_workspace_slugs": {
+						"description": "Comma-separated workspace slugs to exclude from organisation-wide analytics, for example ws-legacy,ws-archived. Only applies to organisation API keys; workspace_slug takes precedence.",
+						"type": "string",
+						"minLength": 1
 					},
 					"api_key_ids": {
 						"description": "Legacy Portkey query param for API key UUIDs. Comma-separated string; request_analytics also accepts an array and normalizes it to this form.",
@@ -8020,11 +8205,7 @@
 						"type": "boolean"
 					}
 				},
-				"required": [
-					"time_of_generation_min",
-					"time_of_generation_max",
-					"workspace_slug"
-				],
+				"required": ["time_of_generation_min", "time_of_generation_max"],
 				"$schema": "http://json-schema.org/draft-07/schema#"
 			},
 			"annotations": {
@@ -8134,8 +8315,17 @@
 						}
 					},
 					"workspace_slug": {
-						"description": "Filter by specific workspace",
+						"description": "Filter by one workspace. Takes precedence over include_all_workspaces and exclude_workspace_slugs when provided.",
 						"type": "string"
+					},
+					"include_all_workspaces": {
+						"description": "Aggregate across all organisation workspaces with an organisation API key. Ignored for workspace API keys or when workspace_slug is provided. Supply workspace_slug, include_all_workspaces=true, or exclude_workspace_slugs to choose a scope.",
+						"type": "boolean"
+					},
+					"exclude_workspace_slugs": {
+						"description": "Comma-separated workspace slugs to exclude from organisation-wide analytics, for example ws-legacy,ws-archived. Only applies to organisation API keys; workspace_slug takes precedence.",
+						"type": "string",
+						"minLength": 1
 					},
 					"api_key_ids": {
 						"description": "Legacy Portkey query param for API key UUIDs. Comma-separated string; request_analytics also accepts an array and normalizes it to this form.",
@@ -8332,8 +8522,17 @@
 						}
 					},
 					"workspace_slug": {
-						"description": "Filter by specific workspace",
+						"description": "Filter by one workspace. Takes precedence over include_all_workspaces and exclude_workspace_slugs when provided.",
 						"type": "string"
+					},
+					"include_all_workspaces": {
+						"description": "Aggregate across all organisation workspaces with an organisation API key. Ignored for workspace API keys or when workspace_slug is provided. Supply workspace_slug, include_all_workspaces=true, or exclude_workspace_slugs to choose a scope.",
+						"type": "boolean"
+					},
+					"exclude_workspace_slugs": {
+						"description": "Comma-separated workspace slugs to exclude from organisation-wide analytics, for example ws-legacy,ws-archived. Only applies to organisation API keys; workspace_slug takes precedence.",
+						"type": "string",
+						"minLength": 1
 					},
 					"api_key_ids": {
 						"description": "Legacy Portkey query param for API key UUIDs. Comma-separated string; request_analytics also accepts an array and normalizes it to this form.",
@@ -8522,8 +8721,17 @@
 						}
 					},
 					"workspace_slug": {
-						"description": "Filter by specific workspace",
+						"description": "Filter by one workspace. Takes precedence over include_all_workspaces and exclude_workspace_slugs when provided.",
 						"type": "string"
+					},
+					"include_all_workspaces": {
+						"description": "Aggregate across all organisation workspaces with an organisation API key. Ignored for workspace API keys or when workspace_slug is provided. Supply workspace_slug, include_all_workspaces=true, or exclude_workspace_slugs to choose a scope.",
+						"type": "boolean"
+					},
+					"exclude_workspace_slugs": {
+						"description": "Comma-separated workspace slugs to exclude from organisation-wide analytics, for example ws-legacy,ws-archived. Only applies to organisation API keys; workspace_slug takes precedence.",
+						"type": "string",
+						"minLength": 1
 					},
 					"api_key_ids": {
 						"description": "Legacy Portkey query param for API key UUIDs. Comma-separated string; request_analytics also accepts an array and normalizes it to this form.",
@@ -8712,8 +8920,17 @@
 						}
 					},
 					"workspace_slug": {
-						"description": "Filter by specific workspace",
+						"description": "Filter by one workspace. Takes precedence over include_all_workspaces and exclude_workspace_slugs when provided.",
 						"type": "string"
+					},
+					"include_all_workspaces": {
+						"description": "Aggregate across all organisation workspaces with an organisation API key. Ignored for workspace API keys or when workspace_slug is provided. Supply workspace_slug, include_all_workspaces=true, or exclude_workspace_slugs to choose a scope.",
+						"type": "boolean"
+					},
+					"exclude_workspace_slugs": {
+						"description": "Comma-separated workspace slugs to exclude from organisation-wide analytics, for example ws-legacy,ws-archived. Only applies to organisation API keys; workspace_slug takes precedence.",
+						"type": "string",
+						"minLength": 1
 					},
 					"api_key_ids": {
 						"description": "Legacy Portkey query param for API key UUIDs. Comma-separated string; request_analytics also accepts an array and normalizes it to this form.",
