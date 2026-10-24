@@ -386,6 +386,13 @@ The required CI and release gates measure every TypeScript source file and fail
 below 80% line coverage. The CI and Coverage workflow reports show the current
 line, branch, and function coverage.
 
+The [CI workflow](https://github.com/CodesWhat/portkey-admin-mcp/actions/workflows/ci.yml)
+also runs the standalone Qlty CLI and publishes `quality-reports` artifacts for
+each analyzed commit, including lint/security results, duplication, complexity,
+and metrics. The existing Qlty maintainability and coverage badges remain
+Cloud-generated; local analysis does not update those badges. Coverage uploads
+and Cloud analysis still consume Qlty analysis minutes.
+
 `npm run dev:http` now requires `MCP_AUTH_MODE=bearer` or `MCP_AUTH_MODE=clerk` by default. For deliberate local-only unauthenticated testing, set `MCP_ALLOW_UNAUTHENTICATED_HTTP=true`.
 
 Contributions use pull requests and the checks documented in

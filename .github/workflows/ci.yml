@@ -113,6 +113,40 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install Qlty CLI
+        env:
+          QLTY_VERSION: 0.657.0
+          QLTY_SHA256: 25a37d639c73468267cbb86abeed7d39199b416e3e3288afdb24edcb967c02c5
+        run: |
+          set -euo pipefail
+          archive="${RUNNER_TEMP}/qlty.tar.xz"
+          curl -fsSL \
+            "https://github.com/qltysh/qlty/releases/download/v${QLTY_VERSION}/qlty-x86_64-unknown-linux-gnu.tar.xz" \
+            -o "$archive"
+          echo "${QLTY_SHA256}  ${archive}" | sha256sum --check --strict
+          mkdir -p "${RUNNER_TEMP}/qlty-bin"
+          tar -xJf "$archive" -C "${RUNNER_TEMP}/qlty-bin" --strip-components=1
+          echo "${RUNNER_TEMP}/qlty-bin" >> "$GITHUB_PATH"
+
+      - name: Qlty CLI checks
+        run: npm run --silent quality -- --json > "${RUNNER_TEMP}/qlty-check.json"
+
+      - name: Qlty maintainability report
+        run: |
+          qlty smells --all --no-snippets --no-upgrade-check > "${RUNNER_TEMP}/qlty-smells.txt"
+          qlty metrics --all --exclude-tests --no-upgrade-check > "${RUNNER_TEMP}/qlty-metrics.txt"
+
+      - name: Publish self-run quality reports
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: quality-reports
+          path: |
+            ${{ runner.temp }}/qlty-check.json
+            ${{ runner.temp }}/qlty-smells.txt
+            ${{ runner.temp }}/qlty-metrics.txt
+          retention-days: 14
+
       - name: Lint
         run: npm run lint
 

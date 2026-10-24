@@ -15,6 +15,7 @@ release until that reference and the release notes say so.
 - Refresh the dependency lock to patched `body-parser` 2.4.0, `fast-uri` 3.1.9, `hono` 4.13.13, and `ip-address` 10.7.4. The full npm audit reports no vulnerabilities.
 
 ### Changed
+- Enforce the free standalone Qlty CLI in CI, the full local pipeline, and pre-push while retaining existing required checks, coverage reporting, and Cloud badges. Keep duplication and complexity reports advisory. Use a JSON Docker health check and the existing numeric runtime user to clear the CLI baseline.
 - Update npm to 12.2.1 and the pinned CodeQL action to 4.39.0. Other non-security updates retain the seven-day minimum release age.
 - Aligned the README, roadmap, contribution flow, release guide, and catalog records after 0.14.0. Added a packaged compatibility and deprecation reference that keeps current settings distinct from the unassigned MCP migration.
 - Corrected the single-container Docker HTTP example to explicitly acknowledge in-memory production rate limiting.
