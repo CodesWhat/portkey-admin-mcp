@@ -8,6 +8,6 @@
 		"scripts/**/*.{ts,mjs}"
 	],
 	"ignore": ["src/services/prompts.typecheck.ts"],
-	"ignoreBinaries": ["openssl"],
+	"ignoreBinaries": ["openssl", "qlty"],
 	"ignoreExportsUsedInFile": true
 }

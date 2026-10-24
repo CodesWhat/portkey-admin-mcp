@@ -1,13 +1,13 @@
 # Compatibility and deprecations
 
-Last reviewed: 2026-10-16. Package versions, SDK versions, and negotiated MCP
+Last reviewed: 2026-10-24. Package versions, SDK versions, and negotiated MCP
 protocol revisions are separate compatibility boundaries.
 
 ## Release lines
 
 | Package release | MCP SDK | MCP protocol | Support and behavior |
 | --- | --- | --- | --- |
-| 0.14.0 | v1; dependency floor 1.32.1 | Latest supported revision: `2025-11-25` | Current published minor, 194 tools across 22 domains, Node.js 24+. Stateful HTTP sessions and optional replay stores remain active. |
+| 0.14.1 | v1; dependency floor 1.32.1 | Latest supported revision: `2025-11-25` | Current published minor, 194 tools across 22 domains, Node.js 24+. Stateful HTTP sessions and optional replay stores remain active. |
 | 0.13.0 | v1; dependency floor 1.31.0 | Latest supported revision: `2025-11-25` | Historical release, 184 tools across 20 domains. Upgrade to the latest published minor for security fixes. |
 | Planned migration, minor release number unassigned | v2, exact version to be selected and tested | Native `2026-07-28` plus older clients on the same endpoint | Not shipped. Planned to retire HTTP session and replay stores and change configuration behavior. |
 
@@ -23,12 +23,12 @@ See [CHANGELOG.md](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/CHAN
 
 ## Configuration lifecycle
 
-No deprecation warnings or removals for the settings below ship in 0.14.0.
+No deprecation warnings or removals for the settings below ship in 0.14.x.
 The planned migration has no assigned package release number. Its release
 notes must identify the first warning, ignored-setting, and removal versions
 before operators are asked to upgrade.
 
-| Setting or behavior | 0.14.0 | Planned migration | First warning / ignored / removal release |
+| Setting or behavior | 0.14.x | Planned migration | First warning / ignored / removal release |
 | --- | --- | --- | --- |
 | `MCP_SESSION_MODE`, `MCP_SESSION_TIMEOUT` | Active; stateful mode is the default | Retire session storage; serve older clients without persistent sessions | Unassigned / unassigned / unassigned |
 | `MCP_EVENT_STORE`, `MCP_EVENT_TTL_SECONDS`, `MCP_EVENT_STORE_MAX_EVENTS`, `MCP_EVENT_STORE_MAX_BYTES`, `MCP_EVENT_STORE_COMMAND_TIMEOUT_MS` | Active replay configuration | Retire replay storage and warn about obsolete settings | Unassigned / unassigned / unassigned |
@@ -41,7 +41,7 @@ before operators are asked to upgrade.
 
 Redis rate limiting and Redis replay are separate features. Retiring the replay
 store does not remove the need for a shared rate limiter in multi-instance or
-serverless deployments. Do not remove working settings from a 0.14.0 deployment
+serverless deployments. Do not remove working settings from a 0.14.x deployment
 based on the migration plan.
 
 ## Migration preparation
