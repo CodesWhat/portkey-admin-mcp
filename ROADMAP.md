@@ -1,6 +1,6 @@
 # Portkey Admin MCP roadmap
 
-> Last reviewed: 2026-10-16
+> Last reviewed: 2026-10-24
 > Status: active compatibility maintenance
 > Current catalog: 194 tools across 22 domains, including 56 Enterprise-gated tools
 
@@ -81,6 +81,19 @@ URL substitution remains unsupported.
   `SECURITY-ASSURANCE.md` together. Distinguish retiring replay Redis settings
   from the retained Redis rate limiter, its URL fallbacks, and the stateless
   concurrency cap. These settings remain active in 0.14.0.
+
+## Completed 2026-10-24 (0.14.1)
+
+- Patched the dependency lock's body-parser, fast-uri, Hono, and ip-address
+  advisories; the full npm audit is clear. Updated the declared npm toolchain
+  and the pinned CodeQL action while retaining the seven-day release-age policy
+  for non-security updates.
+- Enforced standalone Qlty CLI checks in CI and pre-push, with published
+  commit-specific check, duplication, complexity, and metrics reports. Existing
+  Cloud badges and coverage uploads remain in place; local quality results have
+  no verified import path for the official Cloud maintainability badge.
+- Verified the Docker HTTP health check, non-root UID, authenticated 194-tool
+  discovery, and stdio discovery in the isolated NAS testbed.
 
 ## Completed 2026-10-16 (0.14.0)
 

@@ -11,6 +11,8 @@ release until that reference and the release notes say so.
 
 ## [Unreleased]
 
+## [0.14.1] - 2026-10-24
+
 ### Security
 - Refresh the dependency lock to patched `body-parser` 2.4.0, `fast-uri` 3.1.9, `hono` 4.13.13, and `ip-address` 10.7.4. The full npm audit reports no vulnerabilities.
 
@@ -926,7 +928,8 @@ First stable release. Graduates from beta with 151 tools covering ~98% of the Po
 - Vercel deployment support
 - Contract tests, E2E tests, security tests
 
-[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.14.0...HEAD
+[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.14.1...HEAD
+[0.14.1]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.14.0...v0.14.1
 [0.14.0]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.12.2...v0.13.0
 [0.12.2]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.12.1...v0.12.2
