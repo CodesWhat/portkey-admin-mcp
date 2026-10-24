@@ -67,8 +67,18 @@ const PKG = JSON.parse(
 	readFileSync(new URL("../package.json", import.meta.url), "utf-8"),
 );
 
-// All 184 expected tool names across 20 domains
+// All 194 expected tool names across 22 domains
 const EXPECTED_TOOLS = [
+	"create_access_policy",
+	"list_access_policies",
+	"get_access_policy",
+	"update_access_policy",
+	"delete_access_policy",
+	"list_egress_allowlist",
+	"create_egress_allowlist_entry",
+	"get_egress_allowlist_entry",
+	"update_egress_allowlist_entry",
+	"delete_egress_allowlist_entry",
 	// users (10)
 	"list_all_users",
 	"invite_user",

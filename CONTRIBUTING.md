@@ -6,16 +6,24 @@ not a public issue, for suspected vulnerabilities. See [`SECURITY.md`](SECURITY.
 ## Contribution process
 
 1. Search existing issues and pull requests for related work.
-2. Fork the repository and create a focused branch from `main`.
+2. Fork the repository and create a focused branch from the active `dev/<minor>`
+   line, currently `dev/0.14`.
 3. Install Node.js 24+ and npm 12, then run `npm install`.
 4. Make the change with tests and documentation where required.
 5. Run `npm run ci`.
-6. Open a pull request describing the problem, the chosen approach, security or
-   compatibility effects, and the verification performed.
+6. Open a pull request into that development line describing the problem, the
+   chosen approach, security or compatibility effects, and the verification
+   performed.
 
 Maintainers review pull requests and may request changes. A maintainer merges a
 change after the required checks and review policy pass. Opening a pull request
 does not guarantee that a proposal will be accepted.
+
+Maintainers promote the reviewed development line to protected `main` through
+a separate pull request. Version changes on `main` start the automated release
+flow. [The release guide](docs/RELEASE.md) owns the active-line and promotion
+procedure; Renovate targets the same development line. A new minor line starts
+when its release scope is assigned, rather than from an assumed next version.
 
 ## Acceptable contributions
 

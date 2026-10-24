@@ -307,13 +307,28 @@ export class IntegrationsService extends BaseService {
 		slug: string,
 		params?: ListIntegrationModelsParams,
 	): Promise<ListIntegrationModelsResponse> {
+		type ApiModel = Omit<IntegrationModel, "is_custom"> & {
+			is_custom?: boolean | 0 | 1 | null;
+		};
 		const response = await this.get<
-			ListIntegrationModelsResponse & { models?: IntegrationModel[] }
+			Omit<ListIntegrationModelsResponse, "data"> & {
+				data?: ApiModel[];
+				models?: ApiModel[];
+			}
 		>(`/integrations/${this.encodePathSegment(slug)}/models`, {
 			current_page: params?.current_page,
 			page_size: params?.page_size,
 		});
-		const data = response.data ?? response.models ?? [];
+		const data = (response.data ?? response.models ?? []).map(
+			({ is_custom, ...model }) =>
+				is_custom === undefined
+					? model
+					: {
+							...model,
+							is_custom:
+								typeof is_custom === "number" ? is_custom === 1 : is_custom,
+						},
+		);
 		return {
 			object: response.object ?? "list",
 			total: response.total ?? data.length,

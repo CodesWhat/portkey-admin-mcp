@@ -631,6 +631,10 @@ describe("Contract: fixtures manifest", () => {
 			liveCaptureStatus?: string;
 		};
 		const allowedDocumentationDerivedFixtures = [
+			"access-policies-get",
+			"access-policies-list",
+			"egress-allowlist-get",
+			"egress-allowlist-list",
 			"api-keys-rotate",
 			"analytics-a2a-group",
 			"analytics-cache-summary",
