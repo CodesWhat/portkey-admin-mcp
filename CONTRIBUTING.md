@@ -19,6 +19,12 @@ Maintainers review pull requests and may request changes. A maintainer merges a
 change after the required checks and review policy pass. Opening a pull request
 does not guarantee that a proposal will be accepted.
 
+Maintainers schedule CodeRabbit reviews explicitly. Automatic reviews and reviews
+on each push are disabled. Maintainers request an incremental review after a fix
+batch, and merge only after the required checks and review policy pass.
+Ordinary dependency updates await dashboard approval; urgent security updates
+retain their existing exception.
+
 Maintainers promote the reviewed development line to protected `main` through
 a separate pull request. Version changes on `main` start the automated release
 flow. [The release guide](docs/RELEASE.md) owns the active-line and promotion
