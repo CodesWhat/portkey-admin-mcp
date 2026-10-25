@@ -569,7 +569,7 @@ export function registerPromptsTools(
 		"get_prompt",
 		{
 			description:
-				"Fetch a prompt's full definition, active version, and version history. Use this before updating, publishing, rendering, or copying a prompt when you need the stored template and metadata. For multi-message chat prompts pass messages (preferred) or a JSON-encoded array as string.",
+				"Fetch a prompt's full definition, active version, and version history. Use this before updating, publishing, rendering, or copying a prompt when you need the stored template and metadata. template_format in the result shows whether the stored template is a plain string or a JSON messages array.",
 			inputSchema: PROMPTS_TOOL_SCHEMAS.getPrompt,
 		},
 		async (params) => {

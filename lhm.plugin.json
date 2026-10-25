@@ -3428,7 +3428,7 @@
 		},
 		{
 			"name": "get_prompt",
-			"description": "Fetch a prompt's full definition, active version, and version history. Use this before updating, publishing, rendering, or copying a prompt when you need the stored template and metadata. For multi-message chat prompts pass messages (preferred) or a JSON-encoded array as string.",
+			"description": "Fetch a prompt's full definition, active version, and version history. Use this before updating, publishing, rendering, or copying a prompt when you need the stored template and metadata. template_format in the result shows whether the stored template is a plain string or a JSON messages array.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
@@ -7982,7 +7982,7 @@
 		},
 		{
 			"name": "get_analytics_group_providers",
-			"description": "Enterprise-gated. Get provider-grouped analytics for one workspace and time range with selectable metrics, ordering, pagination, and optional total count. Use this when comparing provider traffic or reliability; requested metric fields are preserved in each provider row. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
+			"description": "Enterprise-gated. Get provider-grouped analytics for one workspace or organisation-wide and a time range with selectable metrics, ordering, pagination, and optional total count. Choose workspace_slug, include_all_workspaces=true, or exclude_workspace_slugs. Use this when comparing provider traffic or reliability; requested metric fields are preserved in each provider row. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
@@ -14040,7 +14040,7 @@
 		},
 		{
 			"name": "get_mcp_server",
-			"description": "Retrieve one MCP server by id or slug. Returns server details including the parent integration, status, and created time; use get_mcp_server when you need the server record rather than the integration config.",
+			"description": "Retrieve one MCP server by id or slug. Returns server details including the parent integration, status, and created time; use get_mcp_server for the server record, and get_mcp_integration for the parent integration's URL, auth, and transport configuration.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {

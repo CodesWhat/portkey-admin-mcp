@@ -186,5 +186,5 @@ For team access:
 
 Suggested naming convention:
 
-- `MCP_REDIS_KEY_PREFIX=portkey-admin-mcp:prod`
-- `MCP_REDIS_KEY_PREFIX=portkey-admin-mcp:staging`
+- `RATE_LIMIT_REDIS_KEY_PREFIX=portkey-admin-mcp:prod`
+- `RATE_LIMIT_REDIS_KEY_PREFIX=portkey-admin-mcp:staging`

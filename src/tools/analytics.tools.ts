@@ -839,7 +839,7 @@ export function registerAnalyticsTools(
 		"get_analytics_group_providers",
 		{
 			description:
-				"Enterprise-gated. Get provider-grouped analytics for one workspace and time range with selectable metrics, ordering, pagination, and optional total count. Use this when comparing provider traffic or reliability; requested metric fields are preserved in each provider row.",
+				"Enterprise-gated. Get provider-grouped analytics for one workspace or organisation-wide and a time range with selectable metrics, ordering, pagination, and optional total count. Choose workspace_slug, include_all_workspaces=true, or exclude_workspace_slugs. Use this when comparing provider traffic or reliability; requested metric fields are preserved in each provider row.",
 			inputSchema: providerGroupAnalyticsSchema,
 		},
 		async (params) => {

@@ -282,7 +282,7 @@ export function registerMcpServersTools(
 		"get_mcp_server",
 		{
 			description:
-				"Retrieve one MCP server by id or slug. Returns server details including the parent integration, status, and created time; use get_mcp_server when you need the server record rather than the integration config.",
+				"Retrieve one MCP server by id or slug. Returns server details including the parent integration, status, and created time; use get_mcp_server for the server record, and get_mcp_integration for the parent integration's URL, auth, and transport configuration.",
 			inputSchema: MCP_SERVERS_TOOL_SCHEMAS.getMcpServer,
 		},
 		async (params) => {

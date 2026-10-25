@@ -494,8 +494,15 @@ function createMcpRequestHandler(
 		const close = () => {
 			closePromise ??= (async () => {
 				try {
-					await handler.close();
-					await server?.close();
+					const results = await Promise.allSettled([
+						handler.close(),
+						server?.close(),
+					]);
+					for (const result of results) {
+						if (result.status === "rejected") {
+							throw result.reason;
+						}
+					}
 				} finally {
 					activeRequests.delete(close);
 				}
