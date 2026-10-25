@@ -2,7 +2,7 @@
  * MCP Server factory for creating configured server instances
  */
 import { readFileSync } from "node:fs";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import {
 	getSharedPortkeyService,
@@ -98,7 +98,7 @@ function registerServerPromptsAndResources(server: McpServer): void {
 			title: "Plan Portkey Admin Workflow",
 			description:
 				"Create a concise, safe plan for a Portkey Admin API task using this MCP server.",
-			argsSchema: {
+			argsSchema: z.object({
 				task: z
 					.string()
 					.min(1)
@@ -111,7 +111,7 @@ function registerServerPromptsAndResources(server: McpServer): void {
 					.describe(
 						"Optional Portkey area, such as prompts, analytics, configs, or users",
 					),
-			},
+			}),
 		},
 		async ({ task, area }) => ({
 			description: "Plan a Portkey Admin MCP workflow",

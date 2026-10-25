@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { CurrentPageSchema, PageSizeSchema } from "../lib/schemas.js";
 import type {
@@ -507,10 +507,13 @@ export function registerAnalyticsTools(
 ): void {
 	// ==================== Cost Analytics (existing) ====================
 
-	server.tool(
+	server.registerTool(
 		"get_cost_analytics",
-		"Get cost time-series data with summary.total_cost, summary.average_cost_per_request, and per-bucket total/avg cost. Use this for spend analysis and spike detection; use get_token_analytics when you need token volume instead of monetary cost.",
-		baseAnalyticsSchema,
+		{
+			description:
+				"Get cost time-series data with summary.total_cost, summary.average_cost_per_request, and per-bucket total/avg cost. Use this for spend analysis and spike detection; use get_token_analytics when you need token volume instead of monetary cost.",
+			inputSchema: baseAnalyticsSchema,
+		},
 		async (params) => {
 			const analytics = await service.analytics.getCostAnalytics(
 				normalizeAnalyticsParams(params),
@@ -534,10 +537,13 @@ export function registerAnalyticsTools(
 
 	// ==================== Graph Analytics ====================
 
-	server.tool(
+	server.registerTool(
 		"get_request_analytics",
-		"Get request-volume time-series data with summary.total_requests, summary.successful_requests, summary.failed_requests, and per-bucket total/success/failed counts. Use this for traffic and reliability trends; use get_error_analytics when you only need error counts.",
-		baseAnalyticsSchema,
+		{
+			description:
+				"Get request-volume time-series data with summary.total_requests, summary.successful_requests, summary.failed_requests, and per-bucket total/success/failed counts. Use this for traffic and reliability trends; use get_error_analytics when you only need error counts.",
+			inputSchema: baseAnalyticsSchema,
+		},
 		async (params) => {
 			const analytics = await service.analytics.getRequestAnalytics(
 				normalizeAnalyticsParams(params),
@@ -561,10 +567,13 @@ export function registerAnalyticsTools(
 		},
 	);
 
-	server.tool(
+	server.registerTool(
 		"get_token_analytics",
-		"Get token-usage time-series data with summary.total_tokens, summary.prompt_tokens, summary.completion_tokens, and per-bucket total/prompt/completion counts. Use this for consumption trends; use get_cost_analytics when you need spend instead of token volume.",
-		baseAnalyticsSchema,
+		{
+			description:
+				"Get token-usage time-series data with summary.total_tokens, summary.prompt_tokens, summary.completion_tokens, and per-bucket total/prompt/completion counts. Use this for consumption trends; use get_cost_analytics when you need spend instead of token volume.",
+			inputSchema: baseAnalyticsSchema,
+		},
 		async (params) => {
 			const analytics = await service.analytics.getTokenAnalytics(
 				normalizeAnalyticsParams(params),
@@ -588,10 +597,13 @@ export function registerAnalyticsTools(
 		},
 	);
 
-	server.tool(
+	server.registerTool(
 		"get_latency_analytics",
-		"Get latency time-series data with summary.avg_latency_ms, summary.p50_latency_ms, summary.p90_latency_ms, summary.p99_latency_ms, and per-bucket latency percentiles in ms. Use this to spot slowdowns and regressions; use get_cache_hit_latency when you only want cache-hit latency.",
-		baseAnalyticsSchema,
+		{
+			description:
+				"Get latency time-series data with summary.avg_latency_ms, summary.p50_latency_ms, summary.p90_latency_ms, summary.p99_latency_ms, and per-bucket latency percentiles in ms. Use this to spot slowdowns and regressions; use get_cache_hit_latency when you only want cache-hit latency.",
+			inputSchema: baseAnalyticsSchema,
+		},
 		async (params) => {
 			const analytics = await service.analytics.getLatencyAnalytics(
 				normalizeAnalyticsParams(params),
@@ -617,10 +629,13 @@ export function registerAnalyticsTools(
 		},
 	);
 
-	server.tool(
+	server.registerTool(
 		"get_error_analytics",
-		"Get error-count time-series data with summary.total_errors and per-bucket counts. Use this for high-level error trends; use get_error_rate_analytics for percentages, or get_error_status_codes_analytics and get_error_stacks_analytics for breakdowns.",
-		baseAnalyticsSchema,
+		{
+			description:
+				"Get error-count time-series data with summary.total_errors and per-bucket counts. Use this for high-level error trends; use get_error_rate_analytics for percentages, or get_error_status_codes_analytics and get_error_stacks_analytics for breakdowns.",
+			inputSchema: baseAnalyticsSchema,
+		},
 		async (params) => {
 			const analytics = await service.analytics.getErrorAnalytics(
 				normalizeAnalyticsParams(params),
@@ -640,10 +655,13 @@ export function registerAnalyticsTools(
 		},
 	);
 
-	server.tool(
+	server.registerTool(
 		"get_error_rate_analytics",
-		"Get error-rate time-series data with summary.error_rate_percent and per-bucket percentages of total requests. Use this for reliability and SLA trends; use get_error_analytics for absolute error counts instead.",
-		baseAnalyticsSchema,
+		{
+			description:
+				"Get error-rate time-series data with summary.error_rate_percent and per-bucket percentages of total requests. Use this for reliability and SLA trends; use get_error_analytics for absolute error counts instead.",
+			inputSchema: baseAnalyticsSchema,
+		},
 		async (params) => {
 			const analytics = await service.analytics.getErrorRateAnalytics(
 				normalizeAnalyticsParams(params),
@@ -665,10 +683,13 @@ export function registerAnalyticsTools(
 
 	// ==================== Cache Analytics ====================
 
-	server.tool(
+	server.registerTool(
 		"get_cache_hit_latency",
-		"Get cache-hit-only latency time-series data with summary.total_latency, summary.avg_latency, and per-bucket total/avg latency. Use this to evaluate cached-response speed; use get_latency_analytics for all requests.",
-		baseAnalyticsSchema,
+		{
+			description:
+				"Get cache-hit-only latency time-series data with summary.total_latency, summary.avg_latency, and per-bucket total/avg latency. Use this to evaluate cached-response speed; use get_latency_analytics for all requests.",
+			inputSchema: baseAnalyticsSchema,
+		},
 		async (params) => {
 			const analytics = await service.analytics.getCacheHitLatency(
 				normalizeAnalyticsParams(params),
@@ -690,10 +711,13 @@ export function registerAnalyticsTools(
 		},
 	);
 
-	server.tool(
+	server.registerTool(
 		"get_cache_hit_rate",
-		"Get cache-effectiveness time-series data with summary.hit_rate, summary.total_hits, summary.total_misses, and per-bucket hits/misses/rate. Use this to measure cache effectiveness; use get_cache_hit_latency for speed rather than hit/miss ratio.",
-		baseAnalyticsSchema,
+		{
+			description:
+				"Get cache-effectiveness time-series data with summary.hit_rate, summary.total_hits, summary.total_misses, and per-bucket hits/misses/rate. Use this to measure cache effectiveness; use get_cache_hit_latency for speed rather than hit/miss ratio.",
+			inputSchema: baseAnalyticsSchema,
+		},
 		async (params) => {
 			const analytics = await service.analytics.getCacheHitRate(
 				normalizeAnalyticsParams(params),
@@ -717,10 +741,13 @@ export function registerAnalyticsTools(
 		},
 	);
 
-	server.tool(
+	server.registerTool(
 		"get_cache_summary",
-		"Enterprise-gated. Get cache summary metrics for a workspace or organisation and time range: hits, average cache-hit latency, total requests, and percentage speedup. Choose workspace_slug, include_all_workspaces=true, or exclude_workspace_slugs. Use the graph cache tools when you need changes over time instead of one aggregate.",
-		cacheSummarySchema,
+		{
+			description:
+				"Enterprise-gated. Get cache summary metrics for a workspace or organisation and time range: hits, average cache-hit latency, total requests, and percentage speedup. Choose workspace_slug, include_all_workspaces=true, or exclude_workspace_slugs. Use the graph cache tools when you need changes over time instead of one aggregate.",
+			inputSchema: cacheSummarySchema,
+		},
 		async (params) => {
 			requireAnalyticsWorkspaceScope(params);
 			const analytics = await service.analytics.getCacheSummary(
@@ -732,10 +759,13 @@ export function registerAnalyticsTools(
 
 	// ==================== User Analytics ====================
 
-	server.tool(
+	server.registerTool(
 		"get_users_analytics",
-		"Get user-growth time-series data with summary.total_active_users, summary.total_new_users, and per-bucket active/new user counts. Use this for growth and adoption trends; use get_user_requests_analytics for per-user traffic or get_analytics_group_users for per-user cost and token detail.",
-		baseAnalyticsSchema,
+		{
+			description:
+				"Get user-growth time-series data with summary.total_active_users, summary.total_new_users, and per-bucket active/new user counts. Use this for growth and adoption trends; use get_user_requests_analytics for per-user traffic or get_analytics_group_users for per-user cost and token detail.",
+			inputSchema: baseAnalyticsSchema,
+		},
 		async (params) => {
 			const analytics = await service.analytics.getUsersAnalytics(
 				normalizeAnalyticsParams(params),
@@ -760,10 +790,9 @@ export function registerAnalyticsTools(
 	// ==================== Extended Graph Analytics ====================
 
 	for (const tool of GENERIC_GRAPH_ANALYTICS_TOOLS) {
-		server.tool(
+		server.registerTool(
 			tool.name,
-			tool.description,
-			baseAnalyticsSchema,
+			{ description: tool.description, inputSchema: baseAnalyticsSchema },
 			async (params) => {
 				const analytics = await tool.method(
 					service.analytics,
@@ -776,10 +805,13 @@ export function registerAnalyticsTools(
 
 	// ==================== Analytics Groups (Paginated) ====================
 
-	server.tool(
+	server.registerTool(
 		"get_analytics_group_users",
-		"Get a paginated per-user breakdown with total_groups, group_count, and a users array containing request count, cost, and token usage. Use this for billing, audits, or top-consumer analysis; use get_users_analytics for aggregate active and new user trends.",
-		paginatedAnalyticsSchema,
+		{
+			description:
+				"Get a paginated per-user breakdown with total_groups, group_count, and a users array containing request count, cost, and token usage. Use this for billing, audits, or top-consumer analysis; use get_users_analytics for aggregate active and new user trends.",
+			inputSchema: paginatedAnalyticsSchema,
+		},
 		async (params) => {
 			const analytics = await service.analytics.getAnalyticsGroupUsers(
 				normalizeAnalyticsParams(params),
@@ -788,10 +820,13 @@ export function registerAnalyticsTools(
 		},
 	);
 
-	server.tool(
+	server.registerTool(
 		"get_analytics_group_models",
-		"Get a paginated per-model breakdown with total_groups, group_count, and a models array containing request count, cost, and token usage. Use this to compare model cost, popularity, and efficiency; use get_token_analytics or get_cost_analytics for time-series trends instead.",
-		paginatedAnalyticsSchema,
+		{
+			description:
+				"Get a paginated per-model breakdown with total_groups, group_count, and a models array containing request count, cost, and token usage. Use this to compare model cost, popularity, and efficiency; use get_token_analytics or get_cost_analytics for time-series trends instead.",
+			inputSchema: paginatedAnalyticsSchema,
+		},
 		async (params) => {
 			const analytics = await service.analytics.getAnalyticsGroupModels(
 				normalizeAnalyticsParams(params),
@@ -800,10 +835,13 @@ export function registerAnalyticsTools(
 		},
 	);
 
-	server.tool(
+	server.registerTool(
 		"get_analytics_group_providers",
-		"Enterprise-gated. Get provider-grouped analytics for one workspace and time range with selectable metrics, ordering, pagination, and optional total count. Use this when comparing provider traffic or reliability; requested metric fields are preserved in each provider row.",
-		providerGroupAnalyticsSchema,
+		{
+			description:
+				"Enterprise-gated. Get provider-grouped analytics for one workspace and time range with selectable metrics, ordering, pagination, and optional total count. Use this when comparing provider traffic or reliability; requested metric fields are preserved in each provider row.",
+			inputSchema: providerGroupAnalyticsSchema,
+		},
 		async (params) => {
 			requireAnalyticsWorkspaceScope(params);
 			const normalized = normalizeAnalyticsParams({
@@ -821,10 +859,13 @@ export function registerAnalyticsTools(
 		},
 	);
 
-	server.tool(
+	server.registerTool(
 		"get_analytics_group_metadata",
-		"Get a paginated metadata breakdown with total_groups, group_count, and a metadata_groups array grouped by the required metadata_key. Use this for custom breakdowns like per-environment or per-feature analysis; pass metadata_key in addition to the time window.",
-		analyticsGroupMetadataSchema,
+		{
+			description:
+				"Get a paginated metadata breakdown with total_groups, group_count, and a metadata_groups array grouped by the required metadata_key. Use this for custom breakdowns like per-environment or per-feature analysis; pass metadata_key in addition to the time window.",
+			inputSchema: analyticsGroupMetadataSchema,
+		},
 		async (params) => {
 			const { metadata_key, ...analyticsParams } = params;
 			const analytics = await service.analytics.getAnalyticsGroupMetadata(
@@ -835,10 +876,13 @@ export function registerAnalyticsTools(
 		},
 	);
 
-	server.tool(
+	server.registerTool(
 		"get_analytics_group_mcp",
-		"Get a paginated per-MCP-server breakdown with total_groups, group_count, and an mcp_servers array containing each server name and its request count. Use this to see which MCP servers receive the most traffic; use get_analytics_group_a2a for A2A agents or get_analytics_group_users and get_analytics_group_models for other breakdowns.",
-		paginatedAnalyticsSchema,
+		{
+			description:
+				"Get a paginated per-MCP-server breakdown with total_groups, group_count, and an mcp_servers array containing each server name and its request count. Use this to see which MCP servers receive the most traffic; use get_analytics_group_a2a for A2A agents or get_analytics_group_users and get_analytics_group_models for other breakdowns.",
+			inputSchema: paginatedAnalyticsSchema,
+		},
 		async (params) => {
 			const analytics = await service.analytics.getAnalyticsGroupMcp(
 				normalizeAnalyticsParams(params),
@@ -847,10 +891,13 @@ export function registerAnalyticsTools(
 		},
 	);
 
-	server.tool(
+	server.registerTool(
 		"get_analytics_group_a2a",
-		"Get a paginated per-agent breakdown with total_groups, group_count, and an agents array containing each A2A (agent-to-agent) agent name and its request count. Use this to see which agents receive the most traffic; use get_analytics_group_mcp for MCP servers instead.",
-		paginatedAnalyticsSchema,
+		{
+			description:
+				"Get a paginated per-agent breakdown with total_groups, group_count, and an agents array containing each A2A (agent-to-agent) agent name and its request count. Use this to see which agents receive the most traffic; use get_analytics_group_mcp for MCP servers instead.",
+			inputSchema: paginatedAnalyticsSchema,
+		},
 		async (params) => {
 			const analytics = await service.analytics.getAnalyticsGroupA2a(
 				normalizeAnalyticsParams(params),
@@ -859,10 +906,13 @@ export function registerAnalyticsTools(
 		},
 	);
 
-	server.tool(
+	server.registerTool(
 		"get_analytics_group_workspaces",
-		"Get a paginated per-workspace breakdown with total_groups, group_count, is_quota_exceeded when reported, and a workspaces array containing each workspace_slug with request count and cost. Use this for org-wide chargeback or comparing workspaces; pass workspace_slug to other analytics tools to drill into one workspace.",
-		paginatedAnalyticsSchema,
+		{
+			description:
+				"Get a paginated per-workspace breakdown with total_groups, group_count, is_quota_exceeded when reported, and a workspaces array containing each workspace_slug with request count and cost. Use this for org-wide chargeback or comparing workspaces; pass workspace_slug to other analytics tools to drill into one workspace.",
+			inputSchema: paginatedAnalyticsSchema,
+		},
 		async (params) => {
 			const analytics = await service.analytics.getAnalyticsGroupWorkspaces(
 				normalizeAnalyticsParams(params),

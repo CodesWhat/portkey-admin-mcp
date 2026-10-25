@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { afterEach, describe, it } from "node:test";
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+import { Client, InMemoryTransport } from "@modelcontextprotocol/client";
 import { z } from "zod";
 import { createMcpServer, resolveToolDomains } from "../src/lib/mcp-server.js";
 import { SessionStore } from "../src/lib/session-store.js";
@@ -17,12 +16,12 @@ describe("MCP argument complexity limit", () => {
 		server.registerTool(
 			"inspect_inputs",
 			{
-				inputSchema: {
+				inputSchema: z.object({
 					values: z.unknown().transform((value) => {
 						validations += 1;
 						return value;
 					}),
-				},
+				}),
 			},
 			async () => {
 				calls += 1;

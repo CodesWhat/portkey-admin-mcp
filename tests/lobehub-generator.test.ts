@@ -10,11 +10,11 @@ import {
 	writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { join, resolve } from "node:path";
 import { after, before, describe, it } from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import { Client } from "@modelcontextprotocol/client";
+import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const temporaryRoots = new Set<string>();
@@ -76,10 +76,7 @@ async function run(
 
 function paginatedClientSource(tracePath: string): string {
 	const clientUrl = pathToFileURL(
-		resolve(
-			root,
-			"node_modules/@modelcontextprotocol/sdk/dist/esm/client/index.js",
-		),
+		resolve(root, "node_modules/@modelcontextprotocol/client/dist/index.mjs"),
 	).href;
 
 	return `
@@ -136,9 +133,9 @@ async function createFixture(manifest: Manifest): Promise<{
 	const buildDir = join(fixtureRoot, "build");
 	const sdkClientDir = join(
 		fixtureRoot,
-		"node_modules/@modelcontextprotocol/sdk/client",
+		"node_modules/@modelcontextprotocol/client",
 	);
-	const sdkPackageDir = dirname(sdkClientDir);
+	const sdkPackageDir = sdkClientDir;
 	const manifestPath = join(fixtureRoot, "lhm.plugin.json");
 	const tracePath = join(fixtureRoot, "pagination.log");
 
@@ -158,8 +155,8 @@ async function createFixture(manifest: Manifest): Promise<{
 			`${JSON.stringify({
 				type: "module",
 				exports: {
-					"./client/index.js": "./client/index.js",
-					"./client/stdio.js": "./client/stdio.js",
+					".": "./index.js",
+					"./stdio": "./stdio.js",
 				},
 			})}\n`,
 		),
@@ -170,7 +167,7 @@ async function createFixture(manifest: Manifest): Promise<{
 				pathToFileURL(
 					resolve(
 						root,
-						"node_modules/@modelcontextprotocol/sdk/dist/esm/client/stdio.js",
+						"node_modules/@modelcontextprotocol/client/dist/stdio.mjs",
 					),
 				).href,
 			)};\n`,

@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { CurrentPageSchema, PageSizeSchema } from "../lib/schemas.js";
 import type { PortkeyService } from "../services/index.js";
@@ -184,10 +184,13 @@ export function registerConfigsTools(
 	service: PortkeyService,
 ): void {
 	// List configurations tool
-	server.tool(
+	server.registerTool(
 		"list_configs",
-		"List configs in the org with id, slug, name, status, workspace, and timestamps. Use this summary view to find a slug; use get_config for the full routing, cache, retry, and target settings before updating or deleting.",
-		CONFIGS_TOOL_SCHEMAS.listConfigs,
+		{
+			description:
+				"List configs in the org with id, slug, name, status, workspace, and timestamps. Use this summary view to find a slug; use get_config for the full routing, cache, retry, and target settings before updating or deleting.",
+			inputSchema: CONFIGS_TOOL_SCHEMAS.listConfigs,
+		},
 		async (params) => {
 			const configs = await service.configs.listConfigs({
 				current_page: params.current_page,
@@ -212,10 +215,13 @@ export function registerConfigsTools(
 	);
 
 	// Get configuration details tool
-	server.tool(
+	server.registerTool(
 		"get_config",
-		"Get one config by slug and return its routing, cache, retry, and target settings. Requires a known slug; use list_configs to discover one before editing.",
-		CONFIGS_TOOL_SCHEMAS.getConfig,
+		{
+			description:
+				"Get one config by slug and return its routing, cache, retry, and target settings. Requires a known slug; use list_configs to discover one before editing.",
+			inputSchema: CONFIGS_TOOL_SCHEMAS.getConfig,
+		},
 		async (params) => {
 			const response = await service.configs.getConfig(params.slug);
 			return jsonResult({
@@ -247,10 +253,13 @@ export function registerConfigsTools(
 	);
 
 	// Phase 1: Create configuration tool
-	server.tool(
+	server.registerTool(
 		"create_config",
-		"Create a config that defines routing, cache, retry, and targets for requests; use update_config to modify an existing one and list_config_versions for history. At least one setting is required, new configs become active immediately once referenced by a key or prompt, and the call returns the new id and version_id.",
-		CONFIGS_TOOL_SCHEMAS.createConfig,
+		{
+			description:
+				"Create a config that defines routing, cache, retry, and targets for requests; use update_config to modify an existing one and list_config_versions for history. At least one setting is required, new configs become active immediately once referenced by a key or prompt, and the call returns the new id and version_id.",
+			inputSchema: CONFIGS_TOOL_SCHEMAS.createConfig,
+		},
 		async (params) => {
 			const validated = createConfigSchema.parse(params);
 			const config = buildConfigPayload(validated);
@@ -270,15 +279,18 @@ export function registerConfigsTools(
 	);
 
 	// Phase 1: Update configuration tool
-	server.tool(
+	server.registerTool(
 		"update_config",
-		"Update a config by slug; every call creates a new config version rather than overwriting, so earlier versions stay recoverable via list_config_versions. Only provided fields change: name, status, and all routing/cache/retry settings (cache_mode, cache_max_age, retry_attempts, retry_on_status_codes, strategy_mode, targets) are editable, while the slug stays fixed. Changes apply immediately to every API key and prompt referencing the config. Returns the update acknowledgement and new version_id.",
-		CONFIGS_TOOL_SCHEMAS.updateConfig,
 		{
-			readOnlyHint: false,
-			destructiveHint: false,
-			idempotentHint: false,
-			openWorldHint: false,
+			description:
+				"Update a config by slug; every call creates a new config version rather than overwriting, so earlier versions stay recoverable via list_config_versions. Only provided fields change: name, status, and all routing/cache/retry settings (cache_mode, cache_max_age, retry_attempts, retry_on_status_codes, strategy_mode, targets) are editable, while the slug stays fixed. Changes apply immediately to every API key and prompt referencing the config. Returns the update acknowledgement and new version_id.",
+			inputSchema: CONFIGS_TOOL_SCHEMAS.updateConfig,
+			annotations: {
+				readOnlyHint: false,
+				destructiveHint: false,
+				idempotentHint: false,
+				openWorldHint: false,
+			},
 		},
 		async (params) => {
 			const config = buildConfigPayload(params);
@@ -305,10 +317,13 @@ export function registerConfigsTools(
 	);
 
 	// Phase 1: Delete configuration tool
-	server.tool(
+	server.registerTool(
 		"delete_config",
-		"Delete a config by slug. This is permanent, removes all versions, and breaks anything still pointing at that slug; check list_config_versions first.",
-		CONFIGS_TOOL_SCHEMAS.deleteConfig,
+		{
+			description:
+				"Delete a config by slug. This is permanent, removes all versions, and breaks anything still pointing at that slug; check list_config_versions first.",
+			inputSchema: CONFIGS_TOOL_SCHEMAS.deleteConfig,
+		},
 		async (params) => {
 			const result = await service.configs.deleteConfig(params.slug);
 			return jsonResult({
@@ -319,10 +334,13 @@ export function registerConfigsTools(
 	);
 
 	// Phase 1: List configuration versions tool
-	server.tool(
+	server.registerTool(
 		"list_config_versions",
-		"List every version of a config with version_id, structured config payload, updater, and timestamp. Use this to audit history or compare revisions before update_config or delete_config.",
-		CONFIGS_TOOL_SCHEMAS.listConfigVersions,
+		{
+			description:
+				"List every version of a config with version_id, structured config payload, updater, and timestamp. Use this to audit history or compare revisions before update_config or delete_config.",
+			inputSchema: CONFIGS_TOOL_SCHEMAS.listConfigVersions,
+		},
 		async (params) => {
 			const result = await service.configs.listConfigVersions(params.slug);
 			return jsonResult({

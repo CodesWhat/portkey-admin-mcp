@@ -9,8 +9,10 @@ import https, { type Server as HttpsServer } from "node:https";
 import net from "node:net";
 import { resolve } from "node:path";
 import { afterEach, describe, it } from "node:test";
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import {
+	Client,
+	StreamableHTTPClientTransport,
+} from "@modelcontextprotocol/client";
 import { exportJWK, generateKeyPair, SignJWT } from "jose";
 import {
 	generateSelfSignedCert,

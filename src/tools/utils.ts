@@ -1,4 +1,4 @@
-import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import type { CallToolResult } from "@modelcontextprotocol/server";
 import { isRecord } from "../lib/type-guards.js";
 
 export function formatFullName(firstName?: string, lastName?: string): string {

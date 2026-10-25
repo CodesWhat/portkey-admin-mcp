@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { buildRateLimitsRpm, buildUsageLimits } from "../lib/limits.js";
 import { CurrentPageSchema, PageSizeSchema } from "../lib/schemas.js";
@@ -506,16 +506,19 @@ export function registerIntegrationsTools(
 	server: McpServer,
 	service: PortkeyService,
 ): void {
-	server.tool(
+	server.registerTool(
 		"get_model_pricing",
-		"Get Portkey's current public pricing configuration for one exact provider/model pair. Prices are returned in USD cents per token or provider-specific unit and may include cache, audio, image, fine-tuning, and calculation metadata. Use this read-only catalog lookup before setting integration pricing_adjustments or custom-model pricing; it does not return your negotiated integration multiplier or require Portkey authentication.",
-		INTEGRATIONS_TOOL_SCHEMAS.getModelPricing,
 		{
-			title: "Get Model Pricing",
-			readOnlyHint: true,
-			destructiveHint: false,
-			idempotentHint: true,
-			openWorldHint: true,
+			description:
+				"Get Portkey's current public pricing configuration for one exact provider/model pair. Prices are returned in USD cents per token or provider-specific unit and may include cache, audio, image, fine-tuning, and calculation metadata. Use this read-only catalog lookup before setting integration pricing_adjustments or custom-model pricing; it does not return your negotiated integration multiplier or require Portkey authentication.",
+			inputSchema: INTEGRATIONS_TOOL_SCHEMAS.getModelPricing,
+			annotations: {
+				title: "Get Model Pricing",
+				readOnlyHint: true,
+				destructiveHint: false,
+				idempotentHint: true,
+				openWorldHint: true,
+			},
 		},
 		async (params) =>
 			jsonResult(
@@ -527,10 +530,13 @@ export function registerIntegrationsTools(
 	);
 
 	// List integrations tool
-	server.tool(
+	server.registerTool(
 		"list_integrations",
-		"List org-level AI provider connections with optional workspace, type, or tag filters. Use this to find integration slugs before model or workspace updates. Returns total plus id, name, slug, provider, status, description, workspace counts, and config summary.",
-		INTEGRATIONS_TOOL_SCHEMAS.listIntegrations,
+		{
+			description:
+				"List org-level AI provider connections with optional workspace, type, or tag filters. Use this to find integration slugs before model or workspace updates. Returns total plus id, name, slug, provider, status, description, workspace counts, and config summary.",
+			inputSchema: INTEGRATIONS_TOOL_SCHEMAS.listIntegrations,
+		},
 		async (params) => {
 			const integrations = await service.integrations.listIntegrations({
 				current_page: params.current_page,
@@ -558,16 +564,19 @@ export function registerIntegrationsTools(
 	);
 
 	// Create integration tool
-	server.tool(
+	server.registerTool(
 		"create_integration",
-		"Create an AI-provider integration that becomes the source for workspace providers. ai_provider_id identifies the backend; provider-specific fields configure Azure, Bedrock, Vertex, or custom hosts. For workspace-scoped integrations, create_default_provider controls automatic provider creation. key is write-only, but secret_mappings can resolve it or configuration fields from Secret References at runtime. pricing_adjustments apply negotiated discounts or markups to cost accounting; tags attach key-value labels that list_integrations can filter on. Use update_integration_models and update_integration_workspaces after creation; returns the new integration id and slug.",
-		INTEGRATIONS_TOOL_SCHEMAS.createIntegration,
 		{
-			title: "Create AI Provider Integration",
-			readOnlyHint: false,
-			destructiveHint: false,
-			idempotentHint: false,
-			openWorldHint: true,
+			description:
+				"Create an AI-provider integration that becomes the source for workspace providers. ai_provider_id identifies the backend; provider-specific fields configure Azure, Bedrock, Vertex, or custom hosts. For workspace-scoped integrations, create_default_provider controls automatic provider creation. key is write-only, but secret_mappings can resolve it or configuration fields from Secret References at runtime. pricing_adjustments apply negotiated discounts or markups to cost accounting; tags attach key-value labels that list_integrations can filter on. Use update_integration_models and update_integration_workspaces after creation; returns the new integration id and slug.",
+			inputSchema: INTEGRATIONS_TOOL_SCHEMAS.createIntegration,
+			annotations: {
+				title: "Create AI Provider Integration",
+				readOnlyHint: false,
+				destructiveHint: false,
+				idempotentHint: false,
+				openWorldHint: true,
+			},
 		},
 		async (params) => {
 			const result = await service.integrations.createIntegration({
@@ -602,10 +611,13 @@ export function registerIntegrationsTools(
 	);
 
 	// Get integration tool
-	server.tool(
+	server.registerTool(
 		"get_integration",
-		"Fetch one integration by slug, including masked key, workspace access, allowed models, and configuration metadata. Use this before editing provider-specific settings or auditing access.",
-		INTEGRATIONS_TOOL_SCHEMAS.getIntegration,
+		{
+			description:
+				"Fetch one integration by slug, including masked key, workspace access, allowed models, and configuration metadata. Use this before editing provider-specific settings or auditing access.",
+			inputSchema: INTEGRATIONS_TOOL_SCHEMAS.getIntegration,
+		},
 		async (params) => {
 			const integration = await service.integrations.getIntegration(
 				params.slug,
@@ -634,16 +646,19 @@ export function registerIntegrationsTools(
 	);
 
 	// Update integration tool
-	server.tool(
+	server.registerTool(
 		"update_integration",
-		"Update an integration's name, description, API key, provider config, Secret Reference mappings, pricing adjustments, or tags by slug. Only provided fields change; tags replaces the whole map and null clears it; key, secret mapping, and config changes take effect immediately and can disrupt dependent providers or live requests, while pricing multipliers change cost analytics and budget accounting. Review get_integration first. Model availability and workspace access remain separate in update_integration_models and update_integration_workspaces.",
-		INTEGRATIONS_TOOL_SCHEMAS.updateIntegration,
 		{
-			title: "Update AI Provider Integration",
-			readOnlyHint: false,
-			destructiveHint: true,
-			idempotentHint: true,
-			openWorldHint: true,
+			description:
+				"Update an integration's name, description, API key, provider config, Secret Reference mappings, pricing adjustments, or tags by slug. Only provided fields change; tags replaces the whole map and null clears it; key, secret mapping, and config changes take effect immediately and can disrupt dependent providers or live requests, while pricing multipliers change cost analytics and budget accounting. Review get_integration first. Model availability and workspace access remain separate in update_integration_models and update_integration_workspaces.",
+			inputSchema: INTEGRATIONS_TOOL_SCHEMAS.updateIntegration,
+			annotations: {
+				title: "Update AI Provider Integration",
+				readOnlyHint: false,
+				destructiveHint: true,
+				idempotentHint: true,
+				openWorldHint: true,
+			},
 		},
 		async (params) => {
 			const result = await service.integrations.updateIntegration(params.slug, {
@@ -664,10 +679,13 @@ export function registerIntegrationsTools(
 	);
 
 	// Delete integration tool
-	server.tool(
+	server.registerTool(
 		"delete_integration",
-		"Delete an integration by slug. This is irreversible and stops the org-level connection, which will break dependent virtual keys, providers, and workspace access.",
-		INTEGRATIONS_TOOL_SCHEMAS.deleteIntegration,
+		{
+			description:
+				"Delete an integration by slug. This is irreversible and stops the org-level connection, which will break dependent virtual keys, providers, and workspace access.",
+			inputSchema: INTEGRATIONS_TOOL_SCHEMAS.deleteIntegration,
+		},
 		async (params) => {
 			const result = await service.integrations.deleteIntegration(params.slug);
 
@@ -679,10 +697,13 @@ export function registerIntegrationsTools(
 	);
 
 	// List integration models tool
-	server.tool(
+	server.registerTool(
 		"list_integration_models",
-		"List models enabled on an integration. Use this to verify model availability before creating prompts or configs. Returns total plus model ids, display names, enabled state, and custom-model markers.",
-		INTEGRATIONS_TOOL_SCHEMAS.listIntegrationModels,
+		{
+			description:
+				"List models enabled on an integration. Use this to verify model availability before creating prompts or configs. Returns total plus model ids, display names, enabled state, and custom-model markers.",
+			inputSchema: INTEGRATIONS_TOOL_SCHEMAS.listIntegrationModels,
+		},
 		async (params) => {
 			const models = await service.integrations.listIntegrationModels(
 				params.slug,
@@ -714,16 +735,19 @@ export function registerIntegrationsTools(
 	);
 
 	// Update integration models tool
-	server.tool(
+	server.registerTool(
 		"update_integration_models",
-		"Bulk enable or disable integration models, register custom or fine-tuned models, set per-model hosts and headers, and attach static token pricing. allow_all_models controls whether future provider models start enabled. These changes affect every workspace using the integration; inspect list_integration_models first and use get_model_pricing when deriving custom rates. Returns success and the number of models updated.",
-		INTEGRATIONS_TOOL_SCHEMAS.updateIntegrationModels,
 		{
-			title: "Update Integration Models",
-			readOnlyHint: false,
-			destructiveHint: true,
-			idempotentHint: true,
-			openWorldHint: true,
+			description:
+				"Bulk enable or disable integration models, register custom or fine-tuned models, set per-model hosts and headers, and attach static token pricing. allow_all_models controls whether future provider models start enabled. These changes affect every workspace using the integration; inspect list_integration_models first and use get_model_pricing when deriving custom rates. Returns success and the number of models updated.",
+			inputSchema: INTEGRATIONS_TOOL_SCHEMAS.updateIntegrationModels,
+			annotations: {
+				title: "Update Integration Models",
+				readOnlyHint: false,
+				destructiveHint: true,
+				idempotentHint: true,
+				openWorldHint: true,
+			},
 		},
 		async (params) => {
 			const result = await service.integrations.updateIntegrationModels(
@@ -743,10 +767,13 @@ export function registerIntegrationsTools(
 	);
 
 	// Delete integration model tool
-	server.tool(
+	server.registerTool(
 		"delete_integration_model",
-		"Delete a custom model from an integration. Built-in models should be disabled instead, because deletion only applies to custom entries. Returns success after the custom model is removed.",
-		INTEGRATIONS_TOOL_SCHEMAS.deleteIntegrationModel,
+		{
+			description:
+				"Delete a custom model from an integration. Built-in models should be disabled instead, because deletion only applies to custom entries. Returns success after the custom model is removed.",
+			inputSchema: INTEGRATIONS_TOOL_SCHEMAS.deleteIntegrationModel,
+		},
 		async (params) => {
 			const result = await service.integrations.deleteIntegrationModel(
 				params.slug,
@@ -761,10 +788,13 @@ export function registerIntegrationsTools(
 	);
 
 	// List integration workspaces tool
-	server.tool(
+	server.registerTool(
 		"list_integration_workspaces",
-		"List workspaces that can use an integration, with their limits. Use this to audit access or confirm per-workspace cost and rate settings. Returns total plus workspace ids, names, enabled state, usage limits, and rate limits.",
-		INTEGRATIONS_TOOL_SCHEMAS.listIntegrationWorkspaces,
+		{
+			description:
+				"List workspaces that can use an integration, with their limits. Use this to audit access or confirm per-workspace cost and rate settings. Returns total plus workspace ids, names, enabled state, usage limits, and rate limits.",
+			inputSchema: INTEGRATIONS_TOOL_SCHEMAS.listIntegrationWorkspaces,
+		},
 		async (params) => {
 			const workspaces = await service.integrations.listIntegrationWorkspaces(
 				params.slug,
@@ -792,16 +822,19 @@ export function registerIntegrationsTools(
 	);
 
 	// Update integration workspaces tool
-	server.tool(
+	server.registerTool(
 		"update_integration_workspaces",
-		"Control per-workspace and global access to an integration, including cost/rate limits, usage resets, and automatic default-provider creation. global_workspace_access_enabled affects current and future workspaces; override_existing_workspace_access determines whether it replaces explicit workspace settings. Per-workspace default-provider fields override top-level values. Review list_integration_workspaces first because access and limits change downstream usage immediately.",
-		INTEGRATIONS_TOOL_SCHEMAS.updateIntegrationWorkspaces,
 		{
-			title: "Update Integration Workspace Access",
-			readOnlyHint: false,
-			destructiveHint: true,
-			idempotentHint: true,
-			openWorldHint: true,
+			description:
+				"Control per-workspace and global access to an integration, including cost/rate limits, usage resets, and automatic default-provider creation. global_workspace_access_enabled affects current and future workspaces; override_existing_workspace_access determines whether it replaces explicit workspace settings. Per-workspace default-provider fields override top-level values. Review list_integration_workspaces first because access and limits change downstream usage immediately.",
+			inputSchema: INTEGRATIONS_TOOL_SCHEMAS.updateIntegrationWorkspaces,
+			annotations: {
+				title: "Update Integration Workspace Access",
+				readOnlyHint: false,
+				destructiveHint: true,
+				idempotentHint: true,
+				openWorldHint: true,
+			},
 		},
 		async (rawParams) => {
 			const params = updateIntegrationWorkspacesSchema.parse(rawParams);

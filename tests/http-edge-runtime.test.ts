@@ -6,9 +6,9 @@ import {
 } from "node:http";
 import net from "node:net";
 import { describe, it } from "node:test";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import type { JSONRPCMessage } from "@modelcontextprotocol/sdk/types.js";
+import { NodeStreamableHTTPServerTransport } from "@modelcontextprotocol/node";
+import type { JSONRPCMessage } from "@modelcontextprotocol/server";
+import { McpServer } from "@modelcontextprotocol/server";
 import { Logger } from "../src/lib/logger.js";
 import { SessionStore } from "../src/lib/session-store.js";
 
@@ -438,13 +438,13 @@ describe("HTTP runtime edge behavior", { concurrency: false }, () => {
 
 	it("delegates stateless event-store callbacks and closes an active failed connection", async () => {
 		const originalHandleRequest =
-			StreamableHTTPServerTransport.prototype.handleRequest;
+			NodeStreamableHTTPServerTransport.prototype.handleRequest;
 		const originalMcpClose = McpServer.prototype.close;
 		const originalLoggerError = Logger.error;
 		const replayed: Array<{ eventId: string; message: JSONRPCMessage }> = [];
 		const errors: string[] = [];
 
-		StreamableHTTPServerTransport.prototype.handleRequest = async function (
+		NodeStreamableHTTPServerTransport.prototype.handleRequest = async function (
 			_request,
 			response,
 		) {
@@ -531,7 +531,7 @@ describe("HTTP runtime edge behavior", { concurrency: false }, () => {
 				},
 			);
 		} finally {
-			StreamableHTTPServerTransport.prototype.handleRequest =
+			NodeStreamableHTTPServerTransport.prototype.handleRequest =
 				originalHandleRequest;
 			McpServer.prototype.close = originalMcpClose;
 			Logger.error = originalLoggerError;
@@ -540,8 +540,8 @@ describe("HTTP runtime edge behavior", { concurrency: false }, () => {
 
 	it("returns a controlled internal error when a stateless transport fails", async () => {
 		const originalHandleRequest =
-			StreamableHTTPServerTransport.prototype.handleRequest;
-		StreamableHTTPServerTransport.prototype.handleRequest = async () => {
+			NodeStreamableHTTPServerTransport.prototype.handleRequest;
+		NodeStreamableHTTPServerTransport.prototype.handleRequest = async () => {
 			throw new Error("transport exploded");
 		};
 
@@ -566,16 +566,16 @@ describe("HTTP runtime edge behavior", { concurrency: false }, () => {
 				},
 			);
 		} finally {
-			StreamableHTTPServerTransport.prototype.handleRequest =
+			NodeStreamableHTTPServerTransport.prototype.handleRequest =
 				originalHandleRequest;
 		}
 	});
 
 	it("rejects a concurrent stateless replay and releases the first lease on close", async () => {
 		const originalHandleRequest =
-			StreamableHTTPServerTransport.prototype.handleRequest;
+			NodeStreamableHTTPServerTransport.prototype.handleRequest;
 		let firstEventId: string | undefined;
-		StreamableHTTPServerTransport.prototype.handleRequest = async function (
+		NodeStreamableHTTPServerTransport.prototype.handleRequest = async function (
 			_request,
 			response,
 		) {
@@ -641,7 +641,7 @@ describe("HTTP runtime edge behavior", { concurrency: false }, () => {
 				},
 			);
 		} finally {
-			StreamableHTTPServerTransport.prototype.handleRequest =
+			NodeStreamableHTTPServerTransport.prototype.handleRequest =
 				originalHandleRequest;
 		}
 	});

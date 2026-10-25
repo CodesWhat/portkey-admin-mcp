@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import {
 	BillingMetadataSchema,
@@ -478,10 +478,13 @@ export function registerPromptsTools(
 	service: PortkeyService,
 ): void {
 	// Create prompt tool
-	server.tool(
+	server.registerTool(
 		"create_prompt",
-		"Create a new prompt template and initial version. Use this for first-time setup; use migrate_prompt for idempotent CI/CD flows. Accepts plain text or structured chat messages, creates a new version immediately, and returns the prompt id, slug, and version id. For multi-message chat prompts pass messages (preferred) or a JSON-encoded array as string.",
-		PROMPTS_TOOL_SCHEMAS.createPrompt,
+		{
+			description:
+				"Create a new prompt template and initial version. Use this for first-time setup; use migrate_prompt for idempotent CI/CD flows. Accepts plain text or structured chat messages, creates a new version immediately, and returns the prompt id, slug, and version id. For multi-message chat prompts pass messages (preferred) or a JSON-encoded array as string.",
+			inputSchema: PROMPTS_TOOL_SCHEMAS.createPrompt,
+		},
 		async (rawParams) => {
 			const params = createPromptSchema.parse(rawParams);
 			// createPromptSchema.superRefine already requires string or messages,
@@ -544,10 +547,13 @@ export function registerPromptsTools(
 	);
 
 	// List prompts tool
-	server.tool(
+	server.registerTool(
 		"list_prompts",
-		"List prompts across the workspace, with optional collection, workspace, or search filters. Returns a paginated summary with id, name, slug, model, and status so you can choose a prompt_id before get_prompt, update_prompt, or render_prompt.",
-		PROMPTS_TOOL_SCHEMAS.listPrompts,
+		{
+			description:
+				"List prompts across the workspace, with optional collection, workspace, or search filters. Returns a paginated summary with id, name, slug, model, and status so you can choose a prompt_id before get_prompt, update_prompt, or render_prompt.",
+			inputSchema: PROMPTS_TOOL_SCHEMAS.listPrompts,
+		},
 		async (params) => {
 			const effectiveParams =
 				params.page_size !== undefined && params.current_page === undefined
@@ -559,10 +565,13 @@ export function registerPromptsTools(
 	);
 
 	// Get prompt tool
-	server.tool(
+	server.registerTool(
 		"get_prompt",
-		"Fetch a prompt's full definition, active version, and version history. Use this before updating, publishing, rendering, or copying a prompt when you need the stored template and metadata. For multi-message chat prompts pass messages (preferred) or a JSON-encoded array as string.",
-		PROMPTS_TOOL_SCHEMAS.getPrompt,
+		{
+			description:
+				"Fetch a prompt's full definition, active version, and version history. Use this before updating, publishing, rendering, or copying a prompt when you need the stored template and metadata. For multi-message chat prompts pass messages (preferred) or a JSON-encoded array as string.",
+			inputSchema: PROMPTS_TOOL_SCHEMAS.getPrompt,
+		},
 		async (params) => {
 			const [prompt, versions] = await Promise.all([
 				service.prompts.getPrompt(params.prompt_id),
@@ -628,10 +637,13 @@ export function registerPromptsTools(
 	);
 
 	// Update prompt tool
-	server.tool(
+	server.registerTool(
 		"update_prompt",
-		"Update an existing prompt and create a new archived version. Only provided fields change, and publish_prompt is what makes the new version active. For multi-message chat prompts pass messages (preferred) or a JSON-encoded array as string.",
-		PROMPTS_TOOL_SCHEMAS.updatePrompt,
+		{
+			description:
+				"Update an existing prompt and create a new archived version. Only provided fields change, and publish_prompt is what makes the new version active. For multi-message chat prompts pass messages (preferred) or a JSON-encoded array as string.",
+			inputSchema: PROMPTS_TOOL_SCHEMAS.updatePrompt,
+		},
 		async (params) => {
 			const { prompt_id, dry_run, messages, ...updateData } = params;
 			const templateString = normalizePromptTemplateString({
@@ -697,10 +709,13 @@ export function registerPromptsTools(
 	);
 
 	// Delete prompt tool
-	server.tool(
+	server.registerTool(
 		"delete_prompt",
-		"Delete a prompt and all its versions by id. This cannot be undone, immediately breaks callers using the slug, and should only be used after checking list_prompt_versions or confirming you do not need an audit trail.",
-		PROMPTS_TOOL_SCHEMAS.deletePrompt,
+		{
+			description:
+				"Delete a prompt and all its versions by id. This cannot be undone, immediately breaks callers using the slug, and should only be used after checking list_prompt_versions or confirming you do not need an audit trail.",
+			inputSchema: PROMPTS_TOOL_SCHEMAS.deletePrompt,
+		},
 		async (params) => {
 			await service.prompts.deletePrompt(params.prompt_id);
 			return jsonResult({
@@ -711,10 +726,13 @@ export function registerPromptsTools(
 	);
 
 	// Publish prompt tool
-	server.tool(
+	server.registerTool(
 		"publish_prompt",
-		"Publish a specific version of a prompt as the active default, unlike promote_prompt which copies across environments or update_prompt which creates a new draft. This immediately routes all callers using the slug to that version and there is no rollback, so use list_prompt_versions to pick the version and update_prompt first if you need to create new content before promoting it.",
-		PROMPTS_TOOL_SCHEMAS.publishPrompt,
+		{
+			description:
+				"Publish a specific version of a prompt as the active default, unlike promote_prompt which copies across environments or update_prompt which creates a new draft. This immediately routes all callers using the slug to that version and there is no rollback, so use list_prompt_versions to pick the version and update_prompt first if you need to create new content before promoting it.",
+			inputSchema: PROMPTS_TOOL_SCHEMAS.publishPrompt,
+		},
 		async (params) => {
 			await service.prompts.publishPrompt(params.prompt_id, {
 				version: params.version,
@@ -729,10 +747,13 @@ export function registerPromptsTools(
 	);
 
 	// List prompt versions tool
-	server.tool(
+	server.registerTool(
 		"list_prompt_versions",
-		"List all versions of one prompt, including version number, description, status, label, and a short template preview. Use this for history or to choose a version_id before publish_prompt or update_prompt_version.",
-		PROMPTS_TOOL_SCHEMAS.listPromptVersions,
+		{
+			description:
+				"List all versions of one prompt, including version number, description, status, label, and a short template preview. Use this for history or to choose a version_id before publish_prompt or update_prompt_version.",
+			inputSchema: PROMPTS_TOOL_SCHEMAS.listPromptVersions,
+		},
 		async (params) => {
 			const versions = await service.prompts.listPromptVersions(
 				params.prompt_id,
@@ -763,10 +784,13 @@ export function registerPromptsTools(
 	);
 
 	// Render prompt tool
-	server.tool(
+	server.registerTool(
 		"render_prompt",
-		"Render a prompt by substituting variables and returning the final messages without calling the model. Use this to verify template output before a completion; run_prompt_completion is the tool that actually invokes the model.",
-		PROMPTS_TOOL_SCHEMAS.renderPrompt,
+		{
+			description:
+				"Render a prompt by substituting variables and returning the final messages without calling the model. Use this to verify template output before a completion; run_prompt_completion is the tool that actually invokes the model.",
+			inputSchema: PROMPTS_TOOL_SCHEMAS.renderPrompt,
+		},
 		async (params) => {
 			const result = await service.prompts.renderPrompt(params.prompt_id, {
 				variables: params.variables,
@@ -787,10 +811,13 @@ export function registerPromptsTools(
 	);
 
 	// Run prompt completion tool
-	server.tool(
+	server.registerTool(
 		"run_prompt_completion",
-		"Execute a prompt against the configured model and return the completion. This makes a billable model call, so use render_prompt first when you want to check the template and validate_completion_metadata when billing fields are uncertain.",
-		PROMPTS_TOOL_SCHEMAS.runPromptCompletion,
+		{
+			description:
+				"Execute a prompt against the configured model and return the completion. This makes a billable model call, so use render_prompt first when you want to check the template and validate_completion_metadata when billing fields are uncertain.",
+			inputSchema: PROMPTS_TOOL_SCHEMAS.runPromptCompletion,
+		},
 		async (params) => {
 			const result = await service.prompts.runPromptCompletion(
 				params.prompt_id,
@@ -820,15 +847,18 @@ export function registerPromptsTools(
 	);
 
 	// Migrate prompt tool
-	server.tool(
+	server.registerTool(
 		"migrate_prompt",
-		"Create or update a prompt in one idempotent step for CI/CD and prompt-as-code flows, unlike create_prompt which always makes a new prompt. Looks up the prompt by name within collection_id: if missing it creates the prompt, if found with different content it adds a new version (nothing is overwritten), and if the content already matches it no-ops; dry_run reports what would happen without changing anything. Stores app/env in template_metadata; get collection_id from list_collections. Returns the action taken (created, updated, or unchanged), dry_run flag, message, prompt id, slug, and version id.",
-		PROMPTS_TOOL_SCHEMAS.migratePrompt,
 		{
-			readOnlyHint: false,
-			destructiveHint: false,
-			idempotentHint: true,
-			openWorldHint: false,
+			description:
+				"Create or update a prompt in one idempotent step for CI/CD and prompt-as-code flows, unlike create_prompt which always makes a new prompt. Looks up the prompt by name within collection_id: if missing it creates the prompt, if found with different content it adds a new version (nothing is overwritten), and if the content already matches it no-ops; dry_run reports what would happen without changing anything. Stores app/env in template_metadata; get collection_id from list_collections. Returns the action taken (created, updated, or unchanged), dry_run flag, message, prompt id, slug, and version id.",
+			inputSchema: PROMPTS_TOOL_SCHEMAS.migratePrompt,
+			annotations: {
+				readOnlyHint: false,
+				destructiveHint: false,
+				idempotentHint: true,
+				openWorldHint: false,
+			},
 		},
 		async (rawParams) => {
 			const params = migratePromptSchema.parse(rawParams);
@@ -876,10 +906,13 @@ export function registerPromptsTools(
 	);
 
 	// Promote prompt tool
-	server.tool(
+	server.registerTool(
 		"promote_prompt",
-		"Copy a prompt from one environment to another and create or update the target automatically. Use this for staged releases when you want the target prompt synchronized without manual edits, and it returns both source and target version ids.",
-		PROMPTS_TOOL_SCHEMAS.promotePrompt,
+		{
+			description:
+				"Copy a prompt from one environment to another and create or update the target automatically. Use this for staged releases when you want the target prompt synchronized without manual edits, and it returns both source and target version ids.",
+			inputSchema: PROMPTS_TOOL_SCHEMAS.promotePrompt,
+		},
 		async (params) => {
 			const result = await service.prompts.promotePrompt({
 				source_prompt_id: params.source_prompt_id,
@@ -906,10 +939,13 @@ export function registerPromptsTools(
 	);
 
 	// Validate completion metadata tool
-	server.tool(
+	server.registerTool(
 		"validate_completion_metadata",
-		"Preflight billing metadata before run_prompt_completion. Validates required fields and values without making changes, so you can catch attribution errors before paying for the call.",
-		PROMPTS_TOOL_SCHEMAS.validateCompletionMetadata,
+		{
+			description:
+				"Preflight billing metadata before run_prompt_completion. Validates required fields and values without making changes, so you can catch attribution errors before paying for the call.",
+			inputSchema: PROMPTS_TOOL_SCHEMAS.validateCompletionMetadata,
+		},
 		async (params) => {
 			const result = service.prompts.validateBillingMetadata(params);
 
@@ -924,10 +960,13 @@ export function registerPromptsTools(
 
 	// ==================== Individual Version Management ====================
 
-	server.tool(
+	server.registerTool(
 		"get_prompt_version",
-		"Retrieve a specific prompt version by its version UUID. Use list_prompt_versions to find the id first; returns the template, parameters, and model config for that version.",
-		PROMPTS_TOOL_SCHEMAS.getPromptVersion,
+		{
+			description:
+				"Retrieve a specific prompt version by its version UUID. Use list_prompt_versions to find the id first; returns the template, parameters, and model config for that version.",
+			inputSchema: PROMPTS_TOOL_SCHEMAS.getPromptVersion,
+		},
 		async (params) => {
 			const version = await service.prompts.getPromptVersion(
 				params.prompt_id,
@@ -937,10 +976,13 @@ export function registerPromptsTools(
 		},
 	);
 
-	server.tool(
+	server.registerTool(
 		"update_prompt_version",
-		"Update a specific prompt version's label assignment. This only assigns or removes a label, and null clears the label after you look up ids with list_prompt_labels.",
-		PROMPTS_TOOL_SCHEMAS.updatePromptVersion,
+		{
+			description:
+				"Update a specific prompt version's label assignment. This only assigns or removes a label, and null clears the label after you look up ids with list_prompt_labels.",
+			inputSchema: PROMPTS_TOOL_SCHEMAS.updatePromptVersion,
+		},
 		async (params) => {
 			await service.prompts.updatePromptVersion(
 				params.prompt_id,

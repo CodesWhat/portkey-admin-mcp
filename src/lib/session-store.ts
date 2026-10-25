@@ -1,7 +1,7 @@
 /**
  * Session management for HTTP transport
  */
-import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
+import type { Transport } from "@modelcontextprotocol/server";
 import type { ToolDomain } from "../tools/index.js";
 
 export const DEFAULT_MAX_SESSIONS = 100;

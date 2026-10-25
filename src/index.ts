@@ -2,11 +2,11 @@
 /**
  * Portkey MCP Server - stdio transport entry point
  */
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { serveStdio } from "@modelcontextprotocol/server/stdio";
 import { Logger } from "./lib/logger.js";
 import { createMcpServer } from "./lib/mcp-server.js";
 
-async function main() {
+function main() {
 	try {
 		if (!process.env.PORTKEY_API_KEY) {
 			// The catalog (initialize/tools/list) still works without credentials,
@@ -17,20 +17,18 @@ async function main() {
 			);
 		}
 
-		// Create MCP server with all tools registered
-		const { server } = createMcpServer();
-
-		// Start server with stdio transport
-		const transport = new StdioServerTransport();
-		await server.connect(transport);
+		const connection = serveStdio(() => createMcpServer().server, {
+			onerror: (error) =>
+				Logger.error("MCP stdio transport failed", { error: error.message }),
+		});
 
 		// Graceful shutdown handlers
 		process.on("SIGINT", async () => {
-			await server.close();
+			await connection.close();
 			process.exit(0);
 		});
 		process.on("SIGTERM", async () => {
-			await server.close();
+			await connection.close();
 			process.exit(0);
 		});
 	} catch (error) {

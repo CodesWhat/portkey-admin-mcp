@@ -10,8 +10,8 @@ import assert from "node:assert/strict";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { after, before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import { Client } from "@modelcontextprotocol/client";
+import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
 
 // ---------------------------------------------------------------------------
 // Pre-flight: verify the build artifact exists and is not stale
@@ -66,6 +66,30 @@ if (!existsSync(BUILD_INDEX)) {
 const PKG = JSON.parse(
 	readFileSync(new URL("../package.json", import.meta.url), "utf-8"),
 );
+
+describe("modern stdio protocol", () => {
+	it("discovers the full catalog, resources, and prompts without the legacy handshake", async () => {
+		const transport = new StdioClientTransport({
+			command: "node",
+			args: ["build/index.js"],
+			stderr: "pipe",
+		});
+		const client = new Client(
+			{ name: "modern-stdio-test", version: "1.0.0" },
+			{ versionNegotiation: { mode: { pin: "2026-07-28" } } },
+		);
+		try {
+			await client.connect(transport);
+			assert.equal(client.getProtocolEra(), "modern");
+			assert.equal(client.getServerVersion()?.name, "portkey-admin-mcp");
+			assert.equal((await client.listTools()).tools.length, 194);
+			assert.ok((await client.listResources()).resources.length > 0);
+			assert.ok((await client.listPrompts()).prompts.length > 0);
+		} finally {
+			await client.close();
+		}
+	});
+});
 
 // All 194 expected tool names across 22 domains
 const EXPECTED_TOOLS = [

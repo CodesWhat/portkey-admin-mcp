@@ -185,7 +185,7 @@
 					}
 				},
 				"required": ["name", "subjects", "targets"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -263,7 +263,7 @@
 						"maximum": 9007199254740991
 					}
 				},
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -286,7 +286,7 @@
 					}
 				},
 				"required": ["id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -438,7 +438,7 @@
 					}
 				},
 				"required": ["subjects", "targets", "version", "id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -461,7 +461,7 @@
 					}
 				},
 				"required": ["id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -495,7 +495,7 @@
 						"maximum": 100
 					}
 				},
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -530,7 +530,7 @@
 					}
 				},
 				"required": ["domain"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -553,7 +553,7 @@
 					}
 				},
 				"required": ["id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -594,7 +594,7 @@
 					}
 				},
 				"required": ["id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -617,7 +617,7 @@
 					}
 				},
 				"required": ["id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -656,7 +656,7 @@
 						"pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
 					}
 				},
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -743,7 +743,7 @@
 					}
 				},
 				"required": ["email", "role", "workspaces"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -802,7 +802,7 @@
 					}
 				},
 				"required": ["time_of_generation_min", "time_of_generation_max"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -823,7 +823,7 @@
 					}
 				},
 				"required": ["user_id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -857,7 +857,7 @@
 					}
 				},
 				"required": ["user_id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -878,7 +878,7 @@
 					}
 				},
 				"required": ["user_id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -922,7 +922,7 @@
 						"enum": ["pending", "cancelled", "accepted", "expired"]
 					}
 				},
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -943,7 +943,7 @@
 					}
 				},
 				"required": ["invite_id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -964,7 +964,7 @@
 					}
 				},
 				"required": ["invite_id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -985,7 +985,7 @@
 					}
 				},
 				"required": ["invite_id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -1026,7 +1026,7 @@
 						"maximum": 100
 					}
 				},
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"title": "List SCIM Workspace Mappings",
@@ -1063,7 +1063,7 @@
 					}
 				},
 				"required": ["workspace_id", "role"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"title": "Create SCIM Workspace Mapping",
@@ -1085,7 +1085,7 @@
 					}
 				},
 				"required": ["mapping_id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"title": "Delete SCIM Workspace Mapping",
@@ -1118,7 +1118,7 @@
 						"maximum": 100
 					}
 				},
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"title": "List SCIM Groups",
@@ -1160,7 +1160,7 @@
 						"enum": ["active", "archived"]
 					}
 				},
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -1181,7 +1181,7 @@
 					}
 				},
 				"required": ["workspace_id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -1318,7 +1318,7 @@
 					}
 				},
 				"required": ["name"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -1470,7 +1470,7 @@
 					}
 				},
 				"required": ["workspace_id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -1491,7 +1491,7 @@
 					}
 				},
 				"required": ["workspace_id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -1523,7 +1523,7 @@
 					}
 				},
 				"required": ["workspace_id", "user_id", "role"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -1567,7 +1567,7 @@
 					}
 				},
 				"required": ["workspace_id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -1594,7 +1594,7 @@
 					}
 				},
 				"required": ["workspace_id", "user_id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -1626,7 +1626,7 @@
 					}
 				},
 				"required": ["workspace_id", "user_id", "role"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -1653,7 +1653,7 @@
 					}
 				},
 				"required": ["workspace_id", "user_id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -1681,7 +1681,7 @@
 						"maximum": 100
 					}
 				},
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -1702,7 +1702,7 @@
 					}
 				},
 				"required": ["slug"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -1772,7 +1772,7 @@
 					}
 				},
 				"required": ["name"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -1847,7 +1847,7 @@
 					}
 				},
 				"required": ["slug"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -1868,7 +1868,7 @@
 					}
 				},
 				"required": ["slug"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -1889,7 +1889,7 @@
 					}
 				},
 				"required": ["slug"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -1941,7 +1941,7 @@
 						}
 					}
 				},
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -2068,7 +2068,7 @@
 					}
 				},
 				"required": ["name"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -2094,7 +2094,7 @@
 					}
 				},
 				"required": ["id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -2253,7 +2253,7 @@
 					}
 				},
 				"required": ["id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -2275,7 +2275,7 @@
 					}
 				},
 				"required": ["id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -2303,7 +2303,7 @@
 						"maximum": 100
 					}
 				},
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -2436,7 +2436,7 @@
 					}
 				},
 				"required": ["name", "provider"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -2457,7 +2457,7 @@
 					}
 				},
 				"required": ["slug"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -2568,7 +2568,7 @@
 					}
 				},
 				"required": ["slug"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -2589,7 +2589,7 @@
 					}
 				},
 				"required": ["slug"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -2768,7 +2768,7 @@
 					}
 				},
 				"required": ["type", "sub_type", "name", "scopes"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -2800,7 +2800,7 @@
 						"type": "string"
 					}
 				},
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -2823,7 +2823,7 @@
 					}
 				},
 				"required": ["id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -2998,7 +2998,7 @@
 					}
 				},
 				"required": ["id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -3021,7 +3021,7 @@
 					}
 				},
 				"required": ["id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -3050,7 +3050,7 @@
 					}
 				},
 				"required": ["id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"title": "Rotate API Key",
@@ -3087,7 +3087,7 @@
 						"maximum": 100
 					}
 				},
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -3116,7 +3116,7 @@
 					}
 				},
 				"required": ["name"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -3137,7 +3137,7 @@
 					}
 				},
 				"required": ["collection_id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -3166,7 +3166,7 @@
 					}
 				},
 				"required": ["collection_id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -3187,7 +3187,7 @@
 					}
 				},
 				"required": ["collection_id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -3377,7 +3377,7 @@
 					}
 				},
 				"required": ["name", "collection_id", "parameters", "virtual_key"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -3417,7 +3417,7 @@
 						"maximum": 100
 					}
 				},
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -3438,7 +3438,7 @@
 					}
 				},
 				"required": ["prompt_id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -3624,7 +3624,7 @@
 					}
 				},
 				"required": ["prompt_id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -3645,7 +3645,7 @@
 					}
 				},
 				"required": ["prompt_id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -3671,7 +3671,7 @@
 					}
 				},
 				"required": ["prompt_id", "version"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -3692,7 +3692,7 @@
 					}
 				},
 				"required": ["prompt_id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -3770,7 +3770,7 @@
 					}
 				},
 				"required": ["prompt_id", "variables"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -3877,7 +3877,7 @@
 					}
 				},
 				"required": ["prompt_id", "variables", "metadata"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -4076,7 +4076,7 @@
 					"parameters",
 					"virtual_key"
 				],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -4114,7 +4114,7 @@
 					}
 				},
 				"required": ["source_prompt_id", "target_collection_id", "target_env"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -4152,7 +4152,7 @@
 						"type": "string"
 					}
 				},
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -4177,7 +4177,7 @@
 					}
 				},
 				"required": ["prompt_id", "version_id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -4206,7 +4206,7 @@
 					}
 				},
 				"required": ["prompt_id", "version_id", "label_id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -4393,7 +4393,7 @@
 					}
 				},
 				"required": ["time_of_generation_min", "time_of_generation_max"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -4580,7 +4580,7 @@
 					}
 				},
 				"required": ["time_of_generation_min", "time_of_generation_max"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -4767,7 +4767,7 @@
 					}
 				},
 				"required": ["time_of_generation_min", "time_of_generation_max"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -4954,7 +4954,7 @@
 					}
 				},
 				"required": ["time_of_generation_min", "time_of_generation_max"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -5141,7 +5141,7 @@
 					}
 				},
 				"required": ["time_of_generation_min", "time_of_generation_max"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -5328,7 +5328,7 @@
 					}
 				},
 				"required": ["time_of_generation_min", "time_of_generation_max"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -5515,7 +5515,7 @@
 					}
 				},
 				"required": ["time_of_generation_min", "time_of_generation_max"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -5702,7 +5702,7 @@
 					}
 				},
 				"required": ["time_of_generation_min", "time_of_generation_max"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -5890,7 +5890,7 @@
 					}
 				},
 				"required": ["time_of_generation_min", "time_of_generation_max"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -6077,7 +6077,7 @@
 					}
 				},
 				"required": ["time_of_generation_min", "time_of_generation_max"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -6264,7 +6264,7 @@
 					}
 				},
 				"required": ["time_of_generation_min", "time_of_generation_max"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -6451,7 +6451,7 @@
 					}
 				},
 				"required": ["time_of_generation_min", "time_of_generation_max"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -6638,7 +6638,7 @@
 					}
 				},
 				"required": ["time_of_generation_min", "time_of_generation_max"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -6825,7 +6825,7 @@
 					}
 				},
 				"required": ["time_of_generation_min", "time_of_generation_max"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -7012,7 +7012,7 @@
 					}
 				},
 				"required": ["time_of_generation_min", "time_of_generation_max"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -7199,7 +7199,7 @@
 					}
 				},
 				"required": ["time_of_generation_min", "time_of_generation_max"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -7386,7 +7386,7 @@
 					}
 				},
 				"required": ["time_of_generation_min", "time_of_generation_max"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -7573,7 +7573,7 @@
 					}
 				},
 				"required": ["time_of_generation_min", "time_of_generation_max"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -7772,7 +7772,7 @@
 					}
 				},
 				"required": ["time_of_generation_min", "time_of_generation_max"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -7971,7 +7971,7 @@
 					}
 				},
 				"required": ["time_of_generation_min", "time_of_generation_max"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -8206,7 +8206,7 @@
 					}
 				},
 				"required": ["time_of_generation_min", "time_of_generation_max"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -8413,7 +8413,7 @@
 					"time_of_generation_max",
 					"metadata_key"
 				],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -8612,7 +8612,7 @@
 					}
 				},
 				"required": ["time_of_generation_min", "time_of_generation_max"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -8811,7 +8811,7 @@
 					}
 				},
 				"required": ["time_of_generation_min", "time_of_generation_max"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -9010,7 +9010,7 @@
 					}
 				},
 				"required": ["time_of_generation_min", "time_of_generation_max"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -9025,7 +9025,7 @@
 			"inputSchema": {
 				"type": "object",
 				"properties": {},
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"title": "Get Organisation Guardrail Defaults",
@@ -9056,7 +9056,7 @@
 						}
 					}
 				},
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"title": "Update Organisation Guardrail Defaults",
@@ -9078,7 +9078,7 @@
 					}
 				},
 				"required": ["organisation_id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"title": "List Input Guardrail Workspace Exclusions",
@@ -9123,7 +9123,7 @@
 					}
 				},
 				"required": ["organisation_id", "workspaces"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"title": "Update Input Guardrail Workspace Exclusions",
@@ -9145,7 +9145,7 @@
 					}
 				},
 				"required": ["organisation_id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"title": "List Output Guardrail Workspace Exclusions",
@@ -9190,7 +9190,7 @@
 					}
 				},
 				"required": ["organisation_id", "workspaces"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"title": "Update Output Guardrail Workspace Exclusions",
@@ -9227,7 +9227,7 @@
 						"maximum": 9007199254740991
 					}
 				},
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -9248,7 +9248,7 @@
 					}
 				},
 				"required": ["guardrail_id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -9379,7 +9379,7 @@
 					}
 				},
 				"required": ["name"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -9401,7 +9401,7 @@
 					}
 				},
 				"required": ["guardrail_id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"title": "List Guardrail MCP Servers",
@@ -9457,7 +9457,7 @@
 					}
 				},
 				"required": ["guardrail_id", "mcp_servers"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"title": "Replace Guardrail MCP Servers",
@@ -9505,7 +9505,7 @@
 					}
 				},
 				"required": ["guardrail_id", "mcp_server_id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"title": "Upsert Guardrail MCP Server",
@@ -9628,7 +9628,7 @@
 					}
 				},
 				"required": ["guardrail_id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -9649,7 +9649,7 @@
 					}
 				},
 				"required": ["guardrail_id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -9701,7 +9701,7 @@
 						"maximum": 9007199254740991
 					}
 				},
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -9728,7 +9728,7 @@
 					}
 				},
 				"required": ["id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -9839,7 +9839,7 @@
 					}
 				},
 				"required": ["conditions", "group_by", "type", "unit", "value"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -9921,7 +9921,7 @@
 					}
 				},
 				"required": ["id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -9943,7 +9943,7 @@
 					}
 				},
 				"required": ["id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -9985,7 +9985,7 @@
 						"maximum": 9007199254740991
 					}
 				},
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -10016,7 +10016,7 @@
 					}
 				},
 				"required": ["id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -10141,7 +10141,7 @@
 					}
 				},
 				"required": ["conditions", "group_by", "type", "credit_limit"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -10285,7 +10285,7 @@
 					}
 				},
 				"required": ["id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -10307,7 +10307,7 @@
 					}
 				},
 				"required": ["id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -10350,7 +10350,7 @@
 					}
 				},
 				"required": ["limit_id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -10377,7 +10377,7 @@
 					}
 				},
 				"required": ["limit_id", "entity_id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -10466,7 +10466,7 @@
 					}
 				},
 				"required": ["start_time", "end_time", "organisation_id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -10504,7 +10504,7 @@
 					}
 				},
 				"required": ["name"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -10544,7 +10544,7 @@
 						"maximum": 100
 					}
 				},
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -10573,7 +10573,7 @@
 					}
 				},
 				"required": ["label_id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -10607,7 +10607,7 @@
 					}
 				},
 				"required": ["label_id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -10628,7 +10628,7 @@
 					}
 				},
 				"required": ["label_id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -10661,7 +10661,7 @@
 					}
 				},
 				"required": ["name", "string"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -10681,7 +10681,7 @@
 						"type": "string"
 					}
 				},
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -10702,7 +10702,7 @@
 					}
 				},
 				"required": ["prompt_partial_id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -10740,7 +10740,7 @@
 					}
 				},
 				"required": ["prompt_partial_id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -10761,7 +10761,7 @@
 					}
 				},
 				"required": ["prompt_partial_id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -10782,7 +10782,7 @@
 					}
 				},
 				"required": ["prompt_partial_id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -10808,7 +10808,7 @@
 					}
 				},
 				"required": ["prompt_partial_id", "version"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -10846,7 +10846,7 @@
 					}
 				},
 				"required": ["trace_id", "value"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -10884,7 +10884,7 @@
 					}
 				},
 				"required": ["id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -10921,7 +10921,7 @@
 					}
 				},
 				"required": ["log_id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"title": "Get Gateway Log",
@@ -10943,7 +10943,7 @@
 					}
 				},
 				"required": ["workspace_id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"title": "Get Log Export Field Restrictions",
@@ -11055,7 +11055,7 @@
 						"additionalProperties": {}
 					}
 				},
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -11140,7 +11140,7 @@
 					}
 				},
 				"required": ["time_min", "time_max", "requested_fields"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -11161,7 +11161,7 @@
 					}
 				},
 				"required": ["workspace_id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -11182,7 +11182,7 @@
 					}
 				},
 				"required": ["export_id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -11203,7 +11203,7 @@
 					}
 				},
 				"required": ["export_id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -11224,7 +11224,7 @@
 					}
 				},
 				"required": ["export_id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -11245,7 +11245,7 @@
 					}
 				},
 				"required": ["export_id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -11303,7 +11303,7 @@
 					}
 				},
 				"required": ["export_id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -11335,7 +11335,7 @@
 						"type": "string"
 					}
 				},
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -11407,7 +11407,7 @@
 					}
 				},
 				"required": ["name", "integration_id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -11432,7 +11432,7 @@
 					}
 				},
 				"required": ["slug"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -11504,7 +11504,7 @@
 					}
 				},
 				"required": ["slug"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -11529,7 +11529,7 @@
 					}
 				},
 				"required": ["slug"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -11875,7 +11875,7 @@
 					}
 				},
 				"required": ["name", "manager_type", "auth_config", "secret_path"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"title": "Create Secret Reference",
@@ -11925,7 +11925,7 @@
 						"maximum": 100
 					}
 				},
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"title": "List Secret References",
@@ -11948,7 +11948,7 @@
 					}
 				},
 				"required": ["id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"title": "Get Secret Reference",
@@ -12150,7 +12150,7 @@
 					}
 				},
 				"required": ["id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"title": "Update Secret Reference",
@@ -12173,7 +12173,7 @@
 					}
 				},
 				"required": ["id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"title": "Delete Secret Reference",
@@ -12199,7 +12199,7 @@
 					}
 				},
 				"required": ["provider", "model"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"title": "Get Model Pricing",
@@ -12247,7 +12247,7 @@
 						}
 					}
 				},
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -12682,7 +12682,7 @@
 					}
 				},
 				"required": ["name", "ai_provider_id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"title": "Create AI Provider Integration",
@@ -12704,7 +12704,7 @@
 					}
 				},
 				"required": ["slug"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -13121,7 +13121,7 @@
 					}
 				},
 				"required": ["slug"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"title": "Update AI Provider Integration",
@@ -13143,7 +13143,7 @@
 					}
 				},
 				"required": ["slug"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -13176,7 +13176,7 @@
 					}
 				},
 				"required": ["slug"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -13298,7 +13298,7 @@
 					}
 				},
 				"required": ["slug", "models"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"title": "Update Integration Models",
@@ -13324,7 +13324,7 @@
 					}
 				},
 				"required": ["slug", "model_slug"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -13357,7 +13357,7 @@
 					}
 				},
 				"required": ["slug"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -13456,7 +13456,7 @@
 					}
 				},
 				"required": ["slug", "workspaces"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"title": "Update Integration Workspace Access",
@@ -13502,7 +13502,7 @@
 						"type": "string"
 					}
 				},
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -13601,7 +13601,7 @@
 					}
 				},
 				"required": ["name", "url", "auth_type", "transport"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"title": "Create MCP Integration",
@@ -13623,7 +13623,7 @@
 					}
 				},
 				"required": ["id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -13718,7 +13718,7 @@
 					}
 				},
 				"required": ["id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"title": "Update MCP Integration",
@@ -13740,7 +13740,7 @@
 					}
 				},
 				"required": ["id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -13761,7 +13761,7 @@
 					}
 				},
 				"required": ["id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -13782,7 +13782,7 @@
 					}
 				},
 				"required": ["id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -13827,7 +13827,7 @@
 					}
 				},
 				"required": ["id", "capabilities"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -13848,7 +13848,7 @@
 					}
 				},
 				"required": ["id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -13888,7 +13888,7 @@
 					}
 				},
 				"required": ["id", "workspaces"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -13931,7 +13931,7 @@
 					}
 				},
 				"required": ["id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"title": "List MCP Server Connections",
@@ -13963,7 +13963,7 @@
 					}
 				},
 				"required": ["id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"title": "Disconnect MCP Server Connection",
@@ -13996,7 +13996,7 @@
 						"type": "string"
 					}
 				},
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -14029,7 +14029,7 @@
 					}
 				},
 				"required": ["name", "mcp_integration_id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -14050,7 +14050,7 @@
 					}
 				},
 				"required": ["id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -14079,7 +14079,7 @@
 					}
 				},
 				"required": ["id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -14100,7 +14100,7 @@
 					}
 				},
 				"required": ["id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -14121,7 +14121,7 @@
 					}
 				},
 				"required": ["id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -14154,7 +14154,7 @@
 					}
 				},
 				"required": ["id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -14199,7 +14199,7 @@
 					}
 				},
 				"required": ["id", "capabilities"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
@@ -14232,7 +14232,7 @@
 					}
 				},
 				"required": ["id"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": true,
@@ -14272,7 +14272,7 @@
 					}
 				},
 				"required": ["id", "users"],
-				"$schema": "http://json-schema.org/draft-07/schema#"
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,

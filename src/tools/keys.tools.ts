@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { buildRateLimitsRpm, buildUsageLimits } from "../lib/limits.js";
 import { CurrentPageSchema, PageSizeSchema } from "../lib/schemas.js";
@@ -546,10 +546,13 @@ export function registerKeysTools(
 	service: PortkeyService,
 ): void {
 	// List virtual keys tool
-	server.tool(
+	server.registerTool(
 		"list_virtual_keys",
-		"List provider API keys stored as virtual keys in your Portkey org. Use this to find slugs before wiring prompts/configs or auditing limits. Returns total plus name, slug, status, usage limits, rate limits, reset state, and model config.",
-		KEYS_TOOL_SCHEMAS.listVirtualKeys,
+		{
+			description:
+				"List provider API keys stored as virtual keys in your Portkey org. Use this to find slugs before wiring prompts/configs or auditing limits. Returns total plus name, slug, status, usage limits, rate limits, reset state, and model config.",
+			inputSchema: KEYS_TOOL_SCHEMAS.listVirtualKeys,
+		},
 		async (params) => {
 			const virtualKeys = await service.keys.listVirtualKeys({
 				current_page: params.current_page,
@@ -563,10 +566,13 @@ export function registerKeysTools(
 	);
 
 	// Phase 2: Create virtual key tool
-	server.tool(
+	server.registerTool(
 		"create_virtual_key",
-		"Store a provider API key as a virtual key. The raw key is encrypted and only returned at creation time, so save the returned slug and use it in prompts/configs. Optional usage and rate limits apply immediately, and the tool returns the new slug.",
-		KEYS_TOOL_SCHEMAS.createVirtualKey,
+		{
+			description:
+				"Store a provider API key as a virtual key. The raw key is encrypted and only returned at creation time, so save the returned slug and use it in prompts/configs. Optional usage and rate limits apply immediately, and the tool returns the new slug.",
+			inputSchema: KEYS_TOOL_SCHEMAS.createVirtualKey,
+		},
 		async (params) => {
 			const validated = createVirtualKeySchema.parse(params);
 			const result = await service.keys.createVirtualKey({
@@ -610,10 +616,13 @@ export function registerKeysTools(
 	);
 
 	// Phase 2: Get virtual key tool
-	server.tool(
+	server.registerTool(
 		"get_virtual_key",
-		"Fetch one virtual key by slug, including metadata, a masked secret, limits, status, and model config. Use this before updating or to inspect the current configuration.",
-		KEYS_TOOL_SCHEMAS.getVirtualKey,
+		{
+			description:
+				"Fetch one virtual key by slug, including metadata, a masked secret, limits, status, and model config. Use this before updating or to inspect the current configuration.",
+			inputSchema: KEYS_TOOL_SCHEMAS.getVirtualKey,
+		},
 		async (params) => {
 			const virtualKey = await service.keys.getVirtualKey(params.slug);
 			return jsonResult(formatVirtualKey(virtualKey));
@@ -621,10 +630,13 @@ export function registerKeysTools(
 	);
 
 	// Phase 2: Update virtual key tool
-	server.tool(
+	server.registerTool(
 		"update_virtual_key",
-		"Update a virtual key's name, secret, note, or limits. Rotating the key takes effect immediately, and limit changes apply to downstream prompts and configs using this slug. Returns success when Portkey accepts the update.",
-		KEYS_TOOL_SCHEMAS.updateVirtualKey,
+		{
+			description:
+				"Update a virtual key's name, secret, note, or limits. Rotating the key takes effect immediately, and limit changes apply to downstream prompts and configs using this slug. Returns success when Portkey accepts the update.",
+			inputSchema: KEYS_TOOL_SCHEMAS.updateVirtualKey,
+		},
 		async (params) => {
 			const result = await service.keys.updateVirtualKey(params.slug, {
 				name: params.name,
@@ -658,10 +670,13 @@ export function registerKeysTools(
 	);
 
 	// Phase 2: Delete virtual key tool
-	server.tool(
+	server.registerTool(
 		"delete_virtual_key",
-		"Delete a virtual key by slug. This is irreversible and will break prompts and configs that reference the slug, so confirm no active dependencies first. Returns success after removal.",
-		KEYS_TOOL_SCHEMAS.deleteVirtualKey,
+		{
+			description:
+				"Delete a virtual key by slug. This is irreversible and will break prompts and configs that reference the slug, so confirm no active dependencies first. Returns success after removal.",
+			inputSchema: KEYS_TOOL_SCHEMAS.deleteVirtualKey,
+		},
 		async (params) => {
 			const result = await service.keys.deleteVirtualKey(params.slug);
 			return jsonResult({
@@ -672,10 +687,13 @@ export function registerKeysTools(
 	);
 
 	// Phase 2: Create API key tool
-	server.tool(
+	server.registerTool(
 		"create_api_key",
-		"Create a Portkey API key for auth. Org keys grant broader access; workspace keys are scoped. WARNING: The key secret is returned ONCE in the tool result and will be visible in MCP transcripts and LLM context — store it securely immediately. Using the key grants access immediately according to its scopes, defaults, and limits. Workspace keys require workspace_id and user keys require user_id.",
-		KEYS_TOOL_SCHEMAS.createApiKey,
+		{
+			description:
+				"Create a Portkey API key for auth. Org keys grant broader access; workspace keys are scoped. WARNING: The key secret is returned ONCE in the tool result and will be visible in MCP transcripts and LLM context — store it securely immediately. Using the key grants access immediately according to its scopes, defaults, and limits. Workspace keys require workspace_id and user keys require user_id.",
+			inputSchema: KEYS_TOOL_SCHEMAS.createApiKey,
+		},
 		async (params) => {
 			const validated = createApiKeySchema.parse(params);
 			const result = await service.keys.createApiKey(
@@ -721,10 +739,13 @@ export function registerKeysTools(
 	);
 
 	// Phase 2: List API keys tool
-	server.tool(
+	server.registerTool(
 		"list_api_keys",
-		"List Portkey API keys for auditing access, scopes, defaults, limits, and expiration. Use this for API keys only; use list_virtual_keys for provider keys. Returns total plus id, type, status, workspace/user scope, limits, defaults, alert emails, and creation mode.",
-		KEYS_TOOL_SCHEMAS.listApiKeys,
+		{
+			description:
+				"List Portkey API keys for auditing access, scopes, defaults, limits, and expiration. Use this for API keys only; use list_virtual_keys for provider keys. Returns total plus id, type, status, workspace/user scope, limits, defaults, alert emails, and creation mode.",
+			inputSchema: KEYS_TOOL_SCHEMAS.listApiKeys,
+		},
 		async (params) => {
 			const apiKeys = await service.keys.listApiKeys({
 				page_size: params.page_size,
@@ -740,10 +761,13 @@ export function registerKeysTools(
 	);
 
 	// Phase 2: Get API key tool
-	server.tool(
+	server.registerTool(
 		"get_api_key",
-		"Fetch one API key by UUID without revealing the secret. Use this to inspect scopes, defaults, limits, expiration, and reset state before changing access.",
-		KEYS_TOOL_SCHEMAS.getApiKey,
+		{
+			description:
+				"Fetch one API key by UUID without revealing the secret. Use this to inspect scopes, defaults, limits, expiration, and reset state before changing access.",
+			inputSchema: KEYS_TOOL_SCHEMAS.getApiKey,
+		},
 		async (params) => {
 			const apiKey = await service.keys.getApiKey(params.id);
 			return jsonResult(formatApiKey(apiKey));
@@ -751,10 +775,13 @@ export function registerKeysTools(
 	);
 
 	// Phase 2: Update API key tool
-	server.tool(
+	server.registerTool(
 		"update_api_key",
-		"Update an API key's name, description, scopes, defaults, or limits, unlike delete_api_key which revokes it or create_api_key which issues a new one. Changes take effect immediately for downstream callers, type and sub-type stay fixed after creation, and the call returns success without rotating the secret.",
-		KEYS_TOOL_SCHEMAS.updateApiKey,
+		{
+			description:
+				"Update an API key's name, description, scopes, defaults, or limits, unlike delete_api_key which revokes it or create_api_key which issues a new one. Changes take effect immediately for downstream callers, type and sub-type stay fixed after creation, and the call returns success without rotating the secret.",
+			inputSchema: KEYS_TOOL_SCHEMAS.updateApiKey,
+		},
 		async (params) => {
 			const result = await service.keys.updateApiKey(params.id, {
 				name: params.name,
@@ -801,10 +828,13 @@ export function registerKeysTools(
 	);
 
 	// Phase 2: Delete API key tool
-	server.tool(
+	server.registerTool(
 		"delete_api_key",
-		"Delete an API key by UUID. This cannot be undone, revokes access immediately, and can break active sessions using the key. Returns success after revocation.",
-		KEYS_TOOL_SCHEMAS.deleteApiKey,
+		{
+			description:
+				"Delete an API key by UUID. This cannot be undone, revokes access immediately, and can break active sessions using the key. Returns success after revocation.",
+			inputSchema: KEYS_TOOL_SCHEMAS.deleteApiKey,
+		},
 		async (params) => {
 			const result = await service.keys.deleteApiKey(params.id);
 			return jsonResult({
@@ -814,16 +844,19 @@ export function registerKeysTools(
 		},
 	);
 
-	server.tool(
+	server.registerTool(
 		"rotate_api_key",
-		"Rotate an API key without changing its identity or scopes. The new secret is returned once and exposed to this MCP transcript, while the previous secret remains valid until key_transition_expires_at. Store the new key securely, update callers during the transition window, and never log either secret.",
-		KEYS_TOOL_SCHEMAS.rotateApiKey,
 		{
-			title: "Rotate API Key",
-			readOnlyHint: false,
-			destructiveHint: true,
-			idempotentHint: false,
-			openWorldHint: true,
+			description:
+				"Rotate an API key without changing its identity or scopes. The new secret is returned once and exposed to this MCP transcript, while the previous secret remains valid until key_transition_expires_at. Store the new key securely, update callers during the transition window, and never log either secret.",
+			inputSchema: KEYS_TOOL_SCHEMAS.rotateApiKey,
+			annotations: {
+				title: "Rotate API Key",
+				readOnlyHint: false,
+				destructiveHint: true,
+				idempotentHint: false,
+				openWorldHint: true,
+			},
 		},
 		async (params) => {
 			const result = await service.keys.rotateApiKey(params.id, {

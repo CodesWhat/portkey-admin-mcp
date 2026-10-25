@@ -71,8 +71,8 @@ describe("organisation analytics scope", () => {
 		const schemas = new Map<string, z.ZodRawShape>();
 		registerAnalyticsTools(
 			{
-				tool(name: string, _description: string, shape: z.ZodRawShape) {
-					schemas.set(name, shape);
+				registerTool(name: string, config: { inputSchema: z.ZodRawShape }) {
+					schemas.set(name, config.inputSchema);
 				},
 			} as never,
 			{} as never,

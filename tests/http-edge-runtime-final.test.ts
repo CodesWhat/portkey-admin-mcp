@@ -8,12 +8,12 @@ import {
 import { Server as HttpsServer, request as httpsRequest } from "node:https";
 import net, { type AddressInfo } from "node:net";
 import { describe, it } from "node:test";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { NodeStreamableHTTPServerTransport } from "@modelcontextprotocol/node";
+import type { JSONRPCMessage } from "@modelcontextprotocol/server";
 import {
-	type JSONRPCMessage,
 	LATEST_PROTOCOL_VERSION,
-} from "@modelcontextprotocol/sdk/types.js";
+	McpServer,
+} from "@modelcontextprotocol/server";
 import { createManagedEventStore } from "../src/lib/event-store.js";
 import { Logger } from "../src/lib/logger.js";
 import { SessionStore } from "../src/lib/session-store.js";
@@ -396,7 +396,7 @@ describe("final HTTP runtime edge behavior", { concurrency: false }, () => {
 	it("releases reserved stateful capacity and controls transport failures", async () => {
 		const originalConnect = McpServer.prototype.connect;
 		const originalHandleRequest =
-			StreamableHTTPServerTransport.prototype.handleRequest;
+			NodeStreamableHTTPServerTransport.prototype.handleRequest;
 		try {
 			await withListeningApp({ MCP_MAX_SESSIONS: "1" }, async ({ baseUrl }) => {
 				McpServer.prototype.connect = async () => {
@@ -412,9 +412,10 @@ describe("final HTTP runtime edge behavior", { concurrency: false }, () => {
 				McpServer.prototype.connect = originalConnect;
 				const sessionId = await initializeSession(baseUrl);
 
-				StreamableHTTPServerTransport.prototype.handleRequest = async () => {
-					throw new Error("existing transport failed");
-				};
+				NodeStreamableHTTPServerTransport.prototype.handleRequest =
+					async () => {
+						throw new Error("existing transport failed");
+					};
 				const failedSessionRequest = await fetch(`${baseUrl}/mcp`, {
 					method: "POST",
 					headers: jsonHeaders({
@@ -440,7 +441,7 @@ describe("final HTTP runtime edge behavior", { concurrency: false }, () => {
 			});
 		} finally {
 			McpServer.prototype.connect = originalConnect;
-			StreamableHTTPServerTransport.prototype.handleRequest =
+			NodeStreamableHTTPServerTransport.prototype.handleRequest =
 				originalHandleRequest;
 		}
 	});
@@ -468,8 +469,8 @@ describe("final HTTP runtime edge behavior", { concurrency: false }, () => {
 
 	it("preserves a response already sent by a failing stateless transport", async () => {
 		const originalHandleRequest =
-			StreamableHTTPServerTransport.prototype.handleRequest;
-		StreamableHTTPServerTransport.prototype.handleRequest = async (
+			NodeStreamableHTTPServerTransport.prototype.handleRequest;
+		NodeStreamableHTTPServerTransport.prototype.handleRequest = async (
 			_request,
 			response,
 		) => {
@@ -491,19 +492,19 @@ describe("final HTTP runtime edge behavior", { concurrency: false }, () => {
 				},
 			);
 		} finally {
-			StreamableHTTPServerTransport.prototype.handleRequest =
+			NodeStreamableHTTPServerTransport.prototype.handleRequest =
 				originalHandleRequest;
 		}
 	});
 
 	it("ends a failed replay and reports a failed lease release", async () => {
 		const originalHandleRequest =
-			StreamableHTTPServerTransport.prototype.handleRequest;
+			NodeStreamableHTTPServerTransport.prototype.handleRequest;
 		const originalLoggerError = Logger.error;
 		let firstEventId: string | undefined;
 		const errors: string[] = [];
 
-		StreamableHTTPServerTransport.prototype.handleRequest = async function (
+		NodeStreamableHTTPServerTransport.prototype.handleRequest = async function (
 			_request,
 			response,
 		) {
@@ -542,7 +543,7 @@ describe("final HTTP runtime edge behavior", { concurrency: false }, () => {
 						body: initializeBody(),
 					});
 					assert.ok(firstEventId);
-					StreamableHTTPServerTransport.prototype.handleRequest =
+					NodeStreamableHTTPServerTransport.prototype.handleRequest =
 						originalHandleRequest;
 					const prototypeProbe = createManagedEventStore(runtime.config);
 					const directEventStore =
@@ -600,7 +601,7 @@ describe("final HTTP runtime edge behavior", { concurrency: false }, () => {
 				},
 			);
 		} finally {
-			StreamableHTTPServerTransport.prototype.handleRequest =
+			NodeStreamableHTTPServerTransport.prototype.handleRequest =
 				originalHandleRequest;
 			Logger.error = originalLoggerError;
 		}
@@ -701,10 +702,10 @@ describe("final HTTP runtime edge behavior", { concurrency: false }, () => {
 
 	it("acquires and releases the managed replay lease around a stateful GET replay", async () => {
 		const originalHandleRequest =
-			StreamableHTTPServerTransport.prototype.handleRequest;
+			NodeStreamableHTTPServerTransport.prototype.handleRequest;
 		const calls: string[] = [];
 
-		StreamableHTTPServerTransport.prototype.handleRequest = async function (
+		NodeStreamableHTTPServerTransport.prototype.handleRequest = async function (
 			request,
 			response,
 			parsedBody,
@@ -783,14 +784,14 @@ describe("final HTTP runtime edge behavior", { concurrency: false }, () => {
 				},
 			);
 		} finally {
-			StreamableHTTPServerTransport.prototype.handleRequest =
+			NodeStreamableHTTPServerTransport.prototype.handleRequest =
 				originalHandleRequest;
 		}
 	});
 
 	it("returns JSON-RPC for stateful GET and DELETE failures and releases replay leases", async () => {
 		const originalHandleRequest =
-			StreamableHTTPServerTransport.prototype.handleRequest;
+			NodeStreamableHTTPServerTransport.prototype.handleRequest;
 		try {
 			await withListeningApp(
 				{ MCP_EVENT_STORE: "memory", MCP_SESSION_MODE: "stateful" },
@@ -831,9 +832,10 @@ describe("final HTTP runtime edge behavior", { concurrency: false }, () => {
 							},
 						};
 					};
-					StreamableHTTPServerTransport.prototype.handleRequest = async () => {
-						throw new Error("stateful transport failed");
-					};
+					NodeStreamableHTTPServerTransport.prototype.handleRequest =
+						async () => {
+							throw new Error("stateful transport failed");
+						};
 
 					try {
 						const failedGet = await fetch(`${baseUrl}/mcp`, {
@@ -877,22 +879,26 @@ describe("final HTTP runtime edge behavior", { concurrency: false }, () => {
 				},
 			);
 		} finally {
-			StreamableHTTPServerTransport.prototype.handleRequest =
+			NodeStreamableHTTPServerTransport.prototype.handleRequest =
 				originalHandleRequest;
 		}
 	});
 
 	it("rejects a concurrent stateful replay before it reaches transport.handleRequest", async () => {
 		const originalHandleRequest =
-			StreamableHTTPServerTransport.prototype.handleRequest;
+			NodeStreamableHTTPServerTransport.prototype.handleRequest;
 		const calls: string[] = [];
-		StreamableHTTPServerTransport.prototype.handleRequest = async function (
+		NodeStreamableHTTPServerTransport.prototype.handleRequest = async function (
 			request,
 			response,
 			parsedBody,
 		) {
 			if (request.method === "GET") {
 				calls.push("handleRequest");
+				response.writeHead(200, { "Content-Type": "text/event-stream" });
+				response.write(": replay open\n\n");
+				await new Promise<void>((resolve) => response.once("close", resolve));
+				return;
 			}
 			await originalHandleRequest.call(this, request, response, parsedBody);
 		};
@@ -950,13 +956,12 @@ describe("final HTTP runtime edge behavior", { concurrency: false }, () => {
 					// the rejected second one must never appear here.
 					assert.deepEqual(calls, ["handleRequest"]);
 
-					const closing = runtime.closeHttpApp();
-					await firstReplay.text();
-					await closing;
+					await firstReplay.body?.cancel();
+					await runtime.closeHttpApp();
 				},
 			);
 		} finally {
-			StreamableHTTPServerTransport.prototype.handleRequest =
+			NodeStreamableHTTPServerTransport.prototype.handleRequest =
 				originalHandleRequest;
 		}
 	});

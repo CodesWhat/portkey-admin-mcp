@@ -12,10 +12,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { toJsonSchemaCompat } from "@modelcontextprotocol/sdk/server/zod-json-schema-compat.js";
+import { Client } from "@modelcontextprotocol/client";
+import type { McpServer } from "@modelcontextprotocol/server";
+import { InMemoryTransport } from "@modelcontextprotocol/server";
+
 import { z } from "zod";
 import {
 	createManagedEventStore,
@@ -808,7 +808,7 @@ describe("ConfigsService response parsing", () => {
 
 describe("ToolChoiceSchema", () => {
 	it("emits a flat object JSON schema without union combinators", () => {
-		const jsonSchema = toJsonSchemaCompat(ToolChoiceSchema) as {
+		const jsonSchema = z.toJSONSchema(ToolChoiceSchema) as {
 			type?: string;
 			anyOf?: unknown;
 			oneOf?: unknown;
@@ -2378,7 +2378,18 @@ describe("Config tool payload assembly", () => {
 
 		registerConfigsTools(
 			{
-				tool(name: string, ...rest: unknown[]) {
+				registerTool(
+					name: string,
+					config: Record<string, unknown>,
+					callback: (...args: unknown[]) => Promise<unknown>,
+				): never {
+					const rest: unknown[] = [
+						config.description,
+						(config.inputSchema as { shape?: unknown } | undefined)?.shape ??
+							config.inputSchema,
+						config.annotations,
+						callback,
+					];
 					callbacks.set(
 						name,
 						rest[rest.length - 1] as (...args: unknown[]) => Promise<unknown>,
@@ -2872,7 +2883,18 @@ describe("Tool callback error handling", () => {
 
 		registerPromptsTools(
 			{
-				tool(name: string, ...rest: unknown[]) {
+				registerTool(
+					name: string,
+					config: Record<string, unknown>,
+					callback: (...args: unknown[]) => Promise<unknown>,
+				): never {
+					const rest: unknown[] = [
+						config.description,
+						(config.inputSchema as { shape?: unknown } | undefined)?.shape ??
+							config.inputSchema,
+						config.annotations,
+						callback,
+					];
 					registrations.set(name, rest);
 					return {} as never;
 				},
@@ -2923,7 +2945,18 @@ describe("Tool callback error handling", () => {
 
 		registerPromptsTools(
 			{
-				tool(name: string, ...rest: unknown[]) {
+				registerTool(
+					name: string,
+					config: Record<string, unknown>,
+					callback: (...args: unknown[]) => Promise<unknown>,
+				): never {
+					const rest: unknown[] = [
+						config.description,
+						(config.inputSchema as { shape?: unknown } | undefined)?.shape ??
+							config.inputSchema,
+						config.annotations,
+						callback,
+					];
 					registrations.set(name, rest);
 					return {} as never;
 				},
@@ -3015,7 +3048,18 @@ describe("Tool callback error handling", () => {
 
 		registerPromptsTools(
 			{
-				tool(name: string, ...rest: unknown[]) {
+				registerTool(
+					name: string,
+					config: Record<string, unknown>,
+					callback: (...args: unknown[]) => Promise<unknown>,
+				): never {
+					const rest: unknown[] = [
+						config.description,
+						(config.inputSchema as { shape?: unknown } | undefined)?.shape ??
+							config.inputSchema,
+						config.annotations,
+						callback,
+					];
 					registrations.set(name, rest);
 					return {} as never;
 				},
@@ -3154,7 +3198,18 @@ describe("Tool callback error handling", () => {
 		const registrations = new Map<string, unknown[]>();
 		registerAnalyticsTools(
 			{
-				tool(name: string, ...rest: unknown[]) {
+				registerTool(
+					name: string,
+					config: Record<string, unknown>,
+					callback: (...args: unknown[]) => Promise<unknown>,
+				): never {
+					const rest: unknown[] = [
+						config.description,
+						(config.inputSchema as { shape?: unknown } | undefined)?.shape ??
+							config.inputSchema,
+						config.annotations,
+						callback,
+					];
 					registrations.set(name, rest);
 					return {} as never;
 				},
@@ -3236,7 +3291,18 @@ describe("Tool callback error handling", () => {
 		const registrations = new Map<string, unknown[]>();
 		registerAnalyticsTools(
 			{
-				tool(name: string, ...rest: unknown[]) {
+				registerTool(
+					name: string,
+					config: Record<string, unknown>,
+					callback: (...args: unknown[]) => Promise<unknown>,
+				): never {
+					const rest: unknown[] = [
+						config.description,
+						(config.inputSchema as { shape?: unknown } | undefined)?.shape ??
+							config.inputSchema,
+						config.annotations,
+						callback,
+					];
 					registrations.set(name, rest);
 					return {} as never;
 				},
@@ -3302,7 +3368,18 @@ describe("Tool callback error handling", () => {
 
 		registerAllTools(
 			{
-				tool(name: string, ...rest: unknown[]) {
+				registerTool(
+					name: string,
+					config: Record<string, unknown>,
+					callback: (...args: unknown[]) => Promise<unknown>,
+				): never {
+					const rest: unknown[] = [
+						config.description,
+						(config.inputSchema as { shape?: unknown } | undefined)?.shape ??
+							config.inputSchema,
+						config.annotations,
+						callback,
+					];
 					callbacks.set(
 						name,
 						rest[rest.length - 1] as (...args: unknown[]) => Promise<unknown>,
@@ -3376,7 +3453,18 @@ describe("Tool callback error handling", () => {
 		try {
 			registerAllTools(
 				{
-					tool(name: string, ...rest: unknown[]) {
+					registerTool(
+						name: string,
+						config: Record<string, unknown>,
+						callback: (...args: unknown[]) => Promise<unknown>,
+					): never {
+						const rest: unknown[] = [
+							config.description,
+							(config.inputSchema as { shape?: unknown } | undefined)?.shape ??
+								config.inputSchema,
+							config.annotations,
+							callback,
+						];
 						callbacks.set(
 							name,
 							rest[rest.length - 1] as (...args: unknown[]) => Promise<unknown>,
@@ -3437,7 +3525,18 @@ describe("ZodError formatting through wrapToolCallback", () => {
 
 		registerAllTools(
 			{
-				tool(name: string, ...rest: unknown[]) {
+				registerTool(
+					name: string,
+					config: Record<string, unknown>,
+					callback: (...args: unknown[]) => Promise<unknown>,
+				): never {
+					const rest: unknown[] = [
+						config.description,
+						(config.inputSchema as { shape?: unknown } | undefined)?.shape ??
+							config.inputSchema,
+						config.annotations,
+						callback,
+					];
 					callbacks.set(
 						name,
 						rest[rest.length - 1] as (...args: unknown[]) => Promise<unknown>,
@@ -3599,7 +3698,18 @@ describe("ZodError formatting through wrapToolCallback", () => {
 
 		registerAllTools(
 			{
-				tool(name: string, ...rest: unknown[]) {
+				registerTool(
+					name: string,
+					config: Record<string, unknown>,
+					callback: (...args: unknown[]) => Promise<unknown>,
+				): never {
+					const rest: unknown[] = [
+						config.description,
+						(config.inputSchema as { shape?: unknown } | undefined)?.shape ??
+							config.inputSchema,
+						config.annotations,
+						callback,
+					];
 					callbacks.set(
 						name,
 						rest[rest.length - 1] as (...args: unknown[]) => Promise<unknown>,
@@ -3651,7 +3761,18 @@ describe("Tool annotations", () => {
 
 		registerAllTools(
 			{
-				tool(name: string, ...rest: unknown[]) {
+				registerTool(
+					name: string,
+					config: Record<string, unknown>,
+					callback: (...args: unknown[]) => Promise<unknown>,
+				): never {
+					const rest: unknown[] = [
+						config.description,
+						(config.inputSchema as { shape?: unknown } | undefined)?.shape ??
+							config.inputSchema,
+						config.annotations,
+						callback,
+					];
 					registrations.set(name, rest);
 					return {} as never;
 				},
@@ -3793,7 +3914,18 @@ describe("Tool annotations", () => {
 
 			registerAllTools(
 				{
-					tool(name: string, ...rest: unknown[]) {
+					registerTool(
+						name: string,
+						config: Record<string, unknown>,
+						callback: (...args: unknown[]) => Promise<unknown>,
+					): never {
+						const rest: unknown[] = [
+							config.description,
+							(config.inputSchema as { shape?: unknown } | undefined)?.shape ??
+								config.inputSchema,
+							config.annotations,
+							callback,
+						];
 						schemas.set(name, rest[1]);
 						return {} as never;
 					},
@@ -3908,7 +4040,18 @@ describe("Upstream FetchError propagation through tool callbacks", () => {
 			// registerAllTools provides the wrapToolCallback error-handling layer
 			registerAllTools(
 				{
-					tool(name: string, ...rest: unknown[]) {
+					registerTool(
+						name: string,
+						config: Record<string, unknown>,
+						callback: (...args: unknown[]) => Promise<unknown>,
+					): never {
+						const rest: unknown[] = [
+							config.description,
+							(config.inputSchema as { shape?: unknown } | undefined)?.shape ??
+								config.inputSchema,
+							config.annotations,
+							callback,
+						];
 						callbacks.set(
 							name,
 							rest[rest.length - 1] as (...args: unknown[]) => Promise<unknown>,

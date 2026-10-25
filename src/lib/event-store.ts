@@ -7,9 +7,9 @@ import {
 import type {
 	EventId,
 	EventStore,
+	JSONRPCMessage,
 	StreamId,
-} from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import type { JSONRPCMessage } from "@modelcontextprotocol/sdk/types.js";
+} from "@modelcontextprotocol/server";
 import type { RedisClientType, RedisModules } from "redis";
 import type { ServerConfig } from "./config.js";
 import { Logger } from "./logger.js";

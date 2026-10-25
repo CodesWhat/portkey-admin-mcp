@@ -8,17 +8,17 @@ import {
 	createServer as createHttpsServer,
 	type Server as HttpsServer,
 } from "node:https";
-import {
-	type EventStore,
-	StreamableHTTPServerTransport,
-	type StreamId,
-} from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { NodeStreamableHTTPServerTransport } from "@modelcontextprotocol/node";
+import type {
+	EventStore,
+	JSONRPCMessage,
+	StreamId,
+} from "@modelcontextprotocol/server";
 import {
 	isInitializeRequest,
-	type JSONRPCMessage,
 	LATEST_PROTOCOL_VERSION,
 	SUPPORTED_PROTOCOL_VERSIONS,
-} from "@modelcontextprotocol/sdk/types.js";
+} from "@modelcontextprotocol/server";
 import cors from "cors";
 import express from "express";
 import helmet from "helmet";
@@ -418,7 +418,7 @@ function createStatelessRequestHandler(
 					) => sharedEventStore.replayEventsAfter(lastEventId, options),
 				}
 			: undefined;
-		const transport = new StreamableHTTPServerTransport({
+		const transport = new NodeStreamableHTTPServerTransport({
 			sessionIdGenerator: undefined,
 			eventStore: requestEventStore,
 		});
@@ -810,14 +810,14 @@ function createMcpPostHandler(
 		}
 
 		const sessionId = req.headers["mcp-session-id"] as string | undefined;
-		let transport: StreamableHTTPServerTransport | undefined;
+		let transport: NodeStreamableHTTPServerTransport | undefined;
 		let hasReservedSessionSlot = false;
 		const sessionEntry = sessionId
 			? sessionStore.getOwned(sessionId, ownerKey)
 			: undefined;
 
 		if (sessionId && sessionEntry) {
-			transport = sessionEntry.transport as StreamableHTTPServerTransport;
+			transport = sessionEntry.transport as NodeStreamableHTTPServerTransport;
 			if (transport) {
 				const protocolError = validateRequiredProtocolVersion(
 					protocolVersionHeader,
@@ -863,7 +863,7 @@ function createMcpPostHandler(
 			}
 			hasReservedSessionSlot = true;
 
-			const newTransport = new StreamableHTTPServerTransport({
+			const newTransport = new NodeStreamableHTTPServerTransport({
 				sessionIdGenerator: () => randomUUID(),
 				eventStore: managedEventStore.eventStoreForOwner(ownerKey),
 				onsessioninitialized: (id) => {
@@ -1183,7 +1183,7 @@ function createMcpGetHandler(deps: McpGetHandlerDeps): express.RequestHandler {
 
 		const sessionEntry = sessionStore.getOwned(sessionId, ownerKey);
 		const transport = sessionEntry?.transport as
-			| StreamableHTTPServerTransport
+			| NodeStreamableHTTPServerTransport
 			| undefined;
 
 		if (transport) {
@@ -1319,7 +1319,7 @@ function createMcpDeleteHandler(
 
 		const sessionEntry = sessionStore.getOwned(sessionId, ownerKey);
 		const transport = sessionEntry?.transport as
-			| StreamableHTTPServerTransport
+			| NodeStreamableHTTPServerTransport
 			| undefined;
 
 		if (transport) {
