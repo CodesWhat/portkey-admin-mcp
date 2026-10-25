@@ -1,6 +1,6 @@
 # Portkey Admin MCP roadmap
 
-> Last reviewed: 2026-10-24
+> Last reviewed: 2026-10-25
 > Status: active compatibility maintenance
 > Current catalog: 194 tools across 22 domains, including 56 Enterprise-gated tools
 
@@ -67,29 +67,19 @@ an appropriately scoped tenant can supply live contract evidence.
 
 ### Later
 
-- Move to the MCP 2026-07-28 specification and the v2 TypeScript SDK, serving
-  modern and older clients from the same endpoint. Evaluated on 2026-10-02:
-  modern clients can fall back to the current server's older handshake, most
-  clients still open with that handshake, and the v2 SDK is still changing
-  between minor releases. Work starts by 2026-12-01, or sooner if a v1 SDK
-  security fix stops coming, a client drops support for the older handshake, or
-  30 days pass without a v2 server release carrying upgrade notes.
-  Target completion before 2027-01-27. This is a project planning target, not
-  an announced SDK end-of-life or a user-facing removal date. It retires the
-  replay and session stores, so it ships as a minor release whose number is
-  still to be assigned.
-- Before that MCP migration ships, finalize the versioned compatibility and
-  deprecation table in [COMPATIBILITY.md](COMPATIBILITY.md), linked from the
-  README and CHANGELOG. Current behavior and the unassigned migration are
-  documented separately. Name the releases that first deprecate,
-  ignore, or remove `MCP_SESSION_MODE`,
-  `MCP_SESSION_TIMEOUT`, and `MCP_EVENT_*`, with warning behavior and operator
-  migration steps. Explain loss of sessions, GET-stream/replay, and
-  `Last-Event-ID` recovery while retaining older clients on the same endpoint.
-  Update `docs/VERCEL_DEPLOYMENT.md`, `docs/ARCHITECTURE.md`, and
-  `SECURITY-ASSURANCE.md` together. Distinguish retiring replay Redis settings
-  from the retained Redis rate limiter, its URL fallbacks, and the stateless
-  concurrency cap. These settings remain active in 0.14.0.
+## Completed 2026-10-25 (0.15.0)
+
+- Moved to the MCP 2026-07-28 specification and the v2 TypeScript SDK in 0.15.0,
+  serving modern and older clients from the same endpoint. The release retires
+  the HTTP session and replay stores; `MCP_SESSION_MODE`, `MCP_SESSION_TIMEOUT`,
+  and `MCP_EVENT_*` now warn and are ignored. The catalog is unchanged at 194
+  tools.
+- Finalized the versioned compatibility and deprecation table in
+  [COMPATIBILITY.md](COMPATIBILITY.md), covering warning behavior, loss of
+  sessions, GET-stream/replay and `Last-Event-ID` recovery, interrupted-mutation
+  recovery, and the retained Redis rate limiter and concurrency cap.
+- Added organisation-scope filters (`include_all_workspaces`,
+  `exclude_workspace_slugs`) to the analytics tools.
 
 ## Completed 2026-10-24 (0.14.1)
 

@@ -77,10 +77,10 @@
 
 You need a **Portkey API key** with appropriate scopes. Get one from your [Portkey dashboard](https://app.portkey.ai/) under API Keys.
 
-Version 0.14.0 uses MCP SDK v1 and supports protocol revisions through
-`2025-11-25`. Session and replay settings remain active. See
-[compatibility and deprecations](./COMPATIBILITY.md) before upgrading; the
-unreleased SDK v2 candidate serves `2026-07-28` and legacy clients on the same endpoint, but retires HTTP sessions and replay. It targets 0.15.0; warnings, ignored settings and session/replay removal all start in that minor.
+Version 0.15.0 uses MCP SDK v2 and serves protocol revision `2026-07-28` and
+older clients on the same endpoint. It retires HTTP sessions and replay;
+obsolete settings warn and are ignored. See
+[compatibility and deprecations](./COMPATIBILITY.md) before upgrading from 0.14.x.
 
 ### Claude Code
 
@@ -281,7 +281,7 @@ For local-only HTTP use, leave `MCP_HOST` at its default `127.0.0.1`. Set `MCP_H
 | `MCP_ALLOW_UNAUTHENTICATED_HTTP` | — | Set to `true` only for intentional local unauthenticated HTTP debugging |
 | `MCP_MAX_SESSIONS` | `100` | Maximum concurrent HTTP MCP request handlers (retained name) |
 | `MCP_REDIS_URL` | — | Fallback Redis URL for shared rate limiting, after `RATE_LIMIT_REDIS_URL` and before `REDIS_URL`; production requires `rediss://` |
-| `MCP_SESSION_MODE`, `MCP_SESSION_TIMEOUT`, `MCP_EVENT_*`, `MCP_REDIS_KEY_PREFIX` | Ignored in the unreleased SDK v2 candidate | Old session/replay settings produce a warning containing names only. Published 0.14.x behavior is unchanged; see [compatibility](./COMPATIBILITY.md). |
+| `MCP_SESSION_MODE`, `MCP_SESSION_TIMEOUT`, `MCP_EVENT_*`, `MCP_REDIS_KEY_PREFIX` | Ignored as of 0.15.0 | Old session/replay settings produce a warning containing names only. 0.14.x behavior is unchanged; see [compatibility](./COMPATIBILITY.md). |
 | `MCP_TLS_KEY_PATH` | — | TLS key for native HTTPS |
 | `MCP_TLS_CERT_PATH` | — | TLS cert for native HTTPS |
 | `MCP_TLS_CA_PATH` | — | Optional CA bundle for native HTTPS; only used when the TLS key and cert are set |
@@ -314,7 +314,7 @@ Production containers must choose their rate-limit topology explicitly: set
 Vercel support is kept as a reference proof of concept — we do not run a hosted deployment. See [docs/VERCEL_DEPLOYMENT.md](./docs/VERCEL_DEPLOYMENT.md) if you want to self-deploy.
 
 Key points:
-- Uses stateless request handling and a shared atomic Redis rate limiter in the SDK v2 candidate; GET replay is retired
+- Uses stateless request handling and a shared atomic Redis rate limiter (SDK v2); GET replay is retired
 - Requires Clerk or bearer auth
 - Leave `MCP_TLS_*` unset (Vercel terminates HTTPS)
 - Set `MCP_PUBLIC_BASE_URL` to your deployment URL so advertised MCP endpoints never depend on request headers
@@ -397,11 +397,10 @@ for the public threat model and assurance case.
 
 <h2 align="center" id="roadmap">Roadmap</h2>
 
-Release 0.14.0 adds access policies, egress allowlists, and security maintenance.
+Release 0.15.0 moves to MCP SDK v2 and the 2026-07-28 spec.
 The [roadmap](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/ROADMAP.md) separates completed work from upstream contract and
-tenant-verification gates. The planned MCP v2 migration keeps older clients on
-the same endpoint and targets 0.15.0 for warnings, ignored settings and active
-session/replay removal. See [compatibility and deprecations](./COMPATIBILITY.md).
+tenant-verification gates. The MCP v2 migration shipped in 0.15.0 and keeps older
+clients on the same endpoint while retiring session and replay storage. See [compatibility and deprecations](./COMPATIBILITY.md).
 
 <hr>
 
@@ -420,7 +419,7 @@ tool catalog in this repository as authoritative when a third-party index lags.
 <h2 align="center" id="built-with">Built With</h2>
 
 [![TypeScript](https://img.shields.io/badge/TypeScript_7.0-3178C6?logo=typescript&logoColor=fff)](https://www.typescriptlang.org/)
-[![MCP SDK](https://img.shields.io/badge/MCP_SDK_1.32-000?logo=modelcontextprotocol&logoColor=fff)](https://github.com/modelcontextprotocol/typescript-sdk)
+[![MCP SDK](https://img.shields.io/badge/MCP_SDK_2.3-000?logo=modelcontextprotocol&logoColor=fff)](https://github.com/modelcontextprotocol/typescript-sdk)
 [![Zod 4](https://img.shields.io/badge/Zod_4-3E67B1?logo=zod&logoColor=fff)](https://zod.dev/)
 [![Biome](https://img.shields.io/badge/Biome_2.5-60a5fa?logo=biome&logoColor=fff)](https://biomejs.dev/)
 [![Node 24](https://img.shields.io/badge/Node_24-339933?logo=nodedotjs&logoColor=fff)](https://nodejs.org/)
