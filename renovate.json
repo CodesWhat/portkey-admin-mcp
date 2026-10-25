@@ -53,5 +53,11 @@
 			"groupSlug": "biome-major",
 			"minimumReleaseAge": "7 days"
 		}
-	]
+	],
+	"prConcurrentLimit": 1,
+	"prHourlyLimit": 1,
+	"dependencyDashboardApproval": true,
+	"vulnerabilityAlerts": {
+		"dependencyDashboardApproval": false
+	}
 }
