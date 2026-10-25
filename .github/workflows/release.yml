@@ -73,17 +73,17 @@ jobs:
           fi
 
           ci_commit="$tag_commit"
-          manifest_ref="$MANIFEST_REF"
+          requested_manifest_ref="$MANIFEST_REF"
           manifest_commit=""
-          if [[ -n "$manifest_ref" ]]; then
-            if [[ ! "$manifest_ref" =~ ^[0-9a-fA-F]{40}$ ]] && ! git check-ref-format --branch "$manifest_ref" >/dev/null; then
-              echo "Invalid manifest ref: $manifest_ref" >&2
+          if [[ -n "$requested_manifest_ref" ]]; then
+            if [[ ! "$requested_manifest_ref" =~ ^[0-9a-fA-F]{40}$ ]] && ! git check-ref-format --branch "$requested_manifest_ref" >/dev/null; then
+              echo "Invalid manifest ref: $requested_manifest_ref" >&2
               exit 1
             fi
-            git fetch origin "$manifest_ref"
+            git fetch origin "$requested_manifest_ref"
             manifest_commit="$(git rev-parse 'FETCH_HEAD^{commit}')"
             if ! git merge-base --is-ancestor "$manifest_commit" origin/main; then
-              echo "Manifest ref is not reachable from protected main: $manifest_ref" >&2
+              echo "Manifest ref is not reachable from protected main: $requested_manifest_ref" >&2
               exit 1
             fi
             ci_commit="$manifest_commit"
@@ -264,9 +264,9 @@ jobs:
         run: |
           set -euo pipefail
 
-          tag_commit="$TAG_COMMIT"
+          resolved_release_commit="$TAG_COMMIT"
           trusted_commit="$(git rev-parse "${GITHUB_SHA}^{commit}")"
-          if [[ "$tag_commit" != "$trusted_commit" ]]; then
+          if [[ "$resolved_release_commit" != "$trusted_commit" ]]; then
             echo "Refusing to build $RELEASE_TAG because it does not match the trusted workflow commit $GITHUB_SHA" >&2
             echo "Dispatch an unpublished release with --ref $RELEASE_TAG so GitHub supplies the tagged commit." >&2
             exit 1
@@ -497,8 +497,8 @@ jobs:
 
       - name: Install mcp-publisher
         env:
-          MCP_PUBLISHER_VERSION: v1.7.9
-          MCP_PUBLISHER_SHA256: ab128162b0616090b47cf245afe0a23f3ef08936fdce19074f5ba0a4469281ac
+          MCP_PUBLISHER_VERSION: v1.8.1
+          MCP_PUBLISHER_SHA256: a06c9096dcb9727c13555b6be26c7effa707b01f06a4c561ba7a3635443cf2cc
         run: |
           set -euo pipefail
           archive="${RUNNER_TEMP}/mcp-publisher_linux_amd64.tar.gz"

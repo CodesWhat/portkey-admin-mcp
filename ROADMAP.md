@@ -1,6 +1,6 @@
 # Portkey Admin MCP roadmap
 
-> Last reviewed: 2026-10-16
+> Last reviewed: 2026-10-24
 > Status: active compatibility maintenance
 > Current catalog: 194 tools across 22 domains, including 56 Enterprise-gated tools
 
@@ -60,12 +60,77 @@ URL substitution remains unsupported.
 
 - Move to the MCP 2026-07-28 specification and the v2 TypeScript SDK, serving
   modern and older clients from the same endpoint. Evaluated on 2026-10-02:
-  the current server already works with clients that negotiate 2026-07-28, most
-  clients still open with the older handshake, and the v2 SDK is still changing
+  modern clients can fall back to the current server's older handshake, most
+  clients still open with that handshake, and the v2 SDK is still changing
   between minor releases. Work starts by 2026-12-01, or sooner if a v1 SDK
   security fix stops coming, a client drops support for the older handshake, or
   30 days pass without a v2 server release carrying upgrade notes.
-  It retires the replay and session stores, so it ships as a minor release.
+  Target completion before 2027-01-27. This is a project planning target, not
+  an announced SDK end-of-life or a user-facing removal date. It retires the
+  replay and session stores, so it ships as a minor release whose number is
+  still to be assigned.
+- Before that MCP migration ships, finalize the versioned compatibility and
+  deprecation table in [COMPATIBILITY.md](COMPATIBILITY.md), linked from the
+  README and CHANGELOG. Current behavior and the unassigned migration are
+  documented separately. Name the releases that first deprecate,
+  ignore, or remove `MCP_SESSION_MODE`,
+  `MCP_SESSION_TIMEOUT`, and `MCP_EVENT_*`, with warning behavior and operator
+  migration steps. Explain loss of sessions, GET-stream/replay, and
+  `Last-Event-ID` recovery while retaining older clients on the same endpoint.
+  Update `docs/VERCEL_DEPLOYMENT.md`, `docs/ARCHITECTURE.md`, and
+  `SECURITY-ASSURANCE.md` together. Distinguish retiring replay Redis settings
+  from the retained Redis rate limiter, its URL fallbacks, and the stateless
+  concurrency cap. These settings remain active in 0.14.0.
+
+## Completed 2026-10-24 (0.14.1)
+
+- Patched the dependency lock's body-parser, fast-uri, Hono, and ip-address
+  advisories; the full npm audit is clear. Updated the declared npm toolchain
+  and the pinned CodeQL action while retaining the seven-day release-age policy
+  for non-security updates.
+- Enforced standalone Qlty CLI checks in CI and pre-push, with published
+  commit-specific check, duplication, complexity, and metrics reports. Existing
+  Cloud badges and coverage uploads remain in place; local quality results have
+  no verified import path for the official Cloud maintainability badge.
+- Verified the Docker HTTP health check, non-root UID, authenticated 194-tool
+  discovery, and stdio discovery in the isolated NAS testbed.
+
+## Completed 2026-10-16 (0.14.0)
+
+- Added five versioned access-policy tools and five organisation egress-allowlist
+  tools, bringing the catalog to 194 tools across 22 domains. Access-policy
+  mutations were verified with a disabled disposable policy; egress contracts
+  remain documentation-derived behind the available credential's 403 response.
+- Updated the MCP SDK to 1.32.1 and enabled its 10,000-element input budget
+  before schema validation. Refreshed Express, runtime and development
+  dependencies, the Node image, and pinned workflow actions.
+- Corrected the Prisma AIRS management-contract guidance while retaining the
+  credentialed-tenant gate for a separate adapter.
+- Verified npm, MCP Registry, and owner-controlled marketplace publication at
+  0.14.0, rebuilt Glama's 194-tool inventory, and refreshed the Docker submission.
+  [Distribution records](docs/DISTRIBUTION.md) distinguish publication from
+  downstream caches and pending upstream review.
+
+## Completed 2026-10-16 (documentation and maintenance audit)
+
+- Repaired changelog comparison links and aligned contribution, governance,
+  release, and Renovate branching guidance around the active development line
+  and reviewed promotion to protected `main`.
+- Published [compatibility and deprecation status](COMPATIBILITY.md), separating
+  current 0.14.0 behavior from the unassigned MCP migration. Exact future
+  warning/removal releases and the operator cutover guide remain migration work.
+- Added README documentation and roadmap navigation, retained the themed
+  CodesWhat footer, and corrected the single-container HTTP example's explicit
+  in-memory rate-limit acknowledgement.
+- Recorded post-release catalog evidence and the Glama sync/build procedure,
+  preserving dated earlier observations and audits.
+- Checked GitHub security alerts and dependency health after 0.14.0: no open
+  Dependabot, code-scanning, secret-scanning, or repository advisory findings;
+  full and production npm audits reported no vulnerabilities. Direct packages
+  are current within the supported Node.js 24 line. Updated the release-only
+  MCP publisher to 1.8.1 and pinned the LobeHub maintenance CLI to 0.0.41.
+  CodeQL action 4.39.0 remains queued under Renovate's seven-day release-age
+  policy; security updates bypass that delay.
 
 ## Completed 2026-10-02 (0.13.0)
 
@@ -186,7 +251,7 @@ URL substitution remains unsupported.
 ## Active upstream-validation work
 
 These are intentionally not implementation tasks until the cited contract becomes
-stable and public:
+stable and public, or the stated live-verification prerequisite is met:
 
 - Prompt and partial share/fork/unshare, shared-type filters, and share metadata.
 - Agent Gateway management.
@@ -202,19 +267,23 @@ stable and public:
   organisation or feature scopes. The smoke runner treats only explicit HTTP 401
   and 403 permission denials as skips; unexpected HTTP 400 route failures remain
   real failures.
-- A native Prisma AIRS adapter. Add one only after Palo Alto Networks publishes a
-  stable AI Gateway management API; keep it distinct from Portkey mode.
+- A native Prisma AIRS adapter. The management specification is now public;
+  verify its authentication, separate management bases, and supported domains
+  against a credentialed tenant before implementation. Keep it distinct from
+  Portkey mode, as described in `docs/PRISMA_AIRS_INTEROPERABILITY.md`.
 
 ## Distribution follow-up
 
 - Docker MCP Catalog: submitted as
   [docker/mcp-registry #5026](https://github.com/docker/mcp-registry/pull/5026),
-  pinned to the 0.12.0 release commit and awaiting maintainer review.
+  refreshed to the 0.14.0 release commit on 2026-10-16 with 194-tool discovery
+  evidence, and awaiting maintainer review.
 - Awesome MCP Servers: [#13074](https://github.com/punkpeye/awesome-mcp-servers/pull/13074)
   merged on 2026-09-13.
-- Glama: rebuilt after 0.13.0 and showing that release with 184 tools as of
-  2026-10-04. After each release, sync the repository and run Build & Release on the listing (see
-  docs/RELEASE.md). Its generated description still lags the tool count.
+- Glama: synced and rebuilt after 0.14.0 on 2026-10-16; the indexed release
+  commit and public schema show 194 tools. After each release, sync the
+  repository and run Build & Release on the listing (see `docs/RELEASE.md`).
+  Generated descriptions and quality-score evaluation can lag the inventory.
 - Recheck PulseMCP after listing changes reopen. Its legacy record still uses the
   pre-organization namespace and is not currently editable.
 - Claim or refresh the stale mcp.so record when its owner workflow is available.

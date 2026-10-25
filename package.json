@@ -9,6 +9,7 @@
 		"typecheck": "tsc --noEmit",
 		"typecheck:tests": "tsc --project tsconfig.tests.json --noEmit",
 		"lint": "biome lint .",
+		"quality": "qlty check --all --no-fix --no-progress --fail-level fmt --no-upgrade-check",
 		"format": "biome format --write .",
 		"check": "biome check --write .",
 		"test": "tsx --test tests/config.test.ts tests/security-worker-layout.test.ts tests/security-edge-runtime.test.ts tests/contract.test.ts tests/contract-extended.test.ts tests/unit.test.ts tests/services.test.ts tests/base-services.test.ts tests/fetch.test.ts tests/http-server.test.ts tests/http-edge-runtime.test.ts tests/http-edge-runtime-final.test.ts tests/tools-observability.test.ts tests/tools-catalog.test.ts tests/tools-prompts-configs.test.ts tests/tools-remaining.test.ts tests/tools-edge-workflows.test.ts tests/tools-platform.test.ts tests/tools-keys.test.ts tests/tools-users.test.ts tests/tools-analytics.test.ts tests/current-api.test.ts tests/tools-governance.test.ts tests/release-readiness.test.ts tests/lobehub-generator.test.ts tests/auth-clerk.test.ts tests/lib-event-store.test.ts tests/lib-session-mcp.test.ts tests/smoke-outcomes.test.ts tests/request-path.test.ts",
@@ -27,11 +28,11 @@
 		"verify:readme-tools": "node scripts/verify-readme-tools.mjs",
 		"verify:generated": "node scripts/verify-generated.mjs",
 		"knip": "knip",
-		"ci": "npm run lint && npm run knip && npm run typecheck && npm run typecheck:tests && npm run test:coverage && npm run build && npm run verify:tool-quality && npm run test:e2e && npm run verify:readme-tools && npm run verify:generated",
+		"ci": "npm run quality && npm run lint && npm run knip && npm run typecheck && npm run typecheck:tests && npm run test:coverage && npm run build && npm run verify:tool-quality && npm run test:e2e && npm run verify:readme-tools && npm run verify:generated",
 		"start:http": "node build/server.js",
 		"generate:lobehub-tools": "npm run build && node scripts/generate-lobehub-tools.mjs && biome format --write lhm.plugin.json",
 		"generate:endpoints": "node scripts/generate-endpoints.mjs",
-		"update:lobehub": "npm run generate:lobehub-tools && npx -y @lobehub/market-cli plugin update --dir \"$PWD\"",
+		"update:lobehub": "npm run generate:lobehub-tools && npx -y @lobehub/market-cli@0.0.41 plugin update --dir \"$PWD\"",
 		"publish:lobehub": "npm run update:lobehub",
 		"prepare": "[ -n \"$CI\" ] || [ -f /.dockerenv ] || [ ! -d .git ] || lefthook install",
 		"prepublishOnly": "npm run ci"
@@ -39,10 +40,11 @@
 	"engines": {
 		"node": ">=24"
 	},
-	"packageManager": "npm@12.2.0",
+	"packageManager": "npm@12.2.1",
 	"files": [
 		"build",
 		"ENDPOINTS.md",
+		"COMPATIBILITY.md",
 		"docs/DISTRIBUTION.md",
 		"docs/PRISMA_AIRS_INTEROPERABILITY.md",
 		"docs/VERCEL_DEPLOYMENT.md"
@@ -59,7 +61,7 @@
 	},
 	"name": "portkey-admin-mcp",
 	"mcpName": "io.github.CodesWhat/portkey-admin-mcp",
-	"version": "0.14.0",
+	"version": "0.14.1",
 	"main": "build/index.js",
 	"keywords": [
 		"mcp",

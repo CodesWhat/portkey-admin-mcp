@@ -8,6 +8,8 @@ pre-commit:
 pre-push:
   parallel: true
   jobs:
+    - name: quality
+      run: npm run quality
     - name: typecheck
       run: npm run typecheck
     - name: knip

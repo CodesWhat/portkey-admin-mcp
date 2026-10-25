@@ -5,6 +5,11 @@ clients and Portkey's Admin API. It exposes the same tool catalog over local
 stdio and an optional HTTP transport while keeping API access, validation, and
 transport policy in separate layers.
 
+This describes the current 0.14.0 implementation. Session and replay stores
+remain active; the planned MCP v2 migration has no assigned package version.
+See [compatibility and deprecations](../COMPATIBILITY.md) for the protocol and
+configuration lifecycle boundaries.
+
 ## Component map
 
 | Layer | Main code | Responsibility |
@@ -23,8 +28,9 @@ transport policy in separate layers.
 1. An MCP client connects through `StdioServerTransport` or the HTTP runtime.
 2. `createMcpServer()` registers all 22 tool domains, or the subset allowed by
    `PORTKEY_TOOL_DOMAINS`.
-3. The MCP SDK validates a tool call against its Zod input schema. The shared
-   tool wrapper adds the standard success/error envelope and annotations.
+3. The MCP SDK enforces a 10,000-element budget across nested array elements and
+   object members before validating a tool call against its Zod input schema.
+   The shared tool wrapper adds the standard success/error envelope and annotations.
 4. The tool callback calls its domain client on the shared `PortkeyService`
    facade.
 5. `BaseService` builds the authenticated HTTPS request to the configured

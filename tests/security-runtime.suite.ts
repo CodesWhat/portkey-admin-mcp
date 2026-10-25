@@ -141,7 +141,11 @@ describe("supply-chain configuration", () => {
 			/ref: \$\{\{ needs\.release-ref\.outputs\.tag \}\}/,
 		);
 		assert.match(packageJob, /git rev-parse "\$\{GITHUB_SHA\}\^\{commit\}"/);
-		assert.match(packageJob, /tag_commit.*trusted_commit/);
+		assert.match(packageJob, /resolved_release_commit="\$TAG_COMMIT"/);
+		assert.match(
+			packageJob,
+			/if \[\[ "\$resolved_release_commit" != "\$trusted_commit" \]\]/,
+		);
 	});
 
 	it("pins validated release refs to commits and rechecks the tag before publishing", () => {
