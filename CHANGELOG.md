@@ -11,7 +11,7 @@ release until that reference and the release notes say so.
 
 ## [Unreleased]
 
-## [0.14.1] - 2026-10-24
+## [0.14.1] - 2026-10-25
 
 ### Security
 - Refresh the dependency lock to patched `body-parser` 2.4.0, `fast-uri` 3.1.9, `hono` 4.13.13, and `ip-address` 10.7.4. The full npm audit reports no vulnerabilities.
