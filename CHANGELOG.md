@@ -23,6 +23,9 @@ release until that reference and the release notes say so.
 - Corrected the single-container Docker HTTP example to explicitly acknowledge in-memory production rate limiting.
 - Updated the release-only MCP publisher to 1.8.1 and pinned the LobeHub maintenance CLI to 0.0.41. Runtime dependencies and the published package version are unchanged.
 
+### Fixed
+- Normalize Docker transport selection like the server configuration and health probe, so surrounding whitespace in `MCP_TRANSPORT` does not start the wrong entry point.
+
 ## [0.14.0] - 2026-10-16
 
 Security maintenance and Portkey October control-plane coverage. The catalog

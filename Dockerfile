@@ -70,4 +70,4 @@ USER 1001:1001
 # Default command
 # - MCP_TRANSPORT=stdio -> node build/index.js
 # - MCP_TRANSPORT=http  -> node build/server.js
-CMD ["sh", "-c", "if [ \"$MCP_TRANSPORT\" = \"http\" ]; then exec node build/server.js; else exec node build/index.js; fi"]
+CMD ["sh", "-c", "if [ \"$(node -p \"process.env.MCP_TRANSPORT?.trim() || 'stdio'\")\" = \"http\" ]; then exec node build/server.js; else exec node build/index.js; fi"]

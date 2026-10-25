@@ -1,11 +1,57 @@
 import assert from "node:assert/strict";
-import { spawn } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { spawn, spawnSync } from "node:child_process";
+import {
+	mkdirSync,
+	mkdtempSync,
+	readFileSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
 import { createServer } from "node:http";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
+
+test("Docker startup selects the same normalized transport as its probe", (t) => {
+	const directory = mkdtempSync(join(tmpdir(), "portkey-launcher-"));
+	t.after(() => rmSync(directory, { recursive: true, force: true }));
+	mkdirSync(join(directory, "build"));
+	writeFileSync(join(directory, "build/server.js"), "console.log('http')");
+	writeFileSync(join(directory, "build/index.js"), "console.log('stdio')");
+	const dockerfile = readFileSync(`${root}Dockerfile`, "utf8");
+	const commands = [...dockerfile.matchAll(/^\s*CMD (\[.*\])$/gm)];
+	const command = commands.at(-1)?.[1];
+	assert.ok(command);
+	const [executable, ...args] = JSON.parse(command) as string[];
+	assert.ok(executable);
+	const cases: [string | undefined, string][] = [
+		[undefined, "stdio"],
+		[" http ", "http"],
+		["http", "http"],
+		["\thttp\n", "http"],
+		["stdio", "stdio"],
+		["", "stdio"],
+	];
+	for (const [transport, expected] of cases) {
+		const env = { ...process.env };
+		if (transport === undefined) {
+			delete env.MCP_TRANSPORT;
+		} else {
+			env.MCP_TRANSPORT = transport;
+		}
+		const result = spawnSync(executable, args, {
+			cwd: directory,
+			env,
+			encoding: "utf8",
+			timeout: 5000,
+		});
+		assert.equal(result.status, 0, result.stderr);
+		assert.equal(result.stdout.trim(), expected, JSON.stringify(transport));
+	}
+});
 
 test("Docker health check uses the server's normalized transport and port", async (t) => {
 	let requests = 0;
