@@ -6,14 +6,10 @@ import {
 } from "node:http";
 import net from "node:net";
 import { describe, it } from "node:test";
-import { NodeStreamableHTTPServerTransport } from "@modelcontextprotocol/node";
-import type { JSONRPCMessage } from "@modelcontextprotocol/server";
-import { McpServer } from "@modelcontextprotocol/server";
 import { Logger } from "../src/lib/logger.js";
-import { SessionStore } from "../src/lib/session-store.js";
 
 const AUTH_TOKEN = "http-edge-secret";
-const INIT_PAYLOAD = {
+const _INIT_PAYLOAD = {
 	jsonrpc: "2.0",
 	id: 1,
 	method: "initialize",
@@ -176,7 +172,7 @@ async function waitUntilListening(server: HttpServer): Promise<void> {
 	}
 }
 
-function authorizationHeaders(): Record<string, string> {
+function _authorizationHeaders(): Record<string, string> {
 	return {
 		authorization: `Bearer ${AUTH_TOKEN}`,
 		accept: "text/event-stream, application/json",
@@ -195,22 +191,6 @@ function replaceProcessExit(
 }
 
 describe("HTTP runtime edge behavior", { concurrency: false }, () => {
-	it("backs off idle replay polling and resets after delivery", () => {
-		const getNextReplayPollDelay = (
-			httpAppModule as typeof httpAppModule & {
-				getNextReplayPollDelay?: (
-					currentDelayMs: number,
-					deliveredEvent: boolean,
-				) => number;
-			}
-		).getNextReplayPollDelay;
-		assert.equal(typeof getNextReplayPollDelay, "function");
-		assert.equal(getNextReplayPollDelay?.(100, false), 200);
-		assert.equal(getNextReplayPollDelay?.(800, false), 1000);
-		assert.equal(getNextReplayPollDelay?.(1000, false), 1000);
-		assert.equal(getNextReplayPollDelay?.(1000, true), 100);
-	});
-
 	it("rejects unsafe runtime configuration and accepts bounded trust proxy variants", async () => {
 		await withEnvironment({ MCP_READY_CHECK_MODE: "remote" }, () => {
 			assert.throws(
@@ -304,9 +284,8 @@ describe("HTTP runtime edge behavior", { concurrency: false }, () => {
 					),
 					{
 						status: "ready",
-						sessions: 0,
-						sessionMode: "stateful",
-						eventStoreMode: "off",
+						activeRequests: 0,
+						sessionMode: "stateless",
 						check: "local",
 					},
 				);
@@ -326,8 +305,7 @@ describe("HTTP runtime edge behavior", { concurrency: false }, () => {
 				const authInfo = await fetch(`${baseUrl}/auth/info`);
 				assert.deepEqual(await authInfo.json(), {
 					mode: "bearer",
-					sessionMode: "stateful",
-					eventStoreMode: "off",
+					sessionMode: "stateless",
 					mcpEndpoint: "http://127.0.0.1:32123/mcp",
 					clerk: {
 						issuerConfigured: true,
@@ -376,273 +354,6 @@ describe("HTTP runtime edge behavior", { concurrency: false }, () => {
 			);
 		} finally {
 			await closeServer(upstream);
-		}
-	});
-
-	it("runs and reports both successful and failed session cleanup ticks", async () => {
-		await withEnvironment({}, async () => {
-			const originalSetInterval = globalThis.setInterval;
-			const originalClearInterval = globalThis.clearInterval;
-			const originalCleanup = SessionStore.prototype.cleanup;
-			const originalInfo = Logger.info;
-			const originalError = Logger.error;
-			let cleanupTick: (() => Promise<void>) | undefined;
-			let unrefCalled = false;
-			let cleanupCalls = 0;
-			const infoMessages: string[] = [];
-			const errorMessages: string[] = [];
-			const fakeInterval = {
-				unref() {
-					unrefCalled = true;
-				},
-			} as NodeJS.Timeout;
-
-			globalThis.setInterval = ((callback: () => Promise<void>) => {
-				cleanupTick = callback;
-				return fakeInterval;
-			}) as typeof setInterval;
-			globalThis.clearInterval = (() => {}) as typeof clearInterval;
-			SessionStore.prototype.cleanup = async () => {
-				cleanupCalls += 1;
-				if (cleanupCalls === 1) {
-					return ["expired-session"];
-				}
-				throw new Error("cleanup failed");
-			};
-			Logger.info = ((message: string) => {
-				infoMessages.push(message);
-			}) as typeof Logger.info;
-			Logger.error = ((message: string) => {
-				errorMessages.push(message);
-			}) as typeof Logger.error;
-
-			let runtime: Runtime | undefined;
-			try {
-				runtime = createHttpAppRuntime();
-				assert.equal(unrefCalled, true);
-				assert.ok(cleanupTick);
-				await cleanupTick();
-				await cleanupTick();
-				assert.deepEqual(infoMessages, ["MCP session expired and cleaned up"]);
-				assert.deepEqual(errorMessages, ["Session cleanup tick failed"]);
-			} finally {
-				await runtime?.closeHttpApp();
-				globalThis.setInterval = originalSetInterval;
-				globalThis.clearInterval = originalClearInterval;
-				SessionStore.prototype.cleanup = originalCleanup;
-				Logger.info = originalInfo;
-				Logger.error = originalError;
-			}
-		});
-	});
-
-	it("delegates stateless event-store callbacks and closes an active failed connection", async () => {
-		const originalHandleRequest =
-			NodeStreamableHTTPServerTransport.prototype.handleRequest;
-		const originalMcpClose = McpServer.prototype.close;
-		const originalLoggerError = Logger.error;
-		const replayed: Array<{ eventId: string; message: JSONRPCMessage }> = [];
-		const errors: string[] = [];
-
-		NodeStreamableHTTPServerTransport.prototype.handleRequest = async function (
-			_request,
-			response,
-		) {
-			const eventStore = (
-				this as unknown as {
-					_webStandardTransport: {
-						_eventStore?: {
-							storeEvent(
-								streamId: string,
-								message: JSONRPCMessage,
-							): Promise<string>;
-							getStreamIdForEventId?(
-								eventId: string,
-							): Promise<string | undefined>;
-							replayEventsAfter(
-								lastEventId: string,
-								options: {
-									send(eventId: string, message: JSONRPCMessage): Promise<void>;
-								},
-							): Promise<string>;
-						};
-					};
-				}
-			)._webStandardTransport._eventStore;
-			assert.ok(eventStore);
-			const firstMessage = {
-				jsonrpc: "2.0",
-				method: "notifications/progress",
-				params: { progressToken: "edge", progress: 1 },
-			} satisfies JSONRPCMessage;
-			const finalMessage = {
-				jsonrpc: "2.0",
-				id: 1,
-				result: { ok: true },
-			} satisfies JSONRPCMessage;
-			const firstEventId = await eventStore.storeEvent(
-				"edge-stream",
-				firstMessage,
-			);
-			assert.equal(
-				await eventStore.getStreamIdForEventId?.(firstEventId),
-				"edge-stream",
-			);
-			await eventStore.storeEvent("edge-stream", finalMessage);
-			assert.equal(
-				await eventStore.replayEventsAfter(firstEventId, {
-					send: async (eventId, message) => {
-						replayed.push({ eventId, message });
-					},
-				}),
-				"edge-stream",
-			);
-			response.statusCode = 200;
-			response.setHeader("content-type", "application/json");
-			response.end(JSON.stringify({ firstEventId }));
-		};
-		McpServer.prototype.close = async () => {
-			throw new Error("close failed");
-		};
-		Logger.error = ((message: string) => {
-			errors.push(message);
-		}) as typeof Logger.error;
-
-		try {
-			await withListeningApp(
-				{ MCP_EVENT_STORE: "memory", MCP_SESSION_MODE: "stateless" },
-				async ({ baseUrl, runtime }) => {
-					const response = await fetch(`${baseUrl}/mcp`, {
-						method: "POST",
-						headers: authorizationHeaders(),
-						body: JSON.stringify(INIT_PAYLOAD),
-					});
-					assert.equal(response.status, 200);
-					assert.equal(replayed.length, 1);
-					assert.deepEqual(replayed[0]?.message, {
-						jsonrpc: "2.0",
-						id: 1,
-						result: { ok: true },
-					});
-					await runtime.closeHttpApp();
-					assert.ok(
-						errors.includes("Failed to close stateless MCP connection"),
-					);
-				},
-			);
-		} finally {
-			NodeStreamableHTTPServerTransport.prototype.handleRequest =
-				originalHandleRequest;
-			McpServer.prototype.close = originalMcpClose;
-			Logger.error = originalLoggerError;
-		}
-	});
-
-	it("returns a controlled internal error when a stateless transport fails", async () => {
-		const originalHandleRequest =
-			NodeStreamableHTTPServerTransport.prototype.handleRequest;
-		NodeStreamableHTTPServerTransport.prototype.handleRequest = async () => {
-			throw new Error("transport exploded");
-		};
-
-		try {
-			await withListeningApp(
-				{ MCP_SESSION_MODE: "stateless" },
-				async ({ baseUrl }) => {
-					const response = await fetch(`${baseUrl}/mcp`, {
-						method: "POST",
-						headers: authorizationHeaders(),
-						body: JSON.stringify(INIT_PAYLOAD),
-					});
-					assert.equal(response.status, 500);
-					assert.deepEqual(await response.json(), {
-						jsonrpc: "2.0",
-						error: {
-							code: -32603,
-							message: "Internal server error (POST /mcp stateless)",
-						},
-						id: null,
-					});
-				},
-			);
-		} finally {
-			NodeStreamableHTTPServerTransport.prototype.handleRequest =
-				originalHandleRequest;
-		}
-	});
-
-	it("rejects a concurrent stateless replay and releases the first lease on close", async () => {
-		const originalHandleRequest =
-			NodeStreamableHTTPServerTransport.prototype.handleRequest;
-		let firstEventId: string | undefined;
-		NodeStreamableHTTPServerTransport.prototype.handleRequest = async function (
-			_request,
-			response,
-		) {
-			const eventStore = (
-				this as unknown as {
-					_webStandardTransport: {
-						_eventStore?: {
-							storeEvent(
-								streamId: string,
-								message: JSONRPCMessage,
-							): Promise<string>;
-						};
-					};
-				}
-			)._webStandardTransport._eventStore;
-			assert.ok(eventStore);
-			firstEventId = await eventStore.storeEvent("held-stream", {
-				jsonrpc: "2.0",
-				method: "notifications/progress",
-				params: { progressToken: "held", progress: 1 },
-			});
-			response.statusCode = 200;
-			response.setHeader("content-type", "application/json");
-			response.end(JSON.stringify({ firstEventId }));
-		};
-
-		try {
-			await withListeningApp(
-				{ MCP_EVENT_STORE: "memory", MCP_SESSION_MODE: "stateless" },
-				async ({ baseUrl, runtime }) => {
-					const post = await fetch(`${baseUrl}/mcp`, {
-						method: "POST",
-						headers: authorizationHeaders(),
-						body: JSON.stringify(INIT_PAYLOAD),
-					});
-					assert.equal(post.status, 200);
-					assert.ok(firstEventId);
-					runtime.setServerReady();
-					const replayHeaders = {
-						authorization: `Bearer ${AUTH_TOKEN}`,
-						accept: "text/event-stream",
-						"last-event-id": firstEventId,
-						"mcp-protocol-version": "2025-11-25",
-					};
-					const firstReplay = await fetch(`${baseUrl}/mcp`, {
-						headers: replayHeaders,
-					});
-					assert.equal(firstReplay.status, 200);
-
-					const conflictingReplay = await fetch(`${baseUrl}/mcp`, {
-						headers: replayHeaders,
-					});
-					assert.equal(conflictingReplay.status, 409);
-					assert.match(
-						((await conflictingReplay.json()) as { error: { message: string } })
-							.error.message,
-						/active replay connection/,
-					);
-
-					const closing = runtime.closeHttpApp();
-					await firstReplay.text();
-					await closing;
-				},
-			);
-		} finally {
-			NodeStreamableHTTPServerTransport.prototype.handleRequest =
-				originalHandleRequest;
 		}
 	});
 

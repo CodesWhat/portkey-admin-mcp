@@ -1,4 +1,3 @@
-import { createHash, randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import {
 	createServer as createHttpServer,
@@ -8,16 +7,10 @@ import {
 	createServer as createHttpsServer,
 	type Server as HttpsServer,
 } from "node:https";
-import { NodeStreamableHTTPServerTransport } from "@modelcontextprotocol/node";
-import type {
-	EventStore,
-	JSONRPCMessage,
-	StreamId,
-} from "@modelcontextprotocol/server";
+import { toNodeHandler } from "@modelcontextprotocol/node";
 import {
-	isInitializeRequest,
-	LATEST_PROTOCOL_VERSION,
-	SUPPORTED_PROTOCOL_VERSIONS,
+	createMcpHandler,
+	isJsonContentType,
 } from "@modelcontextprotocol/server";
 import cors from "cors";
 import express from "express";
@@ -28,22 +21,15 @@ import {
 } from "../services/index.js";
 import {
 	isToolDomain,
-	normalizeToolDomains,
 	TOOL_DOMAIN_NAMES,
 	type ToolDomain,
 } from "../tools/index.js";
 import {
-	type AuthPrincipal,
 	assertSafeHttpAuthConfig,
 	getHttpAuthConfig,
-	getPrincipalOwnerKey,
 	mcpAuthMiddleware,
 } from "./auth.js";
 import { getServerConfig, type ServerConfig } from "./config.js";
-import {
-	createManagedEventStore,
-	type ManagedEventStore,
-} from "./event-store.js";
 import { Logger } from "./logger.js";
 import { createMcpServer, resolveToolDomains } from "./mcp-server.js";
 import { isMcpRequestPath } from "./request-path.js";
@@ -57,8 +43,6 @@ import {
 	rateLimitMiddleware,
 	validateOrigin,
 } from "./security.js";
-import { SessionStore } from "./session-store.js";
-import { isRecord } from "./type-guards.js";
 
 export interface HttpAppRuntime {
 	app: express.Express;
@@ -67,32 +51,6 @@ export interface HttpAppRuntime {
 	closeHttpApp(): Promise<void>;
 	setServerReady(value?: boolean): void;
 	startHttpServer(): HttpServer | HttpsServer;
-}
-
-interface BackpressureResponse {
-	once(event: "drain" | "close", listener: () => void): unknown;
-	off(event: "drain" | "close", listener: () => void): unknown;
-}
-
-export function waitForResponseWritable(
-	response: BackpressureResponse,
-): Promise<void> {
-	return new Promise((resolve) => {
-		const done = () => {
-			response.off("drain", done);
-			response.off("close", done);
-			resolve();
-		};
-		response.once("drain", done);
-		response.once("close", done);
-	});
-}
-
-export function getNextReplayPollDelay(
-	currentDelayMs: number,
-	deliveredEvent: boolean,
-): number {
-	return deliveredEvent ? 100 : Math.min(currentDelayMs * 2, 1000);
 }
 
 function getReadyCheckMode(): "local" | "portkey" {
@@ -251,18 +209,6 @@ function respondJsonRpcClientError(
 	});
 }
 
-function getRequestOwnerKey(res: express.Response): string {
-	const principal = res.locals.authPrincipal as AuthPrincipal | undefined;
-	if (!principal) {
-		throw new Error("Authenticated MCP request is missing its principal");
-	}
-	return getPrincipalOwnerKey(principal);
-}
-
-function fingerprintCapabilityId(id: string): string {
-	return createHash("sha256").update(id, "utf8").digest("hex").slice(0, 16);
-}
-
 function parseRequestedToolDomains(
 	rawQuery: unknown,
 ): ToolDomain[] | undefined {
@@ -303,228 +249,6 @@ function parseRequestedToolDomains(
 	return resolveToolDomains(normalizedDomains as ToolDomain[]);
 }
 
-function areToolDomainsEqual(
-	left?: readonly ToolDomain[],
-	right?: readonly ToolDomain[],
-): boolean {
-	const normalizedLeft = left ? normalizeToolDomains(left) : [];
-	const normalizedRight = right ? normalizeToolDomains(right) : [];
-
-	if (normalizedLeft.length !== normalizedRight.length) {
-		return false;
-	}
-
-	return normalizedLeft.every(
-		(value, index) => value === normalizedRight[index],
-	);
-}
-
-function getNegotiatedProtocolVersion(body: unknown): string | undefined {
-	if (!isRecord(body) || !isRecord(body.params)) {
-		return undefined;
-	}
-
-	const requestedVersion = body.params.protocolVersion;
-	if (typeof requestedVersion !== "string") {
-		return undefined;
-	}
-
-	return SUPPORTED_PROTOCOL_VERSIONS.includes(requestedVersion)
-		? requestedVersion
-		: LATEST_PROTOCOL_VERSION;
-}
-
-function sanitizeProtocolVersion(version: string): string {
-	return version.replace(/[^A-Za-z0-9._-]/g, "").slice(0, 64);
-}
-
-function getMcpProtocolVersion(req: express.Request): string | undefined {
-	const raw = req.headers["mcp-protocol-version"];
-	return typeof raw === "string" ? raw : undefined;
-}
-
-function validateRequiredProtocolVersion(
-	protocolVersion: string | undefined,
-	expectedProtocolVersion?: string,
-): string | undefined {
-	if (!protocolVersion) {
-		return undefined;
-	}
-
-	if (!SUPPORTED_PROTOCOL_VERSIONS.includes(protocolVersion)) {
-		const safe = sanitizeProtocolVersion(protocolVersion);
-		return `Bad Request: Unsupported protocol version: ${safe} (supported versions: ${SUPPORTED_PROTOCOL_VERSIONS.join(", ")})`;
-	}
-
-	if (
-		expectedProtocolVersion !== undefined &&
-		protocolVersion !== expectedProtocolVersion
-	) {
-		const safe = sanitizeProtocolVersion(protocolVersion);
-		return `Bad Request: MCP-Protocol-Version ${safe} does not match negotiated session protocol version ${expectedProtocolVersion}`;
-	}
-
-	return undefined;
-}
-
-interface StatelessRequestHandlerDeps {
-	managedEventStore: ManagedEventStore;
-	activeStatelessConnections: Set<() => Promise<void>>;
-}
-
-type StatelessRequestHandler = (
-	req: express.Request,
-	res: express.Response,
-	context: string,
-	ownerKey: string,
-	parsedBody?: unknown,
-	toolDomains?: readonly ToolDomain[],
-) => Promise<void>;
-
-function createStatelessRequestHandler(
-	deps: StatelessRequestHandlerDeps,
-): StatelessRequestHandler {
-	const { managedEventStore, activeStatelessConnections } = deps;
-
-	return async function handleStatelessRequest(
-		req,
-		res,
-		context,
-		ownerKey,
-		parsedBody,
-		toolDomains,
-	) {
-		// The SDK removes its response-stream mapping as soon as the client drops
-		// the POST SSE connection. Track the primed stream separately so an in-flight
-		// stateless handler can still persist progress/final messages for GET replay.
-		let replayStreamId: string | undefined;
-		let responseDisconnected = false;
-		const storedMessages = new WeakSet<object>();
-		const sharedEventStore = managedEventStore.eventStoreForOwner(ownerKey);
-		const requestEventStore: EventStore | undefined = sharedEventStore
-			? {
-					storeEvent: async (streamId: StreamId, message: JSONRPCMessage) => {
-						replayStreamId ??= streamId;
-						storedMessages.add(message);
-						return sharedEventStore.storeEvent(streamId, message);
-					},
-					getStreamIdForEventId: async (eventId: string) =>
-						sharedEventStore.getStreamIdForEventId?.(eventId),
-					replayEventsAfter: (
-						lastEventId: string,
-						options: {
-							send: (eventId: string, message: JSONRPCMessage) => Promise<void>;
-						},
-					) => sharedEventStore.replayEventsAfter(lastEventId, options),
-				}
-			: undefined;
-		const transport = new NodeStreamableHTTPServerTransport({
-			sessionIdGenerator: undefined,
-			eventStore: requestEventStore,
-		});
-		const { server: mcpServer } = createMcpServer({ toolDomains });
-		const requestMessages = Array.isArray(parsedBody)
-			? parsedBody
-			: [parsedBody];
-		const pendingRequestIds = new Set<unknown>();
-		for (const message of requestMessages) {
-			if (
-				isRecord(message) &&
-				typeof message.method === "string" &&
-				(typeof message.id === "string" || typeof message.id === "number")
-			) {
-				pendingRequestIds.add(message.id);
-			}
-		}
-		let closePromise: Promise<void> | undefined;
-		const closeConnection = () => {
-			if (!closePromise) {
-				closePromise = mcpServer
-					.close()
-					.catch((error) => {
-						Logger.error("Failed to close stateless MCP connection", {
-							metadata: {
-								context,
-								error: error instanceof Error ? error.message : String(error),
-							},
-						});
-					})
-					.finally(() => {
-						activeStatelessConnections.delete(closeConnection);
-					});
-			}
-			return closePromise;
-		};
-		activeStatelessConnections.add(closeConnection);
-
-		const originalSend = transport.send.bind(transport);
-		transport.send = async (message, options) => {
-			if (
-				(responseDisconnected || res.destroyed) &&
-				replayStreamId &&
-				sharedEventStore
-			) {
-				await sharedEventStore.storeEvent(replayStreamId, message);
-				storedMessages.add(message);
-			} else {
-				try {
-					await originalSend(message, options);
-				} catch (error) {
-					const disconnected =
-						error instanceof Error &&
-						error.message.startsWith(
-							"No connection established for request ID:",
-						);
-					if (!disconnected || !replayStreamId || !sharedEventStore) {
-						throw error;
-					}
-					if (!storedMessages.has(message)) {
-						await sharedEventStore.storeEvent(replayStreamId, message);
-						storedMessages.add(message);
-					}
-				}
-				if (
-					(responseDisconnected || res.destroyed) &&
-					replayStreamId &&
-					sharedEventStore &&
-					!storedMessages.has(message)
-				) {
-					await sharedEventStore.storeEvent(replayStreamId, message);
-					storedMessages.add(message);
-				}
-			}
-
-			if ("id" in message && ("result" in message || "error" in message)) {
-				pendingRequestIds.delete(message.id);
-				if (pendingRequestIds.size === 0) {
-					queueMicrotask(() => {
-						void closeConnection();
-					});
-				}
-			}
-		};
-
-		res.once("close", () => {
-			if (pendingRequestIds.size > 0 && replayStreamId) {
-				responseDisconnected = true;
-			} else {
-				void closeConnection();
-			}
-		});
-
-		try {
-			await mcpServer.connect(transport);
-			await transport.handleRequest(req, res, parsedBody);
-			if (pendingRequestIds.size === 0) {
-				await closeConnection();
-			}
-		} catch (error) {
-			await closeConnection();
-			throw error;
-		}
-	};
-}
-
 function createHealthHandler(): express.RequestHandler {
 	/**
 	 * Health check endpoint - always returns 200 if server is running
@@ -542,26 +266,18 @@ interface ReadyHandlerDeps {
 	getIsReady: () => boolean;
 	readyCheckMode: "local" | "portkey";
 	healthService: HealthService | null;
-	isStatefulSessionMode: boolean;
-	sessionStore: SessionStore;
-	config: ServerConfig;
+	getActiveRequestCount: () => number;
 }
 
 function createReadyHandler(deps: ReadyHandlerDeps): express.RequestHandler {
-	const {
-		getIsReady,
-		readyCheckMode,
-		healthService,
-		isStatefulSessionMode,
-		sessionStore,
-		config,
-	} = deps;
+	const { getIsReady, readyCheckMode, healthService, getActiveRequestCount } =
+		deps;
 
 	/**
 	 * Readiness check endpoint - returns 200 only when server is ready to accept MCP requests
 	 */
 	return async function readyHandler(_req, res) {
-		const sessionCount = isStatefulSessionMode ? sessionStore.size : 0;
+		const activeRequests = getActiveRequestCount();
 
 		if (getIsReady()) {
 			if (readyCheckMode === "portkey") {
@@ -578,9 +294,8 @@ function createReadyHandler(deps: ReadyHandlerDeps): express.RequestHandler {
 					const portkey = await healthService.ping();
 					res.json({
 						status: "ready",
-						sessions: sessionCount,
-						sessionMode: config.sessionMode,
-						eventStoreMode: config.eventStore.mode,
+						activeRequests,
+						sessionMode: "stateless",
 						portkey,
 						timestamp: new Date().toISOString(),
 					});
@@ -588,9 +303,8 @@ function createReadyHandler(deps: ReadyHandlerDeps): express.RequestHandler {
 				} catch (error) {
 					res.status(503).json({
 						status: "not_ready",
-						sessions: sessionCount,
-						sessionMode: config.sessionMode,
-						eventStoreMode: config.eventStore.mode,
+						activeRequests,
+						sessionMode: "stateless",
 						portkey: {
 							status: "error",
 							error: error instanceof Error ? error.message : "Unknown error",
@@ -603,9 +317,8 @@ function createReadyHandler(deps: ReadyHandlerDeps): express.RequestHandler {
 
 			res.json({
 				status: "ready",
-				sessions: sessionCount,
-				sessionMode: config.sessionMode,
-				eventStoreMode: config.eventStore.mode,
+				activeRequests,
+				sessionMode: "stateless",
 				check: "local",
 				timestamp: new Date().toISOString(),
 			});
@@ -667,8 +380,8 @@ function createRootPageHandler(
   <div class="card">
     <div><strong>MCP endpoint:</strong> <code>${escapeHtml(mcpUrl)}</code></div>
     <div><strong>Transport security:</strong> <code>${config.tls.enabled ? "native HTTPS enabled" : "HTTP in app (use proxy/platform HTTPS in production)"}</code></div>
-    <div><strong>Session mode:</strong> <code>${escapeHtml(config.sessionMode)}</code></div>
-    <div><strong>Event store mode:</strong> <code>${escapeHtml(config.eventStore.mode)}</code></div>
+    <div><strong>Session mode:</strong> <code>${"stateless"}</code></div>
+    <div><strong>Event store mode:</strong> <code>${"retired"}</code></div>
     <div><strong>Auth mode:</strong> <code>${escapeHtml(authConfig.mode)}</code></div>
     <div><strong>Auth usage:</strong> ${escapeHtml(authHelp)}</div>
   </div>
@@ -716,8 +429,7 @@ function createAuthInfoHandler(
 	return function authInfoHandler(_req, res) {
 		res.json({
 			mode: authConfig.mode,
-			sessionMode: config.sessionMode,
-			eventStoreMode: config.eventStore.mode,
+			sessionMode: "stateless",
 			mcpEndpoint: `${publicBaseUrl}/mcp`,
 			clerk: {
 				issuerConfigured: Boolean(process.env.CLERK_ISSUER),
@@ -734,37 +446,14 @@ function createAuthInfoHandler(
 	};
 }
 
-interface McpPostHandlerDeps {
-	isStatefulSessionMode: boolean;
-	activeStatelessConnections: Set<() => Promise<void>>;
-	config: ServerConfig;
-	managedEventStore: ManagedEventStore;
-	sessionStore: SessionStore;
-	handleStatelessRequest: StatelessRequestHandler;
-}
-
-function createMcpPostHandler(
-	deps: McpPostHandlerDeps,
+function createMcpRequestHandler(
+	config: ServerConfig,
+	activeRequests: Set<() => Promise<void>>,
 ): express.RequestHandler {
-	const {
-		isStatefulSessionMode,
-		activeStatelessConnections,
-		config,
-		managedEventStore,
-		sessionStore,
-		handleStatelessRequest,
-	} = deps;
-
-	/**
-	 * MCP POST endpoint - handles MCP requests
-	 * Creates new sessions on initialize requests, reuses existing sessions otherwise
-	 */
-	return async function mcpPostHandler(req, res) {
-		const ownerKey = getRequestOwnerKey(res);
-		let requestedToolDomains: ToolDomain[] | undefined;
-		const protocolVersionHeader = getMcpProtocolVersion(req);
+	return async (req, res) => {
+		let toolDomains: ToolDomain[] | undefined;
 		try {
-			requestedToolDomains = parseRequestedToolDomains(req.query.tools);
+			toolDomains = parseRequestedToolDomains(req.query.tools);
 		} catch (error) {
 			respondJsonRpcClientError(
 				res,
@@ -773,575 +462,59 @@ function createMcpPostHandler(
 			);
 			return;
 		}
-
-		if (!isStatefulSessionMode) {
-			if (activeStatelessConnections.size >= config.maxSessions) {
-				respondJsonRpcClientError(
-					res,
-					503,
-					`Maximum active stateless request limit reached (${config.maxSessions})`,
-					-32000,
-				);
-				return;
-			}
-			if (!isInitializeRequest(req.body)) {
-				const protocolError = validateRequiredProtocolVersion(
-					protocolVersionHeader,
-				);
-				if (protocolError) {
-					respondJsonRpcClientError(res, 400, protocolError, -32000);
-					return;
-				}
-			}
-
-			try {
-				await handleStatelessRequest(
-					req,
-					res,
-					"POST /mcp stateless",
-					ownerKey,
-					req.body,
-					requestedToolDomains,
-				);
-			} catch (error) {
-				respondJsonRpcInternalError(res, "POST /mcp stateless", error);
-			}
+		if (req.method !== "POST") {
+			res.set("Allow", "POST");
+			respondJsonRpcClientError(res, 405, "Method not allowed.", -32000);
 			return;
 		}
-
-		const sessionId = req.headers["mcp-session-id"] as string | undefined;
-		let transport: NodeStreamableHTTPServerTransport | undefined;
-		let hasReservedSessionSlot = false;
-		const sessionEntry = sessionId
-			? sessionStore.getOwned(sessionId, ownerKey)
-			: undefined;
-
-		if (sessionId && sessionEntry) {
-			transport = sessionEntry.transport as NodeStreamableHTTPServerTransport;
-			if (transport) {
-				const protocolError = validateRequiredProtocolVersion(
-					protocolVersionHeader,
-					sessionEntry.protocolVersion,
-				);
-				if (protocolError) {
-					respondJsonRpcClientError(res, 400, protocolError, -32000);
-					return;
-				}
-
-				if (
-					requestedToolDomains &&
-					!areToolDomainsEqual(requestedToolDomains, sessionEntry.toolDomains)
-				) {
-					respondJsonRpcClientError(
-						res,
-						400,
-						"Tool subset is fixed when a stateful session is initialized. Open a new session to change ?tools=.",
-					);
-					return;
-				}
-				sessionStore.touch(sessionId);
-			}
-		}
-
-		if (!transport && !sessionId && isInitializeRequest(req.body)) {
-			if (!sessionStore.tryReserve()) {
-				Logger.warn("Rejected MCP session initialization at capacity", {
-					metadata: {
-						activeSessions: sessionStore.size,
-						maxSessions: config.maxSessions,
-					},
-				});
-				res.status(503).json({
-					jsonrpc: "2.0",
-					error: {
-						code: -32000,
-						message: `Maximum active session limit reached (${config.maxSessions})`,
-					},
-					id: null,
-				});
-				return;
-			}
-			hasReservedSessionSlot = true;
-
-			const newTransport = new NodeStreamableHTTPServerTransport({
-				sessionIdGenerator: () => randomUUID(),
-				eventStore: managedEventStore.eventStoreForOwner(ownerKey),
-				onsessioninitialized: (id) => {
-					sessionStore.set(id, {
-						transport: newTransport,
-						ownerKey,
-						toolDomains: requestedToolDomains,
-						protocolVersion: getNegotiatedProtocolVersion(req.body),
-						createdAt: Date.now(),
-						lastActivity: Date.now(),
-					});
-					hasReservedSessionSlot = false;
-					Logger.info("MCP session initialized", {
-						metadata: { sessionFingerprint: fingerprintCapabilityId(id) },
-					});
-				},
-				onsessionclosed: (id) => {
-					sessionStore.delete(id);
-					Logger.info("MCP session closed", {
-						metadata: { sessionFingerprint: fingerprintCapabilityId(id) },
-					});
-				},
-			});
-
-			newTransport.onclose = () => {
-				if (newTransport.sessionId) {
-					sessionStore.delete(newTransport.sessionId);
-				}
-			};
-			transport = newTransport;
-
-			try {
-				const { server: mcpServer } = createMcpServer({
-					toolDomains: requestedToolDomains,
-				});
-				await mcpServer.connect(transport);
-			} catch (error) {
-				if (hasReservedSessionSlot) {
-					sessionStore.releaseReservation();
-					hasReservedSessionSlot = false;
-				}
-				respondJsonRpcInternalError(
-					res,
-					"POST /mcp stateful initialize",
-					error,
-				);
-				return;
-			}
-		} else if (!transport) {
-			// Unknown session id -> 404 so clients re-initialize (per MCP spec);
-			// a missing id on a non-initialize request is a 400 Bad Request.
-			res.status(sessionId ? 404 : 400).json({
-				jsonrpc: "2.0",
-				error: {
-					code: -32000,
-					message: sessionId
-						? "Session not found"
-						: "Missing session ID or invalid initialize request",
-				},
-				id: null,
-			});
-			return;
-		}
-
-		try {
-			await transport.handleRequest(req, res, req.body);
-		} catch (error) {
-			respondJsonRpcInternalError(
-				res,
-				sessionId
-					? "POST /mcp stateful session"
-					: "POST /mcp stateful initialize",
-				error,
-			);
-		} finally {
-			// The SDK's transport returns error responses (406/415/400/...) for a
-			// rejected initialize request instead of throwing, so the catch block
-			// above never fires for those. onsessioninitialized (which flips this
-			// flag off) runs synchronously inside handleRequest before it resolves,
-			// so if the slot is still marked reserved here the initialize was never
-			// completed and the reservation must be released to avoid leaking
-			// session capacity.
-			if (hasReservedSessionSlot) {
-				sessionStore.releaseReservation();
-				hasReservedSessionSlot = false;
-			}
-		}
-	};
-}
-
-interface McpGetHandlerDeps {
-	isStatefulSessionMode: boolean;
-	activeReplayOperations: Set<Promise<void>>;
-	config: ServerConfig;
-	managedEventStore: ManagedEventStore;
-	sessionStore: SessionStore;
-	getIsReady: () => boolean;
-}
-
-function createMcpGetHandler(deps: McpGetHandlerDeps): express.RequestHandler {
-	const {
-		isStatefulSessionMode,
-		activeReplayOperations,
-		config,
-		managedEventStore,
-		sessionStore,
-		getIsReady,
-	} = deps;
-
-	/**
-	 * MCP GET endpoint - handles SSE streams for server-to-client notifications
-	 */
-	return async function mcpGetHandler(req, res) {
-		const ownerKey = getRequestOwnerKey(res);
-		let requestedToolDomains: ToolDomain[] | undefined;
-		try {
-			requestedToolDomains = parseRequestedToolDomains(req.query.tools);
-		} catch (error) {
+		if (!isJsonContentType(req.get("content-type") ?? null)) {
 			respondJsonRpcClientError(
 				res,
-				400,
-				error instanceof Error ? error.message : String(error),
+				415,
+				"Content-Type must be application/json",
+				-32000,
 			);
 			return;
 		}
-
-		if (!isStatefulSessionMode) {
-			if (activeReplayOperations.size >= config.maxSessions) {
-				respondJsonRpcClientError(
-					res,
-					503,
-					`Maximum active stateless replay limit reached (${config.maxSessions})`,
-					-32000,
-				);
-				return;
-			}
-
-			// Reserve the slot synchronously, in the same tick as the capacity
-			// check above, so a concurrent GET can't observe stale capacity while
-			// this request is still awaiting the (network-bound, e.g. Redis)
-			// lease acquisition below. The reservation stays in the set for the
-			// full lifetime of this GET, released in the `finally` at the bottom.
-			let releaseReplaySlot!: () => void;
-			const replaySlot = new Promise<void>((resolve) => {
-				releaseReplaySlot = resolve;
-			});
-			activeReplayOperations.add(replaySlot);
-
-			try {
-				const replayEventStore = managedEventStore.eventStoreForOwner(ownerKey);
-				if (!replayEventStore || !managedEventStore.acquireReplayLease) {
-					res.setHeader("Allow", "POST");
-					respondJsonRpcClientError(
-						res,
-						405,
-						"Stateless GET /mcp replay requires MCP_EVENT_STORE=memory or redis",
-						-32000,
-					);
-					return;
-				}
-
-				const lastEventId = req.headers["last-event-id"];
-				if (typeof lastEventId !== "string" || lastEventId.length === 0) {
-					res.setHeader("Allow", "POST");
-					respondJsonRpcClientError(
-						res,
-						405,
-						"Stateless GET /mcp only supports replay with Last-Event-ID",
-						-32000,
-					);
-					return;
-				}
-				if (!req.headers.accept?.includes("text/event-stream")) {
-					respondJsonRpcClientError(
-						res,
-						406,
-						"Not Acceptable: Client must accept text/event-stream",
-						-32000,
-					);
-					return;
-				}
-
-				const protocolError = validateRequiredProtocolVersion(
-					getMcpProtocolVersion(req),
-				);
-				if (protocolError) {
-					respondJsonRpcClientError(res, 400, protocolError, -32000);
-					return;
-				}
-				try {
-					const lease = await managedEventStore.acquireReplayLease(
-						lastEventId,
-						ownerKey,
-					);
-					if (lease.status !== "acquired") {
-						if (lease.status === "missing") {
-							respondJsonRpcClientError(
-								res,
-								400,
-								"Invalid event ID format",
-								-32000,
-							);
-							return;
-						}
-						respondJsonRpcClientError(
-							res,
-							409,
-							"Conflict: Stream already has an active replay connection",
-							-32000,
-						);
-						return;
-					}
-
-					const replayOperation = (async () => {
-						try {
-							res.status(200);
-							res.setHeader("Content-Type", "text/event-stream");
-							res.setHeader("Cache-Control", "no-cache, no-transform");
-							res.flushHeaders();
-
-							let cursor = lastEventId;
-							let finalResponseSeen = false;
-							let pollDelayMs = 100;
-							const deadline = Date.now() + 25_000;
-							while (getIsReady() && !res.destroyed && !finalResponseSeen) {
-								let deliveredEvent = false;
-								await replayEventStore.replayEventsAfter(cursor, {
-									send: async (eventId, message) => {
-										deliveredEvent = true;
-										cursor = eventId;
-										finalResponseSeen =
-											"id" in message &&
-											("result" in message || "error" in message);
-										if (
-											!res.write(
-												`event: message\nid: ${eventId}\ndata: ${JSON.stringify(message)}\n\n`,
-											)
-										) {
-											await waitForResponseWritable(res);
-										}
-									},
-								});
-								if (finalResponseSeen || res.destroyed) {
-									break;
-								}
-								if (Date.now() >= deadline) {
-									// Preserve the cursor across a quiet long-poll reconnect.
-									res.write(`id: ${cursor}\ndata: \n\n`);
-									break;
-								}
-								pollDelayMs = getNextReplayPollDelay(
-									pollDelayMs,
-									deliveredEvent,
-								);
-								await new Promise((resolvePoll) =>
-									setTimeout(resolvePoll, pollDelayMs),
-								);
-							}
-
-							if (!res.writableEnded && !res.destroyed) {
-								await new Promise<void>((resolveResponse) => {
-									const done = () => resolveResponse();
-									res.once("finish", done);
-									res.once("close", done);
-									res.end();
-								});
-							}
-						} finally {
-							try {
-								await lease.release();
-							} catch (error) {
-								Logger.error("Failed to release stateless replay lease", {
-									metadata: {
-										error:
-											error instanceof Error ? error.message : String(error),
-									},
-								});
-							}
-						}
-					})();
-					await replayOperation;
-				} catch (error) {
-					if (res.headersSent) {
-						Logger.error("GET /mcp stateless replay failed", {
-							metadata: {
-								error: error instanceof Error ? error.message : String(error),
-							},
-						});
-						if (!res.writableEnded) {
-							res.end();
-						}
-					} else {
-						respondJsonRpcInternalError(res, "GET /mcp stateless", error);
-					}
-				}
-			} finally {
-				activeReplayOperations.delete(replaySlot);
-				releaseReplaySlot();
-			}
-			return;
-		}
-
-		const sessionId = req.headers["mcp-session-id"] as string | undefined;
-		const protocolVersionHeader = getMcpProtocolVersion(req);
-
-		if (!sessionId) {
-			res.status(400).json({
-				jsonrpc: "2.0",
-				error: {
-					code: -32000,
-					message: "Missing session ID",
-				},
-				id: null,
-			});
-			return;
-		}
-
-		const sessionEntry = sessionStore.getOwned(sessionId, ownerKey);
-		const transport = sessionEntry?.transport as
-			| NodeStreamableHTTPServerTransport
-			| undefined;
-
-		if (transport) {
-			const protocolError = validateRequiredProtocolVersion(
-				protocolVersionHeader,
-				sessionEntry?.protocolVersion,
+		if (activeRequests.size >= config.maxSessions) {
+			respondJsonRpcClientError(
+				res,
+				503,
+				`Maximum active request limit reached (${config.maxSessions})`,
+				-32000,
 			);
-			if (protocolError) {
-				respondJsonRpcClientError(res, 400, protocolError, -32000);
-				return;
-			}
-
-			if (
-				requestedToolDomains &&
-				!areToolDomainsEqual(requestedToolDomains, sessionEntry?.toolDomains)
-			) {
-				respondJsonRpcClientError(
-					res,
-					400,
-					"Tool subset is fixed when a stateful session is initialized. Open a new session to change ?tools=.",
-				);
-				return;
-			}
-			sessionStore.touch(sessionId);
-
-			// Mirror the stateless replay guard: the SDK's replayEvents() checks
-			// _streamMapping for an existing stream BEFORE awaiting
-			// getStreamIdForEventId()/replayEventsAfter(), and only registers the
-			// new mapping afterward, which is an unguarded TOCTOU inside the SDK.
-			// Acquiring the same per-stream lease the stateless path uses here
-			// serializes replay attempts for this event id before the SDK's own
-			// racy check ever runs, since a losing concurrent request now gets
-			// rejected below instead of reaching transport.handleRequest at all.
-			const lastEventId = req.headers["last-event-id"];
-			if (
-				typeof lastEventId === "string" &&
-				lastEventId.length > 0 &&
-				managedEventStore.acquireReplayLease
-			) {
-				const lease = await managedEventStore.acquireReplayLease(
-					lastEventId,
-					ownerKey,
-				);
-				if (lease.status !== "acquired") {
-					if (lease.status === "missing") {
-						respondJsonRpcClientError(
-							res,
-							400,
-							"Invalid event ID format",
-							-32000,
-						);
-						return;
-					}
-					respondJsonRpcClientError(
-						res,
-						409,
-						"Conflict: Stream already has an active replay connection",
-						-32000,
-					);
-					return;
-				}
+			return;
+		}
+		let server: ReturnType<typeof createMcpServer>["server"] | undefined;
+		const handler = createMcpHandler(() => {
+			server = createMcpServer({ toolDomains }).server;
+			return server;
+		});
+		let closePromise: Promise<void> | undefined;
+		const close = () => {
+			closePromise ??= (async () => {
 				try {
-					await transport.handleRequest(req, res);
+					await handler.close();
+					await server?.close();
 				} finally {
-					try {
-						await lease.release();
-					} catch (error) {
-						Logger.error("Failed to release stateful replay lease", {
-							metadata: {
-								error: error instanceof Error ? error.message : String(error),
-							},
-						});
-					}
+					activeRequests.delete(close);
 				}
-				return;
-			}
-
-			await transport.handleRequest(req, res);
-		} else {
-			res.status(404).json({
-				jsonrpc: "2.0",
-				error: {
-					code: -32000,
-					message: "Session not found",
+			})();
+			return closePromise;
+		};
+		activeRequests.add(close);
+		try {
+			await toNodeHandler(handler, {
+				onerror: (error) => {
+					Logger.error("MCP HTTP adapter failed", {
+						metadata: { error: error.message },
+					});
 				},
-				id: null,
-			});
-		}
-	};
-}
-
-interface McpDeleteHandlerDeps {
-	isStatefulSessionMode: boolean;
-	sessionStore: SessionStore;
-}
-
-function createMcpDeleteHandler(
-	deps: McpDeleteHandlerDeps,
-): express.RequestHandler {
-	const { isStatefulSessionMode, sessionStore } = deps;
-
-	/**
-	 * MCP DELETE endpoint - closes sessions
-	 */
-	return async function mcpDeleteHandler(req, res) {
-		const ownerKey = getRequestOwnerKey(res);
-		if (!isStatefulSessionMode) {
-			res.status(405).json({
-				jsonrpc: "2.0",
-				error: {
-					code: -32000,
-					message: "DELETE /mcp is not used in stateless session mode",
-				},
-				id: null,
-			});
-			return;
-		}
-
-		const sessionId = req.headers["mcp-session-id"] as string | undefined;
-		const protocolVersionHeader = getMcpProtocolVersion(req);
-
-		if (!sessionId) {
-			res.status(400).json({
-				jsonrpc: "2.0",
-				error: {
-					code: -32000,
-					message: "Missing session ID",
-				},
-				id: null,
-			});
-			return;
-		}
-
-		const sessionEntry = sessionStore.getOwned(sessionId, ownerKey);
-		const transport = sessionEntry?.transport as
-			| NodeStreamableHTTPServerTransport
-			| undefined;
-
-		if (transport) {
-			const protocolError = validateRequiredProtocolVersion(
-				protocolVersionHeader,
-				sessionEntry?.protocolVersion,
-			);
-			if (protocolError) {
-				respondJsonRpcClientError(res, 400, protocolError, -32000);
-				return;
-			}
-
-			await transport.handleRequest(req, res);
-		} else {
-			res.status(404).json({
-				jsonrpc: "2.0",
-				error: {
-					code: -32000,
-					message: "Session not found",
-				},
-				id: null,
-			});
+			})(req, res, req.body);
+		} catch (error) {
+			respondJsonRpcInternalError(res, `${req.method} /mcp`, error);
+		} finally {
+			await close();
 		}
 	};
 }
@@ -1350,7 +523,6 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 	const config = getServerConfig();
 	const authConfig = getHttpAuthConfig();
 	assertSafeHttpAuthConfig(authConfig);
-	const managedEventStore = createManagedEventStore(config);
 	const readyCheckMode = getReadyCheckMode();
 	const requestBodyLimit = process.env.MCP_MAX_REQUEST_SIZE?.trim() || "1mb";
 	const allowedOrigins = getAllowedOrigins();
@@ -1371,26 +543,17 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 	const healthService = process.env.PORTKEY_API_KEY
 		? getSharedPortkeyService().health
 		: null;
-	const isStatefulSessionMode = config.sessionMode === "stateful";
 	const publicBaseUrl = buildConfiguredPublicBaseUrl(config);
-	const sessionStore = new SessionStore(config.maxSessions);
-	const activeStatelessConnections = new Set<() => Promise<void>>();
-	const activeReplayOperations = new Set<Promise<void>>();
+	const activeRequests = new Set<() => Promise<void>>();
 	const app = express();
 
 	let isReady = false;
 	let server: HttpServer | HttpsServer | undefined;
-	let cleanupInterval: NodeJS.Timeout | undefined;
 	let closeRuntimeResourcesPromise: Promise<void> | undefined;
 	let sigintHandler: (() => void) | undefined;
 	let sigtermHandler: (() => void) | undefined;
 
 	const getIsReady = () => isReady;
-
-	const handleStatelessRequest = createStatelessRequestHandler({
-		managedEventStore,
-		activeStatelessConnections,
-	});
 
 	app.set("trust proxy", resolveTrustProxy(process.env.MCP_TRUST_PROXY));
 	app.use(
@@ -1466,9 +629,7 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 			getIsReady,
 			readyCheckMode,
 			healthService,
-			isStatefulSessionMode,
-			sessionStore,
-			config,
+			getActiveRequestCount: () => activeRequests.size,
 		}),
 	);
 
@@ -1493,47 +654,7 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 		}),
 	);
 
-	/**
-	 * MCP POST endpoint - handles MCP requests
-	 * Creates new sessions on initialize requests, reuses existing sessions otherwise
-	 */
-	app.post(
-		"/mcp",
-		createMcpPostHandler({
-			isStatefulSessionMode,
-			activeStatelessConnections,
-			config,
-			managedEventStore,
-			sessionStore,
-			handleStatelessRequest,
-		}),
-	);
-
-	/**
-	 * MCP GET endpoint - handles SSE streams for server-to-client notifications
-	 */
-	app.get(
-		"/mcp",
-		createMcpGetHandler({
-			isStatefulSessionMode,
-			activeReplayOperations,
-			config,
-			managedEventStore,
-			sessionStore,
-			getIsReady,
-		}),
-	);
-
-	/**
-	 * MCP DELETE endpoint - closes sessions
-	 */
-	app.delete(
-		"/mcp",
-		createMcpDeleteHandler({
-			isStatefulSessionMode,
-			sessionStore,
-		}),
-	);
+	app.all("/mcp", createMcpRequestHandler(config, activeRequests));
 
 	app.use(
 		(
@@ -1549,29 +670,6 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 			respondJsonRpcInternalError(res, `${req.method} /mcp`, error);
 		},
 	);
-
-	cleanupInterval = isStatefulSessionMode
-		? setInterval(async () => {
-				try {
-					const expiredIds = await sessionStore.cleanup(config.sessionTimeout);
-					for (const id of expiredIds) {
-						Logger.info("MCP session expired and cleaned up", {
-							metadata: {
-								sessionFingerprint: fingerprintCapabilityId(id),
-							},
-						});
-					}
-				} catch (error) {
-					Logger.error("Session cleanup tick failed", {
-						metadata: {
-							fn: "sessionStore.cleanup",
-							error: error instanceof Error ? error.message : String(error),
-						},
-					});
-				}
-			}, 60000)
-		: undefined;
-	cleanupInterval?.unref?.();
 
 	function setServerReady(value = true): void {
 		isReady = value;
@@ -1610,28 +708,9 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 				isReady = false;
 				detachSignalHandlers();
 
-				if (cleanupInterval) {
-					clearInterval(cleanupInterval);
-					cleanupInterval = undefined;
-				}
-
 				const failures: unknown[] = [];
-				try {
-					if (isStatefulSessionMode) {
-						await sessionStore.closeAll();
-					}
-					await Promise.allSettled(
-						Array.from(activeStatelessConnections, (closeConnection) =>
-							closeConnection(),
-						),
-					);
-					await Promise.allSettled(activeReplayOperations);
-				} catch (error) {
-					failures.push(error);
-				}
-
 				const storeResults = await Promise.allSettled([
-					managedEventStore.close(),
+					...Array.from(activeRequests, (close) => close()),
 					closeRateLimitStore(),
 				]);
 				for (const result of storeResults) {
@@ -1676,8 +755,7 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 				host: config.host,
 				port: config.port,
 				protocol: config.protocol,
-				sessionMode: config.sessionMode,
-				eventStoreMode: config.eventStore.mode,
+				sessionMode: "stateless",
 				requestBodyLimit,
 				allowedOrigins,
 				authMode: authConfig.mode,
@@ -1698,15 +776,9 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 		console.log("  GET  /ready  - Readiness check");
 		console.log("  POST /mcp    - MCP requests");
 		console.log(
-			`  GET  /mcp    - ${isStatefulSessionMode ? "SSE notifications and replay" : managedEventStore.mode !== "off" ? "SSE replay (requires Last-Event-ID)" : "Unavailable (event store off)"}`,
+			"  GET/DELETE /mcp - Method not allowed (no sessions or replay)",
 		);
-		console.log(
-			`  DELETE /mcp  - ${isStatefulSessionMode ? "Close session" : "Not used in stateless mode"}`,
-		);
-		console.log(`[MCP] Session timeout: ${config.sessionTimeout}ms`);
-		console.log(`[MCP] Max sessions: ${config.maxSessions}`);
-		console.log(`[MCP] Session mode: ${config.sessionMode}`);
-		console.log(`[MCP] Event store mode: ${config.eventStore.mode}`);
+		console.log(`[MCP] Max active requests: ${config.maxSessions}`);
 		console.log(`[MCP] Auth mode: ${authConfig.mode}`);
 		console.log(`[MCP] Ready check: ${readyCheckMode}`);
 	}
@@ -1748,7 +820,7 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 
 		server.close(() => {
 			clearTimeout(forceExitTimer);
-			console.log("[MCP] All sessions closed, exiting...");
+			console.log("[MCP] All requests closed, exiting...");
 			process.exit(exitCode);
 		});
 	}

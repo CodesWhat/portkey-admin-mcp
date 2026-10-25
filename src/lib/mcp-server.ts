@@ -235,9 +235,16 @@ export function createMcpServer(
 		{
 			maxToolInputElements: 10_000,
 			capabilities: {
-				prompts: { listChanged: true },
-				resources: { listChanged: true },
-				tools: { listChanged: true },
+				prompts: { listChanged: false },
+				resources: { listChanged: false },
+				tools: { listChanged: false },
+			},
+			cacheHints: {
+				"tools/list": { ttlMs: 60_000, cacheScope: "private" },
+				"prompts/list": { ttlMs: 60_000, cacheScope: "private" },
+				"resources/list": { ttlMs: 60_000, cacheScope: "private" },
+				"resources/templates/list": { ttlMs: 60_000, cacheScope: "private" },
+				"server/discover": { ttlMs: 60_000, cacheScope: "private" },
 			},
 			instructions: SERVER_INSTRUCTIONS,
 		},

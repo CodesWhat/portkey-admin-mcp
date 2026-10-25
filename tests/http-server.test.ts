@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { type ChildProcess, spawn } from "node:child_process";
-import { EventEmitter, once } from "node:events";
+import { once } from "node:events";
 import {
 	createServer as createHttpServer,
 	request as httpRequest,
@@ -33,54 +33,6 @@ const INIT_PAYLOAD = {
 };
 
 const spawnedServers = new Set<ChildProcess>();
-
-interface SseEvent {
-	id?: string;
-	data: string;
-}
-
-function parseSseEvents(raw: string): SseEvent[] {
-	return raw
-		.split("\n\n")
-		.map((block) => {
-			const lines = block.split("\n");
-			const id = lines.find((line) => line.startsWith("id: "))?.slice(4);
-			const data = lines
-				.filter((line) => line.startsWith("data: "))
-				.map((line) => line.slice(6))
-				.join("\n");
-			return { id, data };
-		})
-		.filter((event) => event.id !== undefined || event.data.length > 0);
-}
-
-async function readSseEvents(
-	response: Response,
-	minimumEvents: number,
-): Promise<SseEvent[]> {
-	assert.ok(response.body, "expected SSE response body");
-	const reader = response.body.getReader();
-	const decoder = new TextDecoder();
-	let raw = "";
-
-	try {
-		while (true) {
-			const { done, value } = await reader.read();
-			if (done) {
-				break;
-			}
-			raw += decoder.decode(value, { stream: true });
-			const events = parseSseEvents(raw);
-			if (events.length >= minimumEvents) {
-				return events;
-			}
-		}
-	} finally {
-		await reader.cancel();
-	}
-
-	return parseSseEvents(raw);
-}
 
 async function getFreePort(): Promise<number> {
 	return new Promise((resolvePort, reject) => {
@@ -355,7 +307,7 @@ describe("HTTP server integration", () => {
 			);
 			const readyBody = (await ready.json()) as Record<string, unknown>;
 			assert.equal(readyBody.status, "ready");
-			assert.equal(readyBody.sessionMode, "stateful");
+			assert.equal(readyBody.sessionMode, "stateless");
 
 			const authInfo = await fetch(`${baseUrl}/auth/info`);
 			assert.equal(authInfo.status, 200);
@@ -368,7 +320,7 @@ describe("HTTP server integration", () => {
 			);
 			const authInfoBody = (await authInfo.json()) as Record<string, unknown>;
 			assert.equal(authInfoBody.mode, "bearer");
-			assert.equal(authInfoBody.sessionMode, "stateful");
+			assert.equal(authInfoBody.sessionMode, "stateless");
 			assert.equal(authInfoBody.mcpEndpoint, `${baseUrl}/mcp`);
 		});
 	});
@@ -392,7 +344,7 @@ describe("HTTP server integration", () => {
 					html,
 					/Send Authorization: Bearer &lt;MCP_AUTH_TOKEN&gt;\./,
 				);
-				assert.match(html, /Session mode:<\/strong> <code>stateful<\/code>/);
+				assert.match(html, /Session mode:<\/strong> <code>stateless<\/code>/);
 			},
 		);
 	});
@@ -437,8 +389,8 @@ describe("HTTP server integration", () => {
 					assert.equal(response.status, 200);
 					const body = (await response.json()) as Record<string, unknown>;
 					assert.equal(body.status, "ready");
-					assert.equal(body.sessionMode, "stateful");
-					assert.equal(body.eventStoreMode, "off");
+					assert.equal(body.sessionMode, "stateless");
+					assert.equal(body.eventStoreMode, undefined);
 					assert.deepEqual(body.portkey, {
 						status: "ok",
 						latency_ms: (body.portkey as { latency_ms: number }).latency_ms,
@@ -699,139 +651,6 @@ describe("HTTP server integration", () => {
 		);
 	});
 
-	it("rejects new initialize requests after hitting MCP_MAX_SESSIONS", async () => {
-		await withHttpServer(
-			{
-				MCP_MAX_SESSIONS: "1",
-			},
-			async ({ baseUrl }) => {
-				const headers = {
-					authorization: `Bearer ${AUTH_TOKEN}`,
-					"content-type": "application/json",
-					accept: "text/event-stream, application/json",
-				};
-
-				const first = await fetch(`${baseUrl}/mcp`, {
-					method: "POST",
-					headers,
-					body: JSON.stringify(INIT_PAYLOAD),
-				});
-				assert.equal(first.status, 200);
-				assert.ok(first.headers.get("mcp-session-id"));
-
-				const second = await fetch(`${baseUrl}/mcp`, {
-					method: "POST",
-					headers,
-					body: JSON.stringify(INIT_PAYLOAD),
-				});
-
-				assert.equal(second.status, 503);
-				assert.deepEqual(await second.json(), {
-					jsonrpc: "2.0",
-					error: {
-						code: -32000,
-						message: "Maximum active session limit reached (1)",
-					},
-					id: null,
-				});
-			},
-		);
-	});
-
-	it("returns 404 for requests against an unknown session id", async () => {
-		await withHttpServer({}, async ({ baseUrl }) => {
-			const response = await fetch(`${baseUrl}/mcp`, {
-				method: "POST",
-				headers: {
-					authorization: `Bearer ${AUTH_TOKEN}`,
-					"content-type": "application/json",
-					accept: "text/event-stream, application/json",
-					"mcp-session-id": "00000000-0000-0000-0000-000000000000",
-				},
-				body: JSON.stringify({
-					jsonrpc: "2.0",
-					id: 1,
-					method: "tools/list",
-					params: {},
-				}),
-			});
-
-			assert.equal(response.status, 404);
-			assert.deepEqual(await response.json(), {
-				jsonrpc: "2.0",
-				error: {
-					code: -32000,
-					message: "Session not found",
-				},
-				id: null,
-			});
-		});
-	});
-
-	it("uses the negotiated protocol when a post-initialize header is missing", async () => {
-		await withHttpServer({}, async ({ baseUrl }) => {
-			const initHeaders = {
-				authorization: `Bearer ${AUTH_TOKEN}`,
-				"content-type": "application/json",
-				accept: "text/event-stream, application/json",
-			};
-
-			const initialize = await fetch(`${baseUrl}/mcp`, {
-				method: "POST",
-				headers: initHeaders,
-				body: JSON.stringify(INIT_PAYLOAD),
-			});
-			assert.equal(initialize.status, 200);
-
-			const sessionId = initialize.headers.get("mcp-session-id");
-			assert.ok(
-				sessionId,
-				"expected initialize response to include mcp-session-id",
-			);
-
-			const missingHeader = await fetch(`${baseUrl}/mcp`, {
-				method: "POST",
-				headers: {
-					...initHeaders,
-					"mcp-session-id": sessionId,
-				},
-				body: JSON.stringify({
-					jsonrpc: "2.0",
-					id: 2,
-					method: "tools/list",
-					params: {},
-				}),
-			});
-			assert.equal(missingHeader.status, 200);
-			assert.match(await missingHeader.text(), /"tools"/);
-
-			const mismatchedHeader = await fetch(`${baseUrl}/mcp`, {
-				method: "POST",
-				headers: {
-					...initHeaders,
-					"mcp-session-id": sessionId,
-					"mcp-protocol-version": "2025-03-26",
-				},
-				body: JSON.stringify({
-					jsonrpc: "2.0",
-					id: 3,
-					method: "tools/list",
-					params: {},
-				}),
-			});
-			assert.equal(mismatchedHeader.status, 400);
-			assert.deepEqual(await mismatchedHeader.json(), {
-				jsonrpc: "2.0",
-				error: {
-					code: -32000,
-					message:
-						"Bad Request: MCP-Protocol-Version 2025-03-26 does not match negotiated session protocol version 2024-11-05",
-				},
-				id: null,
-			});
-		});
-	});
-
 	it("uses a fresh stateless MCP server and transport for each request", async () => {
 		await withHttpServer(
 			{
@@ -866,7 +685,7 @@ describe("HTTP server integration", () => {
 		);
 	});
 
-	it("registers only the selected tool domains for an HTTP session", async () => {
+	it("registers only the selected tool domains for an HTTP request", async () => {
 		await withHttpServer(
 			{ PORTKEY_TOOL_DOMAINS: "prompts,analytics,keys" },
 			async ({ baseUrl }) => {
@@ -934,365 +753,6 @@ describe("HTTP server integration", () => {
 	// DELETE /mcp
 	// ---------------------------------------------------------------------------
 
-	it("DELETE /mcp succeeds for an open stateful session", async () => {
-		await withHttpServer({}, async ({ baseUrl }) => {
-			const authHeaders = {
-				authorization: `Bearer ${AUTH_TOKEN}`,
-				"content-type": "application/json",
-				accept: "text/event-stream, application/json",
-			};
-
-			const initialize = await fetch(`${baseUrl}/mcp`, {
-				method: "POST",
-				headers: authHeaders,
-				body: JSON.stringify(INIT_PAYLOAD),
-			});
-			assert.equal(initialize.status, 200);
-
-			const sessionId = initialize.headers.get("mcp-session-id");
-			assert.ok(
-				sessionId,
-				"expected initialize response to include mcp-session-id",
-			);
-
-			const deleteResponse = await fetch(`${baseUrl}/mcp`, {
-				method: "DELETE",
-				headers: {
-					authorization: `Bearer ${AUTH_TOKEN}`,
-					"mcp-session-id": sessionId,
-					"mcp-protocol-version": "2024-11-05",
-				},
-			});
-
-			assert.equal(deleteResponse.status, 200);
-		});
-	});
-
-	it("DELETE /mcp without mcp-session-id header returns 400", async () => {
-		await withHttpServer({}, async ({ baseUrl }) => {
-			const deleteResponse = await fetch(`${baseUrl}/mcp`, {
-				method: "DELETE",
-				headers: {
-					authorization: `Bearer ${AUTH_TOKEN}`,
-				},
-			});
-
-			assert.equal(deleteResponse.status, 400);
-			assert.deepEqual(await deleteResponse.json(), {
-				jsonrpc: "2.0",
-				error: {
-					code: -32000,
-					message: "Missing session ID",
-				},
-				id: null,
-			});
-		});
-	});
-
-	it("DELETE /mcp in stateless session mode returns 405", async () => {
-		await withHttpServer(
-			{ MCP_SESSION_MODE: "stateless" },
-			async ({ baseUrl }) => {
-				const deleteResponse = await fetch(`${baseUrl}/mcp`, {
-					method: "DELETE",
-					headers: {
-						authorization: `Bearer ${AUTH_TOKEN}`,
-						"mcp-session-id": "00000000-0000-0000-0000-000000000000",
-					},
-				});
-
-				assert.equal(deleteResponse.status, 405);
-				assert.deepEqual(await deleteResponse.json(), {
-					jsonrpc: "2.0",
-					error: {
-						code: -32000,
-						message: "DELETE /mcp is not used in stateless session mode",
-					},
-					id: null,
-				});
-			},
-		);
-	});
-
-	// ---------------------------------------------------------------------------
-	// GET /mcp (SSE notifications stream)
-	// ---------------------------------------------------------------------------
-
-	it("GET /mcp without mcp-session-id header returns 400", async () => {
-		await withHttpServer({}, async ({ baseUrl }) => {
-			const getResponse = await fetch(`${baseUrl}/mcp`, {
-				method: "GET",
-				headers: {
-					authorization: `Bearer ${AUTH_TOKEN}`,
-					accept: "text/event-stream",
-				},
-			});
-
-			assert.equal(getResponse.status, 400);
-			assert.deepEqual(await getResponse.json(), {
-				jsonrpc: "2.0",
-				error: {
-					code: -32000,
-					message: "Missing session ID",
-				},
-				id: null,
-			});
-		});
-	});
-
-	it("GET /mcp with unknown session id returns 404", async () => {
-		await withHttpServer({}, async ({ baseUrl }) => {
-			const getResponse = await fetch(`${baseUrl}/mcp`, {
-				method: "GET",
-				headers: {
-					authorization: `Bearer ${AUTH_TOKEN}`,
-					accept: "text/event-stream",
-					"mcp-session-id": "00000000-0000-0000-0000-000000000000",
-					"mcp-protocol-version": "2024-11-05",
-				},
-			});
-
-			assert.equal(getResponse.status, 404);
-			assert.deepEqual(await getResponse.json(), {
-				jsonrpc: "2.0",
-				error: {
-					code: -32000,
-					message: "Session not found",
-				},
-				id: null,
-			});
-		});
-	});
-
-	it("GET /mcp replays stateless SSE events after Last-Event-ID without a session id", async () => {
-		await withHttpServer(
-			{
-				MCP_SESSION_MODE: "stateless",
-				MCP_EVENT_STORE: "memory",
-			},
-			async ({ baseUrl }) => {
-				const postResponse = await fetch(`${baseUrl}/mcp`, {
-					method: "POST",
-					headers: {
-						authorization: `Bearer ${AUTH_TOKEN}`,
-						accept: "text/event-stream, application/json",
-						"content-type": "application/json",
-					},
-					body: JSON.stringify({
-						...INIT_PAYLOAD,
-						params: {
-							...INIT_PAYLOAD.params,
-							protocolVersion: "2025-11-25",
-						},
-					}),
-				});
-
-				assert.equal(postResponse.status, 200);
-				assert.equal(postResponse.headers.get("mcp-session-id"), null);
-				const originalEvents = parseSseEvents(await postResponse.text());
-				assert.equal(originalEvents.length, 2);
-				assert.ok(originalEvents[0]?.id);
-				assert.ok(originalEvents[1]?.id);
-				assert.equal(originalEvents[0]?.data, "");
-				assert.match(originalEvents[1]?.data ?? "", /"protocolVersion"/);
-
-				const getResponse = await fetch(`${baseUrl}/mcp`, {
-					method: "GET",
-					headers: {
-						authorization: `Bearer ${AUTH_TOKEN}`,
-						accept: "text/event-stream",
-						"last-event-id": originalEvents[0].id as string,
-						"mcp-protocol-version": "2025-11-25",
-					},
-				});
-
-				assert.equal(getResponse.status, 200);
-				assert.equal(
-					getResponse.headers.get("content-type"),
-					"text/event-stream",
-				);
-				assert.equal(getResponse.headers.get("mcp-session-id"), null);
-				const replayedEvents = parseSseEvents(await getResponse.text());
-				assert.deepEqual(replayedEvents, [originalEvents[1]]);
-			},
-		);
-	});
-
-	it("finishes and replays a stateless request after the POST stream disconnects", async () => {
-		const upstreamPort = await getFreePort();
-		const upstream = createHttpServer((_request, response) => {
-			setTimeout(() => {
-				response.writeHead(200, { "content-type": "application/json" });
-				response.end(JSON.stringify({ object: "list", total: 0, data: [] }));
-			}, 250);
-		});
-		await new Promise<void>((resolveListen) => {
-			upstream.listen(upstreamPort, "127.0.0.1", resolveListen);
-		});
-
-		try {
-			await withHttpServer(
-				{
-					MCP_SESSION_MODE: "stateless",
-					MCP_EVENT_STORE: "memory",
-					PORTKEY_BASE_URL: `http://127.0.0.1:${upstreamPort}`,
-					PORTKEY_ALLOW_PRIVATE_BASE_URL: "true",
-					PORTKEY_ALLOW_INSECURE_HTTP: "true",
-				},
-				async ({ baseUrl }) => {
-					const postResponse = await fetch(`${baseUrl}/mcp`, {
-						method: "POST",
-						headers: {
-							authorization: `Bearer ${AUTH_TOKEN}`,
-							accept: "text/event-stream, application/json",
-							"content-type": "application/json",
-							"mcp-protocol-version": "2025-11-25",
-						},
-						body: JSON.stringify({
-							jsonrpc: "2.0",
-							id: 77,
-							method: "tools/call",
-							params: { name: "list_configs", arguments: {} },
-						}),
-					});
-					const [primingEvent] = await readSseEvents(postResponse, 1);
-					assert.ok(primingEvent?.id);
-					assert.equal(primingEvent?.data, "");
-
-					const replayResponse = await fetch(`${baseUrl}/mcp`, {
-						method: "GET",
-						headers: {
-							authorization: `Bearer ${AUTH_TOKEN}`,
-							accept: "text/event-stream",
-							"last-event-id": primingEvent.id as string,
-							"mcp-protocol-version": "2025-11-25",
-						},
-					});
-					const replayed = parseSseEvents(await replayResponse.text());
-					assert.equal(replayed.length, 1);
-					assert.match(replayed[0]?.data ?? "", /"id":77/);
-				},
-			);
-		} finally {
-			await new Promise<void>((resolveClose, reject) => {
-				upstream.close((error) => (error ? reject(error) : resolveClose()));
-			});
-		}
-	});
-
-	it("GET /mcp rejects stateless replay when the event store is disabled", async () => {
-		await withHttpServer(
-			{
-				MCP_SESSION_MODE: "stateless",
-				MCP_EVENT_STORE: "off",
-			},
-			async ({ baseUrl }) => {
-				const response = await fetch(`${baseUrl}/mcp`, {
-					method: "GET",
-					headers: {
-						authorization: `Bearer ${AUTH_TOKEN}`,
-						accept: "text/event-stream",
-						"last-event-id": "1",
-					},
-				});
-
-				assert.equal(response.status, 405);
-				assert.deepEqual(await response.json(), {
-					jsonrpc: "2.0",
-					error: {
-						code: -32000,
-						message:
-							"Stateless GET /mcp replay requires MCP_EVENT_STORE=memory or redis",
-					},
-					id: null,
-				});
-			},
-		);
-	});
-
-	it("GET /mcp rejects a standalone stateless SSE stream without Last-Event-ID", async () => {
-		await withHttpServer(
-			{
-				MCP_SESSION_MODE: "stateless",
-				MCP_EVENT_STORE: "memory",
-			},
-			async ({ baseUrl }) => {
-				const response = await fetch(`${baseUrl}/mcp`, {
-					method: "GET",
-					headers: {
-						authorization: `Bearer ${AUTH_TOKEN}`,
-						accept: "text/event-stream",
-					},
-				});
-
-				assert.equal(response.status, 405);
-				assert.equal(response.headers.get("allow"), "POST");
-				assert.deepEqual(await response.json(), {
-					jsonrpc: "2.0",
-					error: {
-						code: -32000,
-						message:
-							"Stateless GET /mcp only supports replay with Last-Event-ID",
-					},
-					id: null,
-				});
-			},
-		);
-	});
-
-	it("GET /mcp validates stateless replay headers and cursor", async () => {
-		await withHttpServer(
-			{
-				MCP_SESSION_MODE: "stateless",
-				MCP_EVENT_STORE: "memory",
-			},
-			async ({ baseUrl }) => {
-				const missingAccept = await fetch(`${baseUrl}/mcp`, {
-					method: "GET",
-					headers: {
-						authorization: `Bearer ${AUTH_TOKEN}`,
-						"last-event-id": "not-an-event",
-					},
-				});
-				assert.equal(missingAccept.status, 406);
-
-				const unsupportedProtocol = await fetch(`${baseUrl}/mcp`, {
-					method: "GET",
-					headers: {
-						authorization: `Bearer ${AUTH_TOKEN}`,
-						accept: "text/event-stream",
-						"last-event-id": "not-an-event",
-						"mcp-protocol-version": "2099-01-01",
-					},
-				});
-				assert.equal(unsupportedProtocol.status, 400);
-
-				const invalidCursor = await fetch(`${baseUrl}/mcp`, {
-					method: "GET",
-					headers: {
-						authorization: `Bearer ${AUTH_TOKEN}`,
-						accept: "text/event-stream",
-						"last-event-id": "not-an-event",
-						"mcp-protocol-version": "2025-11-25",
-					},
-				});
-				assert.equal(invalidCursor.status, 400);
-				assert.deepEqual(await invalidCursor.json(), {
-					jsonrpc: "2.0",
-					error: {
-						code: -32000,
-						message: "Invalid event ID format",
-					},
-					id: null,
-				});
-			},
-		);
-	});
-
-	// ---------------------------------------------------------------------------
-	// ?tools=nonexistent-domain — parseRequestedToolDomains rejection
-	// ---------------------------------------------------------------------------
-
 	it("POST /mcp with unknown ?tools domain returns 400 JSON-RPC error", async () => {
 		await withHttpServer({}, async ({ baseUrl }) => {
 			const response = await fetch(`${baseUrl}/mcp?tools=nonexistent-domain`, {
@@ -1346,7 +806,7 @@ describe("HTTP server integration", () => {
 	// MCP session isolation between distinct clerk principals
 	// ---------------------------------------------------------------------------
 
-	it("isolates MCP sessions between two distinct clerk principals on the same server", {
+	it("authenticates each Clerk principal on every request without session authority", {
 		skip: OPENSSL_AVAILABLE ? false : "openssl binary not available",
 	}, async () => {
 		await withJwksHttpsServer(async ({ jwksUrl, signToken }) => {
@@ -1368,125 +828,48 @@ describe("HTTP server integration", () => {
 						"content-type": "application/json",
 						accept: "text/event-stream, application/json",
 					});
-					const notFoundBody = {
+					const payload = JSON.stringify({
 						jsonrpc: "2.0",
-						error: {
-							code: -32000,
-							message: "Session not found",
-						},
-						id: null,
-					};
-
-					const initialize = await fetch(`${baseUrl}/mcp`, {
-						method: "POST",
-						headers: headersFor(tokenA),
-						body: JSON.stringify(INIT_PAYLOAD),
-					});
-					assert.equal(initialize.status, 200);
-
-					const sessionId = initialize.headers.get("mcp-session-id");
-					assert.ok(
-						sessionId,
-						"expected initialize response to include mcp-session-id",
-					);
-
-					const toolsListBody = JSON.stringify({
-						jsonrpc: "2.0",
-						id: 2,
+						id: 1,
 						method: "tools/list",
 						params: {},
 					});
-
-					// Principal B must not be able to reach principal A's session on
-					// any of the three /mcp verbs.
-					const postAsB = await fetch(`${baseUrl}/mcp`, {
-						method: "POST",
-						headers: { ...headersFor(tokenB), "mcp-session-id": sessionId },
-						body: toolsListBody,
-					});
-					assert.equal(postAsB.status, 404);
-					assert.deepEqual(await postAsB.json(), notFoundBody);
-
-					const getAsB = await fetch(`${baseUrl}/mcp`, {
-						method: "GET",
-						headers: {
-							authorization: `Bearer ${tokenB}`,
-							accept: "text/event-stream",
-							"mcp-session-id": sessionId,
-							"mcp-protocol-version": "2024-11-05",
-						},
-					});
-					assert.equal(getAsB.status, 404);
-					assert.deepEqual(await getAsB.json(), notFoundBody);
-
-					const deleteAsB = await fetch(`${baseUrl}/mcp`, {
-						method: "DELETE",
-						headers: {
-							authorization: `Bearer ${tokenB}`,
-							"mcp-session-id": sessionId,
-							"mcp-protocol-version": "2024-11-05",
-						},
-					});
-					assert.equal(deleteAsB.status, 404);
-					assert.deepEqual(await deleteAsB.json(), notFoundBody);
-
-					// Control: principal A still owns the session after B's rejected
-					// attempts, on all three verbs.
-					const postAsA = await fetch(`${baseUrl}/mcp`, {
-						method: "POST",
-						headers: { ...headersFor(tokenA), "mcp-session-id": sessionId },
-						body: toolsListBody,
-					});
-					assert.equal(postAsA.status, 200);
-					assert.match(await postAsA.text(), /"tools"/);
-
-					const getAsA = await fetch(`${baseUrl}/mcp`, {
-						method: "GET",
-						headers: {
-							authorization: `Bearer ${tokenA}`,
-							accept: "text/event-stream",
-							"mcp-session-id": sessionId,
-							"mcp-protocol-version": "2024-11-05",
-						},
-					});
-					assert.equal(getAsA.status, 200);
-					await getAsA.body?.cancel();
-
-					const deleteAsA = await fetch(`${baseUrl}/mcp`, {
-						method: "DELETE",
-						headers: {
-							authorization: `Bearer ${tokenA}`,
-							"mcp-session-id": sessionId,
-							"mcp-protocol-version": "2024-11-05",
-						},
-					});
-					assert.equal(deleteAsA.status, 200);
+					for (const principal of [tokenA, tokenB]) {
+						const response = await fetch(`${baseUrl}/mcp`, {
+							method: "POST",
+							headers: {
+								...headersFor(principal),
+								"Mcp-Session-Id": "retired-session",
+							},
+							body: payload,
+						});
+						assert.equal(response.status, 200);
+						assert.equal(response.headers.get("mcp-session-id"), null);
+						assert.match(await response.text(), /"tools"/);
+						for (const method of ["GET", "DELETE"]) {
+							const denied = await fetch(`${baseUrl}/mcp`, {
+								method,
+								headers: {
+									...headersFor(principal),
+									"Mcp-Session-Id": "retired-session",
+								},
+							});
+							assert.equal(denied.status, 405);
+						}
+					}
+					for (const method of ["POST", "GET", "DELETE"]) {
+						const denied = await fetch(`${baseUrl}/mcp`, {
+							method,
+							headers: {
+								...headersFor("invalid-jwt"),
+								"Mcp-Session-Id": "retired-session",
+							},
+							...(method === "POST" ? { body: payload } : {}),
+						});
+						assert.equal(denied.status, 401);
+					}
 				},
 			);
 		});
-	});
-
-	it("removes both backpressure listeners after drain or close", async () => {
-		const httpApp = (await import("../src/lib/http-app.js")) as unknown as {
-			waitForResponseWritable?: (response: EventEmitter) => Promise<void>;
-		};
-		const waitForResponseWritable = httpApp.waitForResponseWritable;
-		assert.ok(
-			waitForResponseWritable,
-			"expected a testable backpressure wait helper",
-		);
-
-		for (const event of ["drain", "close"] as const) {
-			const response = new EventEmitter();
-			const pending = waitForResponseWritable(response);
-			assert.equal(response.listenerCount("drain"), 1);
-			assert.equal(response.listenerCount("close"), 1);
-
-			response.emit(event);
-			await pending;
-
-			assert.equal(response.listenerCount("drain"), 0);
-			assert.equal(response.listenerCount("close"), 0);
-		}
 	});
 });

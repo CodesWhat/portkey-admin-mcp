@@ -364,18 +364,18 @@ describe("MCP E2E Protocol Tests", () => {
 			);
 		});
 
-		it("advertises tools.listChanged capability", () => {
+		it("advertises tools without unused change notifications", () => {
 			const caps = client.getServerCapabilities();
 			assert.ok(caps?.tools, "tools capability should be present");
-			assert.equal(caps?.tools?.listChanged, true);
+			assert.equal(caps?.tools?.listChanged, false);
 		});
 
 		it("advertises prompts and resources capabilities", () => {
 			const caps = client.getServerCapabilities();
 			assert.ok(caps?.prompts, "prompts capability should be present");
-			assert.equal(caps?.prompts?.listChanged, true);
+			assert.equal(caps?.prompts?.listChanged, false);
 			assert.ok(caps?.resources, "resources capability should be present");
-			assert.equal(caps?.resources?.listChanged, true);
+			assert.equal(caps?.resources?.listChanged, false);
 		});
 	});
 
