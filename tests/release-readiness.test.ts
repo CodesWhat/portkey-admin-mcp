@@ -27,16 +27,24 @@ test("Docker startup selects the same normalized transport as its probe", (t) =>
 	assert.ok(command);
 	const [executable, ...args] = JSON.parse(command) as string[];
 	assert.ok(executable);
-	for (const [transport, expected] of [
+	const cases: [string | undefined, string][] = [
+		[undefined, "stdio"],
 		[" http ", "http"],
 		["http", "http"],
 		["\thttp\n", "http"],
 		["stdio", "stdio"],
 		["", "stdio"],
-	]) {
+	];
+	for (const [transport, expected] of cases) {
+		const env = { ...process.env };
+		if (transport === undefined) {
+			delete env.MCP_TRANSPORT;
+		} else {
+			env.MCP_TRANSPORT = transport;
+		}
 		const result = spawnSync(executable, args, {
 			cwd: directory,
-			env: { ...process.env, MCP_TRANSPORT: transport },
+			env,
 			encoding: "utf8",
 			timeout: 5000,
 		});
