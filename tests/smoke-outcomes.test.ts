@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { FetchError } from "../src/lib/fetch.js";
-import { expectedSmokeSkipReason } from "./smoke-outcomes.js";
+import { expectedSmokeSkipReason, smokeExitCode } from "./smoke-outcomes.js";
 
 describe("live smoke outcome classification", () => {
 	it("skips endpoints blocked by the configured credential", () => {
@@ -19,6 +19,18 @@ describe("live smoke outcome classification", () => {
 			),
 			"configured credential lacks access (HTTP 401)",
 		);
+	});
+
+	it("skips transient Portkey upstream unavailability", () => {
+		for (const status of [502, 503, 504]) {
+			assert.equal(
+				expectedSmokeSkipReason(
+					"listGuardrails",
+					new FetchError(`HTTP error! status: ${status}`, status),
+				),
+				`Portkey upstream unavailable (HTTP ${status})`,
+			);
+		}
 	});
 
 	it("no longer hides the gateway catch-all for management routes", () => {
@@ -53,5 +65,37 @@ describe("live smoke outcome classification", () => {
 			expectedSmokeSkipReason("listDeployments", new Error("socket closed")),
 			null,
 		);
+		assert.equal(
+			expectedSmokeSkipReason(
+				"listConfigs",
+				new FetchError("HTTP error! status: 500", 500),
+			),
+			null,
+		);
+		assert.equal(
+			expectedSmokeSkipReason(
+				"listConfigs",
+				new FetchError("bad request", 400),
+			),
+			null,
+		);
+	});
+});
+
+describe("live smoke exit code", () => {
+	it("fails when any endpoint failed", () => {
+		assert.equal(smokeExitCode({ passed: 5, failed: 1, total: 10 }), 1);
+	});
+
+	it("fails when nothing passed but endpoints ran", () => {
+		assert.equal(smokeExitCode({ passed: 0, failed: 0, total: 10 }), 1);
+	});
+
+	it("succeeds when something passed and nothing failed", () => {
+		assert.equal(smokeExitCode({ passed: 3, failed: 0, total: 10 }), 0);
+	});
+
+	it("succeeds when there were no results", () => {
+		assert.equal(smokeExitCode({ passed: 0, failed: 0, total: 0 }), 0);
 	});
 });

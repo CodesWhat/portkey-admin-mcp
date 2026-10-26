@@ -11,6 +11,9 @@ release until that reference and the release notes say so.
 
 ## [Unreleased]
 
+### Fixed
+- The optional live smoke test reports Portkey 502, 503 and 504 responses as skipped with the status code instead of failing CI, and still fails when no endpoint passes.
+
 ## [0.15.0] - 2026-10-25
 
 MCP specification `2026-07-28` support on the v2 SDK. The server speaks both protocol eras on one endpoint, so older clients keep working. HTTP session and GET replay storage is retired, which is breaking for operators who rely on replay or session affinity. The catalog is unchanged at 194 tools across 22 domains.
