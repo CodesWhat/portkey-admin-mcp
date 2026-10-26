@@ -824,10 +824,6 @@ button {
   overflow-x: auto;
 }
 
-main:focus {
-  outline: none;
-}
-
 .prose code {
   font-family: JetBrains, monospace;
   font-size: 0.82em;
