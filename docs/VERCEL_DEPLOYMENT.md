@@ -4,21 +4,20 @@
 
 This guide describes how to self-deploy this MCP server on Vercel.
 
-These session and Redis replay settings remain active in 0.14.0. The planned
-MCP migration has no assigned warning or removal release. Keep this deployment
-configuration until a versioned upgrade guide replaces it; Redis rate limiting
-remains a separate requirement. See [compatibility and
-deprecations](../COMPATIBILITY.md).
+This guide follows the **unreleased SDK v2 candidate**, not the published 0.14.x
+session/replay implementation. No deployment of this candidate has been verified.
+Use the guide from your installed release when operating 0.14.x. See
+[compatibility and recovery](../COMPATIBILITY.md) before upgrading; the retirement and names-only warnings target 0.15.0.
 
 ## Recommended Architecture
 
 - Runtime: Vercel Node.js Function (`api/index.ts`)
 - Transport: Streamable HTTP (`/mcp`)
-- Session mode: `stateless`
-- Event store: `redis`
+- Request handling: stateless for modern and legacy clients
+- Redis: shared rate limiting only
 - Auth: `clerk` (preferred for teams) or `bearer` (internal-only)
 
-Why: serverless instances scale and restart, so each POST and replay GET is handled independently. Redis maps the client's `Last-Event-ID` cursor back to the interrupted SSE stream across instances without introducing MCP session affinity.
+Each POST is independent. GET replay, session IDs and DELETE session operations are retired in the candidate. After an interrupted mutation, inspect Portkey state before retrying; see the recovery guide. Forward `MCP-Protocol-Version`, `Mcp-Method` and `Mcp-Name` through any proxy. No idle change-notification streams are advertised.
 
 ## 1. Prerequisites
 
@@ -49,10 +48,7 @@ Set these in Vercel Project Settings -> Environment Variables.
 Required:
 
 - `PORTKEY_API_KEY`
-- `MCP_SESSION_MODE=stateless`
-- `MCP_EVENT_STORE=redis`
-- `MCP_REDIS_URL=rediss://<ACL-user>:<password>@...`
-- `MCP_EVENT_ENCRYPTION_KEY=<base64-encoded-32-byte-key>`
+- `RATE_LIMIT_REDIS_URL=rediss://<ACL-user>:<password>@...`
 - `ALLOWED_ORIGINS=https://your-app-domain`
 - `MCP_TRUST_PROXY=1` (adjust only if the verified Vercel proxy chain has a different exact hop count)
 - `RATE_LIMIT_STORE=redis`
@@ -61,14 +57,12 @@ Recommended:
 
 - `MCP_READY_CHECK_MODE=portkey`
 - `RATE_LIMIT_ENABLED=true`
-- `RATE_LIMIT_REDIS_URL=rediss://...` (optional; falls back to `MCP_REDIS_URL`)
+- `MCP_MAX_SESSIONS=100` (per-instance concurrent MCP request bound)
+
+The rate-limit URL also accepts `MCP_REDIS_URL` then `REDIS_URL` as fallbacks.
 
 The shared limiter applies an IP bucket before authentication and a separate
 principal-plus-IP bucket after authentication.
-
-Generate the replay encryption key locally with `openssl rand -base64 32`. Store
-it only as a Vercel secret. Rotating it makes unexpired replay events unreadable;
-the default replay TTL is five minutes.
 
 Auth option A (recommended for teams): Clerk JWT
 
@@ -163,10 +157,8 @@ Treat this as required before making the repo public.
 
 6. Isolate Redis
 
-- Require TLS (`rediss://`) and an ACL user limited to the configured replay and
-  rate-limit prefixes.
+- Require TLS (`rediss://`) and an ACL user limited to the configured rate-limit prefix.
 - Use a dedicated namespace and credentials per environment.
-- Keep `MCP_EVENT_TTL_SECONDS` short; the default is 300 seconds.
 
 7. Enable repository protections
 
@@ -194,5 +186,5 @@ For team access:
 
 Suggested naming convention:
 
-- `MCP_REDIS_KEY_PREFIX=portkey-admin-mcp:prod`
-- `MCP_REDIS_KEY_PREFIX=portkey-admin-mcp:staging`
+- `RATE_LIMIT_REDIS_KEY_PREFIX=portkey-admin-mcp:prod`
+- `RATE_LIMIT_REDIS_KEY_PREFIX=portkey-admin-mcp:staging`

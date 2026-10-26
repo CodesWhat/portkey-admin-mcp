@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import type { PortkeyService } from "../services/index.js";
 import { jsonResult } from "./utils.js";
@@ -67,10 +67,13 @@ export function registerPartialsTools(
 	service: PortkeyService,
 ): void {
 	// Create partial tool
-	server.tool(
+	server.registerTool(
 		"create_prompt_partial",
-		"Create a reusable prompt partial for inclusion with {{> partial_name}}. Use this for shared snippets or macros; returns the partial id, slug, and version id, and the new version stays inactive until published.",
-		PARTIALS_TOOL_SCHEMAS.createPromptPartial,
+		{
+			description:
+				"Create a reusable prompt partial for inclusion with {{> partial_name}}. Use this for shared snippets or macros; returns the partial id, slug, and version id, and the new version stays inactive until published.",
+			inputSchema: PARTIALS_TOOL_SCHEMAS.createPromptPartial,
+		},
 		async (params) => {
 			const result = await service.partials.createPromptPartial({
 				name: params.name,
@@ -88,10 +91,13 @@ export function registerPartialsTools(
 	);
 
 	// List partials tool
-	server.tool(
+	server.registerTool(
 		"list_prompt_partials",
-		"List partials across collections, with optional collection filtering. Returns ids, slugs, names, collections, and status so you can choose a prompt_partial_id before get_prompt_partial, update_prompt_partial, delete_prompt_partial, or publish_partial.",
-		PARTIALS_TOOL_SCHEMAS.listPromptPartials,
+		{
+			description:
+				"List partials across collections, with optional collection filtering. Returns ids, slugs, names, collections, and status so you can choose a prompt_partial_id before get_prompt_partial, update_prompt_partial, delete_prompt_partial, or publish_partial.",
+			inputSchema: PARTIALS_TOOL_SCHEMAS.listPromptPartials,
+		},
 		async (params) => {
 			const partials = await service.partials.listPromptPartials(params);
 			return jsonResult({
@@ -110,10 +116,13 @@ export function registerPartialsTools(
 	);
 
 	// Get partial tool
-	server.tool(
+	server.registerTool(
 		"get_prompt_partial",
-		"Fetch a partial's content and current version details. Use this before embedding, updating, or checking what {{> partial_name}} resolves to; returns the stored string plus version metadata.",
-		PARTIALS_TOOL_SCHEMAS.getPromptPartial,
+		{
+			description:
+				"Fetch a partial's content and current version details. Use this before embedding, updating, or checking what {{> partial_name}} resolves to; returns the stored string plus version metadata.",
+			inputSchema: PARTIALS_TOOL_SCHEMAS.getPromptPartial,
+		},
 		async (params) => {
 			const partial = await service.partials.getPromptPartial(
 				params.prompt_partial_id,
@@ -135,10 +144,13 @@ export function registerPartialsTools(
 	);
 
 	// Update partial tool
-	server.tool(
+	server.registerTool(
 		"update_prompt_partial",
-		"Create a new version of a partial by updating its content or metadata. Only provided fields change, and the new version stays inactive until publish_partial makes it current.",
-		PARTIALS_TOOL_SCHEMAS.updatePromptPartial,
+		{
+			description:
+				"Create a new version of a partial by updating its content or metadata. Only provided fields change, and the new version stays inactive until publish_partial makes it current.",
+			inputSchema: PARTIALS_TOOL_SCHEMAS.updatePromptPartial,
+		},
 		async (params) => {
 			const { prompt_partial_id, ...updateData } = params;
 			const result = await service.partials.updatePromptPartial(
@@ -153,10 +165,13 @@ export function registerPartialsTools(
 	);
 
 	// Delete partial tool
-	server.tool(
+	server.registerTool(
 		"delete_prompt_partial",
-		"Delete a prompt partial by ID. This cannot be undone, and prompts that reference it with {{> name}} will fail to render until you replace the reference.",
-		PARTIALS_TOOL_SCHEMAS.deletePromptPartial,
+		{
+			description:
+				"Delete a prompt partial by ID. This cannot be undone, and prompts that reference it with {{> name}} will fail to render until you replace the reference.",
+			inputSchema: PARTIALS_TOOL_SCHEMAS.deletePromptPartial,
+		},
 		async (params) => {
 			await service.partials.deletePromptPartial(params.prompt_partial_id);
 			return jsonResult({
@@ -167,10 +182,13 @@ export function registerPartialsTools(
 	);
 
 	// List partial versions tool
-	server.tool(
+	server.registerTool(
 		"list_partial_versions",
-		"List all versions for one partial, including version numbers, descriptions, status, and timestamps. Use this when you need history or want to choose a version_id before publish_partial.",
-		PARTIALS_TOOL_SCHEMAS.listPartialVersions,
+		{
+			description:
+				"List all versions for one partial, including version numbers, descriptions, status, and timestamps. Use this when you need history or want to choose a version_id before publish_partial.",
+			inputSchema: PARTIALS_TOOL_SCHEMAS.listPartialVersions,
+		},
 		async (params) => {
 			const versions = await service.partials.listPartialVersions(
 				params.prompt_partial_id,
@@ -196,10 +214,13 @@ export function registerPartialsTools(
 	);
 
 	// Publish partial tool
-	server.tool(
+	server.registerTool(
 		"publish_partial",
-		"Publish a specific partial version as the default, unlike update_prompt_partial which creates a new draft without activating it. Use after list_partial_versions to pick a version_id; this immediately changes what {{> partial_name}} resolves to for all prompts and replaces the previously active version without a rollback path.",
-		PARTIALS_TOOL_SCHEMAS.publishPartial,
+		{
+			description:
+				"Publish a specific partial version as the default, unlike update_prompt_partial which creates a new draft without activating it. Use after list_partial_versions to pick a version_id; this immediately changes what {{> partial_name}} resolves to for all prompts and replaces the previously active version without a rollback path.",
+			inputSchema: PARTIALS_TOOL_SCHEMAS.publishPartial,
+		},
 		async (params) => {
 			await service.partials.publishPartial(params.prompt_partial_id, {
 				version: params.version,

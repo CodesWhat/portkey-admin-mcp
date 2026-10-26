@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { CurrentPageSchema, PageSizeSchema } from "../lib/schemas.js";
 import type { PortkeyService } from "../services/index.js";
@@ -49,10 +49,13 @@ export function registerCollectionsTools(
 	service: PortkeyService,
 ): void {
 	// List collections tool
-	server.tool(
+	server.registerTool(
 		"list_collections",
-		"List prompt collections in the workspace, optionally filtering by name or workspace. Returns ids, names, slugs, parent collection ids, and timestamps so you can choose a collection_id before create_prompt, get_collection, or list_prompts.",
-		COLLECTIONS_TOOL_SCHEMAS.listCollections,
+		{
+			description:
+				"List prompt collections in the workspace, optionally filtering by name or workspace. Returns ids, names, slugs, parent collection ids, and timestamps so you can choose a collection_id before create_prompt, get_collection, or list_prompts.",
+			inputSchema: COLLECTIONS_TOOL_SCHEMAS.listCollections,
+		},
 		async (params) => {
 			const collections = await service.collections.listCollections(params);
 			return jsonResult({
@@ -71,10 +74,13 @@ export function registerCollectionsTools(
 	);
 
 	// Create collection tool
-	server.tool(
+	server.registerTool(
 		"create_collection",
-		"Create a new prompt collection for organizing prompts by app. Use this when you need a new namespace before create_prompt; set parent_collection_id to nest it under an existing collection. Returns the collection id and slug, and does not move any prompts.",
-		COLLECTIONS_TOOL_SCHEMAS.createCollection,
+		{
+			description:
+				"Create a new prompt collection for organizing prompts by app. Use this when you need a new namespace before create_prompt; set parent_collection_id to nest it under an existing collection. Returns the collection id and slug, and does not move any prompts.",
+			inputSchema: COLLECTIONS_TOOL_SCHEMAS.createCollection,
+		},
 		async (params) => {
 			const result = await service.collections.createCollection(params);
 			return jsonResult({
@@ -86,10 +92,13 @@ export function registerCollectionsTools(
 	);
 
 	// Get collection tool
-	server.tool(
+	server.registerTool(
 		"get_collection",
-		"Fetch one collection by id or slug and return its name, slug, workspace, parent collection id, child collections with prompt counts, and timestamps. Use list_collections when browsing and get_collection when you already know the target.",
-		COLLECTIONS_TOOL_SCHEMAS.getCollection,
+		{
+			description:
+				"Fetch one collection by id or slug and return its name, slug, workspace, parent collection id, child collections with prompt counts, and timestamps. Use list_collections when browsing and get_collection when you already know the target.",
+			inputSchema: COLLECTIONS_TOOL_SCHEMAS.getCollection,
+		},
 		async (params) => {
 			const collection = await service.collections.getCollection(
 				params.collection_id,
@@ -108,10 +117,13 @@ export function registerCollectionsTools(
 	);
 
 	// Update collection tool
-	server.tool(
+	server.registerTool(
 		"update_collection",
-		"Update a collection's name or description only. This does not move prompts or change membership, so use it for metadata changes rather than reorganization.",
-		COLLECTIONS_TOOL_SCHEMAS.updateCollection,
+		{
+			description:
+				"Update a collection's name or description only. This does not move prompts or change membership, so use it for metadata changes rather than reorganization.",
+			inputSchema: COLLECTIONS_TOOL_SCHEMAS.updateCollection,
+		},
 		async (params) => {
 			await service.collections.updateCollection(params.collection_id, {
 				name: params.name,
@@ -125,10 +137,13 @@ export function registerCollectionsTools(
 	);
 
 	// Phase 1: Delete collection tool
-	server.tool(
+	server.registerTool(
 		"delete_collection",
-		"Delete a prompt collection by ID. This cannot be undone; prompts stay in the workspace but lose their collection grouping, so reassign them first if organization matters.",
-		COLLECTIONS_TOOL_SCHEMAS.deleteCollection,
+		{
+			description:
+				"Delete a prompt collection by ID. This cannot be undone; prompts stay in the workspace but lose their collection grouping, so reassign them first if organization matters.",
+			inputSchema: COLLECTIONS_TOOL_SCHEMAS.deleteCollection,
+		},
 		async (params) => {
 			const result = await service.collections.deleteCollection(
 				params.collection_id,

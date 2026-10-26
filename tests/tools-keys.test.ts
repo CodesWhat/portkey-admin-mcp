@@ -352,7 +352,18 @@ describe("update_virtual_key", () => {
 		let description = "";
 		registerKeysTools(
 			{
-				tool(name: string, ...rest: unknown[]) {
+				registerTool(
+					name: string,
+					config: Record<string, unknown>,
+					callback: (...args: unknown[]) => Promise<unknown>,
+				): never {
+					const rest: unknown[] = [
+						config.description,
+						(config.inputSchema as { shape?: unknown } | undefined)?.shape ??
+							config.inputSchema,
+						config.annotations,
+						callback,
+					];
 					if (name === "update_virtual_key") {
 						description = String(rest[0]);
 					}
@@ -736,7 +747,18 @@ describe("create_api_key", () => {
 
 		registerAllTools(
 			{
-				tool(name: string, ...rest: unknown[]) {
+				registerTool(
+					name: string,
+					config: Record<string, unknown>,
+					callback: (...args: unknown[]) => Promise<unknown>,
+				): never {
+					const rest: unknown[] = [
+						config.description,
+						(config.inputSchema as { shape?: unknown } | undefined)?.shape ??
+							config.inputSchema,
+						config.annotations,
+						callback,
+					];
 					callbacks.set(
 						name,
 						rest[rest.length - 1] as (...args: unknown[]) => Promise<unknown>,

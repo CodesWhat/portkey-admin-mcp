@@ -106,7 +106,13 @@ async function captureServiceRequest(
 }
 
 function registerToolSchemas(
-	register: (server: { tool(name: string, ...rest: unknown[]): never }) => void,
+	register: (server: {
+		registerTool(
+			name: string,
+			config: Record<string, unknown>,
+			callback: (...args: unknown[]) => Promise<unknown>,
+		): never;
+	}) => void,
 ): Map<
 	string,
 	Record<string, { safeParse(value: unknown): { success: boolean } }>
@@ -116,7 +122,18 @@ function registerToolSchemas(
 		Record<string, { safeParse(value: unknown): { success: boolean } }>
 	>();
 	register({
-		tool(name: string, ...rest: unknown[]) {
+		registerTool(
+			name: string,
+			config: Record<string, unknown>,
+			callback: (...args: unknown[]) => Promise<unknown>,
+		): never {
+			const rest: unknown[] = [
+				config.description,
+				(config.inputSchema as { shape?: unknown } | undefined)?.shape ??
+					config.inputSchema,
+				config.annotations,
+				callback,
+			];
 			schemas.set(name, rest[1] as never);
 			return {} as never;
 		},
@@ -1314,7 +1331,18 @@ describe("get_mcp_integration_metadata curated response shape", () => {
 		let toolDescription: string | undefined;
 		registerMcpIntegrationsTools(
 			{
-				tool(name: string, ...rest: unknown[]): never {
+				registerTool(
+					name: string,
+					config: Record<string, unknown>,
+					callback: (...args: unknown[]) => Promise<unknown>,
+				): never {
+					const rest: unknown[] = [
+						config.description,
+						(config.inputSchema as { shape?: unknown } | undefined)?.shape ??
+							config.inputSchema,
+						config.annotations,
+						callback,
+					];
 					if (name === "get_mcp_integration_metadata") {
 						toolDescription = rest[0] as string;
 					}

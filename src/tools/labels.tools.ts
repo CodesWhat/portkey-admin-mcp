@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { CurrentPageSchema, PageSizeSchema } from "../lib/schemas.js";
 import type { PortkeyService } from "../services/index.js";
@@ -73,10 +73,13 @@ export function registerLabelsTools(
 	service: PortkeyService,
 ): void {
 	// Create label tool
-	server.tool(
+	server.registerTool(
 		"create_prompt_label",
-		"Create a prompt label for tagging prompt versions such as production, staging, or experiment. Requires either organisation_id or workspace_id to set scope, returns the new label id, and does not assign it to any versions yet.",
-		LABELS_TOOL_SCHEMAS.createPromptLabel,
+		{
+			description:
+				"Create a prompt label for tagging prompt versions such as production, staging, or experiment. Requires either organisation_id or workspace_id to set scope, returns the new label id, and does not assign it to any versions yet.",
+			inputSchema: LABELS_TOOL_SCHEMAS.createPromptLabel,
+		},
 		async (rawParams) => {
 			const params = createPromptLabelSchema.parse(rawParams);
 			const result = await service.labels.createLabel({
@@ -94,10 +97,13 @@ export function registerLabelsTools(
 	);
 
 	// List labels tool
-	server.tool(
+	server.registerTool(
 		"list_prompt_labels",
-		"List labels across the workspace or organisation, with optional search and scope filters. Returns ids, names, colors, status, and timestamps so you can choose a label_id before get_prompt_label or update_prompt_version.",
-		LABELS_TOOL_SCHEMAS.listPromptLabels,
+		{
+			description:
+				"List labels across the workspace or organisation, with optional search and scope filters. Returns ids, names, colors, status, and timestamps so you can choose a label_id before get_prompt_label or update_prompt_version.",
+			inputSchema: LABELS_TOOL_SCHEMAS.listPromptLabels,
+		},
 		async (params) => {
 			const result = await service.labels.listLabels(params);
 			return jsonResult({
@@ -117,10 +123,13 @@ export function registerLabelsTools(
 	);
 
 	// Get label tool
-	server.tool(
+	server.registerTool(
 		"get_prompt_label",
-		"Fetch one label's full definition, including scope, color, and status. Use this when you already know the label_id; list_prompt_labels is better for browsing candidates.",
-		LABELS_TOOL_SCHEMAS.getPromptLabel,
+		{
+			description:
+				"Fetch one label's full definition, including scope, color, and status. Use this when you already know the label_id; list_prompt_labels is better for browsing candidates.",
+			inputSchema: LABELS_TOOL_SCHEMAS.getPromptLabel,
+		},
 		async (params) => {
 			const label = await service.labels.getLabel(params.label_id, {
 				organisation_id: params.organisation_id,
@@ -142,10 +151,13 @@ export function registerLabelsTools(
 	);
 
 	// Update label tool
-	server.tool(
+	server.registerTool(
 		"update_prompt_label",
-		"Update a prompt label's name, description, or color only, unlike update_prompt_version which changes which label a version carries. This takes effect immediately for all versions already tagged with the label, but does not reassign labels or touch history; use list_prompt_labels to find the label_id first.",
-		LABELS_TOOL_SCHEMAS.updatePromptLabel,
+		{
+			description:
+				"Update a prompt label's name, description, or color only, unlike update_prompt_version which changes which label a version carries. This takes effect immediately for all versions already tagged with the label, but does not reassign labels or touch history; use list_prompt_labels to find the label_id first.",
+			inputSchema: LABELS_TOOL_SCHEMAS.updatePromptLabel,
+		},
 		async (params) => {
 			const { label_id, ...updateData } = params;
 			await service.labels.updateLabel(label_id, updateData);
@@ -157,10 +169,13 @@ export function registerLabelsTools(
 	);
 
 	// Delete label tool
-	server.tool(
+	server.registerTool(
 		"delete_prompt_label",
-		"Delete a prompt label by ID. This cannot be undone; versions carrying the label lose it, and any workflow resolving by that label will need a replacement.",
-		LABELS_TOOL_SCHEMAS.deletePromptLabel,
+		{
+			description:
+				"Delete a prompt label by ID. This cannot be undone; versions carrying the label lose it, and any workflow resolving by that label will need a replacement.",
+			inputSchema: LABELS_TOOL_SCHEMAS.deletePromptLabel,
+		},
 		async (params) => {
 			await service.labels.deleteLabel(params.label_id);
 			return jsonResult({

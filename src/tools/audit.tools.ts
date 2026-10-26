@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { CurrentPageSchema, PageSizeSchema } from "../lib/schemas.js";
 import type { PortkeyService } from "../services/index.js";
@@ -69,10 +69,13 @@ export function registerAuditTools(
 	service: PortkeyService,
 ): void {
 	// List audit logs
-	server.tool(
+	server.registerTool(
 		"list_audit_logs",
-		"List audit log records for a Portkey organization within a time range (Enterprise plan only; other plans get a permissions error). Each record is a state-changing API request (POST, PUT, or DELETE) with timestamp, method, uri, request_id, user_id, user_type (user or api_key), organisation_id, workspace_id, response_status_code, resource_type, action, client_ip, country, plus request_body, query_params, and request_headers as JSON strings. Use it for compliance or incident review of individual events; use analytics instead for aggregates.",
-		AUDIT_TOOL_SCHEMAS.listAuditLogs,
+		{
+			description:
+				"List audit log records for a Portkey organization within a time range (Enterprise plan only; other plans get a permissions error). Each record is a state-changing API request (POST, PUT, or DELETE) with timestamp, method, uri, request_id, user_id, user_type (user or api_key), organisation_id, workspace_id, response_status_code, resource_type, action, client_ip, country, plus request_body, query_params, and request_headers as JSON strings. Use it for compliance or incident review of individual events; use analytics instead for aggregates.",
+			inputSchema: AUDIT_TOOL_SCHEMAS.listAuditLogs,
+		},
 		async (params) => {
 			const result = await service.audit.listAuditLogs({
 				start_time: params.start_time,

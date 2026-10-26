@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { CurrentPageSchema, PageSizeSchema } from "../lib/schemas.js";
 import type { PortkeyService } from "../services/index.js";
@@ -459,16 +459,19 @@ export function registerSecretReferencesTools(
 	server: McpServer,
 	service: PortkeyService,
 ): void {
-	server.tool(
+	server.registerTool(
 		"create_secret_reference",
-		"Create a reference to a secret stored in AWS Secrets Manager, Azure Key Vault, or HashiCorp Vault. Authentication credentials are sent to Portkey and exposed to this MCP transcript; use short-lived or workload identity modes when possible. Returns the new UUID and slug, never the resolved external secret.",
-		SECRET_REFERENCE_TOOL_SCHEMAS.create,
 		{
-			title: "Create Secret Reference",
-			readOnlyHint: false,
-			destructiveHint: false,
-			idempotentHint: false,
-			openWorldHint: true,
+			description:
+				"Create a reference to a secret stored in AWS Secrets Manager, Azure Key Vault, or HashiCorp Vault. Authentication credentials are sent to Portkey and exposed to this MCP transcript; use short-lived or workload identity modes when possible. Returns the new UUID and slug, never the resolved external secret.",
+			inputSchema: SECRET_REFERENCE_TOOL_SCHEMAS.create,
+			annotations: {
+				title: "Create Secret Reference",
+				readOnlyHint: false,
+				destructiveHint: false,
+				idempotentHint: false,
+				openWorldHint: true,
+			},
 		},
 		async (params) => {
 			validateWorkspaceAccess(params);
@@ -483,16 +486,19 @@ export function registerSecretReferencesTools(
 		},
 	);
 
-	server.tool(
+	server.registerTool(
 		"list_secret_references",
-		"List Secret References without returning authentication configuration or resolved secret values. Filter by manager type, tags, or name and use a returned UUID or slug with get_secret_reference.",
-		SECRET_REFERENCE_TOOL_SCHEMAS.list,
 		{
-			title: "List Secret References",
-			readOnlyHint: true,
-			destructiveHint: false,
-			idempotentHint: true,
-			openWorldHint: true,
+			description:
+				"List Secret References without returning authentication configuration or resolved secret values. Filter by manager type, tags, or name and use a returned UUID or slug with get_secret_reference.",
+			inputSchema: SECRET_REFERENCE_TOOL_SCHEMAS.list,
+			annotations: {
+				title: "List Secret References",
+				readOnlyHint: true,
+				destructiveHint: false,
+				idempotentHint: true,
+				openWorldHint: true,
+			},
 		},
 		async (params) => {
 			const result = await service.secretReferences.listSecretReferences({
@@ -514,16 +520,19 @@ export function registerSecretReferencesTools(
 		},
 	);
 
-	server.tool(
+	server.registerTool(
 		"get_secret_reference",
-		"Retrieve one Secret Reference by UUID or slug. Portkey masks sensitive authentication fields for non-system users; the tool returns metadata and the masked auth configuration, not the resolved external secret value.",
-		SECRET_REFERENCE_TOOL_SCHEMAS.get,
 		{
-			title: "Get Secret Reference",
-			readOnlyHint: true,
-			destructiveHint: false,
-			idempotentHint: true,
-			openWorldHint: true,
+			description:
+				"Retrieve one Secret Reference by UUID or slug. Portkey masks sensitive authentication fields for non-system users; the tool returns metadata and the masked auth configuration, not the resolved external secret value.",
+			inputSchema: SECRET_REFERENCE_TOOL_SCHEMAS.get,
+			annotations: {
+				title: "Get Secret Reference",
+				readOnlyHint: true,
+				destructiveHint: false,
+				idempotentHint: true,
+				openWorldHint: true,
+			},
 		},
 		async ({ id }) => {
 			const result = await service.secretReferences.getSecretReference(id);
@@ -534,16 +543,19 @@ export function registerSecretReferencesTools(
 		},
 	);
 
-	server.tool(
+	server.registerTool(
 		"update_secret_reference",
-		"Update at least one selected field on a Secret Reference. auth_config is merged into the existing manager-specific configuration. allowed_workspaces replaces all workspace mappings and sets allow_all_workspaces=false; allow_all_workspaces=true removes workspace-specific mappings. Credential values are sent to Portkey and exposed to the MCP transcript.",
-		SECRET_REFERENCE_TOOL_SCHEMAS.update,
 		{
-			title: "Update Secret Reference",
-			readOnlyHint: false,
-			destructiveHint: true,
-			idempotentHint: true,
-			openWorldHint: true,
+			description:
+				"Update at least one selected field on a Secret Reference. auth_config is merged into the existing manager-specific configuration. allowed_workspaces replaces all workspace mappings and sets allow_all_workspaces=false; allow_all_workspaces=true removes workspace-specific mappings. Credential values are sent to Portkey and exposed to the MCP transcript.",
+			inputSchema: SECRET_REFERENCE_TOOL_SCHEMAS.update,
+			annotations: {
+				title: "Update Secret Reference",
+				readOnlyHint: false,
+				destructiveHint: true,
+				idempotentHint: true,
+				openWorldHint: true,
+			},
 		},
 		async ({ id, ...updates }) => {
 			validateWorkspaceAccess(updates);
@@ -559,16 +571,19 @@ export function registerSecretReferencesTools(
 		},
 	);
 
-	server.tool(
+	server.registerTool(
 		"delete_secret_reference",
-		"Permanently delete a Secret Reference. This is irreversible and integrations or virtual keys using it can fail to resolve credentials immediately; confirm dependencies before deletion.",
-		SECRET_REFERENCE_TOOL_SCHEMAS.delete,
 		{
-			title: "Delete Secret Reference",
-			readOnlyHint: false,
-			destructiveHint: true,
-			idempotentHint: true,
-			openWorldHint: true,
+			description:
+				"Permanently delete a Secret Reference. This is irreversible and integrations or virtual keys using it can fail to resolve credentials immediately; confirm dependencies before deletion.",
+			inputSchema: SECRET_REFERENCE_TOOL_SCHEMAS.delete,
+			annotations: {
+				title: "Delete Secret Reference",
+				readOnlyHint: false,
+				destructiveHint: true,
+				idempotentHint: true,
+				openWorldHint: true,
+			},
 		},
 		async ({ id }) => {
 			const result = await service.secretReferences.deleteSecretReference(id);

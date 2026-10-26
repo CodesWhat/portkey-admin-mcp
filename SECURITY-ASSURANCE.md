@@ -8,10 +8,10 @@ implementation controls, and public verification evidence. It complements
 [`SECURITY.md`](SECURITY.md) and the deployment guidance in
 [`docs/VERCEL_DEPLOYMENT.md`](docs/VERCEL_DEPLOYMENT.md).
 
-The session and replay controls below remain active in 0.14.0. The planned MCP
-migration has no assigned removal release; [compatibility and
-deprecations](COMPATIBILITY.md) tracks that boundary separately from retained
-Redis rate limiting.
+The unreleased SDK v2 candidate retires HTTP session and replay storage. The
+published 0.14.x implementation retains those controls. Candidate evidence below
+is local testing, not deployed assurance; [compatibility and recovery](COMPATIBILITY.md)
+records remaining lifecycle/release prerequisites.
 
 ## Security requirements and limits
 
@@ -23,7 +23,7 @@ Portkey Admin MCP is intended to:
   development acknowledgement to run them without authentication;
 - validate MCP tool input before constructing Portkey API requests;
 - encode path segments and construct query parameters without string injection;
-- bound request bodies, rate-limit clients, and constrain replay state; and
+- bound request bodies, rate-limit clients, and bound concurrent requests; and
 - publish npm and MCP Registry releases only after the tagged source passes the
   complete CI gate.
 
@@ -48,7 +48,7 @@ The principal trust boundaries are:
    turn untrusted JSON into encoded paths, query parameters, and request bodies.
 3. **Service to Portkey API.** The configured key crosses to an external admin
    API. Responses are untrusted and may contain tenant data.
-4. **HTTP process to Redis and Clerk.** Hosted session, replay, rate-limit, and
+4. **HTTP process to Redis and Clerk.** Hosted rate-limit and
    identity state cross external-service boundaries and require TLS and scoped
    credentials.
 5. **Source to package and registry entry.** Review, CI, a prebuilt tarball, OIDC
@@ -88,9 +88,10 @@ the tool-specific test suites under [`tests/`](tests).
 
 Tool domains can be restricted at startup. Deployment guidance requires exact
 origins, authenticated production transports, TLS Redis connections, separate
-environment credentials, short replay retention, and secrets stored outside the
-repository. Redis replay records are encrypted when configured for stateless
-hosted operation.
+environment credentials and secrets stored outside the repository. The candidate
+persists no MCP replay payloads. HTTP requests are independent and authenticated
+every time; a retired session ID grants no authority. An interrupted mutation
+can still complete upstream, so operators must inspect state before retrying.
 
 Evidence: [`docs/VERCEL_DEPLOYMENT.md`](docs/VERCEL_DEPLOYMENT.md),
 [`SECURITY.md`](SECURITY.md), and configuration tests in

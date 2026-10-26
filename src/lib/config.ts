@@ -1,3 +1,5 @@
+import { Logger } from "./logger.js";
+
 /**
  * Server configuration for MCP transports
  */
@@ -8,30 +10,14 @@
 export interface ServerConfig {
 	/** Transport type: 'stdio' for CLI or 'http' for HTTP server */
 	transport: "stdio" | "http";
-	/** Session behavior for HTTP transport */
-	sessionMode: "stateful" | "stateless";
-	/** Event store behavior for HTTP stream resumability */
-	eventStore: {
-		mode: "off" | "memory" | "redis";
-		ttlSeconds: number;
-		maxEvents?: number;
-		maxBytes?: number;
-		redisUrl?: string;
-		redisKeyPrefix: string;
-		encryptionKey?: Buffer;
-		/** Per-command Redis timeout in ms for the event store (0 disables it) */
-		commandTimeoutMs: number;
-	};
 	/** Protocol for HTTP transport */
 	protocol: "http" | "https";
 	/** Port number for HTTP transport (default: 3000) */
 	port: number;
 	/** Host address for HTTP transport (default: 127.0.0.1) */
 	host: string;
-	/** Maximum number of active stateful MCP sessions */
+	/** Maximum number of concurrent HTTP MCP requests */
 	maxSessions: number;
-	/** Session timeout in milliseconds (default: 3600000 = 1 hour) */
-	sessionTimeout: number;
 	/** Graceful shutdown timeout in milliseconds (default: 10000) */
 	shutdownTimeout: number;
 	/** Optional native TLS config for HTTPS mode */
@@ -60,10 +46,6 @@ export function getServerConfig(): ServerConfig {
 	const transport = (process.env.MCP_TRANSPORT?.trim() || "stdio") as
 		| "stdio"
 		| "http";
-	const sessionMode = (process.env.MCP_SESSION_MODE?.trim().toLowerCase() ||
-		"stateful") as "stateful" | "stateless";
-	const eventStoreMode = (process.env.MCP_EVENT_STORE?.trim().toLowerCase() ||
-		"off") as "off" | "memory" | "redis";
 
 	// Validate transport value
 	if (transport !== "stdio" && transport !== "http") {
@@ -71,14 +53,20 @@ export function getServerConfig(): ServerConfig {
 			`Invalid MCP_TRANSPORT value: ${transport}. Must be 'stdio' or 'http'`,
 		);
 	}
-	if (sessionMode !== "stateful" && sessionMode !== "stateless") {
-		throw new Error(
-			`Invalid MCP_SESSION_MODE value: ${sessionMode}. Must be 'stateful' or 'stateless'`,
-		);
-	}
-	if (!["off", "memory", "redis"].includes(eventStoreMode)) {
-		throw new Error(
-			`Invalid MCP_EVENT_STORE value: ${eventStoreMode}. Must be 'off', 'memory', or 'redis'`,
+	const retiredSettings = [
+		"MCP_SESSION_MODE",
+		"MCP_SESSION_TIMEOUT",
+		"MCP_EVENT_STORE",
+		"MCP_EVENT_TTL_SECONDS",
+		"MCP_EVENT_STORE_MAX_EVENTS",
+		"MCP_EVENT_STORE_MAX_BYTES",
+		"MCP_EVENT_STORE_COMMAND_TIMEOUT_MS",
+		"MCP_EVENT_ENCRYPTION_KEY",
+		"MCP_REDIS_KEY_PREFIX",
+	].filter((name) => process.env[name] !== undefined);
+	if (retiredSettings.length > 0) {
+		Logger.warn(
+			`Retired HTTP session/replay settings are ignored: ${retiredSettings.join(", ")}. See COMPATIBILITY.md for recovery and migration guidance.`,
 		);
 	}
 
@@ -104,16 +92,6 @@ export function getServerConfig(): ServerConfig {
 		host = "127.0.0.1";
 	}
 
-	const sessionTimeoutStr = (
-		process.env.MCP_SESSION_TIMEOUT || "3600000"
-	).trim();
-	const sessionTimeout = parseStrictInteger(sessionTimeoutStr);
-	if (Number.isNaN(sessionTimeout) || sessionTimeout < 0) {
-		throw new Error(
-			`Invalid MCP_SESSION_TIMEOUT value: ${sessionTimeoutStr}. Must be a non-negative number`,
-		);
-	}
-
 	const shutdownTimeoutStr = (
 		process.env.MCP_SHUTDOWN_TIMEOUT_MS || "10000"
 	).trim();
@@ -132,97 +110,6 @@ export function getServerConfig(): ServerConfig {
 		);
 	}
 
-	const eventStoreTtlStr = (process.env.MCP_EVENT_TTL_SECONDS || "300").trim();
-	const eventStoreTtlSeconds = parseStrictInteger(eventStoreTtlStr);
-	if (Number.isNaN(eventStoreTtlSeconds) || eventStoreTtlSeconds <= 0) {
-		throw new Error(
-			`Invalid MCP_EVENT_TTL_SECONDS value: ${eventStoreTtlStr}. Must be a positive integer`,
-		);
-	}
-	const eventStoreMaxEventsStr = (
-		process.env.MCP_EVENT_STORE_MAX_EVENTS || "10000"
-	).trim();
-	const eventStoreMaxEvents = parseStrictInteger(eventStoreMaxEventsStr);
-	if (Number.isNaN(eventStoreMaxEvents) || eventStoreMaxEvents <= 0) {
-		throw new Error(
-			`Invalid MCP_EVENT_STORE_MAX_EVENTS value: ${eventStoreMaxEventsStr}. Must be a positive integer`,
-		);
-	}
-	const eventStoreMaxBytesStr = (
-		process.env.MCP_EVENT_STORE_MAX_BYTES || String(64 * 1024 * 1024)
-	).trim();
-	const eventStoreMaxBytes = parseStrictInteger(eventStoreMaxBytesStr);
-	if (Number.isNaN(eventStoreMaxBytes) || eventStoreMaxBytes <= 0) {
-		throw new Error(
-			`Invalid MCP_EVENT_STORE_MAX_BYTES value: ${eventStoreMaxBytesStr}. Must be a positive integer`,
-		);
-	}
-
-	const eventStoreCommandTimeoutStr = (
-		process.env.MCP_EVENT_STORE_COMMAND_TIMEOUT_MS || "5000"
-	).trim();
-	const eventStoreCommandTimeoutMs = parseStrictInteger(
-		eventStoreCommandTimeoutStr,
-	);
-	if (
-		Number.isNaN(eventStoreCommandTimeoutMs) ||
-		eventStoreCommandTimeoutMs < 0
-	) {
-		throw new Error(
-			`Invalid MCP_EVENT_STORE_COMMAND_TIMEOUT_MS value: ${eventStoreCommandTimeoutStr}. Must be a non-negative integer (0 disables the timeout)`,
-		);
-	}
-
-	const redisUrl =
-		process.env.MCP_REDIS_URL?.trim() || process.env.REDIS_URL?.trim();
-	if (eventStoreMode === "redis" && !redisUrl) {
-		throw new Error(
-			"MCP_EVENT_STORE=redis requires MCP_REDIS_URL (or REDIS_URL) to be set",
-		);
-	}
-	if (eventStoreMode === "redis" && redisUrl) {
-		let parsedRedisUrl: URL;
-		try {
-			parsedRedisUrl = new URL(redisUrl);
-		} catch {
-			throw new Error(
-				"MCP_REDIS_URL must be a valid redis:// or rediss:// URL",
-			);
-		}
-		if (!["redis:", "rediss:"].includes(parsedRedisUrl.protocol)) {
-			throw new Error("MCP_REDIS_URL must use redis:// or rediss://");
-		}
-		if (
-			process.env.NODE_ENV?.trim().toLowerCase() === "production" &&
-			parsedRedisUrl.protocol !== "rediss:"
-		) {
-			throw new Error("MCP_REDIS_URL must use rediss:// in production");
-		}
-	}
-
-	const rawEventEncryptionKey = process.env.MCP_EVENT_ENCRYPTION_KEY?.trim();
-	let eventEncryptionKey: Buffer | undefined;
-	if (eventStoreMode === "redis") {
-		if (!rawEventEncryptionKey) {
-			throw new Error(
-				"MCP_EVENT_ENCRYPTION_KEY must be base64-encoded 32-byte key when MCP_EVENT_STORE=redis",
-			);
-		}
-		const decodedKey = Buffer.from(rawEventEncryptionKey, "base64");
-		if (
-			decodedKey.length !== 32 ||
-			decodedKey.toString("base64") !== rawEventEncryptionKey
-		) {
-			throw new Error(
-				"MCP_EVENT_ENCRYPTION_KEY must be base64-encoded 32-byte key when MCP_EVENT_STORE=redis",
-			);
-		}
-		eventEncryptionKey = decodedKey;
-	}
-
-	const redisKeyPrefix =
-		process.env.MCP_REDIS_KEY_PREFIX?.trim() || "mcp:event-store";
-
 	const keyPath = process.env.MCP_TLS_KEY_PATH?.trim() || undefined;
 	const certPath = process.env.MCP_TLS_CERT_PATH?.trim() || undefined;
 	const caPath = process.env.MCP_TLS_CA_PATH?.trim() || undefined;
@@ -240,22 +127,10 @@ export function getServerConfig(): ServerConfig {
 
 	return {
 		transport,
-		sessionMode,
-		eventStore: {
-			mode: eventStoreMode,
-			ttlSeconds: eventStoreTtlSeconds,
-			maxEvents: eventStoreMaxEvents,
-			maxBytes: eventStoreMaxBytes,
-			redisUrl,
-			redisKeyPrefix,
-			encryptionKey: eventEncryptionKey,
-			commandTimeoutMs: eventStoreCommandTimeoutMs,
-		},
 		protocol,
 		port,
 		host,
 		maxSessions,
-		sessionTimeout,
 		shutdownTimeout,
 		tls: {
 			enabled: tlsEnabled,

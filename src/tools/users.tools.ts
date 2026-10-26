@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { CurrentPageSchema, PageSizeSchema } from "../lib/schemas.js";
 import type { PortkeyService } from "../services/index.js";
@@ -200,10 +200,13 @@ export function registerUsersTools(
 	service: PortkeyService,
 ): void {
 	// List all users tool
-	server.tool(
+	server.registerTool(
 		"list_all_users",
-		"List accepted org users with id, name, email, role, and timestamps. Use this to find a user_id before get_user, update_user, delete_user, or add_workspace_member; use list_user_invites for pending invitations.",
-		USERS_TOOL_SCHEMAS.listAllUsers,
+		{
+			description:
+				"List accepted org users with id, name, email, role, and timestamps. Use this to find a user_id before get_user, update_user, delete_user, or add_workspace_member; use list_user_invites for pending invitations.",
+			inputSchema: USERS_TOOL_SCHEMAS.listAllUsers,
+		},
 		async (params) => {
 			const users = await service.users.listUsers({
 				current_page: params.current_page,
@@ -219,10 +222,13 @@ export function registerUsersTools(
 	);
 
 	// Invite user tool
-	server.tool(
+	server.registerTool(
 		"invite_user",
-		"Invite a new org user and optionally provision workspace access and an API key in one call. Workspace assignments apply only after acceptance; use add_workspace_member or update_workspace_member later for follow-up changes.",
-		USERS_TOOL_SCHEMAS.inviteUser,
+		{
+			description:
+				"Invite a new org user and optionally provision workspace access and an API key in one call. Workspace assignments apply only after acceptance; use add_workspace_member or update_workspace_member later for follow-up changes.",
+			inputSchema: USERS_TOOL_SCHEMAS.inviteUser,
+		},
 		async (params) => {
 			const result = await service.users.inviteUser(params);
 			return jsonResult({
@@ -234,10 +240,13 @@ export function registerUsersTools(
 	);
 
 	// User analytics tool
-	server.tool(
+	server.registerTool(
 		"get_user_stats",
-		"Return per-user request and cost analytics for a required time range. This is usage-by-user, not population metrics; use get_users_analytics for active-user or cohort trends.",
-		USERS_TOOL_SCHEMAS.getUserStats,
+		{
+			description:
+				"Return per-user request and cost analytics for a required time range. This is usage-by-user, not population metrics; use get_users_analytics for active-user or cohort trends.",
+			inputSchema: USERS_TOOL_SCHEMAS.getUserStats,
+		},
 		async (params) => {
 			const stats = await service.users.getUserGroupedData(params);
 			return jsonResult({
@@ -248,10 +257,13 @@ export function registerUsersTools(
 	);
 
 	// Phase 1: Get user tool
-	server.tool(
+	server.registerTool(
 		"get_user",
-		"Get one accepted user by id and return their profile, role, and timestamps. Use list_all_users to find the id if you only have a name or email, and get_user_invite for pending invitations.",
-		USERS_TOOL_SCHEMAS.getUser,
+		{
+			description:
+				"Get one accepted user by id and return their profile, role, and timestamps. Use list_all_users to find the id if you only have a name or email, and get_user_invite for pending invitations.",
+			inputSchema: USERS_TOOL_SCHEMAS.getUser,
+		},
 		async (params) => {
 			const user = await service.users.getUser(params.user_id);
 			return jsonResult(formatUser(user));
@@ -259,10 +271,13 @@ export function registerUsersTools(
 	);
 
 	// Phase 1: Update user tool
-	server.tool(
+	server.registerTool(
 		"update_user",
-		"Update a user's first name, last name, or organization role by id. Email and workspace roles are not editable here; use update_workspace_member for workspace membership changes.",
-		USERS_TOOL_SCHEMAS.updateUser,
+		{
+			description:
+				"Update a user's first name, last name, or organization role by id. Email and workspace roles are not editable here; use update_workspace_member for workspace membership changes.",
+			inputSchema: USERS_TOOL_SCHEMAS.updateUser,
+		},
 		async (params) => {
 			const { user_id, ...updateData } = params;
 			const user = await service.users.updateUser(user_id, updateData);
@@ -274,10 +289,13 @@ export function registerUsersTools(
 	);
 
 	// Phase 1: Delete user tool
-	server.tool(
+	server.registerTool(
 		"delete_user",
-		"Delete a user from the org by id. This is permanent, removes org and workspace memberships, revokes API keys, and ends active sessions; use delete_user_invite for pending invites instead.",
-		USERS_TOOL_SCHEMAS.deleteUser,
+		{
+			description:
+				"Delete a user from the org by id. This is permanent, removes org and workspace memberships, revokes API keys, and ends active sessions; use delete_user_invite for pending invites instead.",
+			inputSchema: USERS_TOOL_SCHEMAS.deleteUser,
+		},
 		async (params) => {
 			await service.users.deleteUser(params.user_id);
 			return jsonResult({
@@ -288,10 +306,13 @@ export function registerUsersTools(
 	);
 
 	// Phase 1: List user invites tool
-	server.tool(
+	server.registerTool(
 		"list_user_invites",
-		"List pending and sent invitations with id, email, role, status, and expiry. Use this to check invite state; use list_all_users for users who already accepted.",
-		USERS_TOOL_SCHEMAS.listUserInvites,
+		{
+			description:
+				"List pending and sent invitations with id, email, role, status, and expiry. Use this to check invite state; use list_all_users for users who already accepted.",
+			inputSchema: USERS_TOOL_SCHEMAS.listUserInvites,
+		},
 		async (params) => {
 			const invites = await service.users.listUserInvites({
 				current_page: params.current_page,
@@ -308,10 +329,13 @@ export function registerUsersTools(
 	);
 
 	// Phase 1: Get user invite tool
-	server.tool(
+	server.registerTool(
 		"get_user_invite",
-		"Get one invitation by invite id and return its email, role, status, and expiry. Use this for pending invites only; use get_user for accepted users.",
-		USERS_TOOL_SCHEMAS.getUserInvite,
+		{
+			description:
+				"Get one invitation by invite id and return its email, role, status, and expiry. Use this for pending invites only; use get_user for accepted users.",
+			inputSchema: USERS_TOOL_SCHEMAS.getUserInvite,
+		},
 		async (params) => {
 			const invite = await service.users.getUserInvite(params.invite_id);
 			return jsonResult(formatUserInvite(invite));
@@ -319,10 +343,13 @@ export function registerUsersTools(
 	);
 
 	// Phase 1: Delete user invite tool
-	server.tool(
+	server.registerTool(
 		"delete_user_invite",
-		"Delete a pending invite and revoke its invite link. This does not affect existing users; use delete_user for full user removal.",
-		USERS_TOOL_SCHEMAS.deleteUserInvite,
+		{
+			description:
+				"Delete a pending invite and revoke its invite link. This does not affect existing users; use delete_user for full user removal.",
+			inputSchema: USERS_TOOL_SCHEMAS.deleteUserInvite,
+		},
 		async (params) => {
 			await service.users.deleteUserInvite(params.invite_id);
 			return jsonResult({
@@ -333,10 +360,13 @@ export function registerUsersTools(
 	);
 
 	// Phase 1: Resend user invite tool
-	server.tool(
+	server.registerTool(
 		"resend_user_invite",
-		"Resend the email for a pending invite that has not been accepted, unlike invite_user which creates a new invite. This sends a fresh email without modifying the invite record, expiry, or role; use get_user_invite first if you are unsure whether the invite still exists and list_user_invites to discover invite_ids.",
-		USERS_TOOL_SCHEMAS.resendUserInvite,
+		{
+			description:
+				"Resend the email for a pending invite that has not been accepted, unlike invite_user which creates a new invite. This sends a fresh email without modifying the invite record, expiry, or role; use get_user_invite first if you are unsure whether the invite still exists and list_user_invites to discover invite_ids.",
+			inputSchema: USERS_TOOL_SCHEMAS.resendUserInvite,
+		},
 		async (params) => {
 			await service.users.resendUserInvite(params.invite_id);
 			return jsonResult({

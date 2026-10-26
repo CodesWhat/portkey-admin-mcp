@@ -42,7 +42,11 @@ README, endpoint catalog, domain counts, and Enterprise-gated inventory together
 
 ## Planned
 
-Reviewed 2026-10-16 against Portkey OpenAPI commit `700ece6` (October 13).
+Reviewed 2026-10-24 against Portkey OpenAPI commit `c3dda80` (October 22).
+The newly documented organisation analytics filters, `include_all_workspaces`
+and `exclude_workspace_slugs`, are covered on all 25 analytics tools. The
+Anthropic Messages additions are inference routes outside this admin server's
+scope.
 Access policies and egress allowlists are covered. Existing published contracts
 are unchanged from the September baseline. Egress calls use the hosted `/v2`
 base: `/v1` returns the inference gateway fallback, while `/v2` reaches the
@@ -55,6 +59,11 @@ Prisma AIRS now publishes management contracts. The interoperability guide
 records the authentication, route, domain, and verification differences. Native
 adapter work waits for a credentialed tenant to verify those contracts; a base
 URL substitution remains unsupported.
+No maintainer Prisma AIRS tenant is available, and acquiring paid access is
+outside this project's maintenance plan. Palo Alto Networks advertises a
+[contact-based free trial](https://www.paloaltonetworks.com/blog/network-security/enterprise-grade-ai-security-prisma-airs-and-truefoundry-ai-gateway/),
+but free AI Gateway management access has not been verified. A contributor with
+an appropriately scoped tenant can supply live contract evidence.
 
 ### Later
 

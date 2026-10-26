@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { buildRateLimits, buildUsageLimits } from "../lib/limits.js";
 import { CurrentPageSchema, PageSizeSchema } from "../lib/schemas.js";
@@ -157,10 +157,13 @@ export function registerProvidersTools(
 	service: PortkeyService,
 ): void {
 	// List providers tool
-	server.tool(
+	server.registerTool(
 		"list_providers",
-		"List workspace-scoped provider instances and their limits or status. Use this to find provider slugs for workspace-level updates; use list_integrations for the org-level source connection. Returns total plus provider name, slug, integration, status, limits, expiration, and reset flags.",
-		PROVIDERS_TOOL_SCHEMAS.listProviders,
+		{
+			description:
+				"List workspace-scoped provider instances and their limits or status. Use this to find provider slugs for workspace-level updates; use list_integrations for the org-level source connection. Returns total plus provider name, slug, integration, status, limits, expiration, and reset flags.",
+			inputSchema: PROVIDERS_TOOL_SCHEMAS.listProviders,
+		},
 		async (params) => {
 			const providers = await service.providers.listProviders({
 				current_page: params.current_page,
@@ -198,10 +201,13 @@ export function registerProvidersTools(
 	);
 
 	// Create provider tool
-	server.tool(
+	server.registerTool(
 		"create_provider",
-		"Create a workspace provider backed by an org integration. The provider inherits the integration key, but its limits and expiration are enforced independently for that workspace. Returns the new provider id and slug.",
-		PROVIDERS_TOOL_SCHEMAS.createProvider,
+		{
+			description:
+				"Create a workspace provider backed by an org integration. The provider inherits the integration key, but its limits and expiration are enforced independently for that workspace. Returns the new provider id and slug.",
+			inputSchema: PROVIDERS_TOOL_SCHEMAS.createProvider,
+		},
 		async (params) => {
 			const result = await service.providers.createProvider({
 				name: params.name,
@@ -235,10 +241,13 @@ export function registerProvidersTools(
 	);
 
 	// Get provider tool
-	server.tool(
+	server.registerTool(
 		"get_provider",
-		"Fetch one provider by slug, including limits, rate settings, expiration, and reset status. Use this to check consumption or audit configuration before updating.",
-		PROVIDERS_TOOL_SCHEMAS.getProvider,
+		{
+			description:
+				"Fetch one provider by slug, including limits, rate settings, expiration, and reset status. Use this to check consumption or audit configuration before updating.",
+			inputSchema: PROVIDERS_TOOL_SCHEMAS.getProvider,
+		},
 		async (params) => {
 			const provider = await service.providers.getProvider(
 				params.slug,
@@ -272,10 +281,13 @@ export function registerProvidersTools(
 	);
 
 	// Update provider tool
-	server.tool(
+	server.registerTool(
 		"update_provider",
-		"Update a provider's metadata, limits, or expiration. reset_usage clears accumulated usage counters immediately, so use it only when you intend to reset quota tracking. Returns the updated provider id and slug.",
-		PROVIDERS_TOOL_SCHEMAS.updateProvider,
+		{
+			description:
+				"Update a provider's metadata, limits, or expiration. reset_usage clears accumulated usage counters immediately, so use it only when you intend to reset quota tracking. Returns the updated provider id and slug.",
+			inputSchema: PROVIDERS_TOOL_SCHEMAS.updateProvider,
+		},
 		async (params) => {
 			const result = await service.providers.updateProvider(
 				params.slug,
@@ -311,10 +323,13 @@ export function registerProvidersTools(
 	);
 
 	// Delete provider tool
-	server.tool(
+	server.registerTool(
 		"delete_provider",
-		"Delete a workspace provider by slug. This is irreversible and will break prompts, configs, and virtual keys that reference it; use delete_integration for the org source instead. Returns success after the provider is removed.",
-		PROVIDERS_TOOL_SCHEMAS.deleteProvider,
+		{
+			description:
+				"Delete a workspace provider by slug. This is irreversible and will break prompts, configs, and virtual keys that reference it; use delete_integration for the org source instead. Returns success after the provider is removed.",
+			inputSchema: PROVIDERS_TOOL_SCHEMAS.deleteProvider,
+		},
 		async (params) => {
 			await service.providers.deleteProvider(params.slug, params.workspace_id);
 

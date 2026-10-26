@@ -80,7 +80,7 @@ You need a **Portkey API key** with appropriate scopes. Get one from your [Portk
 Version 0.14.0 uses MCP SDK v1 and supports protocol revisions through
 `2025-11-25`. Session and replay settings remain active. See
 [compatibility and deprecations](./COMPATIBILITY.md) before upgrading; the
-planned MCP v2 migration has no assigned release number or removal date.
+unreleased SDK v2 candidate serves `2026-07-28` and legacy clients on the same endpoint, but retires HTTP sessions and replay. It targets 0.15.0; warnings, ignored settings and session/replay removal all start in that minor.
 
 ### Claude Code
 
@@ -175,7 +175,7 @@ Then use this config:
 | **Egress Allowlist** | 5 | Organisation trust for custom outbound hosts |
 | **Usage Limits** | 7 | Cost and token consumption limits |
 | **Rate Limits** | 5 | Request frequency controls |
-| **Analytics** | 25 | Cost, latency, errors, tokens, cache, feedback, provider, MCP, A2A, and workspace groups |
+| **Analytics** | 25 | Cost, latency, errors, tokens, cache, feedback, provider, MCP, A2A, and workspace groups; organisation scope and workspace exclusions |
 | **Logging** | 10 | Log retrieval, ingestion, export, and field restrictions |
 | **Tracing** | 2 | Feedback creation and updates on traces |
 | **Users & Workspaces** | 24 | User management, invites, workspace members, SCIM group mappings |
@@ -279,17 +279,9 @@ For local-only HTTP use, leave `MCP_HOST` at its default `127.0.0.1`. Set `MCP_H
 | `CLERK_ALLOWED_ORGANIZATION_IDS` / `CLERK_ALLOWED_ROLES` | — | Optional CSV organization and role constraints; every configured constraint must match |
 | `CLERK_REQUIRED_PERMISSIONS` | — | Optional CSV permissions that must all be present in the verified Clerk JWT |
 | `MCP_ALLOW_UNAUTHENTICATED_HTTP` | — | Set to `true` only for intentional local unauthenticated HTTP debugging |
-| `MCP_SESSION_MODE` | `stateful` | `stateful` or `stateless` |
-| `MCP_SESSION_TIMEOUT` | `3600000` | Idle timeout for stateful sessions, in milliseconds; `0` or more |
-| `MCP_MAX_SESSIONS` | `100` | Maximum concurrent stateful sessions or active stateless request handlers |
-| `MCP_EVENT_STORE` | `off` | `off`, `memory`, or `redis`; stateless `GET /mcp` replay requires `memory` or `redis` |
-| `MCP_EVENT_TTL_SECONDS` | `300` | Replay retention in seconds |
-| `MCP_EVENT_STORE_MAX_EVENTS` | `10000` | Maximum events retained by the in-memory replay store; oldest events are evicted first |
-| `MCP_EVENT_STORE_MAX_BYTES` | `67108864` | Approximate maximum serialized bytes retained by the in-memory replay store |
-| `MCP_EVENT_STORE_COMMAND_TIMEOUT_MS` | `5000` | Redis command timeout for the event store, in milliseconds; `0` disables the timeout (restores unbounded pre-v6 behavior) |
-| `MCP_REDIS_URL` | — | Redis URL for shared event store; production requires `rediss://` and ACL-scoped credentials |
-| `MCP_EVENT_ENCRYPTION_KEY` | — | Required 32-byte base64 AES key for Redis replay payloads; generate with `openssl rand -base64 32` |
-| `MCP_REDIS_KEY_PREFIX` | `mcp:event-store` | Dedicated Redis namespace for replay data |
+| `MCP_MAX_SESSIONS` | `100` | Maximum concurrent HTTP MCP request handlers (retained name) |
+| `MCP_REDIS_URL` | — | Fallback Redis URL for shared rate limiting, after `RATE_LIMIT_REDIS_URL` and before `REDIS_URL`; production requires `rediss://` |
+| `MCP_SESSION_MODE`, `MCP_SESSION_TIMEOUT`, `MCP_EVENT_*`, `MCP_REDIS_KEY_PREFIX` | Ignored in the unreleased SDK v2 candidate | Old session/replay settings produce a warning containing names only. Published 0.14.x behavior is unchanged; see [compatibility](./COMPATIBILITY.md). |
 | `MCP_TLS_KEY_PATH` | — | TLS key for native HTTPS |
 | `MCP_TLS_CERT_PATH` | — | TLS cert for native HTTPS |
 | `MCP_TLS_CA_PATH` | — | Optional CA bundle for native HTTPS; only used when the TLS key and cert are set |
@@ -322,7 +314,7 @@ Production containers must choose their rate-limit topology explicitly: set
 Vercel support is kept as a reference proof of concept — we do not run a hosted deployment. See [docs/VERCEL_DEPLOYMENT.md](./docs/VERCEL_DEPLOYMENT.md) if you want to self-deploy.
 
 Key points:
-- Uses stateless request handling with encrypted, principal-bound Redis replay and a shared atomic Redis rate limiter
+- Uses stateless request handling and a shared atomic Redis rate limiter in the SDK v2 candidate; GET replay is retired
 - Requires Clerk or bearer auth
 - Leave `MCP_TLS_*` unset (Vercel terminates HTTPS)
 - Set `MCP_PUBLIC_BASE_URL` to your deployment URL so advertised MCP endpoints never depend on request headers
@@ -408,8 +400,8 @@ for the public threat model and assurance case.
 Release 0.14.0 adds access policies, egress allowlists, and security maintenance.
 The [roadmap](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/ROADMAP.md) separates completed work from upstream contract and
 tenant-verification gates. The planned MCP v2 migration keeps older clients on
-the same endpoint; its package version and configuration-removal releases are
-still unassigned. See [compatibility and deprecations](./COMPATIBILITY.md).
+the same endpoint and targets 0.15.0 for warnings, ignored settings and active
+session/replay removal. See [compatibility and deprecations](./COMPATIBILITY.md).
 
 <hr>
 
