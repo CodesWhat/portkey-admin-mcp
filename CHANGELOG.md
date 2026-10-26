@@ -12,6 +12,7 @@ release until that reference and the release notes say so.
 ## [Unreleased]
 
 ### Added
+- A local Portkey marketing and documentation site under `website/`, built from the shared CodesWhat product web shell. It is not published yet and is not part of the npm package.
 - Tests now check the auth and probe path classifiers against Express's own routing across generated path variants, and exercise the 10,000-element tool input budget.
 
 ### Fixed
@@ -22,6 +23,7 @@ release until that reference and the release notes say so.
 MCP specification `2026-07-28` support on the v2 SDK. The server speaks both protocol eras on one endpoint, so older clients keep working. HTTP session and GET replay storage is retired, which is breaking for operators who rely on replay or session affinity. The catalog is unchanged at 194 tools across 22 domains.
 
 ### Added
+- A local Portkey marketing and documentation site under `website/`, built from the shared CodesWhat product web shell. It is not published yet and is not part of the npm package.
 - Analytics workspace scoping through `include_all_workspaces` and `exclude_workspace_slugs` on all 25 analytics tools. Organisation keys can aggregate across workspaces; an explicit `workspace_slug` keeps precedence. Cache summary and provider groups accept organisation scope as an alternative to a single workspace.
 
 ### Changed
@@ -59,6 +61,7 @@ increases from 184 to 194 tools across 22 domains; MCP clients should refresh
   `proxy-addr` and development-only `smol-toml`. The full npm audit is clear.
 
 ### Added
+- A local Portkey marketing and documentation site under `website/`, built from the shared CodesWhat product web shell. It is not published yet and is not part of the npm package.
 
 - Five access-policy tools to create, list, inspect, replace, and delete
   workspace allow/deny rules for users, groups, agents, MCP tools, and provider
@@ -99,6 +102,7 @@ Portkey control-plane additions from the 2026-09-16 OpenAPI. The catalog grows
 from 181 to 184 tools, so MCP clients should refresh `tools/list`.
 
 ### Added
+- A local Portkey marketing and documentation site under `website/`, built from the shared CodesWhat product web shell. It is not published yet and is not part of the npm package.
 
 - `get_analytics_group_mcp`, `get_analytics_group_a2a`, and
   `get_analytics_group_workspaces` grouped analytics views. They're
@@ -135,6 +139,7 @@ from 181 to 184 tools, so MCP clients should refresh `tools/list`.
 Documentation and packaging follow-up to 0.12.1. No runtime behavior changes.
 
 ### Added
+- A local Portkey marketing and documentation site under `website/`, built from the shared CodesWhat product web shell. It is not published yet and is not part of the npm package.
 
 - `npm run verify:generated` fails when regenerating would change
   `ENDPOINTS.md` or `lhm.plugin.json`. It runs in `npm run ci` and in the CI
@@ -203,6 +208,7 @@ Portkey control-plane compatibility and runtime-hardening release. The catalog
 grows from 178 to 181 tools, so MCP clients should refresh `tools/list`.
 
 ### Added
+- A local Portkey marketing and documentation site under `website/`, built from the shared CodesWhat product web shell. It is not published yet and is not part of the npm package.
 
 - Add list, complete replacement, and single-server upsert tools for guardrail
   MCP-server mappings, plus the documented `llm` and `mcp_tools` guardrail
@@ -381,6 +387,7 @@ count or a trusted proxy subnet instead. In-memory replay now also defaults to
 single-process deployment.
 
 ### Added
+- A local Portkey marketing and documentation site under `website/`, built from the shared CodesWhat product web shell. It is not published yet and is not part of the npm package.
 
 - Add five Enterprise/self-hosted deployment-management tools for registration,
   reads, updates, and archival, including warnings around one-time credentials.
@@ -431,6 +438,7 @@ Maintenance release: documentation, CI, and dependencies. No source changes, so 
 - Update dependencies: non-major npm packages, Node.js to 24.19.0 in the Dockerfile, and non-major GitHub Actions. Lockfile refreshed.
 
 ### Added
+- A local Portkey marketing and documentation site under `website/`, built from the shared CodesWhat product web shell. It is not published yet and is not part of the npm package.
 
 - `AGENTS.md`, noting that `greptile.json` keeps Greptile on-demand: it reviews a pull request only when the `second-opinion` label is applied, while CodeRabbit reviews every PR automatically.
 - `greptile.yml`, a label-triggered workflow that summons Greptile for a second-opinion review.
@@ -451,6 +459,7 @@ Security and correctness release from a multi-agent whole-application review, we
 - Return an actionable error when `PORTKEY_API_KEY` is unset instead of an opaque upstream 401. The missing key is still replaced by a placeholder so tool discovery works without credentials, but an authenticated tool call now fails with "PORTKEY_API_KEY is not configured" before any network call, and the stdio server logs a one-line warning to stderr at startup.
 
 ### Added
+- A local Portkey marketing and documentation site under `website/`, built from the shared CodesWhat product web shell. It is not published yet and is not part of the npm package.
 
 - `MCP_EVENT_STORE_COMMAND_TIMEOUT_MS` — Redis command timeout for the event store, in milliseconds. Defaults to 5000; set to `0` for no timeout.
 - Regression tests for every fix above, including end-to-end session isolation between two distinct Clerk principals against a live server, reserved-capacity release after a rejected initialize, the trailing-slash and uppercase rate-limit paths, and concurrent SSE replay.
@@ -473,6 +482,7 @@ Cross-field argument validation now reads the same on every tool that has it. To
 Code-health release from a full-application review across security, performance, quality, and testing. No tools were added or removed; the inventory stays at 171. Security review found no exploitable issues. The tracked findings, including the ones deliberately not acted on, are recorded as Phase 6 in `ROADMAP.md`.
 
 ### Added
+- A local Portkey marketing and documentation site under `website/`, built from the shared CodesWhat product web shell. It is not published yet and is not part of the npm package.
 
 - Cover the Clerk authentication success path, which previously had no test anywhere: the suite now mints a real RSA keypair, signs a real JWT, serves a matching JWKS, and asserts the middleware admits the request with a correctly populated principal. The former placeholder asserted nothing while claiming the contract was covered elsewhere.
 - Drive `BaseService` through real 4xx JSON and 5xx non-JSON upstream error bodies, and exercise the unauthenticated public-catalog path including an assertion that no API key header is sent.
@@ -495,6 +505,7 @@ Code-health release from a full-application review across security, performance,
 ## [0.7.0] - 2026-08-09
 
 ### Added
+- A local Portkey marketing and documentation site under `website/`, built from the shared CodesWhat product web shell. It is not published yet and is not part of the npm package.
 
 - Resume compatibility and API-coverage development with 15 current Portkey tools: organisation guardrail defaults and directional workspace exclusions; single-log reads and log-export field restrictions; SCIM group search and workspace-mapping CRUD; MCP server connection listing/disconnect; and public model-pricing lookup. The inventory now contains 171 tools.
 - Cover current integration schemas for Secret Reference mappings, pricing adjustments, default-provider creation, global workspace access/overrides, custom and fine-tuned models, per-model headers/hosts, and static model pricing. MCP integrations now expose Secret Reference mappings as well.
@@ -585,6 +596,7 @@ Security-hardening release. Remediates all eight findings (two high, four medium
 - **SEC-008 (Low):** The runtime container removes npm, npx, and npm's global module tree after installing production dependencies, dropping the bundled `tar`/`undici` advisories from the image.
 
 ### Added
+- A local Portkey marketing and documentation site under `website/`, built from the shared CodesWhat product web shell. It is not published yet and is not part of the npm package.
 
 - `PORTKEY_ALLOW_INSECURE_HTTP`, `MCP_EVENT_ENCRYPTION_KEY`, `RATE_LIMIT_STORE`, `RATE_LIMIT_SINGLE_PROCESS`, `RATE_LIMIT_REDIS_URL`, `RATE_LIMIT_REDIS_KEY_PREFIX`, and the Clerk authorization variables (`CLERK_ALLOWED_SUBJECTS`, `CLERK_ALLOWED_ORGANIZATION_IDS`, `CLERK_ALLOWED_ROLES`, `CLERK_REQUIRED_PERMISSIONS`) — documented in the README env-var table, `.env.example`, and `docs/VERCEL_DEPLOYMENT.md`.
 - `express-rate-limit` (8.x) promoted to a direct dependency for the defense-in-depth Express limiter.
@@ -599,6 +611,7 @@ Security-hardening release. Remediates all eight findings (two high, four medium
 ## [0.5.0] - 2026-07-14
 
 ### Added
+- A local Portkey marketing and documentation site under `website/`, built from the shared CodesWhat product web shell. It is not published yet and is not part of the npm package.
 
 - Type-check the test suite in local and hosted CI, align Node type definitions with the Node 24 runtime, and pin the expected npm version through `packageManager`.
 - Add stateless `GET /mcp` redelivery from `Last-Event-ID`, including detached completion when a client disconnects before an in-flight POST result is ready.
@@ -657,6 +670,7 @@ Maintenance release: dependency security patches, a Docker base-image CVE fix, a
 - Harden the release pipeline to zizmor-clean: job-scoped permissions replace the workflow-level `contents: write`, checkouts stop persisting git credentials where jobs run dependency scripts, npm caching is off in the publish jobs, and the CI gate receives its one secret explicitly instead of `secrets: inherit`. CI gains an `actionlint` workflow-lint job, PR dependency review, and per-branch concurrency; CodeQL default setup is enabled on the repo.
 
 ### Added
+- A local Portkey marketing and documentation site under `website/`, built from the shared CodesWhat product web shell. It is not published yet and is not part of the npm package.
 
 - LobeHub marketplace support: `lhm.plugin.json` manifest, a `publish:lobehub` npm script, and a documented publish flow in `docs/RELEASE.md`; the README badge switched to the themed `mcp-full` LobeHub badge.
 - Prerelease versions (any `-` tag, e.g. `0.5.0-rc.1`) now publish to the `rc` npm dist-tag instead of `latest`.
@@ -679,6 +693,7 @@ Maintenance release: dependency security patches, a Docker base-image CVE fix, a
 Marketplace validation release for LobeHub and other MCP catalogs. No Portkey Admin API surface changes.
 
 ### Added
+- A local Portkey marketing and documentation site under `website/`, built from the shared CodesWhat product web shell. It is not published yet and is not part of the npm package.
 
 - Register a built-in `plan_portkey_admin_workflow` MCP prompt so clients and catalogs can discover an invokable prompt; the prompt validates argument lengths, embeds the workflow guide as an MCP resource, and reminds clients to treat user task text as lower-priority context.
 - Register a static `portkey-admin://docs/workflow-guide` MCP resource with safe usage guidance and assistant-priority annotations for discovery-first Portkey Admin workflows.
@@ -708,6 +723,7 @@ Security hardening, pagination params, compact tool responses, and a major test-
 - `create_api_key` description now warns that the key secret is returned exactly once and will appear in MCP transcripts and LLM context — store it securely immediately.
 
 ### Added
+- A local Portkey marketing and documentation site under `website/`, built from the shared CodesWhat product web shell. It is not published yet and is not part of the npm package.
 
 - **Pagination params on six list tools** — `list_virtual_keys`, `list_configs`, `list_all_users`, `list_user_invites`, `list_mcp_server_capabilities`, and `list_mcp_server_user_access` now accept optional `current_page`/`page_size` inputs, forwarded to the Portkey Admin API; the two MCP-server lists also surface `has_more` so truncated results are no longer indistinguishable from complete ones.
 - **Cross-field validation for `create_api_key`** — the workspace key type now requires `workspace_id` at the Zod schema layer instead of failing inside the handler.
@@ -753,6 +769,7 @@ Follow-up hardening release clearing the remaining low/medium items from the v0.
 - Gate the release workflow on the full CI suite: `release.yml` now calls `ci.yml` (made reusable via `workflow_call`) and both the GitHub Release and MCP Registry publish jobs `need` it, so a broken tag can never ship.
 
 ### Added
+- A local Portkey marketing and documentation site under `website/`, built from the shared CodesWhat product web shell. It is not published yet and is not part of the npm package.
 
 - `tests/fixtures/manifest.json` records fixture provenance (`recordedAt`, source, list); `record:fixtures` now stamps it on every re-record, and the contract suite asserts it stays in sync with `tests/fixtures/responses/`.
 
@@ -787,6 +804,7 @@ Follow-up description-quality pass targeting the 13 tools that Glama's TDQS rubr
 - Rubric-based scoring of all 150 current descriptions against the reverse-engineered Glama TDQS rubric puts the server at mean 3.81, 150/150 at A-tier (up from baseline mean 3.14 at v1.0.0 with 61 C-tier tools).
 
 ### Added
+- A local Portkey marketing and documentation site under `website/`, built from the shared CodesWhat product web shell. It is not published yet and is not part of the npm package.
 
 - `docs/glama-score/` — audit artifacts: the v1.0.0 Glama scan (`scores.json`, `scores.csv`), per-dimension justifications bucketed by score, the rewrite plan with per-tool checklist, and the post-fix re-score (`current-scores.json`, `diff.json`).
 - `scripts/glama-score/` — reproducible audit tooling: `extract-current.mjs` pulls every `(name, description)` pair from `src/tools/*.tools.ts`, `score-tools.mjs` re-scores via the Anthropic Messages API with the rubric prompt-cached, and `diff-scores.mjs` emits the baseline-vs-current delta.
@@ -803,6 +821,7 @@ Maintenance release. Description-quality pass across every MCP tool and a routin
 - Voice/casing normalized across analytics tools (`Get X` rather than mixed `Return X`/`Returns X`) and MCP tools (lowercase `id` rather than mixed `ID`/`id`).
 
 ### Added
+- A local Portkey marketing and documentation site under `website/`, built from the shared CodesWhat product web shell. It is not published yet and is not part of the npm package.
 
 - Three description-quality test blocks in `tests/unit.test.ts` enforcing: workflow/scope/sibling guidance for weak tool families, A-rated/infra tool standards, and a high-risk sweep over `delete_*` / `create_api_key` / `create_virtual_key` / `run_prompt_completion` / `insert_log` requiring irreversibility, access, billable, or failure semantics in the description. Test count 101 → 102.
 - Shared `before()` setup in the description-quality suite to register all tools once with a `descriptionFor()` helper, replacing per-test `registerAllTools` rebuilds.
@@ -822,6 +841,7 @@ Maintenance release. Description-quality pass across every MCP tool and a routin
 Tool surface refinement release. Cleans up a phantom endpoint, adds structured input aliases for LLM ergonomics, enables stdio/HTTP tool domain subsetting, and flags the 28 tools that are Enterprise-gated so clients know up front.
 
 ### Added
+- A local Portkey marketing and documentation site under `website/`, built from the shared CodesWhat product web shell. It is not published yet and is not part of the npm package.
 
 - **`PORTKEY_TOOL_DOMAINS`** environment variable — stdio and HTTP clients can now expose only a focused subset of tools (e.g. `prompts,analytics`) instead of all 150. Validated against `TOOL_DOMAIN_NAMES` on startup with a clear error listing valid domains. Complements the pre-existing HTTP-only `?tools=` query parameter.
 - **Structured input aliases** for prompt creation/update/migration — `create_prompt`, `update_prompt`, and `migrate_prompt` now accept a first-class `messages` array (system/user/assistant with typed content blocks) alongside the legacy JSON-encoded `string`. The server serializes `messages` into the legacy format before calling Portkey, so both forms keep working.
@@ -850,6 +870,7 @@ Tool surface refinement release. Cleans up a phantom endpoint, adds structured i
 Major hardening release. Fixes critical MCP spec compliance issues, adds tool annotations and structured responses, and significantly improves security defaults.
 
 ### Added
+- A local Portkey marketing and documentation site under `website/`, built from the shared CodesWhat product web shell. It is not published yet and is not part of the npm package.
 
 - **MCP tool annotations** on all 151 tools — `readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint` inferred from tool operation type
 - **`outputSchema`** on all tools via `registerTool()` — consistent `{ok, data}` / `{ok, error}` envelope for predictable LLM parsing
@@ -898,6 +919,7 @@ Major hardening release. Fixes critical MCP spec compliance issues, adds tool an
 First stable release. Graduates from beta with 151 tools covering ~98% of the Portkey Admin API surface.
 
 ### Added
+- A local Portkey marketing and documentation site under `website/`, built from the shared CodesWhat product web shell. It is not published yet and is not part of the npm package.
 
 - **MCP Integrations** (10 tools) — Full CRUD + metadata, capabilities, workspace access management for Portkey MCP integrations
 - **MCP Servers** (10 tools) — Full CRUD + connectivity testing, capabilities, user access management for MCP servers
@@ -940,6 +962,7 @@ First stable release. Graduates from beta with 151 tools covering ~98% of the Po
 ## [0.1.0-beta.3] - 2026-03-02
 
 ### Added
+- A local Portkey marketing and documentation site under `website/`, built from the shared CodesWhat product web shell. It is not published yet and is not part of the npm package.
 
 - Initial public release with 116 tools
 - Stdio and HTTP transports
