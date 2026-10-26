@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { afterEach, describe, it } from "node:test";
 import { getServerConfig } from "../src/lib/config.js";
+import { Logger } from "../src/lib/logger.js";
 
 const ORIGINAL_ENV = { ...process.env };
 
@@ -29,17 +30,10 @@ describe("getServerConfig", () => {
 
 		const config = getServerConfig();
 		assert.equal(config.transport, "stdio");
-		assert.equal(config.sessionMode, "stateful");
-		assert.equal(config.eventStore.mode, "off");
-		assert.equal(config.eventStore.ttlSeconds, 300);
-		assert.equal(config.eventStore.commandTimeoutMs, 5_000);
-		assert.equal(config.eventStore.maxEvents, 10_000);
-		assert.equal(config.eventStore.maxBytes, 64 * 1024 * 1024);
 		assert.equal(config.protocol, "http");
 		assert.equal(config.port, 3000);
 		assert.equal(config.host, "127.0.0.1");
 		assert.equal(config.maxSessions, 100);
-		assert.equal(config.sessionTimeout, 3_600_000);
 		assert.equal(config.shutdownTimeout, 10_000);
 		assert.equal(config.tls.enabled, false);
 	});
@@ -65,77 +59,6 @@ describe("getServerConfig", () => {
 		assert.throws(() => getServerConfig(), /Invalid MCP_TRANSPORT value/);
 	});
 
-	it("throws on invalid session mode", () => {
-		process.env.MCP_SESSION_MODE = "redis";
-		assert.throws(() => getServerConfig(), /Invalid MCP_SESSION_MODE value/);
-	});
-
-	it("disables the event store by default in stateless mode", () => {
-		process.env.MCP_SESSION_MODE = "stateless";
-		const config = getServerConfig();
-		assert.equal(config.sessionMode, "stateless");
-		assert.equal(config.eventStore.mode, "off");
-	});
-
-	it("requires Redis URL when MCP_EVENT_STORE=redis", () => {
-		process.env.MCP_EVENT_STORE = "redis";
-		delete process.env.MCP_REDIS_URL;
-		delete process.env.REDIS_URL;
-		assert.throws(
-			() => getServerConfig(),
-			/MCP_EVENT_STORE=redis requires MCP_REDIS_URL/,
-		);
-	});
-
-	it("prefers MCP_REDIS_URL over REDIS_URL", () => {
-		process.env.MCP_EVENT_STORE = "redis";
-		process.env.MCP_REDIS_URL = "redis://localhost:6380";
-		process.env.REDIS_URL = "redis://localhost:6379";
-		process.env.MCP_EVENT_ENCRYPTION_KEY = Buffer.alloc(32, 7).toString(
-			"base64",
-		);
-
-		const config = getServerConfig();
-		assert.equal(config.eventStore.mode, "redis");
-		assert.equal(config.eventStore.redisUrl, "redis://localhost:6380");
-	});
-
-	it("requires rediss transport for Redis in production", () => {
-		process.env.NODE_ENV = "production";
-		process.env.MCP_EVENT_STORE = "redis";
-		process.env.MCP_REDIS_URL = "redis://cache.example.com:6379";
-		process.env.MCP_EVENT_ENCRYPTION_KEY = Buffer.alloc(32, 7).toString(
-			"base64",
-		);
-
-		assert.throws(
-			() => getServerConfig(),
-			/MCP_REDIS_URL must use rediss:\/\/ in production/,
-		);
-	});
-
-	it("requires a 32-byte encryption key for Redis event payloads", () => {
-		process.env.MCP_EVENT_STORE = "redis";
-		process.env.MCP_REDIS_URL = "redis://localhost:6379";
-		delete process.env.MCP_EVENT_ENCRYPTION_KEY;
-
-		assert.throws(
-			() => getServerConfig(),
-			/MCP_EVENT_ENCRYPTION_KEY must be base64-encoded 32-byte key/,
-		);
-
-		process.env.MCP_EVENT_ENCRYPTION_KEY = Buffer.alloc(31).toString("base64");
-		assert.throws(
-			() => getServerConfig(),
-			/MCP_EVENT_ENCRYPTION_KEY must be base64-encoded 32-byte key/,
-		);
-	});
-
-	it("throws on invalid event store mode", () => {
-		process.env.MCP_EVENT_STORE = "s3";
-		assert.throws(() => getServerConfig(), /Invalid MCP_EVENT_STORE value/);
-	});
-
 	it("throws when only one TLS path is set", () => {
 		process.env.MCP_TLS_KEY_PATH = "/tmp/key.pem";
 		delete process.env.MCP_TLS_CERT_PATH;
@@ -159,75 +82,45 @@ describe("getServerConfig", () => {
 		assert.throws(() => getServerConfig(), /Invalid MCP_MAX_SESSIONS value/);
 	});
 
-	it("allows overriding the event store command timeout", () => {
-		process.env.MCP_EVENT_STORE_COMMAND_TIMEOUT_MS = "2500";
-
-		const config = getServerConfig();
-
-		assert.equal(config.eventStore.commandTimeoutMs, 2_500);
-	});
-
-	it("allows 0 as a sentinel to disable the event store command timeout", () => {
-		process.env.MCP_EVENT_STORE_COMMAND_TIMEOUT_MS = "0";
-
-		const config = getServerConfig();
-
-		assert.equal(config.eventStore.commandTimeoutMs, 0);
-	});
-
-	it("throws on a negative event store command timeout", () => {
-		process.env.MCP_EVENT_STORE_COMMAND_TIMEOUT_MS = "-1";
-
-		assert.throws(
-			() => getServerConfig(),
-			/Invalid MCP_EVENT_STORE_COMMAND_TIMEOUT_MS value/,
-		);
-	});
-
-	it("configures positive in-memory event count and byte caps", () => {
-		process.env.MCP_EVENT_STORE_MAX_EVENTS = "25";
-		process.env.MCP_EVENT_STORE_MAX_BYTES = "4096";
-		const config = getServerConfig();
-		assert.equal(config.eventStore.maxEvents, 25);
-		assert.equal(config.eventStore.maxBytes, 4096);
-
+	it("rejects malformed active numeric settings", () => {
 		for (const [name, value] of [
-			["MCP_EVENT_STORE_MAX_EVENTS", "0"],
-			["MCP_EVENT_STORE_MAX_BYTES", "1.5"],
-		] as const) {
+			["PORT", "3000oops"],
+			["MCP_MAX_SESSIONS", "2.5"],
+		]) {
 			resetEnv();
 			process.env[name] = value;
-			assert.throws(() => getServerConfig(), new RegExp(`Invalid ${name}`));
+			assert.throws(
+				() => getServerConfig(),
+				new RegExp(`Invalid ${name} value`),
+			);
 		}
 	});
 
-	it("rejects numeric environment values with trailing characters", () => {
-		const invalidValues = [
-			["PORT", "3000oops", /Invalid PORT value/],
-			["MCP_SESSION_TIMEOUT", "1000ms", /Invalid MCP_SESSION_TIMEOUT value/],
-			["MCP_MAX_SESSIONS", "2.5", /Invalid MCP_MAX_SESSIONS value/],
-			[
-				"MCP_EVENT_TTL_SECONDS",
-				"60seconds",
-				/Invalid MCP_EVENT_TTL_SECONDS value/,
-			],
-			[
-				"MCP_EVENT_STORE_COMMAND_TIMEOUT_MS",
-				"5000ms",
-				/Invalid MCP_EVENT_STORE_COMMAND_TIMEOUT_MS value/,
-			],
-			[
-				"MCP_EVENT_STORE_MAX_EVENTS",
-				"100events",
-				/Invalid MCP_EVENT_STORE_MAX_EVENTS value/,
-			],
-		] as const;
-
-		for (const [name, value, expectedError] of invalidValues) {
-			resetEnv();
-			process.env[name] = value;
-			assert.throws(() => getServerConfig(), expectedError);
-		}
+	it("ignores retired replay/session settings and warns using names only", (t) => {
+		const names = [
+			"MCP_SESSION_MODE",
+			"MCP_SESSION_TIMEOUT",
+			"MCP_EVENT_STORE",
+			"MCP_EVENT_TTL_SECONDS",
+			"MCP_EVENT_STORE_MAX_EVENTS",
+			"MCP_EVENT_STORE_MAX_BYTES",
+			"MCP_EVENT_STORE_COMMAND_TIMEOUT_MS",
+			"MCP_EVENT_ENCRYPTION_KEY",
+			"MCP_REDIS_KEY_PREFIX",
+		];
+		const sensitive = "private-legacy-value";
+		for (const name of names) process.env[name] = sensitive;
+		const warn = t.mock.method(Logger, "warn", () => {});
+		const config = getServerConfig();
+		assert.equal("sessionMode" in config, false);
+		assert.equal("eventStore" in config, false);
+		assert.equal(config.maxSessions, 100);
+		const messages = warn.mock.calls
+			.map((call) => JSON.stringify(call.arguments))
+			.join("\n");
+		for (const name of names) assert.ok(messages.includes(name), name);
+		assert.ok(!messages.includes(sensitive));
+		assert.match(messages, /ignored/);
 	});
 
 	it("rejects a malformed shutdown timeout", () => {
@@ -239,47 +132,14 @@ describe("getServerConfig", () => {
 		);
 	});
 
-	it("validates host, integer, Redis URL, and TLS edge cases", () => {
+	it("validates host, integer and TLS edge cases", () => {
 		process.env.MCP_HOST = "   ";
 		assert.throws(() => getServerConfig(), /Invalid MCP_HOST value/);
-
-		resetEnv();
-		process.env.MCP_SESSION_TIMEOUT = "9007199254740992";
-		assert.throws(() => getServerConfig(), /Invalid MCP_SESSION_TIMEOUT value/);
-
 		resetEnv();
 		process.env.MCP_SHUTDOWN_TIMEOUT_MS = "0";
 		assert.throws(
 			() => getServerConfig(),
 			/Invalid MCP_SHUTDOWN_TIMEOUT_MS value/,
-		);
-
-		resetEnv();
-		process.env.MCP_EVENT_TTL_SECONDS = "0";
-		assert.throws(
-			() => getServerConfig(),
-			/Invalid MCP_EVENT_TTL_SECONDS value/,
-		);
-
-		for (const redisUrl of ["not a URL", "https://cache.example.com"]) {
-			resetEnv();
-			process.env.MCP_EVENT_STORE = "redis";
-			process.env.MCP_REDIS_URL = redisUrl;
-			process.env.MCP_EVENT_ENCRYPTION_KEY = Buffer.alloc(32, 7).toString(
-				"base64",
-			);
-			assert.throws(() => getServerConfig(), /MCP_REDIS_URL must/);
-		}
-
-		resetEnv();
-		process.env.MCP_EVENT_STORE = "redis";
-		process.env.MCP_REDIS_URL = "redis://localhost:6379";
-		process.env.MCP_EVENT_ENCRYPTION_KEY = Buffer.alloc(32, 7)
-			.toString("base64")
-			.replace(/=+$/, "");
-		assert.throws(
-			() => getServerConfig(),
-			/MCP_EVENT_ENCRYPTION_KEY must be base64-encoded 32-byte key/,
 		);
 
 		resetEnv();

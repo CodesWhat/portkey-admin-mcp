@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { CurrentPageSchema, PageSizeSchema } from "../lib/schemas.js";
 import type { PortkeyService } from "../services/index.js";
@@ -380,16 +380,19 @@ export function registerWorkspacesTools(
 	server: McpServer,
 	service: PortkeyService,
 ): void {
-	server.tool(
+	server.registerTool(
 		"list_scim_workspace_mappings",
-		"List identity-provider SCIM group mappings that automatically grant Portkey workspace roles. Use it to audit provisioned access or obtain mapping_id before delete_scim_workspace_mapping; filter by workspace, group, or role and page through large directories. This reads mappings only and does not query individual workspace members.",
-		WORKSPACES_TOOL_SCHEMAS.listScimWorkspaceMappings,
 		{
-			title: "List SCIM Workspace Mappings",
-			readOnlyHint: true,
-			destructiveHint: false,
-			idempotentHint: true,
-			openWorldHint: true,
+			description:
+				"List identity-provider SCIM group mappings that automatically grant Portkey workspace roles. Use it to audit provisioned access or obtain mapping_id before delete_scim_workspace_mapping; filter by workspace, group, or role and page through large directories. This reads mappings only and does not query individual workspace members.",
+			inputSchema: WORKSPACES_TOOL_SCHEMAS.listScimWorkspaceMappings,
+			annotations: {
+				title: "List SCIM Workspace Mappings",
+				readOnlyHint: true,
+				destructiveHint: false,
+				idempotentHint: true,
+				openWorldHint: true,
+			},
 		},
 		async (params) =>
 			jsonResult(await service.workspaces.listScimWorkspaceMappings(params)),
@@ -435,16 +438,19 @@ export function registerWorkspacesTools(
 		},
 	);
 
-	server.tool(
+	server.registerTool(
 		"delete_scim_workspace_mapping",
-		"Delete a SCIM group-to-workspace mapping by mapping_id and stop future group updates from affecting that workspace. Existing provisioned members remain in the workspace and must be managed separately. Inspect list_scim_workspace_mappings first; this does not delete the identity-provider group or the Portkey workspace.",
-		WORKSPACES_TOOL_SCHEMAS.deleteScimWorkspaceMapping,
 		{
-			title: "Delete SCIM Workspace Mapping",
-			readOnlyHint: false,
-			destructiveHint: true,
-			idempotentHint: true,
-			openWorldHint: true,
+			description:
+				"Delete a SCIM group-to-workspace mapping by mapping_id and stop future group updates from affecting that workspace. Existing provisioned members remain in the workspace and must be managed separately. Inspect list_scim_workspace_mappings first; this does not delete the identity-provider group or the Portkey workspace.",
+			inputSchema: WORKSPACES_TOOL_SCHEMAS.deleteScimWorkspaceMapping,
+			annotations: {
+				title: "Delete SCIM Workspace Mapping",
+				readOnlyHint: false,
+				destructiveHint: true,
+				idempotentHint: true,
+				openWorldHint: true,
+			},
 		},
 		async (params) => {
 			const result = await service.workspaces.deleteScimWorkspaceMapping(
@@ -457,26 +463,32 @@ export function registerWorkspacesTools(
 		},
 	);
 
-	server.tool(
+	server.registerTool(
 		"list_scim_groups",
-		"Search and page through identity-provider groups synchronized to Portkey over SCIM. Use this to resolve a group ID or exact display name before create_scim_workspace_mapping; it reads directory groups only and does not show their workspace mappings or individual members.",
-		WORKSPACES_TOOL_SCHEMAS.listScimGroups,
 		{
-			title: "List SCIM Groups",
-			readOnlyHint: true,
-			destructiveHint: false,
-			idempotentHint: true,
-			openWorldHint: true,
+			description:
+				"Search and page through identity-provider groups synchronized to Portkey over SCIM. Use this to resolve a group ID or exact display name before create_scim_workspace_mapping; it reads directory groups only and does not show their workspace mappings or individual members.",
+			inputSchema: WORKSPACES_TOOL_SCHEMAS.listScimGroups,
+			annotations: {
+				title: "List SCIM Groups",
+				readOnlyHint: true,
+				destructiveHint: false,
+				idempotentHint: true,
+				openWorldHint: true,
+			},
 		},
 		async (params) =>
 			jsonResult(await service.workspaces.listScimGroups(params)),
 	);
 
 	// List workspaces tool
-	server.tool(
+	server.registerTool(
 		"list_workspaces",
-		"List workspaces with id, name, slug, default settings, and timestamps. Use this to find a workspace_id before get_workspace, update_workspace, add_workspace_member, or remove_workspace_member.",
-		WORKSPACES_TOOL_SCHEMAS.listWorkspaces,
+		{
+			description:
+				"List workspaces with id, name, slug, default settings, and timestamps. Use this to find a workspace_id before get_workspace, update_workspace, add_workspace_member, or remove_workspace_member.",
+			inputSchema: WORKSPACES_TOOL_SCHEMAS.listWorkspaces,
+		},
 		async (params) => {
 			const workspaces = await service.workspaces.listWorkspaces(params);
 			return jsonResult({
@@ -487,10 +499,13 @@ export function registerWorkspacesTools(
 	);
 
 	// Get single workspace tool
-	server.tool(
+	server.registerTool(
 		"get_workspace",
-		"Get one workspace by id and return its full details, including defaults and the complete member list. Use this when you need membership detail; use list_workspaces for an overview.",
-		WORKSPACES_TOOL_SCHEMAS.getWorkspace,
+		{
+			description:
+				"Get one workspace by id and return its full details, including defaults and the complete member list. Use this when you need membership detail; use list_workspaces for an overview.",
+			inputSchema: WORKSPACES_TOOL_SCHEMAS.getWorkspace,
+		},
 		async (params) => {
 			const workspace = await service.workspaces.getWorkspace(
 				params.workspace_id,
@@ -500,10 +515,13 @@ export function registerWorkspacesTools(
 	);
 
 	// Phase 1: Create workspace tool
-	server.tool(
+	server.registerTool(
 		"create_workspace",
-		"Create a workspace to isolate resources, API keys, and team members. If slug is omitted it is auto-generated from the name; returns the new workspace id, name, and slug.",
-		WORKSPACES_TOOL_SCHEMAS.createWorkspace,
+		{
+			description:
+				"Create a workspace to isolate resources, API keys, and team members. If slug is omitted it is auto-generated from the name; returns the new workspace id, name, and slug.",
+			inputSchema: WORKSPACES_TOOL_SCHEMAS.createWorkspace,
+		},
 		async (params) => {
 			const workspace = await service.workspaces.createWorkspace({
 				name: params.name,
@@ -532,10 +550,13 @@ export function registerWorkspacesTools(
 	);
 
 	// Phase 1: Update workspace tool
-	server.tool(
+	server.registerTool(
 		"update_workspace",
-		"Update a workspace's name, slug, description, default flag, or metadata by id, unlike update_workspace_member which changes role assignments within a workspace. Only provided fields change and updates take effect immediately; changing the slug can break URLs, API key references, and other external links, so confirm no dependencies first.",
-		WORKSPACES_TOOL_SCHEMAS.updateWorkspace,
+		{
+			description:
+				"Update a workspace's name, slug, description, default flag, or metadata by id, unlike update_workspace_member which changes role assignments within a workspace. Only provided fields change and updates take effect immediately; changing the slug can break URLs, API key references, and other external links, so confirm no dependencies first.",
+			inputSchema: WORKSPACES_TOOL_SCHEMAS.updateWorkspace,
+		},
 		async (params) => {
 			const {
 				workspace_id,
@@ -570,10 +591,13 @@ export function registerWorkspacesTools(
 	);
 
 	// Phase 1: Delete workspace tool
-	server.tool(
+	server.registerTool(
 		"delete_workspace",
-		"Delete a workspace by id. This is permanent and removes the workspace, its members, configs, API keys, and resources.",
-		WORKSPACES_TOOL_SCHEMAS.deleteWorkspace,
+		{
+			description:
+				"Delete a workspace by id. This is permanent and removes the workspace, its members, configs, API keys, and resources.",
+			inputSchema: WORKSPACES_TOOL_SCHEMAS.deleteWorkspace,
+		},
 		async (params) => {
 			await service.workspaces.deleteWorkspace(params.workspace_id);
 			return jsonResult({
@@ -584,10 +608,13 @@ export function registerWorkspacesTools(
 	);
 
 	// Phase 1: Add workspace member tool
-	server.tool(
+	server.registerTool(
 		"add_workspace_member",
-		"Add an existing org user to a workspace with a role. Requires a UUID user_id; use list_all_users to find it, and invite_user first if the person is not yet in the org.",
-		WORKSPACES_TOOL_SCHEMAS.addWorkspaceMember,
+		{
+			description:
+				"Add an existing org user to a workspace with a role. Requires a UUID user_id; use list_all_users to find it, and invite_user first if the person is not yet in the org.",
+			inputSchema: WORKSPACES_TOOL_SCHEMAS.addWorkspaceMember,
+		},
 		async (params) => {
 			const result = await service.workspaces.addWorkspaceMember(
 				params.workspace_id,
@@ -607,10 +634,13 @@ export function registerWorkspacesTools(
 	);
 
 	// Phase 1: List workspace members tool
-	server.tool(
+	server.registerTool(
 		"list_workspace_members",
-		"List every member in a workspace with organization role, workspace role, status, and timestamps. Use this to find a user_id before get_workspace_member, update_workspace_member, or remove_workspace_member.",
-		WORKSPACES_TOOL_SCHEMAS.listWorkspaceMembers,
+		{
+			description:
+				"List every member in a workspace with organization role, workspace role, status, and timestamps. Use this to find a user_id before get_workspace_member, update_workspace_member, or remove_workspace_member.",
+			inputSchema: WORKSPACES_TOOL_SCHEMAS.listWorkspaceMembers,
+		},
 		async (params) => {
 			const { workspace_id, ...filters } = params;
 			const members = await service.workspaces.listWorkspaceMembers(
@@ -625,10 +655,13 @@ export function registerWorkspacesTools(
 	);
 
 	// Phase 1: Get workspace member tool
-	server.tool(
+	server.registerTool(
 		"get_workspace_member",
-		"Get one workspace member by workspace_id and user_id. Use this when you already know both IDs; use list_workspace_members to browse the full roster.",
-		WORKSPACES_TOOL_SCHEMAS.getWorkspaceMember,
+		{
+			description:
+				"Get one workspace member by workspace_id and user_id. Use this when you already know both IDs; use list_workspace_members to browse the full roster.",
+			inputSchema: WORKSPACES_TOOL_SCHEMAS.getWorkspaceMember,
+		},
 		async (params) => {
 			const member = await service.workspaces.getWorkspaceMember(
 				params.workspace_id,
@@ -639,10 +672,13 @@ export function registerWorkspacesTools(
 	);
 
 	// Phase 1: Update workspace member tool
-	server.tool(
+	server.registerTool(
 		"update_workspace_member",
-		"Update a workspace member's role by workspace_id and user_id. Only the role changes here; use list_workspace_members or get_workspace_member to confirm the current assignment first.",
-		WORKSPACES_TOOL_SCHEMAS.updateWorkspaceMember,
+		{
+			description:
+				"Update a workspace member's role by workspace_id and user_id. Only the role changes here; use list_workspace_members or get_workspace_member to confirm the current assignment first.",
+			inputSchema: WORKSPACES_TOOL_SCHEMAS.updateWorkspaceMember,
+		},
 		async (params) => {
 			const member = await service.workspaces.updateWorkspaceMember(
 				params.workspace_id,
@@ -659,10 +695,13 @@ export function registerWorkspacesTools(
 	);
 
 	// Phase 1: Remove workspace member tool
-	server.tool(
+	server.registerTool(
 		"remove_workspace_member",
-		"Remove a user from a workspace and revoke workspace access. This does not delete the user from the organization; use delete_user for full removal.",
-		WORKSPACES_TOOL_SCHEMAS.removeWorkspaceMember,
+		{
+			description:
+				"Remove a user from a workspace and revoke workspace access. This does not delete the user from the organization; use delete_user for full removal.",
+			inputSchema: WORKSPACES_TOOL_SCHEMAS.removeWorkspaceMember,
+		},
 		async (params) => {
 			await service.workspaces.removeWorkspaceMember(
 				params.workspace_id,

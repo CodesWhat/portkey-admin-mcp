@@ -18,6 +18,7 @@
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { z } from "zod";
 import { registerAnalyticsTools } from "../src/tools/analytics.tools.js";
 import { registerToolCallbacks } from "./helpers/tool-registry.js";
 
@@ -25,6 +26,90 @@ const TIME_RANGE = {
 	time_of_generation_min: "2024-01-01T00:00:00Z",
 	time_of_generation_max: "2024-02-01T00:00:00Z",
 };
+
+describe("organisation analytics scope", () => {
+	it("accepts organisation scope for summary/provider tools and still requires a scope", async () => {
+		const captured: unknown[] = [];
+		const callbacks = registerToolCallbacks((server) => {
+			registerAnalyticsTools(
+				server as never,
+				{
+					analytics: {
+						getCacheSummary: async (params: unknown) => {
+							captured.push(params);
+							return { summary: {} };
+						},
+						getAnalyticsGroupProviders: async (params: unknown) => {
+							captured.push(params);
+							return { data: [] };
+						},
+					},
+				} as never,
+			);
+		});
+		for (const name of ["get_cache_summary", "get_analytics_group_providers"]) {
+			const callback = callbacks.get(name);
+			assert.ok(callback);
+			await assert.rejects(
+				callback(TIME_RANGE),
+				/workspace_slug.*include_all_workspaces.*exclude_workspace_slugs/,
+			);
+			await callback({ ...TIME_RANGE, include_all_workspaces: true });
+			await callback({
+				...TIME_RANGE,
+				include_all_workspaces: false,
+				exclude_workspace_slugs: "ws-old,ws-test",
+			});
+		}
+		assert.equal(captured.length, 4);
+		for (const params of captured as Array<Record<string, unknown>>) {
+			assert.equal(typeof params.include_all_workspaces, "boolean");
+		}
+	});
+
+	it("exposes strict workspace scope filters on every analytics tool", () => {
+		const schemas = new Map<string, z.ZodRawShape>();
+		registerAnalyticsTools(
+			{
+				registerTool(name: string, config: { inputSchema: z.ZodRawShape }) {
+					schemas.set(name, config.inputSchema);
+				},
+			} as never,
+			{} as never,
+		);
+		assert.equal(schemas.size, 25);
+		for (const [name, shape] of schemas) {
+			assert.ok(shape.include_all_workspaces, name);
+			assert.ok(shape.exclude_workspace_slugs, name);
+			assert.equal(
+				z.safeParse(shape.include_all_workspaces, true).success,
+				true,
+			);
+			assert.equal(
+				z.safeParse(shape.include_all_workspaces, false).success,
+				true,
+			);
+			assert.equal(
+				z.safeParse(shape.include_all_workspaces, "false").success,
+				false,
+			);
+			assert.equal(
+				z.safeParse(shape.exclude_workspace_slugs, "ws-old,ws-test").success,
+				true,
+			);
+		}
+		for (const name of ["get_cache_summary", "get_analytics_group_providers"]) {
+			const shape = schemas.get(name);
+			assert.ok(shape);
+			assert.equal(
+				z
+					.object(shape)
+					.safeParse({ ...TIME_RANGE, include_all_workspaces: true }).success,
+				true,
+			);
+		}
+	});
+});
 
 describe("current summary and provider analytics", () => {
 	it("normalizes provider columns and total selection without stripping metrics", async () => {

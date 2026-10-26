@@ -5,10 +5,9 @@ clients and Portkey's Admin API. It exposes the same tool catalog over local
 stdio and an optional HTTP transport while keeping API access, validation, and
 transport policy in separate layers.
 
-This describes the current 0.14.0 implementation. Session and replay stores
-remain active; the planned MCP v2 migration has no assigned package version.
-See [compatibility and deprecations](../COMPATIBILITY.md) for the protocol and
-configuration lifecycle boundaries.
+This describes the unreleased SDK v2 candidate. Published 0.14.x retains its
+session/replay implementation; use the architecture document from that release.
+See [compatibility and recovery](../COMPATIBILITY.md) before upgrading.
 
 ## Component map
 
@@ -19,13 +18,13 @@ configuration lifecycle boundaries.
 | Tool adapters | `src/tools/*.tools.ts` | Define MCP schemas and annotations, validate tool input, call a domain service, and curate the MCP result. |
 | Service clients | `src/services/*.service.ts` | Map typed domain operations to Portkey Admin API paths and response contracts. |
 | HTTP client base | `src/services/base.service.ts` | Validate the upstream URL, attach the Portkey API key, apply timeouts, encode requests, and normalize upstream errors. |
-| HTTP runtime | `src/lib/http-app.ts` | Host Streamable HTTP MCP sessions plus health and authorization metadata endpoints. |
-| Security and state | `src/lib/auth.ts`, `security.ts`, `session-store.ts`, `event-store.ts`, `limits.ts` | Enforce authentication, origin and network policy, request limits, session ownership, replay protection, and optional Redis-backed event state. |
+| HTTP runtime | `src/lib/http-app.ts` | Host per-request modern and legacy Streamable HTTP MCP plus health and authorization metadata endpoints. |
+| Security and state | `src/lib/auth.ts`, `security.ts`, `limits.ts` | Enforce authentication, origin and network policy, request limits, concurrency bounds, and optional shared Redis rate limiting. |
 | Contracts | `src/schemas/contracts/` | Validate the current Portkey response shapes used by contract tests. |
 
 ## Request flow
 
-1. An MCP client connects through `StdioServerTransport` or the HTTP runtime.
+1. An MCP client connects through dual-era `serveStdio` or `createMcpHandler` via the Node HTTP adapter.
 2. `createMcpServer()` registers all 22 tool domains, or the subset allowed by
    `PORTKEY_TOOL_DOMAINS`.
 3. The MCP SDK enforces a 10,000-element budget across nested array elements and
@@ -39,7 +38,7 @@ configuration lifecycle boundaries.
    Admin API response.
 
 The Portkey API key is used only by the service layer. Tool results, logs, MCP
-session identifiers, and service-cache identifiers do not expose the raw key.
+request metadata, and service-cache identifiers do not expose the raw key.
 
 ## Transport boundaries
 
@@ -49,9 +48,9 @@ separate policy boundary:
 
 - bearer-token or Clerk JWT authentication;
 - allowed-origin, host, and public-base-URL validation;
-- body-size, request-rate, and active-session limits;
-- stateful sessions with principal ownership, or fresh stateless servers;
-- optional encrypted Redis event storage for resumable delivery; and
+- body-size, request-rate, and active-request limits;
+- a fresh MCP server for each modern or legacy HTTP request;
+- shared Redis rate limiting without persisted MCP responses; and
 - readiness and graceful-shutdown handling.
 
 HTTP authentication is a server access gate, not Portkey tenant
@@ -71,9 +70,14 @@ public catalog origin and omit the tenant API key.
   matching tool module.
 - Register a new domain in `src/tools/index.ts` and expose its client through
   `src/services/index.ts`.
-- Put cross-cutting transport, authentication, session, or event behavior in
+- Put cross-cutting transport, authentication or request-lifecycle behavior in
   `src/lib/`, not in individual tools.
 
 `tests/contract*.test.ts` protect API shapes, the tool suites exercise MCP
 callbacks, the service and library suites cover the internal boundaries, and
 `tests/mcp-e2e.test.ts` verifies the built server through MCP.
+
+Static catalog and discovery results use a private 60-second cache hint on the
+modern wire. Change-notification capabilities are disabled because no events are
+emitted. GET replay and DELETE session operations return 405 after the same
+authentication and Origin checks as POST.

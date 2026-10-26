@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { CurrentPageSchema, PageSizeSchema } from "../lib/schemas.js";
 import type { PortkeyService } from "../services/index.js";
@@ -218,39 +218,48 @@ export function registerGuardrailsTools(
 	server: McpServer,
 	service: PortkeyService,
 ): void {
-	server.tool(
+	server.registerTool(
 		"get_organisation_defaults",
-		"Get the organisation-wide input and output guardrails that workspaces inherit by default. Use this before update_organisation_defaults or when auditing baseline enforcement; it does not include per-workspace exclusions, which are available from the directional exclusion list tools. Requires an organisation service API key with organisation_settings.read scope.",
-		GUARDRAILS_TOOL_SCHEMAS.getOrganisationDefaults,
-		GET_ORGANISATION_DEFAULTS_ANNOTATIONS,
+		{
+			description:
+				"Get the organisation-wide input and output guardrails that workspaces inherit by default. Use this before update_organisation_defaults or when auditing baseline enforcement; it does not include per-workspace exclusions, which are available from the directional exclusion list tools. Requires an organisation service API key with organisation_settings.read scope.",
+			inputSchema: GUARDRAILS_TOOL_SCHEMAS.getOrganisationDefaults,
+			annotations: GET_ORGANISATION_DEFAULTS_ANNOTATIONS,
+		},
 		async () => jsonResult(await service.guardrails.getOrganisationDefaults()),
 	);
 
-	server.tool(
+	server.registerTool(
 		"update_organisation_defaults",
-		"Replace the organisation-wide default input and/or output guardrail lists inherited by workspaces. Only supplied directions change, but enforcement updates immediately across non-excluded workspaces; inspect get_organisation_defaults and the directional workspace exclusions first. Repeating the same lists is safe. Requires an organisation service API key with organisation_settings.update scope.",
-		GUARDRAILS_TOOL_SCHEMAS.updateOrganisationDefaults,
 		{
-			title: "Update Organisation Guardrail Defaults",
-			readOnlyHint: false,
-			destructiveHint: false,
-			idempotentHint: true,
-			openWorldHint: true,
+			description:
+				"Replace the organisation-wide default input and/or output guardrail lists inherited by workspaces. Only supplied directions change, but enforcement updates immediately across non-excluded workspaces; inspect get_organisation_defaults and the directional workspace exclusions first. Repeating the same lists is safe. Requires an organisation service API key with organisation_settings.update scope.",
+			inputSchema: GUARDRAILS_TOOL_SCHEMAS.updateOrganisationDefaults,
+			annotations: {
+				title: "Update Organisation Guardrail Defaults",
+				readOnlyHint: false,
+				destructiveHint: false,
+				idempotentHint: true,
+				openWorldHint: true,
+			},
 		},
 		async (params) =>
 			jsonResult(await service.guardrails.updateOrganisationDefaults(params)),
 	);
 
-	server.tool(
+	server.registerTool(
 		"list_input_guardrail_workspace_exclusions",
-		"List workspaces excluded from organisation-wide input guardrails for one organisation. Use this to audit exceptions or establish the current state before the matching update tool; it reads input exclusions only and does not return the organisation's default guardrail list. Requires an organisation service API key with organisation_exclusions.list scope.",
-		GUARDRAILS_TOOL_SCHEMAS.listWorkspaceExclusions,
 		{
-			title: "List Input Guardrail Workspace Exclusions",
-			readOnlyHint: true,
-			destructiveHint: false,
-			idempotentHint: true,
-			openWorldHint: true,
+			description:
+				"List workspaces excluded from organisation-wide input guardrails for one organisation. Use this to audit exceptions or establish the current state before the matching update tool; it reads input exclusions only and does not return the organisation's default guardrail list. Requires an organisation service API key with organisation_exclusions.list scope.",
+			inputSchema: GUARDRAILS_TOOL_SCHEMAS.listWorkspaceExclusions,
+			annotations: {
+				title: "List Input Guardrail Workspace Exclusions",
+				readOnlyHint: true,
+				destructiveHint: false,
+				idempotentHint: true,
+				openWorldHint: true,
+			},
 		},
 		async (params) =>
 			jsonResult(
@@ -258,16 +267,19 @@ export function registerGuardrailsTools(
 			),
 	);
 
-	server.tool(
+	server.registerTool(
 		"update_input_guardrail_workspace_exclusions",
-		"Set workspace exclusions from organisation-wide input guardrails. Each entry excludes or restores one workspace; override_existing replaces prior states while the default merge behavior preserves unmentioned workspaces. Review the matching list tool first because enforcement changes immediately. Repeating the same states is safe. Requires an organisation service API key with organisation_exclusions.update scope.",
-		GUARDRAILS_TOOL_SCHEMAS.updateWorkspaceExclusions,
 		{
-			title: "Update Input Guardrail Workspace Exclusions",
-			readOnlyHint: false,
-			destructiveHint: true,
-			idempotentHint: true,
-			openWorldHint: true,
+			description:
+				"Set workspace exclusions from organisation-wide input guardrails. Each entry excludes or restores one workspace; override_existing replaces prior states while the default merge behavior preserves unmentioned workspaces. Review the matching list tool first because enforcement changes immediately. Repeating the same states is safe. Requires an organisation service API key with organisation_exclusions.update scope.",
+			inputSchema: GUARDRAILS_TOOL_SCHEMAS.updateWorkspaceExclusions,
+			annotations: {
+				title: "Update Input Guardrail Workspace Exclusions",
+				readOnlyHint: false,
+				destructiveHint: true,
+				idempotentHint: true,
+				openWorldHint: true,
+			},
 		},
 		async (params) =>
 			jsonResult(
@@ -275,16 +287,19 @@ export function registerGuardrailsTools(
 			),
 	);
 
-	server.tool(
+	server.registerTool(
 		"list_output_guardrail_workspace_exclusions",
-		"List workspaces excluded from organisation-wide output guardrails for one organisation. Use this to audit exceptions or establish the current state before the matching update tool; it reads output exclusions only and does not return the organisation's default guardrail list. Requires an organisation service API key with organisation_exclusions.list scope.",
-		GUARDRAILS_TOOL_SCHEMAS.listWorkspaceExclusions,
 		{
-			title: "List Output Guardrail Workspace Exclusions",
-			readOnlyHint: true,
-			destructiveHint: false,
-			idempotentHint: true,
-			openWorldHint: true,
+			description:
+				"List workspaces excluded from organisation-wide output guardrails for one organisation. Use this to audit exceptions or establish the current state before the matching update tool; it reads output exclusions only and does not return the organisation's default guardrail list. Requires an organisation service API key with organisation_exclusions.list scope.",
+			inputSchema: GUARDRAILS_TOOL_SCHEMAS.listWorkspaceExclusions,
+			annotations: {
+				title: "List Output Guardrail Workspace Exclusions",
+				readOnlyHint: true,
+				destructiveHint: false,
+				idempotentHint: true,
+				openWorldHint: true,
+			},
 		},
 		async (params) =>
 			jsonResult(
@@ -292,16 +307,19 @@ export function registerGuardrailsTools(
 			),
 	);
 
-	server.tool(
+	server.registerTool(
 		"update_output_guardrail_workspace_exclusions",
-		"Set workspace exclusions from organisation-wide output guardrails. Each entry excludes or restores one workspace; override_existing replaces prior states while the default merge behavior preserves unmentioned workspaces. Review the matching list tool first because enforcement changes immediately. Repeating the same states is safe. Requires an organisation service API key with organisation_exclusions.update scope.",
-		GUARDRAILS_TOOL_SCHEMAS.updateWorkspaceExclusions,
 		{
-			title: "Update Output Guardrail Workspace Exclusions",
-			readOnlyHint: false,
-			destructiveHint: true,
-			idempotentHint: true,
-			openWorldHint: true,
+			description:
+				"Set workspace exclusions from organisation-wide output guardrails. Each entry excludes or restores one workspace; override_existing replaces prior states while the default merge behavior preserves unmentioned workspaces. Review the matching list tool first because enforcement changes immediately. Repeating the same states is safe. Requires an organisation service API key with organisation_exclusions.update scope.",
+			inputSchema: GUARDRAILS_TOOL_SCHEMAS.updateWorkspaceExclusions,
+			annotations: {
+				title: "Update Output Guardrail Workspace Exclusions",
+				readOnlyHint: false,
+				destructiveHint: true,
+				idempotentHint: true,
+				openWorldHint: true,
+			},
 		},
 		async (params) =>
 			jsonResult(
@@ -310,10 +328,13 @@ export function registerGuardrailsTools(
 	);
 
 	// List guardrails tool
-	server.tool(
+	server.registerTool(
 		"list_guardrails",
-		"List guardrails in the org with id, slug, status, ownership, and optional workspace/org filters. Use this to find IDs and slugs before get_guardrail, update_guardrail, or delete_guardrail.",
-		GUARDRAILS_TOOL_SCHEMAS.listGuardrails,
+		{
+			description:
+				"List guardrails in the org with id, slug, status, ownership, and optional workspace/org filters. Use this to find IDs and slugs before get_guardrail, update_guardrail, or delete_guardrail.",
+			inputSchema: GUARDRAILS_TOOL_SCHEMAS.listGuardrails,
+		},
 		async (params) => {
 			const result = await service.guardrails.listGuardrails(params);
 			return jsonResult({
@@ -336,10 +357,13 @@ export function registerGuardrailsTools(
 	);
 
 	// Get guardrail tool
-	server.tool(
+	server.registerTool(
 		"get_guardrail",
-		"Fetch one guardrail by id or slug with its full checks and actions; use list_guardrails to discover ids first. Use before update_guardrail or delete_guardrail when you need the exact enforcement policy, and returns the full check and action configuration alongside status and ownership.",
-		GUARDRAILS_TOOL_SCHEMAS.getGuardrail,
+		{
+			description:
+				"Fetch one guardrail by id or slug with its full checks and actions; use list_guardrails to discover ids first. Use before update_guardrail or delete_guardrail when you need the exact enforcement policy, and returns the full check and action configuration alongside status and ownership.",
+			inputSchema: GUARDRAILS_TOOL_SCHEMAS.getGuardrail,
+		},
 		async (params) => {
 			const guardrail = await service.guardrails.getGuardrail(
 				params.guardrail_id,
@@ -364,10 +388,13 @@ export function registerGuardrailsTools(
 	);
 
 	// Create guardrail tool
-	server.tool(
+	server.registerTool(
 		"create_guardrail",
-		"Create an LLM or MCP-tool guardrail. LLM guardrails require checks and actions; MCP-tool guardrails can be created first and mapped to servers afterward. The new version becomes the policy anchor for downstream use.",
-		GUARDRAILS_TOOL_SCHEMAS.createGuardrail,
+		{
+			description:
+				"Create an LLM or MCP-tool guardrail. LLM guardrails require checks and actions; MCP-tool guardrails can be created first and mapped to servers afterward. The new version becomes the policy anchor for downstream use.",
+			inputSchema: GUARDRAILS_TOOL_SCHEMAS.createGuardrail,
+		},
 		async (rawParams) => {
 			const params = createGuardrailSchema.parse(rawParams);
 			const result = await service.guardrails.createGuardrail({
@@ -387,16 +414,19 @@ export function registerGuardrailsTools(
 		},
 	);
 
-	server.tool(
+	server.registerTool(
 		"list_guardrail_mcp_servers",
-		"List every MCP-server mapping for one guardrail, including the input/output phases and mapped capability IDs. Requires a guardrail with target mcp_tools. Use this before replace_guardrail_mcp_servers because replacement removes every mapping omitted from its request.",
-		GUARDRAILS_TOOL_SCHEMAS.listGuardrailMcpServerMappings,
 		{
-			title: "List Guardrail MCP Servers",
-			readOnlyHint: true,
-			destructiveHint: false,
-			idempotentHint: true,
-			openWorldHint: true,
+			description:
+				"List every MCP-server mapping for one guardrail, including the input/output phases and mapped capability IDs. Requires a guardrail with target mcp_tools. Use this before replace_guardrail_mcp_servers because replacement removes every mapping omitted from its request.",
+			inputSchema: GUARDRAILS_TOOL_SCHEMAS.listGuardrailMcpServerMappings,
+			annotations: {
+				title: "List Guardrail MCP Servers",
+				readOnlyHint: true,
+				destructiveHint: false,
+				idempotentHint: true,
+				openWorldHint: true,
+			},
 		},
 		async ({ guardrail_id }) =>
 			jsonResult({
@@ -405,16 +435,19 @@ export function registerGuardrailsTools(
 			}),
 	);
 
-	server.tool(
+	server.registerTool(
 		"replace_guardrail_mcp_servers",
-		"Replace the complete MCP-server mapping set for one guardrail. Requires a guardrail with target mcp_tools. Any existing server omitted from mcp_servers is removed, and an empty object clears all mappings. Read list_guardrail_mcp_servers first. Repeating the same complete map is safe.",
-		GUARDRAILS_TOOL_SCHEMAS.replaceGuardrailMcpServerMappings,
 		{
-			title: "Replace Guardrail MCP Servers",
-			readOnlyHint: false,
-			destructiveHint: true,
-			idempotentHint: true,
-			openWorldHint: true,
+			description:
+				"Replace the complete MCP-server mapping set for one guardrail. Requires a guardrail with target mcp_tools. Any existing server omitted from mcp_servers is removed, and an empty object clears all mappings. Read list_guardrail_mcp_servers first. Repeating the same complete map is safe.",
+			inputSchema: GUARDRAILS_TOOL_SCHEMAS.replaceGuardrailMcpServerMappings,
+			annotations: {
+				title: "Replace Guardrail MCP Servers",
+				readOnlyHint: false,
+				destructiveHint: true,
+				idempotentHint: true,
+				openWorldHint: true,
+			},
 		},
 		async (rawParams) => {
 			const { guardrail_id, ...data } =
@@ -428,16 +461,19 @@ export function registerGuardrailsTools(
 		},
 	);
 
-	server.tool(
+	server.registerTool(
 		"upsert_guardrail_mcp_server",
-		"Create or replace one guardrail mapping for one MCP server without changing mappings for other servers. Requires a guardrail with target mcp_tools. run_on defaults to both input and output. Use list_guardrail_mcp_servers to inspect the current mapping set first. Repeating the same mapping is safe.",
-		GUARDRAILS_TOOL_SCHEMAS.upsertGuardrailMcpServerMapping,
 		{
-			title: "Upsert Guardrail MCP Server",
-			readOnlyHint: false,
-			destructiveHint: true,
-			idempotentHint: true,
-			openWorldHint: true,
+			description:
+				"Create or replace one guardrail mapping for one MCP server without changing mappings for other servers. Requires a guardrail with target mcp_tools. run_on defaults to both input and output. Use list_guardrail_mcp_servers to inspect the current mapping set first. Repeating the same mapping is safe.",
+			inputSchema: GUARDRAILS_TOOL_SCHEMAS.upsertGuardrailMcpServerMapping,
+			annotations: {
+				title: "Upsert Guardrail MCP Server",
+				readOnlyHint: false,
+				destructiveHint: true,
+				idempotentHint: true,
+				openWorldHint: true,
+			},
 		},
 		async (rawParams) => {
 			const { guardrail_id, mcp_server_id, ...data } =
@@ -453,10 +489,13 @@ export function registerGuardrailsTools(
 	);
 
 	// Update guardrail tool
-	server.tool(
+	server.registerTool(
 		"update_guardrail",
-		"Update a guardrail's name, checks, or actions, unlike create_guardrail which registers a new one or delete_guardrail which removes it. This creates a new version that takes effect immediately for dependent configs, so review list_guardrails first; returns the updated id, slug, and version_id.",
-		GUARDRAILS_TOOL_SCHEMAS.updateGuardrail,
+		{
+			description:
+				"Update a guardrail's name, checks, or actions, unlike create_guardrail which registers a new one or delete_guardrail which removes it. This creates a new version that takes effect immediately for dependent configs, so review list_guardrails first; returns the updated id, slug, and version_id.",
+			inputSchema: GUARDRAILS_TOOL_SCHEMAS.updateGuardrail,
+		},
 		async (params) => {
 			const updateData: {
 				name?: string;
@@ -488,10 +527,13 @@ export function registerGuardrailsTools(
 	);
 
 	// Delete guardrail tool
-	server.tool(
+	server.registerTool(
 		"delete_guardrail",
-		"Delete a guardrail by id or slug. This is irreversible and removes the check from any configs that reference it, so review dependent configs first.",
-		GUARDRAILS_TOOL_SCHEMAS.deleteGuardrail,
+		{
+			description:
+				"Delete a guardrail by id or slug. This is irreversible and removes the check from any configs that reference it, so review dependent configs first.",
+			inputSchema: GUARDRAILS_TOOL_SCHEMAS.deleteGuardrail,
+		},
 		async (params) => {
 			const result = await service.guardrails.deleteGuardrail(
 				params.guardrail_id,

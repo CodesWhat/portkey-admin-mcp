@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import type { PortkeyService } from "../services/index.js";
 import type { LogExportField } from "../services/logging.service.js";
@@ -233,16 +233,19 @@ export function registerLoggingTools(
 		},
 	);
 
-	server.tool(
+	server.registerTool(
 		"get_log_export_field_restrictions",
-		"Get the organisation-managed fields that a workspace is restricted from including in log exports. Use before create_log_export or update_log_export to avoid requesting disallowed fields. Requires an API key with logs.export scope; completion-log fields may additionally require completion scope.",
-		LOGGING_TOOL_SCHEMAS.getLogExportFieldRestrictions,
 		{
-			title: "Get Log Export Field Restrictions",
-			readOnlyHint: true,
-			destructiveHint: false,
-			idempotentHint: true,
-			openWorldHint: true,
+			description:
+				"Get the organisation-managed fields that a workspace is restricted from including in log exports. Use before create_log_export or update_log_export to avoid requesting disallowed fields. Requires an API key with logs.export scope; completion-log fields may additionally require completion scope.",
+			inputSchema: LOGGING_TOOL_SCHEMAS.getLogExportFieldRestrictions,
+			annotations: {
+				title: "Get Log Export Field Restrictions",
+				readOnlyHint: true,
+				destructiveHint: false,
+				idempotentHint: true,
+				openWorldHint: true,
+			},
 		},
 		async (params) => {
 			const result = await service.logging.getLogExportFieldRestrictions({
@@ -253,10 +256,13 @@ export function registerLoggingTools(
 	);
 
 	// Insert log tool
-	server.tool(
+	server.registerTool(
 		"insert_log",
-		"Insert log records for requests that bypassed the gateway. This writes request, response, and trace metadata into Portkey immediately, and the call will fail if request_provider does not match a configured integration. Use the span fields to stitch trace hierarchies together.",
-		LOGGING_TOOL_SCHEMAS.insertLog,
+		{
+			description:
+				"Insert log records for requests that bypassed the gateway. This writes request, response, and trace metadata into Portkey immediately, and the call will fail if request_provider does not match a configured integration. Use the span fields to stitch trace hierarchies together.",
+			inputSchema: LOGGING_TOOL_SCHEMAS.insertLog,
+		},
 		async (params) => {
 			const entry = {
 				request: {
@@ -294,10 +300,13 @@ export function registerLoggingTools(
 	);
 
 	// Create log export tool
-	server.tool(
+	server.registerTool(
 		"create_log_export",
-		"Create a log export definition with filters and requested fields. This only sets up the export and does not start processing; call start_log_export next, then use get_log_export or download_log_export to inspect or retrieve the finished result.",
-		LOGGING_TOOL_SCHEMAS.createLogExport,
+		{
+			description:
+				"Create a log export definition with filters and requested fields. This only sets up the export and does not start processing; call start_log_export next, then use get_log_export or download_log_export to inspect or retrieve the finished result.",
+			inputSchema: LOGGING_TOOL_SCHEMAS.createLogExport,
+		},
 		async (params) => {
 			const result = await service.logging.createLogExport({
 				workspace_id: params.workspace_id,
@@ -324,10 +333,13 @@ export function registerLoggingTools(
 	);
 
 	// List log exports tool
-	server.tool(
+	server.registerTool(
 		"list_log_exports",
-		"List log export jobs in a workspace with status, filters, and timestamps. Use this to find an export_id before calling get_log_export, start_log_export, cancel_log_export, or download_log_export.",
-		LOGGING_TOOL_SCHEMAS.listLogExports,
+		{
+			description:
+				"List log export jobs in a workspace with status, filters, and timestamps. Use this to find an export_id before calling get_log_export, start_log_export, cancel_log_export, or download_log_export.",
+			inputSchema: LOGGING_TOOL_SCHEMAS.listLogExports,
+		},
 		async (params) => {
 			const result = await service.logging.listLogExports({
 				workspace_id: params.workspace_id,
@@ -351,10 +363,13 @@ export function registerLoggingTools(
 	);
 
 	// Get log export tool
-	server.tool(
+	server.registerTool(
 		"get_log_export",
-		"Fetch one log export job by export_id and return its status, filters, requested fields, and file metadata. Use this when you already know the target; use list_log_exports for a workspace-wide overview.",
-		LOGGING_TOOL_SCHEMAS.getLogExport,
+		{
+			description:
+				"Fetch one log export job by export_id and return its status, filters, requested fields, and file metadata. Use this when you already know the target; use list_log_exports for a workspace-wide overview.",
+			inputSchema: LOGGING_TOOL_SCHEMAS.getLogExport,
+		},
 		async (params) => {
 			const result = await service.logging.getLogExport(params.export_id);
 
@@ -374,10 +389,13 @@ export function registerLoggingTools(
 	);
 
 	// Start log export tool
-	server.tool(
+	server.registerTool(
 		"start_log_export",
-		"Start processing a previously created log export job. This is asynchronous, only queues the export, and does not return rows or a download file; use get_log_export to poll progress and download_log_export after the job completes.",
-		LOGGING_TOOL_SCHEMAS.startLogExport,
+		{
+			description:
+				"Start processing a previously created log export job. This is asynchronous, only queues the export, and does not return rows or a download file; use get_log_export to poll progress and download_log_export after the job completes.",
+			inputSchema: LOGGING_TOOL_SCHEMAS.startLogExport,
+		},
 		async (params) => {
 			const result = await service.logging.startLogExport(params.export_id);
 
@@ -390,10 +408,13 @@ export function registerLoggingTools(
 	);
 
 	// Cancel log export tool
-	server.tool(
+	server.registerTool(
 		"cancel_log_export",
-		"Cancel a pending or running log export job, unlike start_log_export which queues one or delete_integration which removes the source. This permanently stops that export, takes effect immediately, and does not roll back already-processed rows; call create_log_export and start_log_export again to retry.",
-		LOGGING_TOOL_SCHEMAS.cancelLogExport,
+		{
+			description:
+				"Cancel a pending or running log export job, unlike start_log_export which queues one or delete_integration which removes the source. This permanently stops that export, takes effect immediately, and does not roll back already-processed rows; call create_log_export and start_log_export again to retry.",
+			inputSchema: LOGGING_TOOL_SCHEMAS.cancelLogExport,
+		},
 		async (params) => {
 			const result = await service.logging.cancelLogExport(params.export_id);
 
@@ -406,10 +427,13 @@ export function registerLoggingTools(
 	);
 
 	// Download log export tool
-	server.tool(
+	server.registerTool(
 		"download_log_export",
-		"Get a signed URL for downloading a completed log export. The export must already be finished; use get_log_export to confirm readiness and start_log_export if it has not run yet.",
-		LOGGING_TOOL_SCHEMAS.downloadLogExport,
+		{
+			description:
+				"Get a signed URL for downloading a completed log export. The export must already be finished; use get_log_export to confirm readiness and start_log_export if it has not run yet.",
+			inputSchema: LOGGING_TOOL_SCHEMAS.downloadLogExport,
+		},
 		async (params) => {
 			const result = await service.logging.downloadLogExport(params.export_id);
 
@@ -422,10 +446,13 @@ export function registerLoggingTools(
 	);
 
 	// Update log export tool
-	server.tool(
+	server.registerTool(
 		"update_log_export",
-		"Update an existing log export configuration before or between export runs. Only workspace_id, time_of_generation_max, and requested_fields can change after creation, so use get_log_export to review the current job and start_log_export after the definition is ready.",
-		LOGGING_TOOL_SCHEMAS.updateLogExport,
+		{
+			description:
+				"Update an existing log export configuration before or between export runs. Only workspace_id, time_of_generation_max, and requested_fields can change after creation, so use get_log_export to review the current job and start_log_export after the definition is ready.",
+			inputSchema: LOGGING_TOOL_SCHEMAS.updateLogExport,
+		},
 		async (params) => {
 			const updateData: {
 				filters?: { time_of_generation_max?: string };

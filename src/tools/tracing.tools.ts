@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import type { PortkeyService } from "../services/index.js";
 import { jsonResult } from "./utils.js";
@@ -54,10 +54,13 @@ export function registerTracingTools(
 	service: PortkeyService,
 ): void {
 	// Create feedback
-	server.tool(
+	server.registerTool(
 		"create_feedback",
-		"Create feedback for a trace or request. Writes a new feedback record linked by trace_id, returns the created feedback IDs and status, and takes effect immediately; use update_feedback when correcting an existing record.",
-		TRACING_TOOL_SCHEMAS.createFeedback,
+		{
+			description:
+				"Create feedback for a trace or request. Writes a new feedback record linked by trace_id, returns the created feedback IDs and status, and takes effect immediately; use update_feedback when correcting an existing record.",
+			inputSchema: TRACING_TOOL_SCHEMAS.createFeedback,
+		},
 		async (params) => {
 			const result = await service.tracing.createFeedback({
 				trace_id: params.trace_id,
@@ -74,10 +77,13 @@ export function registerTracingTools(
 	);
 
 	// Update feedback
-	server.tool(
+	server.registerTool(
 		"update_feedback",
-		"Update an existing feedback record by ID. Returns the updated status and feedback IDs, changes only value, weight, and metadata, and leaves the trace linkage immutable; use create_feedback only for a new record.",
-		TRACING_TOOL_SCHEMAS.updateFeedback,
+		{
+			description:
+				"Update an existing feedback record by ID. Returns the updated status and feedback IDs, changes only value, weight, and metadata, and leaves the trace linkage immutable; use create_feedback only for a new record.",
+			inputSchema: TRACING_TOOL_SCHEMAS.updateFeedback,
+		},
 		async (params) => {
 			const result = await service.tracing.updateFeedback(params.id, {
 				value: params.value,

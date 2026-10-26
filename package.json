@@ -12,8 +12,8 @@
 		"quality": "qlty check --all --no-fix --no-progress --fail-level fmt --no-upgrade-check",
 		"format": "biome format --write .",
 		"check": "biome check --write .",
-		"test": "tsx --test tests/config.test.ts tests/security-worker-layout.test.ts tests/security-edge-runtime.test.ts tests/contract.test.ts tests/contract-extended.test.ts tests/unit.test.ts tests/services.test.ts tests/base-services.test.ts tests/fetch.test.ts tests/http-server.test.ts tests/http-edge-runtime.test.ts tests/http-edge-runtime-final.test.ts tests/tools-observability.test.ts tests/tools-catalog.test.ts tests/tools-prompts-configs.test.ts tests/tools-remaining.test.ts tests/tools-edge-workflows.test.ts tests/tools-platform.test.ts tests/tools-keys.test.ts tests/tools-users.test.ts tests/tools-analytics.test.ts tests/current-api.test.ts tests/tools-governance.test.ts tests/release-readiness.test.ts tests/lobehub-generator.test.ts tests/auth-clerk.test.ts tests/lib-event-store.test.ts tests/lib-session-mcp.test.ts tests/smoke-outcomes.test.ts tests/request-path.test.ts",
-		"test:coverage": "tsx --test --experimental-test-coverage --test-coverage-include='src/**/*.ts' --test-coverage-lines=80 $TEST_COVERAGE_REPORTERS tests/config.test.ts tests/security-worker-layout.test.ts tests/security-edge-runtime.test.ts tests/contract.test.ts tests/contract-extended.test.ts tests/unit.test.ts tests/services.test.ts tests/base-services.test.ts tests/fetch.test.ts tests/http-server.test.ts tests/http-edge-runtime.test.ts tests/http-edge-runtime-final.test.ts tests/tools-observability.test.ts tests/tools-catalog.test.ts tests/tools-prompts-configs.test.ts tests/tools-remaining.test.ts tests/tools-edge-workflows.test.ts tests/tools-platform.test.ts tests/tools-keys.test.ts tests/tools-users.test.ts tests/tools-analytics.test.ts tests/current-api.test.ts tests/tools-governance.test.ts tests/release-readiness.test.ts tests/lobehub-generator.test.ts tests/auth-clerk.test.ts tests/lib-event-store.test.ts tests/lib-session-mcp.test.ts tests/smoke-outcomes.test.ts tests/request-path.test.ts",
+		"test": "tsx --test tests/protocol-compatibility.test.ts tests/config.test.ts tests/security-worker-layout.test.ts tests/security-edge-runtime.test.ts tests/contract.test.ts tests/contract-extended.test.ts tests/unit.test.ts tests/services.test.ts tests/base-services.test.ts tests/fetch.test.ts tests/http-server.test.ts tests/http-edge-runtime.test.ts tests/http-edge-runtime-final.test.ts tests/tools-observability.test.ts tests/tools-catalog.test.ts tests/tools-prompts-configs.test.ts tests/tools-remaining.test.ts tests/tools-edge-workflows.test.ts tests/tools-platform.test.ts tests/tools-keys.test.ts tests/tools-users.test.ts tests/tools-analytics.test.ts tests/current-api.test.ts tests/tools-governance.test.ts tests/release-readiness.test.ts tests/lobehub-generator.test.ts tests/auth-clerk.test.ts tests/lib-session-mcp.test.ts tests/smoke-outcomes.test.ts tests/request-path.test.ts",
+		"test:coverage": "tsx --test --experimental-test-coverage --test-coverage-include='src/**/*.ts' --test-coverage-lines=80 $TEST_COVERAGE_REPORTERS tests/protocol-compatibility.test.ts tests/config.test.ts tests/security-worker-layout.test.ts tests/security-edge-runtime.test.ts tests/contract.test.ts tests/contract-extended.test.ts tests/unit.test.ts tests/services.test.ts tests/base-services.test.ts tests/fetch.test.ts tests/http-server.test.ts tests/http-edge-runtime.test.ts tests/http-edge-runtime-final.test.ts tests/tools-observability.test.ts tests/tools-catalog.test.ts tests/tools-prompts-configs.test.ts tests/tools-remaining.test.ts tests/tools-edge-workflows.test.ts tests/tools-platform.test.ts tests/tools-keys.test.ts tests/tools-users.test.ts tests/tools-analytics.test.ts tests/current-api.test.ts tests/tools-governance.test.ts tests/release-readiness.test.ts tests/lobehub-generator.test.ts tests/auth-clerk.test.ts tests/lib-session-mcp.test.ts tests/smoke-outcomes.test.ts tests/request-path.test.ts",
 		"test:lobehub-generator": "tsx --test tests/lobehub-generator.test.ts",
 		"test:coverage:qlty": "mkdir -p coverage && TEST_COVERAGE_REPORTERS=\"--test-reporter=lcov --test-reporter-destination=$PWD/coverage/lcov.info --test-reporter=spec --test-reporter-destination=stdout\" npm run test:coverage",
 		"dev": "tsx --watch src/index.ts",
@@ -50,18 +50,19 @@
 		"docs/VERCEL_DEPLOYMENT.md"
 	],
 	"dependencies": {
-		"@modelcontextprotocol/sdk": "^1.32.1",
 		"cors": "^2.8.6",
 		"express": "^5.3.0",
 		"express-rate-limit": "^8.7.1",
 		"helmet": "^8.3.0",
 		"jose": "^6.2.2",
 		"redis": "^6.3.0",
-		"zod": "^4.6.7"
+		"zod": "^4.6.7",
+		"@modelcontextprotocol/server": "2.3.1",
+		"@modelcontextprotocol/node": "2.1.1"
 	},
 	"name": "portkey-admin-mcp",
 	"mcpName": "io.github.CodesWhat/portkey-admin-mcp",
-	"version": "0.14.1",
+	"version": "0.15.0",
 	"main": "build/index.js",
 	"keywords": [
 		"mcp",
@@ -99,6 +100,7 @@
 		"knip": "6.41.0",
 		"lefthook": "2.2.2",
 		"tsx": "4.23.15",
-		"typescript": "7.0.2"
+		"typescript": "7.0.2",
+		"@modelcontextprotocol/client": "2.3.1"
 	}
 }

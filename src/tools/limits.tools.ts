@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { CurrentPageSchema, PageSizeSchema } from "../lib/schemas.js";
 import type { PortkeyService } from "../services/index.js";
@@ -242,10 +242,13 @@ export function registerLimitsTools(
 	server: McpServer,
 	service: PortkeyService,
 ): void {
-	server.tool(
+	server.registerTool(
 		"list_rate_limits",
-		"List rate-limit policies with their current condition, grouping, rate unit, target, status, and scope. Filter before retrieving or changing one policy, especially when archived policies should be included.",
-		LIMITS_TOOL_SCHEMAS.listRateLimits,
+		{
+			description:
+				"List rate-limit policies with their current condition, grouping, rate unit, target, status, and scope. Filter before retrieving or changing one policy, especially when archived policies should be included.",
+			inputSchema: LIMITS_TOOL_SCHEMAS.listRateLimits,
+		},
 		async (params) => {
 			const result = await service.limits.listRateLimits(params);
 			return jsonResult({
@@ -255,18 +258,24 @@ export function registerLimitsTools(
 		},
 	);
 
-	server.tool(
+	server.registerTool(
 		"get_rate_limit",
-		"Get one rate-limit policy by id, including current conditions, grouping, unit, value, target, scope, and status. Pass archived status when retrieving a soft-deleted policy.",
-		LIMITS_TOOL_SCHEMAS.getRateLimit,
+		{
+			description:
+				"Get one rate-limit policy by id, including current conditions, grouping, unit, value, target, scope, and status. Pass archived status when retrieving a soft-deleted policy.",
+			inputSchema: LIMITS_TOOL_SCHEMAS.getRateLimit,
+		},
 		async ({ id, status }) =>
 			jsonResult(withoutObject(await service.limits.getRateLimit(id, status))),
 	);
 
-	server.tool(
+	server.registerTool(
 		"create_rate_limit",
-		"Create a request or token rate-limit policy. Conditions and grouping must be non-empty; target llm uses model/provider keys, while target mcp_tools uses MCP server and tool keys.",
-		LIMITS_TOOL_SCHEMAS.createRateLimit,
+		{
+			description:
+				"Create a request or token rate-limit policy. Conditions and grouping must be non-empty; target llm uses model/provider keys, while target mcp_tools uses MCP server and tool keys.",
+			inputSchema: LIMITS_TOOL_SCHEMAS.createRateLimit,
+		},
 		async (params) => {
 			const result = await service.limits.createRateLimit(params);
 			return jsonResult({
@@ -276,30 +285,39 @@ export function registerLimitsTools(
 		},
 	);
 
-	server.tool(
+	server.registerTool(
 		"update_rate_limit",
-		"Update a rate-limit policy's name, unit, value, or non-empty conditions by id. The public contract does not allow changing its type, target, or grouping after creation.",
-		LIMITS_TOOL_SCHEMAS.updateRateLimit,
+		{
+			description:
+				"Update a rate-limit policy's name, unit, value, or non-empty conditions by id. The public contract does not allow changing its type, target, or grouping after creation.",
+			inputSchema: LIMITS_TOOL_SCHEMAS.updateRateLimit,
+		},
 		async ({ id, ...updates }) => {
 			await service.limits.updateRateLimit(id, compact(updates));
 			return jsonResult({ success: true, id });
 		},
 	);
 
-	server.tool(
+	server.registerTool(
 		"delete_rate_limit",
-		"Delete a rate-limit policy by id. Portkey removes the active throttling policy immediately, so inspect dependent callers and the full policy before deleting it.",
-		LIMITS_TOOL_SCHEMAS.deleteRateLimit,
+		{
+			description:
+				"Delete a rate-limit policy by id. Portkey removes the active throttling policy immediately, so inspect dependent callers and the full policy before deleting it.",
+			inputSchema: LIMITS_TOOL_SCHEMAS.deleteRateLimit,
+		},
 		async ({ id }) => {
 			await service.limits.deleteRateLimit(id);
 			return jsonResult({ success: true, id });
 		},
 	);
 
-	server.tool(
+	server.registerTool(
 		"list_usage_limits",
-		"List cumulative cost or token usage-limit policies with current conditions, grouping, reset schedule, status, and scope. Filter by workspace, policy type, status, and pagination.",
-		LIMITS_TOOL_SCHEMAS.listUsageLimits,
+		{
+			description:
+				"List cumulative cost or token usage-limit policies with current conditions, grouping, reset schedule, status, and scope. Filter by workspace, policy type, status, and pagination.",
+			inputSchema: LIMITS_TOOL_SCHEMAS.listUsageLimits,
+		},
 		async (params) => {
 			const result = await service.limits.listUsageLimits(params);
 			return jsonResult({
@@ -309,18 +327,24 @@ export function registerLimitsTools(
 		},
 	);
 
-	server.tool(
+	server.registerTool(
 		"get_usage_limit",
-		"Get one cumulative usage-limit policy by id. Use list_usage_limits first when the id is unknown. Optionally include per-value usage counters and retrieve archived policies; scheduled reset timestamps are returned when present.",
-		LIMITS_TOOL_SCHEMAS.getUsageLimit,
+		{
+			description:
+				"Get one cumulative usage-limit policy by id. Use list_usage_limits first when the id is unknown. Optionally include per-value usage counters and retrieve archived policies; scheduled reset timestamps are returned when present.",
+			inputSchema: LIMITS_TOOL_SCHEMAS.getUsageLimit,
+		},
 		async ({ id, ...params }) =>
 			jsonResult(withoutObject(await service.limits.getUsageLimit(id, params))),
 	);
 
-	server.tool(
+	server.registerTool(
 		"create_usage_limit",
-		"Create a cumulative cost or token usage-limit policy with non-empty conditions and grouping. A periodic reset can be weekly, monthly, or omitted for a cumulative lifetime limit.",
-		LIMITS_TOOL_SCHEMAS.createUsageLimit,
+		{
+			description:
+				"Create a cumulative cost or token usage-limit policy with non-empty conditions and grouping. A periodic reset can be weekly, monthly, or omitted for a cumulative lifetime limit.",
+			inputSchema: LIMITS_TOOL_SCHEMAS.createUsageLimit,
+		},
 		async (params) => {
 			const result = await service.limits.createUsageLimit(params);
 			return jsonResult({
@@ -330,10 +354,13 @@ export function registerLimitsTools(
 		},
 	);
 
-	server.tool(
+	server.registerTool(
 		"update_usage_limit",
-		"Update a cumulative usage-limit policy's name, description, complete condition set, credit limit, alert threshold, reset schedule, next reset time, or one grouped value's usage. periodic_reset and periodic_reset_days are mutually exclusive; conditions replace the existing set.",
-		LIMITS_TOOL_SCHEMAS.updateUsageLimit,
+		{
+			description:
+				"Update a cumulative usage-limit policy's name, description, complete condition set, credit limit, alert threshold, reset schedule, next reset time, or one grouped value's usage. periodic_reset and periodic_reset_days are mutually exclusive; conditions replace the existing set.",
+			inputSchema: LIMITS_TOOL_SCHEMAS.updateUsageLimit,
+		},
 		async (params) => {
 			const { id, ...updates } = updateUsageLimitSchema.parse(params);
 			await service.limits.updateUsageLimit(id, compact(updates));
@@ -341,20 +368,26 @@ export function registerLimitsTools(
 		},
 	);
 
-	server.tool(
+	server.registerTool(
 		"delete_usage_limit",
-		"Archive a cumulative usage-limit policy by id. The policy stops enforcing its budget but its historical record remains available through archived-status reads.",
-		LIMITS_TOOL_SCHEMAS.deleteUsageLimit,
+		{
+			description:
+				"Archive a cumulative usage-limit policy by id. The policy stops enforcing its budget but its historical record remains available through archived-status reads.",
+			inputSchema: LIMITS_TOOL_SCHEMAS.deleteUsageLimit,
+		},
 		async ({ id }) => {
 			await service.limits.deleteUsageLimit(id);
 			return jsonResult({ success: true, id, status: "archived" });
 		},
 	);
 
-	server.tool(
+	server.registerTool(
 		"list_usage_limit_entities",
-		"List the values currently tracked by one usage-limit policy with each value key and current usage. Filter by active or exhausted state, search text, and pagination before resetting one counter.",
-		LIMITS_TOOL_SCHEMAS.listUsageLimitEntities,
+		{
+			description:
+				"List the values currently tracked by one usage-limit policy with each value key and current usage. Filter by active or exhausted state, search text, and pagination before resetting one counter.",
+			inputSchema: LIMITS_TOOL_SCHEMAS.listUsageLimitEntities,
+		},
 		async ({ limit_id, ...params }) => {
 			const result = await service.limits.listUsageLimitEntities(
 				limit_id,
@@ -364,10 +397,13 @@ export function registerLimitsTools(
 		},
 	);
 
-	server.tool(
+	server.registerTool(
 		"reset_usage_limit_entity",
-		"Reset the current usage counter for one tracked usage-limit entity. This changes enforcement immediately for that exact policy and entity, so use the entity id returned by list_usage_limit_entities.",
-		LIMITS_TOOL_SCHEMAS.resetUsageLimitEntity,
+		{
+			description:
+				"Reset the current usage counter for one tracked usage-limit entity. This changes enforcement immediately for that exact policy and entity, so use the entity id returned by list_usage_limit_entities.",
+			inputSchema: LIMITS_TOOL_SCHEMAS.resetUsageLimitEntity,
+		},
 		async ({ limit_id, entity_id }) => {
 			await service.limits.resetUsageLimitEntity(limit_id, entity_id);
 			return jsonResult({ success: true, limit_id, entity_id });

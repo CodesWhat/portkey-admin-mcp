@@ -1,8 +1,8 @@
 import type {
+	CallToolResult,
 	McpServer,
 	ToolCallback,
-} from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+} from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { Logger } from "../lib/logger.js";
 import { isRecord } from "../lib/type-guards.js";
@@ -576,121 +576,21 @@ function wrapToolCallback(
 	};
 }
 
-/*
- * buildToolRegistration reconstructs the overload variants of the MCP SDK's
- * server.tool() signature, which accepts arguments in the forms:
- *   (name, callback)
- *   (name, description, callback)
- *   (name, schema, callback)
- *   (name, description, schema, callback)
- *   (name, description, schema, annotations, callback)
- * Runtime probing is necessary because the SDK does not expose a single
- * canonical signature; instead it uses overloads that cannot be resolved
- * statically from the call-site. The function strips the trailing callback,
- * identifies optional description and inputSchema positionally, and falls back
- * to inferredAnnotations when no explicit annotations object is present.
- *
- * Invariants isToolAnnotationsLike relies on:
- *   - The value must be a non-null plain object (isRecord).
- *   - Every own key must appear in TOOL_ANNOTATION_KEYS (no extra fields).
- *   - The object must have at least one key (empty objects are not annotations).
- *   - All values must be undefined, boolean, or string (matching ToolAnnotations).
- * These constraints distinguish an annotations object from an inputSchema
- * object, which may have arbitrary keys and Zod-schema values.
- */
-function buildToolRegistration(
-	name: string,
-	rest: unknown[],
-): {
-	description?: string;
-	inputSchema?: unknown;
-	annotations: ToolAnnotations;
-	callback: ToolCallback;
-} {
-	const maybeCallback = rest.at(-1);
-	const wrappedCallback = wrapToolCallback(name, maybeCallback as ToolCallback);
-	const inferredAnnotations = inferToolAnnotations(name);
-	const args = [...rest.slice(0, -1)];
+const registrationSchemas = new WeakMap<object, z.ZodType>();
 
-	let description: string | undefined;
-	if (typeof args[0] === "string") {
-		description = args.shift() as string;
+function normalizeRegistrationSchema(schema: unknown): unknown {
+	if (!isRecord(schema) || "~standard" in schema) return schema;
+	let normalized = registrationSchemas.get(schema);
+	if (!normalized) {
+		normalized = z.object(schema as z.ZodRawShape);
+		registrationSchemas.set(schema, normalized);
 	}
-	description = augmentToolDescription(name, description);
-
-	let inputSchema: unknown;
-	let annotations = inferredAnnotations;
-
-	if (args.length === 1) {
-		if (isToolAnnotationsLike(args[0])) {
-			annotations = {
-				...inferredAnnotations,
-				...args[0],
-			};
-		} else {
-			inputSchema = args[0];
-		}
-	} else if (args.length >= 2) {
-		inputSchema = args[0];
-		if (isToolAnnotationsLike(args[1])) {
-			annotations = {
-				...inferredAnnotations,
-				...args[1],
-			};
-		}
-	}
-
-	return {
-		description,
-		inputSchema,
-		annotations,
-		callback: wrappedCallback,
-	};
+	return normalized;
 }
 
-/*
- * createSafeToolServer wraps the MCP server's tool() method so that every
- * registered tool is automatically:
- *   1. Wrapped in wrapToolCallback for consistent error handling and envelope
- *      normalization (normalizeToolResult / StandardToolEnvelope).
- *   2. Augmented with inferred ToolAnnotations (read-only, destructive,
- *      idempotent) derived from the tool name prefix.
- *   3. Optionally upgraded to the registerTool() API (which accepts an
- *      outputSchema) when the underlying SDK supports it — detected at runtime
- *      via `"registerTool" in server`. When registerTool is available, the
- *      STANDARD_TOOL_OUTPUT_SCHEMA is attached so the SDK can validate and
- *      surface structured output; otherwise the wrapped call falls through to
- *      the legacy tool() overload set reconstructed by buildToolRegistration.
- */
 function createSafeToolServer(server: McpServer): McpServer {
-	const originalTool = server.tool.bind(server);
-	const originalRegisterTool =
-		"registerTool" in server && typeof server.registerTool === "function"
-			? server.registerTool.bind(server)
-			: undefined;
+	const originalRegisterTool = server.registerTool.bind(server);
 	const safeServer = Object.create(server) as McpServer;
-	const callOriginalTool = (...args: [string, ...unknown[]]) =>
-		Reflect.apply(
-			originalTool as (...toolArgs: [string, ...unknown[]]) => unknown,
-			server,
-			args,
-		);
-	const callOriginalRegisterTool = (
-		...args: [string, Record<string, unknown>, ToolCallback]
-	) => {
-		if (!originalRegisterTool) {
-			throw new Error("registerTool is not available on the MCP server");
-		}
-
-		return Reflect.apply(
-			originalRegisterTool as (
-				...toolArgs: [string, Record<string, unknown>, ToolCallback]
-			) => unknown,
-			server,
-			args,
-		);
-	};
-
 	safeServer.registerTool = ((
 		name: string,
 		config: Record<string, unknown>,
@@ -700,84 +600,25 @@ function createSafeToolServer(server: McpServer): McpServer {
 			name,
 			typeof config.description === "string" ? config.description : undefined,
 		);
-		const annotations = {
-			...inferToolAnnotations(name),
-			...(isToolAnnotationsLike(config.annotations) ? config.annotations : {}),
-		};
-
-		const wrappedCallback = wrapToolCallback(name, callback);
-		if (originalRegisterTool) {
-			return callOriginalRegisterTool(
-				name,
-				{
-					...config,
-					...(description === undefined ? {} : { description }),
-					outputSchema: config.outputSchema ?? getToolOutputSchema(name),
-					annotations,
+		return Reflect.apply(originalRegisterTool, server, [
+			name,
+			{
+				...config,
+				...(description === undefined ? {} : { description }),
+				inputSchema: normalizeRegistrationSchema(config.inputSchema),
+				outputSchema: normalizeRegistrationSchema(
+					config.outputSchema ?? getToolOutputSchema(name),
+				),
+				annotations: {
+					...inferToolAnnotations(name),
+					...(isToolAnnotationsLike(config.annotations)
+						? config.annotations
+						: {}),
 				},
-				wrappedCallback,
-			);
-		}
-
-		const legacyArguments = [
-			...(description === undefined ? [] : [description]),
-			...(config.inputSchema === undefined ? [] : [config.inputSchema]),
-			annotations,
-			wrappedCallback,
-		];
-		return callOriginalTool(name, ...legacyArguments);
+			},
+			wrapToolCallback(name, callback),
+		]);
 	}) as McpServer["registerTool"];
-
-	safeServer.tool = ((name: string, ...rest: unknown[]) => {
-		const maybeCallback = rest.at(-1);
-		if (typeof maybeCallback !== "function") {
-			return callOriginalTool(name, ...rest);
-		}
-
-		const registration = buildToolRegistration(name, rest);
-
-		if (originalRegisterTool) {
-			return callOriginalRegisterTool(
-				name,
-				{
-					...(registration.description
-						? { description: registration.description }
-						: {}),
-					...(registration.inputSchema !== undefined
-						? { inputSchema: registration.inputSchema }
-						: {}),
-					outputSchema: getToolOutputSchema(name),
-					annotations: registration.annotations,
-				},
-				registration.callback,
-			);
-		}
-
-		const wrappedRest =
-			registration.inputSchema !== undefined
-				? registration.description !== undefined
-					? [
-							registration.description,
-							registration.inputSchema,
-							registration.annotations,
-							registration.callback,
-						]
-					: [
-							registration.inputSchema,
-							registration.annotations,
-							registration.callback,
-						]
-				: registration.description !== undefined
-					? [
-							registration.description,
-							registration.annotations,
-							registration.callback,
-						]
-					: [registration.annotations, registration.callback];
-
-		return callOriginalTool(name, ...wrappedRest);
-	}) as McpServer["tool"];
-
 	return safeServer;
 }
 

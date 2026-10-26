@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import type { PortkeyService } from "../services/index.js";
 import { resourceTagsSchema } from "./tags.schemas.js";
@@ -178,20 +178,26 @@ export function registerDeploymentsTools(
 	server: McpServer,
 	service: PortkeyService,
 ): void {
-	server.tool(
+	server.registerTool(
 		"list_deployments",
-		"Enterprise-gated. List registered self-hosted Gateway deployments with status, type, default state, and connection health. Use this before get_deployment, update_deployment, or archive_deployment to resolve a deployment ID.",
-		DEPLOYMENTS_TOOL_SCHEMAS.listDeployments,
+		{
+			description:
+				"Enterprise-gated. List registered self-hosted Gateway deployments with status, type, default state, and connection health. Use this before get_deployment, update_deployment, or archive_deployment to resolve a deployment ID.",
+			inputSchema: DEPLOYMENTS_TOOL_SCHEMAS.listDeployments,
+		},
 		async (params) => {
 			const result = await service.deployments.listDeployments(params);
 			return jsonResult({ total: result.total, deployments: result.data });
 		},
 	);
 
-	server.tool(
+	server.registerTool(
 		"register_deployment",
-		"Enterprise-gated. Register a self-hosted Gateway deployment when onboarding a new control-plane target; use list_deployments for existing registrations. The response can contain authentication and registry credentials exactly once, exposed to this MCP transcript, so store them securely immediately and never log them.",
-		DEPLOYMENTS_TOOL_SCHEMAS.registerDeployment,
+		{
+			description:
+				"Enterprise-gated. Register a self-hosted Gateway deployment when onboarding a new control-plane target; use list_deployments for existing registrations. The response can contain authentication and registry credentials exactly once, exposed to this MCP transcript, so store them securely immediately and never log them.",
+			inputSchema: DEPLOYMENTS_TOOL_SCHEMAS.registerDeployment,
+		},
 		async (params) => {
 			const auth_settings = authSettingsFrom(params);
 			const result = await service.deployments.registerDeployment(
@@ -210,18 +216,24 @@ export function registerDeploymentsTools(
 		},
 	);
 
-	server.tool(
+	server.registerTool(
 		"get_deployment",
-		"Enterprise-gated. Get one registered Gateway deployment by UUID, or use self when authenticating as that deployment. Use list_deployments to resolve an ID; read responses contain only masked authentication and registry credential values.",
-		DEPLOYMENTS_TOOL_SCHEMAS.getDeployment,
+		{
+			description:
+				"Enterprise-gated. Get one registered Gateway deployment by UUID, or use self when authenticating as that deployment. Use list_deployments to resolve an ID; read responses contain only masked authentication and registry credential values.",
+			inputSchema: DEPLOYMENTS_TOOL_SCHEMAS.getDeployment,
+		},
 		async ({ id, organisation_id }) =>
 			jsonResult(await service.deployments.getDeployment(id, organisation_id)),
 	);
 
-	server.tool(
+	server.registerTool(
 		"update_deployment",
-		"Enterprise-gated. Update a registered Gateway deployment, its workspace or JWT-sub access, or rotate its authentication secret. Use get_deployment first to inspect current settings. Rotation returns the new secret once in this MCP transcript, so store it securely immediately.",
-		DEPLOYMENTS_TOOL_SCHEMAS.updateDeployment,
+		{
+			description:
+				"Enterprise-gated. Update a registered Gateway deployment, its workspace or JWT-sub access, or rotate its authentication secret. Use get_deployment first to inspect current settings. Rotation returns the new secret once in this MCP transcript, so store it securely immediately.",
+			inputSchema: DEPLOYMENTS_TOOL_SCHEMAS.updateDeployment,
+		},
 		async (params) => {
 			const auth_settings = authSettingsFrom(params, true);
 			const result = await service.deployments.updateDeployment(
@@ -242,10 +254,13 @@ export function registerDeploymentsTools(
 		},
 	);
 
-	server.tool(
+	server.registerTool(
 		"archive_deployment",
-		"Enterprise-gated. Archive a registered Gateway deployment by UUID. Use get_deployment first to confirm the target. Portkey soft-deletes the record; this stops treating it as active but does not permanently remove its history.",
-		DEPLOYMENTS_TOOL_SCHEMAS.archiveDeployment,
+		{
+			description:
+				"Enterprise-gated. Archive a registered Gateway deployment by UUID. Use get_deployment first to confirm the target. Portkey soft-deletes the record; this stops treating it as active but does not permanently remove its history.",
+			inputSchema: DEPLOYMENTS_TOOL_SCHEMAS.archiveDeployment,
+		},
 		async ({ id }) => {
 			await service.deployments.archiveDeployment(id);
 			return jsonResult({ success: true, id, status: "archived" });

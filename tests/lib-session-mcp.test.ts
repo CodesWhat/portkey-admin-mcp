@@ -1,10 +1,8 @@
 import assert from "node:assert/strict";
 import { afterEach, describe, it } from "node:test";
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+import { Client, InMemoryTransport } from "@modelcontextprotocol/client";
 import { z } from "zod";
 import { createMcpServer, resolveToolDomains } from "../src/lib/mcp-server.js";
-import { SessionStore } from "../src/lib/session-store.js";
 
 const ORIGINAL_ENV = { ...process.env };
 
@@ -17,12 +15,12 @@ describe("MCP argument complexity limit", () => {
 		server.registerTool(
 			"inspect_inputs",
 			{
-				inputSchema: {
+				inputSchema: z.object({
 					values: z.unknown().transform((value) => {
 						validations += 1;
 						return value;
 					}),
-				},
+				}),
 			},
 			async () => {
 				calls += 1;
@@ -70,7 +68,7 @@ afterEach(() => {
 	process.env = { ...ORIGINAL_ENV };
 });
 
-function sessionEntry(
+function _sessionEntry(
 	transport: { close?: () => void | Promise<void> },
 	lastActivity: number,
 ) {
@@ -81,133 +79,6 @@ function sessionEntry(
 		lastActivity,
 	};
 }
-
-describe("SessionStore lifecycle", () => {
-	it("supports lookup, touch, replacement, deletion, and reservation-backed inserts", () => {
-		const originalDateNow = Date.now;
-		Date.now = () => 500;
-		try {
-			const store = new SessionStore(1);
-			const firstTransport = { close() {} };
-			const replacementTransport = { close() {} };
-
-			assert.equal(store.tryReserve(), true);
-			store.set("session-1", sessionEntry(firstTransport, 100));
-			assert.equal(store.size, 1);
-			assert.equal(store.has("session-1"), true);
-			assert.equal(store.getTransport("session-1"), firstTransport);
-			assert.deepEqual(store.getAllSessionIds(), ["session-1"]);
-
-			store.touch("session-1");
-			assert.equal(store.get("session-1")?.lastActivity, 500);
-			store.touch("missing-session");
-			store.set("session-1", sessionEntry(replacementTransport, 600));
-			assert.equal(store.getTransport("session-1"), replacementTransport);
-			assert.equal(store.delete("missing-session"), false);
-			assert.equal(store.delete("session-1"), true);
-			assert.equal(store.size, 0);
-		} finally {
-			Date.now = originalDateNow;
-		}
-	});
-
-	it("closes expired sessions and tolerates rejected, synchronous, and throwing closes", async () => {
-		const originalDateNow = Date.now;
-		Date.now = () => 1_000;
-		const closeCalls: string[] = [];
-		try {
-			const store = new SessionStore();
-			store.set(
-				"async-close",
-				sessionEntry(
-					{
-						async close() {
-							closeCalls.push("async-close");
-						},
-					},
-					100,
-				),
-			);
-			store.set(
-				"rejected-close",
-				sessionEntry(
-					{
-						async close() {
-							closeCalls.push("rejected-close");
-							throw new Error("close failed");
-						},
-					},
-					200,
-				),
-			);
-			store.set(
-				"sync-close",
-				sessionEntry(
-					{
-						close() {
-							closeCalls.push("sync-close");
-						},
-					},
-					300,
-				),
-			);
-			store.set(
-				"throwing-close",
-				sessionEntry(
-					{
-						close() {
-							closeCalls.push("throwing-close");
-							throw new Error("synchronous close failure");
-						},
-					},
-					400,
-				),
-			);
-			store.set("active", sessionEntry({}, 950));
-
-			assert.deepEqual(await store.cleanup(500), [
-				"async-close",
-				"rejected-close",
-				"sync-close",
-				"throwing-close",
-			]);
-			assert.deepEqual(closeCalls, [
-				"async-close",
-				"rejected-close",
-				"sync-close",
-				"throwing-close",
-			]);
-			assert.deepEqual(store.getAllSessionIds(), ["active"]);
-		} finally {
-			Date.now = originalDateNow;
-		}
-	});
-
-	it("closes all transports and resets active and reserved capacity", async () => {
-		const store = new SessionStore(2);
-		let closeCalls = 0;
-		store.set(
-			"session-1",
-			sessionEntry(
-				{
-					async close() {
-						closeCalls += 1;
-					},
-				},
-				100,
-			),
-		);
-		assert.equal(store.tryReserve(), true);
-
-		await store.closeAll();
-
-		assert.equal(closeCalls, 1);
-		assert.equal(store.size, 0);
-		assert.equal(store.tryReserve(), true);
-		assert.equal(store.tryReserve(), true);
-		assert.equal(store.tryReserve(), false);
-	});
-});
 
 describe("MCP tool-domain resolution", () => {
 	it("normalizes caller-selected domains when no deployment allowlist is set", () => {

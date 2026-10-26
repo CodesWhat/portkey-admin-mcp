@@ -11,6 +11,16 @@ release until that reference and the release notes say so.
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-10-25
+
+MCP specification `2026-07-28` support on the v2 SDK. The server speaks both protocol eras on one endpoint, so older clients keep working. HTTP session and GET replay storage is retired, which is breaking for operators who rely on replay or session affinity. The catalog is unchanged at 194 tools across 22 domains.
+
+### Added
+- Analytics workspace scoping through `include_all_workspaces` and `exclude_workspace_slugs` on all 25 analytics tools. Organisation keys can aggregate across workspaces; an explicit `workspace_slug` keeps precedence. Cache summary and provider groups accept organisation scope as an alternative to a single workspace.
+
+### Changed
+- Move to MCP SDK v2: serve modern `2026-07-28` and older clients on the same HTTP/stdio endpoint, with exact SDK pins. HTTP session/GET replay storage is retired; obsolete settings warn without logging values. Retain authentication, Origin/host/body guards, Redis rate limiting, tool filters and the concurrent-request bound. Static catalog hints are private for 60 seconds; unused change-notification capabilities are disabled. See `COMPATIBILITY.md` for interrupted-mutation recovery and the warning, ignored-setting and removal boundary, all of which start in this release.
+
 ## [0.14.1] - 2026-10-25
 
 ### Security
