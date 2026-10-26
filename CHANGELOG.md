@@ -11,6 +11,9 @@ release until that reference and the release notes say so.
 
 ## [Unreleased]
 
+### Added
+- Tests now check the auth and probe path classifiers against Express's own routing across generated path variants, and exercise the 10,000-element tool input budget.
+
 ### Fixed
 - The optional live smoke test reports Portkey 502, 503 and 504 responses as skipped with the status code instead of failing CI, and still fails when no endpoint passes.
 
