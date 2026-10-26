@@ -6,7 +6,7 @@
       "source": "README.md",
       "route": "/docs/manual",
       "sourceSha256": "eb23cca03cc659d110d6e69ee0f0813aad11b490141777ae2a64b049bf2fc23e",
-      "generatedSha256": "c7001e3dd7598c58d84895daa1bd7e1bbbb75cc58ab1f41b8362c96f09d13407"
+      "generatedSha256": "edaa2a52aeef930132c7f7ed1d8c22b2054e446d6a59c0b10e4211cf4161c884"
     },
     {
       "source": "ENDPOINTS.md",
@@ -36,7 +36,7 @@
       "source": "SECURITY-ASSURANCE.md",
       "route": "/docs/security",
       "sourceSha256": "7c6788b8f2cb0bedfe7a7badcd28666cb680d43993df5bd8d11618632a578809",
-      "generatedSha256": "f3f7c42822c9bf0a6866acdeffa0e5ca874a8670154a8fe69fc15c62634308a2"
+      "generatedSha256": "adb490c32c1eb39c679655670472db35fe16ff88aa7aec6c5ff9b437e8fb1620"
     },
     {
       "source": "docs/PRISMA_AIRS_INTEROPERABILITY.md",

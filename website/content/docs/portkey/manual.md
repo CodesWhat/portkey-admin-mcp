@@ -346,9 +346,9 @@ and Cloud analysis still consume Qlty analysis minutes.
 `npm run dev:http` now requires `MCP_AUTH_MODE=bearer` or `MCP_AUTH_MODE=clerk` by default. For deliberate local-only unauthenticated testing, set `MCP_ALLOW_UNAUTHENTICATED_HTTP=true`.
 
 Contributions use pull requests and the checks documented in
-[`CONTRIBUTING.md`](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/CONTRIBUTING.md). Project decisions and maintainer roles are
-documented in [`GOVERNANCE.md`](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/GOVERNANCE.md). Report vulnerabilities through
-[`SECURITY.md`](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/SECURITY.md), and see [`SECURITY-ASSURANCE.md`](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/SECURITY-ASSURANCE.md)
+[`CONTRIBUTING.md`](https://github.com/CodesWhat/portkey-admin-mcp/blob/46556acebb77c9ee224e54836137c64fb5650594/CONTRIBUTING.md). Project decisions and maintainer roles are
+documented in [`GOVERNANCE.md`](https://github.com/CodesWhat/portkey-admin-mcp/blob/46556acebb77c9ee224e54836137c64fb5650594/GOVERNANCE.md). Report vulnerabilities through
+[`SECURITY.md`](https://github.com/CodesWhat/portkey-admin-mcp/blob/46556acebb77c9ee224e54836137c64fb5650594/SECURITY.md), and see [`SECURITY-ASSURANCE.md`](/docs/security/)
 for the public threat model and assurance case.
 
 ---

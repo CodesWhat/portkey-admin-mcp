@@ -6,6 +6,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { posix } from "node:path";
 import { fileURLToPath } from "node:url";
+import { checkTagPin, mapOutsideFences, rewriteLinksWith } from "./manual-lib.mjs";
 
 const siteRoot = fileURLToPath(new URL("..", import.meta.url));
 const configPath = join(siteRoot, "content/manual.config.json");
@@ -35,6 +36,14 @@ try {
     `commit ${commit} (${config.tag}) is not available. Fetch tags first: git fetch origin --tags (CI needs fetch-depth: 0).`,
   );
 }
+let resolvedTag = "";
+try {
+  resolvedTag = git(["rev-parse", "--verify", "--quiet", `${config.tag}^{commit}`])
+    .toString("utf8")
+    .trim();
+} catch {}
+const tagError = checkTagPin(config.tag, resolvedTag, commit);
+if (tagError) fail(tagError);
 const treeEntries = new Map();
 for (const line of git(["ls-tree", "--full-tree", "-r", "-t", "-z", commit])
   .toString("utf8")
@@ -96,28 +105,10 @@ function rewriteUrl(url, source, isImage) {
   return (isImage ? rawUrl(path) : blobUrl(path)) + rest;
 }
 
-function mapOutsideCode(text, fn) {
-  return text
-    .split(/(```[\s\S]*?```)/g)
-    .map((part, index) => (index % 2 ? part : fn(part)))
-    .join("");
-}
+const mapOutsideCode = mapOutsideFences;
 
 function rewriteLinks(text, source) {
-  return mapOutsideCode(text, (part) =>
-    part
-      .split(/(`+[^`\n]*?`+)/g)
-      .map((piece, index) => {
-        if (index % 2) return piece;
-        return piece
-          .replace(/(!?)\[([^\]]*)\]\(([^)\s]+)((?:\s+"[^"]*")?)\)/g,
-            (_, bang, label, url, title) =>
-              `${bang}[${label}](${rewriteUrl(url, source, bang === "!")})${title}`)
-          .replace(/^(\s*\[[^\]]+\]:\s*)(\S+)/gm,
-            (_, head, url) => `${head}${rewriteUrl(url, source, false)}`);
-      })
-      .join(""),
-  );
+  return rewriteLinksWith(text, (url, isImage) => rewriteUrl(url, source, isImage));
 }
 
 // Decorative top-of-README chrome and README-only HTML. Everything else is

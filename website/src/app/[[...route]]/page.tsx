@@ -94,7 +94,7 @@ export default async function Page({ params }: Props) {
             </nav>
           )}
           <p className="review-note">
-            Generated from the published {release.version} release. The source
+            Based on the published {release.version} release. The source
             files are in the product repository.
           </p>
         </div>

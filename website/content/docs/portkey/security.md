@@ -9,8 +9,8 @@ Input-budget and compatibility claims reviewed for 0.14.0: 2026-10-16.
 
 This document maps the project's security requirements to its threat model,
 implementation controls, and public verification evidence. It complements
-[`SECURITY.md`](SECURITY.md) and the deployment guidance in
-[`docs/VERCEL_DEPLOYMENT.md`](docs/VERCEL_DEPLOYMENT.md).
+[`SECURITY.md`](https://github.com/CodesWhat/portkey-admin-mcp/blob/46556acebb77c9ee224e54836137c64fb5650594/SECURITY.md) and the deployment guidance in
+[`docs/VERCEL_DEPLOYMENT.md`](/docs/http-deployment/).
 
 The unreleased SDK v2 candidate retires HTTP session and replay storage. The
 published 0.14.x implementation retains those controls. Candidate evidence below
@@ -68,10 +68,10 @@ Authentication, origin handling, request limits, rate limiting, and security
 headers are applied by the shared HTTP application before MCP requests reach
 tool handlers.
 
-Evidence: [`src/lib/http-app.ts`](src/lib/http-app.ts),
-[`tests/http-server.test.ts`](tests/http-server.test.ts),
-[`tests/auth-clerk.test.ts`](tests/auth-clerk.test.ts), and the configuration in
-[`README.md`](README.md).
+Evidence: [`src/lib/http-app.ts`](https://github.com/CodesWhat/portkey-admin-mcp/blob/46556acebb77c9ee224e54836137c64fb5650594/src/lib/http-app.ts),
+[`tests/http-server.test.ts`](https://github.com/CodesWhat/portkey-admin-mcp/blob/46556acebb77c9ee224e54836137c64fb5650594/tests/http-server.test.ts),
+[`tests/auth-clerk.test.ts`](https://github.com/CodesWhat/portkey-admin-mcp/blob/46556acebb77c9ee224e54836137c64fb5650594/tests/auth-clerk.test.ts), and the configuration in
+[`README.md`](/docs/manual/).
 
 ### Input validation and credential handling
 
@@ -83,10 +83,10 @@ encoded, query parameters are constructed from validated values, and service
 errors are converted without exposing configured credentials. The in-process
 service cache stores a SHA-256 key digest rather than a plaintext API key.
 
-Evidence: [`src/tools/`](src/tools), [`src/services/`](src/services),
-[`src/lib/`](src/lib),
-[`tests/security-runtime.suite.ts`](tests/security-runtime.suite.ts), and
-the tool-specific test suites under [`tests/`](tests).
+Evidence: [`src/tools/`](https://github.com/CodesWhat/portkey-admin-mcp/tree/46556acebb77c9ee224e54836137c64fb5650594/src/tools), [`src/services/`](https://github.com/CodesWhat/portkey-admin-mcp/tree/46556acebb77c9ee224e54836137c64fb5650594/src/services),
+[`src/lib/`](https://github.com/CodesWhat/portkey-admin-mcp/tree/46556acebb77c9ee224e54836137c64fb5650594/src/lib),
+[`tests/security-runtime.suite.ts`](https://github.com/CodesWhat/portkey-admin-mcp/blob/46556acebb77c9ee224e54836137c64fb5650594/tests/security-runtime.suite.ts), and
+the tool-specific test suites under [`tests/`](https://github.com/CodesWhat/portkey-admin-mcp/tree/46556acebb77c9ee224e54836137c64fb5650594/tests).
 
 ### Least privilege, hosted state, and secrets
 
@@ -97,9 +97,9 @@ persists no MCP replay payloads. HTTP requests are independent and authenticated
 every time; a retired session ID grants no authority. An interrupted mutation
 can still complete upstream, so operators must inspect state before retrying.
 
-Evidence: [`docs/VERCEL_DEPLOYMENT.md`](docs/VERCEL_DEPLOYMENT.md),
-[`SECURITY.md`](SECURITY.md), and configuration tests in
-[`tests/config.test.ts`](tests/config.test.ts).
+Evidence: [`docs/VERCEL_DEPLOYMENT.md`](/docs/http-deployment/),
+[`SECURITY.md`](https://github.com/CodesWhat/portkey-admin-mcp/blob/46556acebb77c9ee224e54836137c64fb5650594/SECURITY.md), and configuration tests in
+[`tests/config.test.ts`](https://github.com/CodesWhat/portkey-admin-mcp/blob/46556acebb77c9ee224e54836137c64fb5650594/tests/config.test.ts).
 
 ### Test, dependency, and release controls
 
@@ -110,9 +110,9 @@ workflow re-runs CI for the tag, builds a tarball without publication authority,
 and passes that exact artifact to an OIDC-enabled npm publish job with provenance.
 The MCP Registry publish also uses GitHub OIDC.
 
-Evidence: [`.github/workflows/ci.yml`](.github/workflows/ci.yml),
-[`.github/workflows/release.yml`](.github/workflows/release.yml),
-[`docs/RELEASE.md`](docs/RELEASE.md), and the public
+Evidence: [`.github/workflows/ci.yml`](https://github.com/CodesWhat/portkey-admin-mcp/blob/46556acebb77c9ee224e54836137c64fb5650594/.github/workflows/ci.yml),
+[`.github/workflows/release.yml`](https://github.com/CodesWhat/portkey-admin-mcp/blob/46556acebb77c9ee224e54836137c64fb5650594/.github/workflows/release.yml),
+[`docs/RELEASE.md`](https://github.com/CodesWhat/portkey-admin-mcp/blob/46556acebb77c9ee224e54836137c64fb5650594/docs/RELEASE.md), and the public
 [release history](https://github.com/CodesWhat/portkey-admin-mcp/releases).
 
 ## Residual risk
@@ -120,7 +120,7 @@ Evidence: [`.github/workflows/ci.yml`](.github/workflows/ci.yml),
 A stolen Portkey key or authorized MCP identity can perform every operation its
 scopes allow. Portkey API changes may create semantic drift before fixtures and
 contracts detect it. Some enterprise-only endpoints cannot be live-recorded
-with the available test account, as documented in [`ROADMAP.md`](ROADMAP.md).
+with the available test account, as documented in [`ROADMAP.md`](https://github.com/CodesWhat/portkey-admin-mcp/blob/46556acebb77c9ee224e54836137c64fb5650594/ROADMAP.md).
 Operators remain responsible for least-privilege scopes, transport access,
 credential rotation, Redis and identity-provider security, and reviewing tool
 domains before deployment.
