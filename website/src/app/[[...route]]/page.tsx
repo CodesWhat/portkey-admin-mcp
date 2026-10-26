@@ -59,6 +59,8 @@ export default async function Page({ params }: Props) {
       </a>
     </nav>
   );
+  const next =
+    entries[entries.findIndex((entry) => entry.slug === resolved.page) + 1];
   const Body = doc.data.body;
   return (
     <Frame product={product} docsPage={resolved.page}>
@@ -83,19 +85,17 @@ export default async function Page({ params }: Props) {
             </header>
             <Body />
           </article>
-          <nav className="doc-next" aria-label="More guides">
-            {entries
-              .filter((entry) => entry.slug !== resolved.page)
-              .map((entry) => (
-                <a key={entry.slug} href={entry.href}>
-                  <small>KEEP READING</small>
-                  <strong>{entry.title} ↗</strong>
-                </a>
-              ))}
-          </nav>
+          {next && (
+            <nav className="doc-next" aria-label="More guides">
+              <a href={next.href}>
+                <small>KEEP READING</small>
+                <strong>{next.title} ↗</strong>
+              </a>
+            </nav>
+          )}
           <p className="review-note">
-            Starter content for release {release.version}. Use the full product
-            reference for installation and release-specific settings.
+            Generated from the published {release.version} release. The source
+            files are in the product repository.
           </p>
         </div>
       </main>
