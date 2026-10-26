@@ -4,6 +4,15 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { routesFor } from "../src/lib/routes.mjs";
 
+const vercel = JSON.parse(
+  readFileSync(new URL("../vercel.json", import.meta.url), "utf8"),
+);
+const csp = vercel.headers
+  .flatMap((entry) => entry.headers)
+  .find((entry) => entry.key === "Content-Security-Policy").value;
+const cspSources = (directive) =>
+  (csp.split(";").map((part) => part.trim().split(/\s+/)).find(([name]) => name === directive) || []).slice(1);
+const externalOrigins = new Set();
 const root = fileURLToPath(new URL("../out", import.meta.url));
 const routes = routesFor();
 const decode = (value) => {
@@ -40,6 +49,18 @@ for (const parts of routes) {
     /name="robots" content="noindex, nofollow"/,
     `${path}: site is not indexable yet`,
   );
+  for (const [element, tag, url] of html.matchAll(
+    /<(img|script|link|iframe|source|video|audio|form)\b[^>]*?\s(?:src|href|action)="(https?:\/\/[^"]+)"[^>]*>/g,
+  )) {
+    const origin = new URL(url).origin;
+    const image = tag === "img" || (tag === "link" && /\sas="image"/.test(element));
+    const directive = image ? "img-src" : tag === "script" ? "script-src" : "default-src";
+    assert.ok(
+      cspSources(directive).includes(origin),
+      `${path}: <${tag}> loads ${origin}, which ${directive} in vercel.json does not allow`,
+    );
+    externalOrigins.add(`${directive} ${origin}`);
+  }
   for (const [, href] of html.matchAll(/(?:href|src)="(\/[^"?#]*)/g)) {
     const target = join(root, decodeURIComponent(href));
     assert.ok(
@@ -80,5 +101,5 @@ const home = readFileSync(join(root, "index.html"), "utf8");
 assert.ok(!home.includes("All local previews"));
 assert.match(home, /Portkey Admin MCP/);
 console.log(
-  `Verified ${routes.length} exported routes, ${anchorsChecked} anchor links, local links/assets and MDX for Portkey.`,
+  `Verified ${routes.length} exported routes, ${anchorsChecked} anchor links, local links/assets and MDX for Portkey. External origins covered by the CSP: ${[...externalOrigins].sort().join(", ") || "none"}.`,
 );

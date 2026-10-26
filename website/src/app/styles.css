@@ -682,8 +682,24 @@ button {
   margin-bottom: 45px;
 }
 
-.docs-toolbar > .eyebrow {
+.docs-toolbar > div:first-child {
   padding-top: 6px;
+}
+
+.release-label {
+  margin: 8px 0 0;
+  font-size: 12px;
+}
+
+.release-label a {
+  color: var(--muted);
+  text-decoration: underline;
+}
+
+.search-hint {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: var(--muted);
 }
 
 .doc-search {
@@ -800,6 +816,12 @@ button {
 .prose strong {
   color: var(--ink);
   font-weight: 600;
+}
+
+.prose table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
 }
 
 .prose code {

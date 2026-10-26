@@ -97,7 +97,7 @@ function McpIllustration() {
 export function Home({ product }: { product: Product }) {
   return (
     <Frame product={product}>
-      <main id="main">
+      <main id="main" tabIndex={-1}>
         <section className="hero wrap">
           <div className="hero-copy">
             <p className="eyebrow">{product.role}</p>
