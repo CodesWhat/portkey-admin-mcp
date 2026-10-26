@@ -56,15 +56,22 @@ product reference.
 | `src/components/controls.tsx` | Theme, native disclosure and guide finder |
 | `src/app/styles.css` | Geometry, responsive rules and styles |
 | `src/lib/routes.mjs` | Route contract |
-| `content/docs/portkey/` | MDX starter guides |
+| `content/docs/portkey/` | MDX starter guides and generated manual pages |
+| `content/manual.config.json` | Pinned release commit, route map and sidebar order |
+| `scripts/sync-manual.mjs` | Generates and drift-checks the manual |
 
 ## Content
 
-The starter guides are grounded in the published 0.15.0 release at
-`46556acebb77c9ee224e54836137c64fb5650594` (README.md and COMPATIBILITY.md at that
-commit), not the working tree. They are not the complete manual; ingesting it is a
-later slice. This site does not offer hosted MCP service or native Prisma AIRS
-management.
+The three starter guides are hand-written and grounded in the published 0.15.0
+release at `46556acebb77c9ee224e54836137c64fb5650594`. The rest of the docs are
+generated from that tag by `scripts/sync-manual.mjs`, which reads each source with
+`git show` (never the working tree), strips decorative README HTML, rewrites links
+and writes `content/docs/portkey/*.md` plus `content/manual.lock.json`. The pinned
+commit and the file-to-route map live in `content/manual.config.json`, which also
+drives the sidebar order. `npm run sync:manual` regenerates; `npm run check:manual`
+fails on drift and needs the tag fetched (CI checks out with full history). Do not
+edit generated pages. This site does not offer hosted MCP service or native Prisma
+AIRS management.
 
 ## Asset provenance
 

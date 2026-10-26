@@ -7,6 +7,8 @@
     "build": "fumadocs-mdx && next build",
     "typecheck": "fumadocs-mdx && tsc --noEmit",
     "test": "node --test tests/*.test.mjs",
+    "sync:manual": "node scripts/sync-manual.mjs",
+    "check:manual": "node scripts/sync-manual.mjs --check",
     "check:export": "node scripts/check-export.mjs",
     "preview": "node scripts/preview.mjs",
     "verify": "node scripts/verify.mjs"

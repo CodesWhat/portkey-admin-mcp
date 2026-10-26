@@ -17,11 +17,39 @@ test("marketing is at the root and every docs page sits under /docs", () => {
   assert.equal(routeFor("overview"), "/docs");
   assert.equal(routeFor("getting-started"), "/docs/getting-started");
   assert.equal(routeFor("operations"), "/docs/operations");
+  assert.equal(routeFor("tools"), "/docs/tools");
+  assert.equal(routeFor("verify-release"), "/docs/verify-release");
   assert.deepEqual(routesFor(), [
     [],
     ["docs"],
     ["docs", "getting-started"],
     ["docs", "operations"],
+    ["docs", "manual"],
+    ["docs", "tools"],
+    ["docs", "compatibility"],
+    ["docs", "architecture"],
+    ["docs", "http-deployment"],
+    ["docs", "security"],
+    ["docs", "prisma-airs"],
+    ["docs", "distribution"],
+    ["docs", "verify-release"],
+  ]);
+});
+
+test("sidebar order is the starters, then the manual in config order", () => {
+  assert.deepEqual(docSlugs, [
+    "overview",
+    "getting-started",
+    "operations",
+    "manual",
+    "tools",
+    "compatibility",
+    "architecture",
+    "http-deployment",
+    "security",
+    "prisma-airs",
+    "distribution",
+    "verify-release",
   ]);
 });
 

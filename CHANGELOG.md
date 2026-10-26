@@ -14,6 +14,7 @@ release until that reference and the release notes say so.
 ### Added
 - A local Portkey marketing and documentation site under `website/`, built from the shared CodesWhat product web shell. It is not published yet and is not part of the npm package.
 - Tests now check the auth and probe path classifiers against Express's own routing across generated path variants, and exercise the 10,000-element tool input budget.
+- The local site now includes the full 0.15.0 manual (install and configuration, tool reference, compatibility, architecture, HTTP deployment, security, Prisma AIRS boundary, distribution, release verification), generated from the release tag with a drift check.
 
 ### Fixed
 - The optional live smoke test reports Portkey 502, 503 and 504 responses as skipped with the status code instead of failing CI, and still fails when no endpoint passes.
