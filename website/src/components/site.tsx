@@ -18,16 +18,16 @@ export function Brand({ product }: { product: Product }) {
 export function Frame({
   product,
   children,
-  docs = false,
+  docsPage,
 }: {
   product: Product;
   children: ReactNode;
-  docs?: boolean;
+  docsPage?: string;
 }) {
   const links = (
     <>
       <a href={`${hrefFor()}#how-it-works`}>How it works</a>
-      <a href={hrefFor("overview")} aria-current={docs ? "page" : undefined}>
+      <a href={hrefFor("overview")} aria-current={docsPage === "overview" ? "page" : undefined}>
         Docs
       </a>
       <a href={`https://github.com/${product.repo}`}>

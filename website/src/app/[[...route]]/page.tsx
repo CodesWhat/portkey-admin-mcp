@@ -61,7 +61,7 @@ export default async function Page({ params }: Props) {
   );
   const Body = doc.data.body;
   return (
-    <Frame product={product} docs>
+    <Frame product={product} docsPage={resolved.page}>
       <main id="main" className="docs-layout wrap">
         <aside className="docs-sidebar">
           <div className="desktop-doc-nav">{nav}</div>
