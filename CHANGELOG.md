@@ -12,6 +12,7 @@ release until that reference and the release notes say so.
 ## [Unreleased]
 
 ### Added
+- A local Portkey marketing and documentation site under `website/`, built from the shared CodesWhat product web shell. It is not published yet and is not part of the npm package.
 - Tests now check the auth and probe path classifiers against Express's own routing across generated path variants, and exercise the 10,000-element tool input budget.
 
 ### Fixed
