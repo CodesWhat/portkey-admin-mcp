@@ -1,0 +1,59 @@
+{
+  "repo": "CodesWhat/portkey-admin-mcp",
+  "tag": "v0.15.0",
+  "commit": "46556acebb77c9ee224e54836137c64fb5650594",
+  "starters": [
+    "overview",
+    "getting-started",
+    "operations"
+  ],
+  "pages": [
+    {
+      "slug": "manual",
+      "source": "README.md",
+      "title": "Install and configure"
+    },
+    {
+      "slug": "tools",
+      "source": "ENDPOINTS.md",
+      "title": "Tool reference"
+    },
+    {
+      "slug": "compatibility",
+      "source": "COMPATIBILITY.md",
+      "title": "Compatibility and deprecations"
+    },
+    {
+      "slug": "architecture",
+      "source": "docs/ARCHITECTURE.md",
+      "title": "Architecture"
+    },
+    {
+      "slug": "http-deployment",
+      "source": "docs/VERCEL_DEPLOYMENT.md",
+      "title": "HTTP deployment",
+      "description": "How to self-deploy this MCP server on Vercel. A proof of concept kept for reference; there is no hosted version."
+    },
+    {
+      "slug": "security",
+      "source": "SECURITY-ASSURANCE.md",
+      "title": "Security assurance",
+      "description": "Maps the project's security requirements to its threat model, implementation controls, and public verification evidence."
+    },
+    {
+      "slug": "prisma-airs",
+      "source": "docs/PRISMA_AIRS_INTEROPERABILITY.md",
+      "title": "Prisma AIRS interoperability"
+    },
+    {
+      "slug": "distribution",
+      "source": "docs/DISTRIBUTION.md",
+      "title": "Distribution and directories"
+    },
+    {
+      "slug": "verify-release",
+      "source": "docs/VERIFY_RELEASE.md",
+      "title": "Verify a release"
+    }
+  ]
+}

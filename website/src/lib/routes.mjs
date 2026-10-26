@@ -1,5 +1,9 @@
 export const productId = "portkey";
-export const docSlugs = ["overview", "getting-started", "operations"];
+import manual from "../../content/manual.config.json" with { type: "json" };
+export const docSlugs = [
+  ...manual.starters,
+  ...manual.pages.map((page) => page.slug),
+];
 if (process.env.SITE_PRODUCT && process.env.SITE_PRODUCT !== productId)
   throw new Error(`This site only builds ${productId}`);
 export function routeFor(page) {
