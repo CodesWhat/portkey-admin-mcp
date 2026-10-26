@@ -39,13 +39,47 @@ set to anything but `portkey` the build fails.
 compiled MDX, local links and assets, noindex metadata, and absence of foreign
 product routes.
 
-Browser checks should cover desktop, 390px and 320px layouts, light/dark theme
-persistence, menu Enter/Space/Escape, visible focus, guide finder results and
-keyboard navigation. The Portkey animation starts only on request, has a pause
-control, and is hidden for reduced motion. Navigation and guide content remain
-usable without JavaScript; theme switching and guide filtering require it. The
-guide finder searches titles and summaries of the three local guides, not the full
-product reference.
+`npm run check:browser` is a local rendered check, not part of CI (it needs a
+browser). Run `npm run build` first. It serves `out/` on 127.0.0.1 and drives
+Chromium (the Playwright build, or system Chrome as a fallback) and WebKit when
+installed (`npx playwright-core install webkit`), printing a PASS or FAIL line per
+check and exiting non-zero on any failure. It covers overflow at 1280, 390 and
+320px, the header nav and Menu disclosure (Enter, Space, Escape, focus return),
+the skip link and docs sidebar Tab order, the guide finder, the release label,
+theme persistence, the animation play control and reduced motion, and the no-JS
+rendering of docs pages and menus. The Tab-to-link checks run only in Chromium,
+because WebKit leaves links out of the Tab order by default.
+
+The Portkey animation starts only on request, has a pause control, and is hidden
+for reduced motion. Navigation and guide content remain usable without JavaScript;
+theme switching and guide filtering require it. The guide finder searches titles
+and summaries of the local guides and manual pages, not their full text, and says
+so in the placeholder and a hint under the input.
+
+## Release label
+
+Every docs page shows "Docs for 0.15.0, the latest release" linking to the GitHub
+release page. The version, tag and URL come from `release` in `src/lib/products.ts`;
+a test checks that its tag matches `tag` in `content/manual.config.json`.
+
+## Security headers
+
+`vercel.json` in this directory (the future Vercel project root; the repo-root
+`vercel.json` belongs to the MCP HTTP adapter) sets `X-Content-Type-Options`,
+`Referrer-Policy`, `X-Frame-Options`, `Permissions-Policy` and a
+`Content-Security-Policy` on every route. The export loads only self-hosted
+scripts, styles and fonts. The only external origins are images in the manual pages:
+`https://img.shields.io` (badges) and `https://lobehub.com` (badge), so `img-src`
+lists exactly those. `connect-src` is `'self'`.
+
+`script-src` uses `'unsafe-inline'` rather than hashes. Next's static export
+inlines the RSC payload in a `<script>` on every page, and across the 16 exported
+pages there are 17 distinct inline scripts, 16 of which are per-page payloads, so
+a hash list would change with every content edit and need a generator for little
+gain. `style-src` uses `'unsafe-inline'` too, for the code highlighter's inline
+`style` attributes. `check:export` fails if any external origin in `out/` is not
+allowed by the CSP, and `npm test` checks that the file parses and carries each
+required header. Revisit hashes or nonces if the host can inject them.
 
 ## Files
 
@@ -59,6 +93,8 @@ product reference.
 | `content/docs/portkey/` | MDX starter guides and generated manual pages |
 | `content/manual.config.json` | Pinned release commit, route map and sidebar order |
 | `scripts/sync-manual.mjs` | Generates and drift-checks the manual |
+| `scripts/check-browser.mjs` | Local Chromium and WebKit rendered checks |
+| `vercel.json` | Static security headers for the future host |
 
 ## Content
 

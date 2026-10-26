@@ -13,6 +13,8 @@ export type Product = {
 };
 export const release = {
   version: "0.15.0",
+  tag: "v0.15.0",
+  notes: "https://github.com/CodesWhat/portkey-admin-mcp/releases/tag/v0.15.0",
   commit: "46556acebb77c9ee224e54836137c64fb5650594",
   source:
     "https://github.com/CodesWhat/portkey-admin-mcp/tree/46556acebb77c9ee224e54836137c64fb5650594",

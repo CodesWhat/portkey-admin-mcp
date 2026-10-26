@@ -64,7 +64,7 @@ export default async function Page({ params }: Props) {
   const Body = doc.data.body;
   return (
     <Frame product={product} docsPage={resolved.page}>
-      <main id="main" className="docs-layout wrap">
+      <main id="main" tabIndex={-1} className="docs-layout wrap">
         <aside className="docs-sidebar">
           <div className="desktop-doc-nav">{nav}</div>
           <Disclosure className="mobile-doc-nav" label="In this guide">
@@ -73,9 +73,16 @@ export default async function Page({ params }: Props) {
         </aside>
         <div className="doc-column">
           <div className="docs-toolbar">
-            <span className="eyebrow">
-              DOCUMENTATION / {product.name.toUpperCase()}
-            </span>
+            <div>
+              <span className="eyebrow">
+                DOCUMENTATION / {product.name.toUpperCase()}
+              </span>
+              <p className="release-label">
+                <a href={release.notes}>
+                  Docs for {release.version}, the latest release
+                </a>
+              </p>
+            </div>
             <DocSearch entries={entries} />
           </div>
           <article className="prose">

@@ -122,10 +122,14 @@ export function DocSearch({
       <input
         id="doc-query"
         type="search"
-        placeholder="Search these guides…"
+        placeholder="Search guide titles and summaries…"
+        aria-describedby="doc-query-hint"
         value={query}
         onChange={(event) => setQuery(event.target.value)}
       />
+      <p id="doc-query-hint" className="search-hint">
+        Matches guide titles and summaries only, not the full text.
+      </p>
       {query && (
         <div className="search-results">
           <p aria-live="polite">
