@@ -7,7 +7,7 @@ protocol revisions are separate compatibility boundaries.
 
 | Package release | MCP SDK | MCP protocol | Support and behavior |
 | --- | --- | --- | --- |
-| 0.15.0 | server/client 2.3.1, Node adapter 2.1.1 (exact pins) | Native `2026-07-28` plus older clients on the same endpoint | Current release, 194 tools across 22 domains, Node.js 24+. HTTP session and replay stores are retired; obsolete settings warn and are ignored. First warnings and ignored settings start in 0.15.0; session/replay behavior is removed in that release. |
+| 0.15.1 | server/client 2.3.1, Node adapter 2.1.1 (exact pins) | Native `2026-07-28` plus older clients on the same endpoint | Current release, 194 tools across 22 domains, Node.js 24+. HTTP session and replay stores are retired; obsolete settings warn and are ignored. First warnings and ignored settings start in 0.15.0; session/replay behavior is removed in that release. |
 | 0.14.1 | v1; dependency floor 1.32.1 | Latest supported revision: `2025-11-25` | Previous line, 194 tools across 22 domains, Node.js 24+. Stateful HTTP sessions and optional replay stores remain active. |
 | 0.13.0 | v1; dependency floor 1.31.0 | Latest supported revision: `2025-11-25` | Historical release, 184 tools across 20 domains. Upgrade to the latest minor for security fixes. |
 

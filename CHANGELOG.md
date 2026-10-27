@@ -11,12 +11,14 @@ release until that reference and the release notes say so.
 
 ## [Unreleased]
 
+## [0.15.1] - 2026-10-27
+
 ### Added
-- A local Portkey marketing and documentation site under `website/`, built from the shared CodesWhat product web shell. It is not published yet and is not part of the npm package.
+- A Portkey marketing and documentation site under `website/`, built from the shared CodesWhat product web shell and published at https://portkey.codeswhat.com. It is not part of the npm package.
 - Tests now check the auth and probe path classifiers against Express's own routing across generated path variants, and exercise the 10,000-element tool input budget.
-- The local site now includes the full 0.15.0 manual (install and configuration, tool reference, compatibility, architecture, HTTP deployment, security, Prisma AIRS boundary, distribution, release verification), generated from the release tag with a drift check.
-- The site's guide finder states that it searches titles and summaries only, docs pages show the release they document, and the site ships static security headers (including a Content-Security-Policy) for its future host.
-- The site is ready to publish at portkey.codeswhat.com: pages are indexable with canonical URLs, and the export includes a robots.txt and sitemap.
+- The site includes the full 0.15.0 manual (install and configuration, tool reference, compatibility, architecture, HTTP deployment, security, Prisma AIRS boundary, distribution, release verification), generated from the release tag with a drift check.
+- The site's guide finder states that it searches titles and summaries only, docs pages show the release they document, and the site ships static security headers (including a Content-Security-Policy).
+- Site pages are indexable with canonical URLs, and the site serves a robots.txt and sitemap.
 
 ### Changed
 - The compatibility table now qualifies the 401 on GET and DELETE by authentication mode (it applies when `MCP_AUTH_MODE` is not `none`), and the release verification guide states the npm 9.5.0 minimum for `npm audit signatures`.
@@ -955,7 +957,9 @@ First stable release. Graduates from beta with 151 tools covering ~98% of the Po
 - Vercel deployment support
 - Contract tests, E2E tests, security tests
 
-[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.14.1...HEAD
+[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.15.1...HEAD
+[0.15.1]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.15.0...v0.15.1
+[0.15.0]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.14.1...v0.15.0
 [0.14.1]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.14.0...v0.14.1
 [0.14.0]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.12.2...v0.13.0
