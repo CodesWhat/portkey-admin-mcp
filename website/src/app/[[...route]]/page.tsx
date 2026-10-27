@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { product, release } from "@/lib/products";
-import { docSlugs, resolveRoute, routesFor } from "@/lib/routes.mjs";
+import { canonicalFor, docSlugs, resolveRoute, routesFor } from "@/lib/routes.mjs";
 import { getDocument } from "@/lib/content";
 import { Frame, Home, hrefFor } from "@/components/site";
 import { Disclosure, DocSearch } from "@/components/controls";
@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       ? `${doc.data.title} · ${product.name}`
       : `${product.name} · ${product.headline.join(" ")}`,
     description: doc?.data.description || product.description,
-    robots: { index: false, follow: false },
+    alternates: { canonical: canonicalFor(resolved.page) },
   };
 }
 export default async function Page({ params }: Props) {

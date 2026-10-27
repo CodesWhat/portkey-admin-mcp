@@ -1,4 +1,5 @@
 export const productId = "portkey";
+export const siteUrl = "https://portkey.codeswhat.com";
 import manual from "../../content/manual.config.json" with { type: "json" };
 export const docSlugs = [
   ...manual.starters,
@@ -12,6 +13,10 @@ export function routeFor(page) {
   return page === "home"
     ? "/"
     : `/docs${page === "overview" ? "" : `/${page}`}`;
+}
+export function canonicalFor(page) {
+  const path = routeFor(page);
+  return `${siteUrl}${path.endsWith("/") ? path : `${path}/`}`;
 }
 export function routesFor() {
   return ["home", ...docSlugs].map((page) =>

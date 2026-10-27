@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  canonicalFor,
   productId,
+  siteUrl,
   docSlugs,
   routeFor,
   routesFor,
@@ -74,4 +76,15 @@ test("foreign product routes and unknown pages do not resolve", () => {
   assert.equal(resolveRoute(["docs", "missing"]), undefined);
   assert.equal(resolveRoute(["docs", "operations", "extra"]), undefined);
   assert.throws(() => routeFor("missing"), /Unknown page/);
+});
+
+test("canonical URLs are absolute and end in a slash", () => {
+  assert.equal(siteUrl, "https://portkey.codeswhat.com");
+  assert.equal(canonicalFor("home"), "https://portkey.codeswhat.com/");
+  assert.equal(canonicalFor("overview"), "https://portkey.codeswhat.com/docs/");
+  assert.equal(
+    canonicalFor("getting-started"),
+    "https://portkey.codeswhat.com/docs/getting-started/",
+  );
+  assert.throws(() => canonicalFor("missing"), /Unknown page/);
 });
