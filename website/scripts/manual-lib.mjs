@@ -35,3 +35,30 @@ export function checkTagPin(tag, resolved, commit) {
     return `tag ${tag} resolves to ${resolved}, but manual.config.json pins ${commit}.`;
   return null;
 }
+
+// Index scans instead of nested quantifiers, so repeated rules stay linear.
+const isBlank = (c) => c === " " || c === "\t";
+
+export function stripLeadingRules(text) {
+  let i = text.length - text.trimStart().length;
+  while (text.startsWith("---", i)) {
+    let j = i + 3;
+    while (isBlank(text[j])) j++;
+    if (text[j] !== "\n") break;
+    j++;
+    while (j < text.length && text[j].trim() === "") j++;
+    i = j;
+  }
+  return text.slice(i);
+}
+
+export function stripTrailingRules(text) {
+  let end = text.trimEnd().length;
+  for (;;) {
+    const nl = text.lastIndexOf("\n", end - 1);
+    if (nl < 0 || !/^[ \t]*---$/.test(text.slice(nl + 1, end))) break;
+    end = nl;
+    while (end > 0 && text[end - 1].trim() === "") end--;
+  }
+  return text.slice(0, end);
+}
