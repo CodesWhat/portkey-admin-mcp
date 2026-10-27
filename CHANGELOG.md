@@ -11,6 +11,9 @@ release until that reference and the release notes say so.
 
 ## [Unreleased]
 
+### Fixed
+- The release workflow now waits up to 15 minutes for a new npm version to become visible before publishing to the MCP Registry. The 0.15.1 run gave up after 5 minutes, seconds before npm finished processing.
+
 ## [0.15.1] - 2026-10-27
 
 ### Added
