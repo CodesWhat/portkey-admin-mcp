@@ -61,6 +61,12 @@ function casePermutations(word: string): string[] {
 	return out;
 }
 
+function swapFirst(text: string, letter: string, replacement: string): string {
+	const at = text.indexOf(letter);
+	if (at === -1) return text;
+	return text.slice(0, at) + replacement + text.slice(at + letter.length);
+}
+
 function percentEncodeLetter(word: string, index: number, upperHex: boolean) {
 	const hex = word.charCodeAt(index).toString(16);
 	const encoded = `%${upperHex ? hex.toUpperCase() : hex}`;
@@ -100,13 +106,13 @@ function buildCorpus(): string[] {
 			}
 		}
 		// Unicode lookalikes (Cyrillic, fullwidth, dotless i, Kelvin sign).
-		paths.add(`/${word.replace(/m/, "%D0%BC")}`);
-		paths.add(`/${word.replace(/e/, "%D0%B5")}`);
-		paths.add(`/${word.replace(/a/, "%D0%B0")}`);
-		paths.add(`/${word.replace(/p/, "%D1%80")}`);
-		paths.add(`/${word.replace(/h/, "%EF%BD%88")}`);
-		paths.add(`/${word.replace(/l/, "%C4%B1")}`);
-		paths.add(`/${word.replace(/k/, "%E2%84%AA")}`);
+		paths.add(`/${swapFirst(word, "m", "%D0%BC")}`);
+		paths.add(`/${swapFirst(word, "e", "%D0%B5")}`);
+		paths.add(`/${swapFirst(word, "a", "%D0%B0")}`);
+		paths.add(`/${swapFirst(word, "p", "%D1%80")}`);
+		paths.add(`/${swapFirst(word, "h", "%EF%BD%88")}`);
+		paths.add(`/${swapFirst(word, "l", "%C4%B1")}`);
+		paths.add(`/${swapFirst(word, "k", "%E2%84%AA")}`);
 		paths.add(`/${word}%E2%80%8B`);
 	}
 	for (const nearMiss of [

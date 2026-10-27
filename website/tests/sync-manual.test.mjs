@@ -35,3 +35,14 @@ test("checkTagPin", () => {
   assert.match(checkTagPin("v1", "", "abc"), /missing/);
   assert.match(checkTagPin("v1", "def", "abc"), /resolves to def/);
 });
+
+test("rewrites a link whose label has a double-backtick code span", () => {
+  assert.equal(run("[``a``](x.md)"), "[``a``](R(x.md))");
+});
+
+test("does not backtrack catastrophically on unbalanced backticks", () => {
+  const input = `[${"``".repeat(5000)}x`;
+  const start = performance.now();
+  run(input);
+  assert.ok(performance.now() - start < 500);
+});

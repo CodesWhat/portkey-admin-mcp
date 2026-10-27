@@ -12,7 +12,7 @@ export function mapOutsideFences(text, fn) {
 // first and left literal; a link whose label contains code spans is matched
 // whole, because its "[" comes first.
 const INLINE =
-  /(`+[^`\n]*?`+)|(!?)\[((?:`+[^`\n]*?`+|[^\]`])*)\]\(([^)\s]+)((?:\s+"[^"]*")?)\)|^(\s*\[[^\]]+\]:\s*)(\S+)/gm;
+  /(`+[^`\n]*?`+)|(!?)\[((?:`[^`\n]*`|[^\]`])*)\]\(([^)\s]+)((?:\s+"[^"]*")?)\)|^(\s*\[[^\]]+\]:\s*)(\S+)/gm;
 
 export function rewriteLinksWith(text, rewrite) {
   return mapOutsideFences(text, (part) =>
