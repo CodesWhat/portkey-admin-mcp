@@ -22,3 +22,4 @@ api/
 Dockerfile
 vercel.json
 lefthook.yml
+website/

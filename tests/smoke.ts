@@ -7,7 +7,11 @@
 
 import "dotenv/config";
 import { HealthService, PortkeyService } from "../src/services/index.js";
-import { expectedSmokeSkipReason } from "./smoke-outcomes.js";
+import {
+	expectedSmokeSkipReason,
+	smokeExitCode,
+	UPSTREAM_UNAVAILABLE_PREFIX,
+} from "./smoke-outcomes.js";
 
 // The smoke suite hits the live Portkey API. CI only invokes it when the
 // release workflow provides the dedicated staging key.
@@ -665,6 +669,15 @@ async function main() {
 	console.log(`  \x1b[32mPassed:  ${passed}\x1b[0m`);
 	console.log(`  \x1b[31mFailed:  ${failed}\x1b[0m`);
 	console.log(`  \x1b[33mSkipped: ${skipped}\x1b[0m`);
+	const upstreamUnavailable = results.filter(
+		(r) =>
+			r.status === "SKIP" && r.message?.startsWith(UPSTREAM_UNAVAILABLE_PREFIX),
+	).length;
+	if (upstreamUnavailable > 0) {
+		console.log(
+			`  \x1b[33mPortkey upstream unavailable (skipped): ${upstreamUnavailable}\x1b[0m`,
+		);
+	}
 
 	if (failed > 0) {
 		console.log("\nFailed Tests:");
@@ -673,7 +686,17 @@ async function main() {
 		}
 	}
 
-	process.exit(failed > 0 ? 1 : 0);
+	const exitCode = smokeExitCode({
+		passed,
+		failed,
+		total: results.length,
+	});
+	if (failed === 0 && exitCode === 1) {
+		console.error(
+			"\nNo endpoint passed. Every check was skipped, so the live smoke test proved nothing (upstream outage or unusable credential).",
+		);
+	}
+	process.exit(exitCode);
 }
 
 main().catch((err) => {

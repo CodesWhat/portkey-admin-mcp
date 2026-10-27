@@ -17,7 +17,7 @@ npm install --ignore-scripts --save-exact portkey-admin-mcp@<version>
 npm audit signatures
 ```
 
-Replace `<version>` with the intended version. A successful audit reports verified
+Replace `<version>` with the intended version. `npm audit signatures` needs npm 9.5.0 or later, which verifies provenance attestations as well as registry signatures. A successful audit reports verified
 registry signatures and provenance for the installed dependency tree. Treat a
 missing or invalid signature or attestation as a failed verification and do not
 run that installation.
