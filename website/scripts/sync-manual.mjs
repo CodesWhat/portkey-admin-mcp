@@ -149,12 +149,22 @@ function assertNoHtml(text, source) {
   if (tag) fail(`${source}: unhandled raw HTML ${tag[0].slice(0, 80)}`);
 }
 
+function stripTags(text) {
+  let previous;
+  let current = text;
+  do {
+    previous = current;
+    current = current.replace(/<[^>]+>/g, "");
+  } while (current !== previous);
+  return current.replace(/[<>]/g, "");
+}
+
 function plain(text) {
-  return text
-    .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
-    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
-    .replace(/<[^>]+>/g, "")
-    .replace(/[<>]/g, "")
+  return stripTags(
+    text
+      .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
+      .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1"),
+  )
     .replace(/[`*_]/g, "")
     .replace(/\s+/g, " ")
     .trim();
