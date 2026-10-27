@@ -6,7 +6,13 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { posix } from "node:path";
 import { fileURLToPath } from "node:url";
-import { checkTagPin, mapOutsideFences, rewriteLinksWith } from "./manual-lib.mjs";
+import {
+  checkTagPin,
+  mapOutsideFences,
+  rewriteLinksWith,
+  stripLeadingRules,
+  stripTrailingRules,
+} from "./manual-lib.mjs";
 
 const siteRoot = fileURLToPath(new URL("..", import.meta.url));
 const configPath = join(siteRoot, "content/manual.config.json");
@@ -148,6 +154,7 @@ function plain(text) {
     .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
     .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
     .replace(/<[^>]+>/g, "")
+    .replace(/[<>]/g, "")
     .replace(/[`*_]/g, "")
     .replace(/\s+/g, " ")
     .trim();
@@ -179,12 +186,11 @@ const generated = new Map();
 const lock = { commit, tag: config.tag, pages: [] };
 for (const page of pages) {
   const raw = git(["show", `${commit}:${page.source}`]).toString("utf8");
-  let body = stripHtml(raw)
-    .replace(/^\s*# .*\n/, "")
-    .replace(/\n{3,}/g, "\n\n")
-    .replace(/^(?:\s*---\s*\n)+/, "")
-    .replace(/(?:\n\s*---\s*)+$/, "")
-    .trim();
+  let body = stripTrailingRules(
+    stripLeadingRules(
+      stripHtml(raw).replace(/^\s*# .*\n/, "").replace(/\n{3,}/g, "\n\n"),
+    ),
+  ).trim();
   assertNoHtml(body, page.source);
   body = rewriteLinks(body, page.source);
   const description = page.description || describe(raw);
