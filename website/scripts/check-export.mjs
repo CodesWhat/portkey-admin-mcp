@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { routesFor } from "../src/lib/routes.mjs";
+import { canonicalFor, docSlugs, routesFor } from "../src/lib/routes.mjs";
 
 const vercel = JSON.parse(
   readFileSync(new URL("../vercel.json", import.meta.url), "utf8"),
@@ -26,6 +26,12 @@ const decode = (value) => {
     return text;
   }
 };
+const expectedCanonical = new Map(
+  ["home", ...docSlugs].map((page, index) => [
+    "/" + routes[index].join("/"),
+    canonicalFor(page),
+  ]),
+);
 const pages = new Map();
 for (const parts of routes) {
   const path = join(root, ...parts, "index.html");
@@ -44,14 +50,19 @@ for (const parts of routes) {
     1,
     `${path}: one main heading`,
   );
-  assert.match(
-    html,
-    /name="robots" content="noindex, nofollow"/,
-    `${path}: site is not indexable yet`,
+  assert.ok(!/noindex/i.test(html), `${path}: page must be indexable`);
+  const canonicals = [
+    ...html.matchAll(/<link\s[^>]*rel="canonical"[^>]*>/g),
+  ].map((m) => m[0].match(/href="([^"]*)"/)?.[1]);
+  assert.deepEqual(
+    canonicals,
+    [expectedCanonical.get("/" + parts.join("/"))],
+    `${path}: exactly one canonical link with the expected URL`,
   );
   for (const [element, tag, url] of html.matchAll(
     /<(img|script|link|iframe|source|video|audio|form)\b[^>]*?\s(?:src|href|action)="(https?:\/\/[^"]+)"[^>]*>/g,
   )) {
+    if (tag === "link" && /\srel="canonical"/.test(element)) continue;
     const origin = new URL(url).origin;
     const image = tag === "img" || (tag === "link" && /\sas="image"/.test(element));
     const directive = image ? "img-src" : tag === "script" ? "script-src" : "default-src";
@@ -97,6 +108,21 @@ for (const id of ["drydock", "sockguard", "portwing", "careerrat", "portkey"])
     false,
     `export leaked a ${id} route`,
   );
+const robotsTxt = readFileSync(join(root, "robots.txt"), "utf8");
+assert.ok(
+  robotsTxt.includes("Sitemap: https://portkey.codeswhat.com/sitemap.xml"),
+  "robots.txt names the sitemap",
+);
+const sitemapLocs = [
+  ...readFileSync(join(root, "sitemap.xml"), "utf8").matchAll(
+    /<loc>([^<]+)<\/loc>/g,
+  ),
+].map((m) => m[1]);
+assert.deepEqual(
+  [...sitemapLocs].sort(),
+  [...expectedCanonical.values()].sort(),
+  "sitemap.xml lists every route and no others",
+);
 const home = readFileSync(join(root, "index.html"), "utf8");
 assert.ok(!home.includes("All local previews"));
 assert.match(home, /Portkey Admin MCP/);
