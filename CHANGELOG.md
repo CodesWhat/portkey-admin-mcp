@@ -12,7 +12,7 @@ release until that reference and the release notes say so.
 ## [Unreleased]
 
 ### Changed
-- The security assurance case limits its per-request authentication claim to bearer and Clerk modes, matching the documented unauthenticated local-debugging override.
+- The security assurance case limits its per-request authentication claim to MCP requests in bearer and Clerk modes, and names the health, readiness, status and auth-info routes that stay unauthenticated.
 - The Docker image now runs Node 26, and CI also tests Node 26. Node 24 remains the minimum (`engines.node` is still `>=24`), and the npm package is still built on Node 24.
 - The README footer links the CodesWhat logo to codeswhat.com, and the architecture guide, Vercel guide and security assurance case no longer call the SDK v2 implementation an unreleased candidate.
 - The site's manual now follows the v0.15.2 release, and its release label and links read the manual pin instead of a hard-coded version.
