@@ -6,6 +6,7 @@ import {
 	parseErrorResponse,
 } from "../lib/fetch.js";
 import { Logger } from "../lib/logger.js";
+import { isInvalidPathSegment } from "../lib/path-segment.js";
 
 const DEFAULT_BASE_URL = "https://api.portkey.ai/v1";
 const DEFAULT_PUBLIC_BASE_URL = "https://api.portkey.ai";
@@ -230,8 +231,36 @@ export class BaseService {
 		this.v2BaseUrl = toV2BaseUrl(this.baseUrl);
 	}
 
+	/**
+	 * Encode a caller-supplied value for use as one URL path segment. "", "."
+	 * and ".." (including percent-encoded forms) are refused: fetch's URL
+	 * parser would collapse them and send the request to a different endpoint.
+	 */
 	protected encodePathSegment(value: string): string {
+		if (isInvalidPathSegment(value)) {
+			throw new Error('Invalid path segment: must not be empty, "." or ".."');
+		}
 		return encodeURIComponent(value);
+	}
+
+	/**
+	 * Defence in depth: refuse to send a request whose path the URL parser
+	 * rewrote (dot segments), since that would reach a different endpoint than
+	 * the one the service built.
+	 */
+	private assertPathNotNormalised(
+		baseUrl: string,
+		path: string,
+		url: string,
+	): void {
+		const queryIndex = path.search(/[?#]/);
+		const builtPath = queryIndex === -1 ? path : path.slice(0, queryIndex);
+		const expected = `${new URL(baseUrl).pathname.replace(/\/+$/, "")}${builtPath}`;
+		if (new URL(url).pathname !== expected) {
+			throw new Error(
+				"Refusing request: the request path would be normalised by the URL parser",
+			);
+		}
 	}
 
 	private buildUrl(
@@ -282,6 +311,7 @@ export class BaseService {
 
 		const requestId = crypto.randomUUID();
 		const url = this.buildUrl(path, options.params, options.baseUrl);
+		this.assertPathNotNormalised(options.baseUrl ?? this.baseUrl, path, url);
 		const startTime = Date.now();
 
 		// Log only the param keys, never the composed URL — query values can carry
