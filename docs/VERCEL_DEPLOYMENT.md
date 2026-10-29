@@ -17,7 +17,7 @@ Use the guide from your installed release when operating 0.14.x. See
 - Redis: shared rate limiting only
 - Auth: `clerk` (preferred for teams) or `bearer` (internal-only)
 
-Each POST is independent. GET replay, session IDs and DELETE session operations are retired in the candidate. After an interrupted mutation, inspect Portkey state before retrying; see the recovery guide. Forward `MCP-Protocol-Version`, `Mcp-Method` and `Mcp-Name` through any proxy. No idle change-notification streams are advertised.
+Each POST is independent. GET replay, session IDs and DELETE session operations are retired in 0.15.0. After an interrupted mutation, inspect Portkey state before retrying; see the recovery guide. Forward `MCP-Protocol-Version`, `Mcp-Method` and `Mcp-Name` through any proxy. No idle change-notification streams are advertised.
 
 ## 1. Prerequisites
 
