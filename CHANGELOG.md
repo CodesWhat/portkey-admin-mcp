@@ -14,6 +14,9 @@ release until that reference and the release notes say so.
 ### Fixed
 - The release workflow now waits up to 15 minutes for a new npm version to become visible before publishing to the MCP Registry. The 0.15.1 run gave up after 5 minutes, seconds before npm finished processing.
 
+### Security
+- Moving to MCP TypeScript SDK 2.4.0 and the Node adapter 2.1.2 pulls `@hono/node-server` 2.1.x, which clears GHSA-rmxm-3fg6-px4f. The server never used the affected `serveStatic`.
+
 ## [0.15.1] - 2026-10-27
 
 ### Added
