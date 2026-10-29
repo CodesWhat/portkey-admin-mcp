@@ -9,30 +9,66 @@ export function Provider({ children }: { children: ReactNode }) {
     </ThemeProvider>
   );
 }
-export function ProductMark() {
-  const [playing, setPlaying] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+// Frame 0 is static; the spin render is fetched after load and plays once, then holds its last frame.
+// Reduced motion keeps the still.
+export function HeroLogo() {
+  const [src, setSrc] = useState("/assets/portkey-360.webp");
+  const [played, setPlayed] = useState(false);
+  useEffect(() => {
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    let cancelled = false;
+    const go = () => {
+      const pre = new Image();
+      pre.onload = () => {
+        if (cancelled) return;
+        setSrc("/assets/portkey-spin-360.webp");
+        setPlayed(true);
+      };
+      pre.src = "/assets/portkey-spin-360.webp";
+    };
+    const after = () =>
+      "requestIdleCallback" in window ? requestIdleCallback(go) : setTimeout(go, 200);
+    if (document.readyState === "complete") after();
+    else window.addEventListener("load", after, { once: true });
+    return () => {
+      cancelled = true;
+      window.removeEventListener("load", after);
+    };
+  }, []);
   return (
-    <div className="product-animation">
-      <div className={playing ? "mark-stage playing" : "mark-stage"}>
-        {playing && (
-          <img
-            className="animated-mark"
-            src="/assets/portkey.webp"
-            alt=""
-            width="152"
-            height="152"
-          />
-        )}
-        <span className="still-mark" aria-hidden="true">
-          PORTKEY
-        </span>
-      </div>
-      <button disabled={!mounted} onClick={() => setPlaying(!playing)}>
-        {playing ? "Pause product animation" : "Play product animation"}
-      </button>
-    </div>
+    <img
+      className="logo"
+      id="hero-logo"
+      src={src}
+      data-played={played ? "1" : undefined}
+      alt="Portkey Admin MCP mascot, a glossy dark tile with a hexagon mark"
+      width="360"
+      height="360"
+    />
+  );
+}
+export function CopyInstall({ command }: { command: string }) {
+  const [label, setLabel] = useState("Copy");
+  const done = (ok: boolean) => {
+    setLabel(ok ? "Copied" : "Press Ctrl+C");
+    setTimeout(() => setLabel("Copy"), 1600);
+  };
+  return (
+    <button
+      type="button"
+      className="copy"
+      aria-label="Copy the install command"
+      onClick={() => {
+        if (navigator.clipboard && window.isSecureContext)
+          navigator.clipboard.writeText(command).then(
+            () => done(true),
+            () => done(false),
+          );
+        else done(false);
+      }}
+    >
+      {label}
+    </button>
   );
 }
 export function ThemeSwitch() {
@@ -46,7 +82,8 @@ export function ThemeSwitch() {
       disabled={!mounted}
       onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
     >
-      {mounted && resolvedTheme === "dark" ? "☀" : "◐"}
+      <span aria-hidden="true">{mounted && resolvedTheme === "dark" ? "☾" : "☀"}</span>
+      <span className="theme-label">{mounted && resolvedTheme === "dark" ? "Dark" : "Light"}</span>
     </button>
   );
 }
@@ -104,6 +141,16 @@ export function Disclosure({
     </details>
   );
 }
+function Highlight({ text, terms }: { text: string; terms: string[] }) {
+  if (!terms.length) return text;
+  const pattern = new RegExp(
+    `(${terms.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`,
+    "gi",
+  );
+  return text
+    .split(pattern)
+    .map((part, i) => (i % 2 ? <mark key={i}>{part}</mark> : part));
+}
 export function DocSearch({
   entries,
 }: {
@@ -137,8 +184,10 @@ export function DocSearch({
           </p>
           {matches.map((entry) => (
             <a key={entry.href} href={entry.href}>
-              {entry.title}
-              <small>{entry.description}</small>
+              <Highlight text={entry.title} terms={terms} />
+              <small>
+                <Highlight text={entry.description} terms={terms} />
+              </small>
             </a>
           ))}
         </div>

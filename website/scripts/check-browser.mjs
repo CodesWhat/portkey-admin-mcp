@@ -35,7 +35,11 @@ async function serve() {
     let file = normalize(join(root, pathname));
     if (file !== root && !file.startsWith(root + sep)) return void response.writeHead(403).end();
     if (existsSync(file) && statSync(file).isDirectory()) file = join(file, "index.html");
-    if (!existsSync(file)) return void response.writeHead(404).end("Not found");
+    if (!existsSync(file)) {
+      const page404 = join(root, "404.html");
+      response.writeHead(404, { "content-type": mime[".html"] });
+      return void (existsSync(page404) ? createReadStream(page404).pipe(response) : response.end("Not found"));
+    }
     response.writeHead(200, { "content-type": mime[extname(file)] ?? "application/octet-stream" });
     createReadStream(file).pipe(response);
   });
@@ -195,25 +199,50 @@ async function suite(browser, engine, base) {
     expect(!(await dark()), "light theme lost after reload");
   });
 
-  await check("animation: starts only on request and can be paused", {}, async (_, page) => {
+  await check("hero logo: static frame first, then the spin render plays once", {}, async (_, page) => {
     await open(page, "/");
-    expect(await page.locator(".animated-mark").count() === 0, "animation is present before it is requested");
-    const button = page.locator(".product-animation button");
-    await button.click();
-    expect(await page.locator(".animated-mark").isVisible(), "animation did not start");
-    expect(/Pause/.test(await button.innerText()), "button does not offer Pause");
-    await button.click();
-    expect(await page.locator(".animated-mark").count() === 0, "animation did not stop");
+    await page.waitForFunction(() => document.querySelector("#hero-logo")?.dataset.played === "1", null, { timeout: 10_000 });
+    expect((await page.locator("#hero-logo").getAttribute("src")).endsWith("/assets/portkey-spin-360.webp"), "spin render was not swapped in");
   });
 
-  await check("reduced motion: animation and its control are hidden", { reducedMotion: "reduce" }, async (_, page) => {
+  await check("reduced motion: hero logo stays on the still frame", { reducedMotion: "reduce" }, async (_, page) => {
     await open(page, "/");
     expect(await page.evaluate(() => matchMedia("(prefers-reduced-motion: reduce)").matches), "reduced motion not emulated");
-    expect(!(await page.locator(".product-animation button").isVisible()), "play control is visible");
-    expect(await page.locator(".animated-mark").count() === 0, "animated mark is rendered");
-    expect(await page.locator(".still-mark").isVisible(), "static mark is not shown");
+    await page.waitForTimeout(800);
+    expect((await page.locator("#hero-logo").getAttribute("src")).endsWith("/assets/portkey-360.webp"), "logo left the still frame");
+    expect(await page.locator("#hero-logo").getAttribute("data-played") === null, "logo reports it played");
     const transition = await page.evaluate(() => getComputedStyle(document.querySelector(".header")).transitionDuration);
     expect(/^0s(, 0s)*$/.test(transition), `transitions still run (${transition})`);
+  });
+
+  await check("terminal: replays a scene and makes no external requests", {}, async (_, page) => {
+    const external = [];
+    page.on("request", (request) => { if (!request.url().startsWith(base)) external.push(request.url()); });
+    await open(page, "/");
+    await page.locator("#term").scrollIntoViewIfNeeded();
+    await page.locator('.tcmd[data-scene="validate"]').click();
+    await page.waitForFunction(() => document.querySelector("#term")?.dataset.state === "done", null, { timeout: 20_000 });
+    expect(/validate_completion_metadata/.test(await page.locator("#term-body").innerText()), "scene output missing");
+    expect(await page.locator('.tcmd[data-scene="validate"]').getAttribute("aria-pressed") === "true", "scene button not pressed");
+    expect(await page.locator(".prov summary").isVisible(), "provenance disclosure missing");
+    expect(!external.length, `external requests: ${external.join(", ")}`);
+  });
+
+  await check("finder: results sit in page flow and do not cover the article at 390px", { viewport: { width: 390, height: 800 } }, async (_, page) => {
+    await open(page, "/docs");
+    await page.locator("#doc-query").fill("security");
+    const results = page.locator(".search-results");
+    expect(await results.evaluate((el) => getComputedStyle(el).position) === "static", "results are positioned over the page");
+    const [r, article] = await Promise.all([results.boundingBox(), page.locator("article.prose").boundingBox()]);
+    expect(r.y + r.height <= article.y + 0.5, "results overlap the article");
+  });
+
+  await check("404: styled, noindex, and offers the guide finder", {}, async (_, page) => {
+    const response = await page.goto(base + "/does-not-exist/", { waitUntil: "load" });
+    expect(response.status() === 404, `status ${response.status()}`);
+    expect(/Nothing to administer here/.test(await page.locator("h1").innerText()), "404 heading missing");
+    expect(await page.locator('meta[name="robots"][content*="noindex"]').count() >= 1, "404 is not noindex");
+    expect(await page.locator("#doc-query").count() === 1, "404 has no finder");
   });
 
   for (const [path, width] of [["/docs", 1280], ["/docs/tools", 1280], ["/docs", 390]])
