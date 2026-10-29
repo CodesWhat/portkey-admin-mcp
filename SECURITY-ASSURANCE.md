@@ -89,8 +89,9 @@ the tool-specific test suites under [`tests/`](tests).
 Tool domains can be restricted at startup. Deployment guidance requires exact
 origins, authenticated production transports, TLS Redis connections, separate
 environment credentials and secrets stored outside the repository. The server
-persists no MCP replay payloads. HTTP requests are independent and authenticated
-every time; a retired session ID grants no authority. An interrupted mutation
+persists no MCP replay payloads. With bearer or Clerk authentication, HTTP
+requests are independent and authenticated every time; a retired session ID
+grants no authority. An interrupted mutation
 can still complete upstream, so operators must inspect state before retrying.
 
 Evidence: [`docs/VERCEL_DEPLOYMENT.md`](docs/VERCEL_DEPLOYMENT.md),
