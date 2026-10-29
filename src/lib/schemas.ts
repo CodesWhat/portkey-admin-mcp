@@ -3,6 +3,7 @@
  */
 import { z } from "zod";
 import type { ToolChoice } from "../services/prompts.types.js";
+import { isInvalidPathSegment } from "./path-segment.js";
 
 // ===== Prompt-Related Schemas =====
 export const PromptFunctionSchema = z.object({
@@ -149,3 +150,15 @@ export function pageSizeSchema(max = 100) {
 }
 
 export const PageSizeSchema = pageSizeSchema();
+
+/**
+ * An ID that ends up as one URL path segment. Portkey accepts UUIDs and
+ * slugs, so this only rejects values that would rewrite the request path
+ * ("." / ".." and their percent-encoded forms).
+ */
+export const PathIdSchema = z
+	.string()
+	.min(1)
+	.refine((value) => !isInvalidPathSegment(value), {
+		message: 'Must not be empty, "." or ".."',
+	});
