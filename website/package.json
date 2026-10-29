@@ -24,7 +24,7 @@
   },
   "devDependencies": {
     "typescript": "7.0.2",
-    "@types/node": "25.9.5",
+    "@types/node": "26.6.5",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.7",
     "@types/mdx": "2.0.14",
