@@ -605,6 +605,52 @@ describe("path segment hardening", () => {
 		assert.equal(capturedFetches.length, 0);
 	});
 
+	it("tool layer: registered inputSchema refuses dot segments for workspace_id and guardrail_id", () => {
+		const configs = new Map<string, Record<string, unknown>>();
+		registerAllTools(
+			{
+				registerTool(
+					name: string,
+					config: Record<string, unknown>,
+					_callback: (...args: unknown[]) => Promise<unknown>,
+				): never {
+					configs.set(name, config);
+					return {} as never;
+				},
+			} as never,
+			{
+				workspaces: new WorkspacesService("test-key", BASE_URL),
+				guardrails: new GuardrailsService("test-key", BASE_URL),
+			} as never,
+		);
+		const cases: Array<[string, string, Record<string, unknown>]> = [
+			[
+				"update_workspace_member",
+				"workspace_id",
+				{ user_id: "6f1c1f0e-3b8a-4c2d-9a47-0d5e8b2c7a11", role: "admin" },
+			],
+			["get_guardrail", "guardrail_id", {}],
+		];
+		for (const [tool, field, rest] of cases) {
+			const schema = configs.get(tool)?.inputSchema as
+				| { safeParse: (v: unknown) => { success: boolean } }
+				| undefined;
+			assert.ok(schema, `${tool} registers an inputSchema`);
+			for (const bad of ["..", ".", "%2e%2e", ""]) {
+				assert.equal(
+					schema.safeParse({ ...rest, [field]: bad }).success,
+					false,
+					`${tool}.${field} must reject ${JSON.stringify(bad)}`,
+				);
+			}
+			assert.equal(
+				schema.safeParse({ ...rest, [field]: "ws-1" }).success,
+				true,
+				`${tool}.${field} accepts a normal id`,
+			);
+		}
+	});
+
 	it("tool input schemas reject dot segments for path ids", () => {
 		for (const bad of ["..", ".", "%2e%2e", ""]) {
 			assert.equal(PathIdSchema.safeParse(bad).success, false, bad);
