@@ -5,8 +5,7 @@ import type { Product } from "@/lib/products";
 import { release } from "@/lib/products";
 import { routeFor } from "@/lib/routes.mjs";
 
-const withSlash = (path: string) => (path.endsWith("/") ? path : `${path}/`);
-export const hrefFor = (page = "home") => withSlash(routeFor(page));
+export const hrefFor = (page = "home") => routeFor(page);
 
 export function Brand({ product }: { product: Product }) {
   return (

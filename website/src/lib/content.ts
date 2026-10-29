@@ -12,7 +12,7 @@ export function guideEntries() {
     return {
       title: page.data.title,
       description: page.data.description || "",
-      href: `${routeFor(slug)}/`,
+      href: routeFor(slug),
       slug,
     };
   });
