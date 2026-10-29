@@ -11,6 +11,8 @@ protocol revisions are separate compatibility boundaries.
 | 0.14.1 | v1; dependency floor 1.32.1 | Latest supported revision: `2025-11-25` | Previous line, 194 tools across 22 domains, Node.js 24+. Stateful HTTP sessions and optional replay stores remain active. |
 | 0.13.0 | v1; dependency floor 1.31.0 | Latest supported revision: `2025-11-25` | Historical release, 184 tools across 20 domains. Upgrade to the latest minor for security fixes. |
 
+Node.js 24 is the supported floor (`engines.node` is `>=24`). The main CI checks and the release build run on Node 24. Node 26 is also tested in CI, and the Docker image runs Node 26 from 0.16.0.
+
 The 0.14.x SDK supports `2025-11-25`, `2025-06-18`, `2025-03-26`,
 `2024-11-05`, and `2024-10-07`. A newer client that negotiates an older
 revision can use this server; that fallback does not mean the server natively

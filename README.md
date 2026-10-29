@@ -422,7 +422,7 @@ tool catalog in this repository as authoritative when a third-party index lags.
 [![MCP SDK](https://img.shields.io/badge/MCP_SDK_2.4-000?logo=modelcontextprotocol&logoColor=fff)](https://github.com/modelcontextprotocol/typescript-sdk)
 [![Zod 4](https://img.shields.io/badge/Zod_4-3E67B1?logo=zod&logoColor=fff)](https://zod.dev/)
 [![Biome](https://img.shields.io/badge/Biome_2.5-60a5fa?logo=biome&logoColor=fff)](https://biomejs.dev/)
-[![Node 24](https://img.shields.io/badge/Node_24-339933?logo=nodedotjs&logoColor=fff)](https://nodejs.org/)
+[![Node 24 | 26](https://img.shields.io/badge/Node_24_%7C_26-339933?logo=nodedotjs&logoColor=fff)](https://nodejs.org/)
 [![Anthropic](https://img.shields.io/badge/Anthropic-CC785C?style=flat&logo=anthropic&logoColor=white)](https://claude.ai/)
 
 [![SemVer](https://img.shields.io/badge/semver-2.0.0-blue)](https://semver.org/)

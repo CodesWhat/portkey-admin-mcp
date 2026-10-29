@@ -197,3 +197,37 @@ jobs:
             exit 0
           fi
           npm run smoke
+
+  node-26:
+    # Runtime-compatibility check on the next Node line. `checks` stays on the
+    # Node 24 floor and keeps its name (main's ruleset requires `checks`), so
+    # this is a separate job rather than a matrix entry. Toolchain-only steps
+    # (Qlty, coverage upload, generated-file checks) already run on Node 24.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+          persist-credentials: false
+
+      - name: Setup Node.js 26
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 26
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Unit tests
+        run: npm test
+
+      - name: E2E tests
+        run: npm run test:e2e
