@@ -11,6 +11,8 @@ release until that reference and the release notes say so.
 
 ## [Unreleased]
 
+## [0.15.2] - 2026-10-29
+
 ### Fixed
 - The release workflow now waits up to 15 minutes for a new npm version to become visible before publishing to the MCP Registry. The 0.15.1 run gave up after 5 minutes, seconds before npm finished processing.
 
@@ -963,7 +965,8 @@ First stable release. Graduates from beta with 151 tools covering ~98% of the Po
 - Vercel deployment support
 - Contract tests, E2E tests, security tests
 
-[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.15.1...HEAD
+[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.15.2...HEAD
+[0.15.2]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.15.1...v0.15.2
 [0.15.1]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.15.0...v0.15.1
 [0.15.0]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.14.1...v0.15.0
 [0.14.1]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.14.0...v0.14.1
