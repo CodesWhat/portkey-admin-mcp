@@ -15,12 +15,20 @@ export function HeroLogo() {
   const [src, setSrc] = useState("/assets/portkey-360.webp");
   const [played, setPlayed] = useState(false);
   useEffect(() => {
-    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const motion = matchMedia("(prefers-reduced-motion: reduce)");
+    if (motion.matches) return;
     let cancelled = false;
+    const onMotion = () => {
+      if (!motion.matches) return;
+      cancelled = true;
+      setSrc("/assets/portkey-360.webp");
+      setPlayed(false);
+    };
+    motion.addEventListener("change", onMotion);
     const go = () => {
       const pre = new Image();
       pre.onload = () => {
-        if (cancelled) return;
+        if (cancelled || motion.matches) return;
         setSrc("/assets/portkey-spin-360.webp");
         setPlayed(true);
       };
@@ -32,6 +40,7 @@ export function HeroLogo() {
     else window.addEventListener("load", after, { once: true });
     return () => {
       cancelled = true;
+      motion.removeEventListener("change", onMotion);
       window.removeEventListener("load", after);
     };
   }, []);
@@ -49,6 +58,15 @@ export function HeroLogo() {
 }
 export function CopyInstall({ command }: { command: string }) {
   const [label, setLabel] = useState("Copy");
+  const selectCommand = () => {
+    const code = document.querySelector(".install code");
+    const selection = window.getSelection();
+    if (!code || !selection) return;
+    const range = document.createRange();
+    range.selectNodeContents(code);
+    selection.removeAllRanges();
+    selection.addRange(range);
+  };
   const done = (ok: boolean) => {
     setLabel(ok ? "Copied" : "Press Ctrl+C");
     setTimeout(() => setLabel("Copy"), 1600);
@@ -62,9 +80,15 @@ export function CopyInstall({ command }: { command: string }) {
         if (navigator.clipboard && window.isSecureContext)
           navigator.clipboard.writeText(command).then(
             () => done(true),
-            () => done(false),
+            () => {
+              selectCommand();
+              done(false);
+            },
           );
-        else done(false);
+        else {
+          selectCommand();
+          done(false);
+        }
       }}
     >
       {label}
@@ -75,6 +99,13 @@ export function ThemeSwitch() {
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    if (!resolvedTheme) return;
+    const color = resolvedTheme === "dark" ? "#16101e" : "#f9f5fc";
+    document
+      .querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')
+      .forEach((meta) => meta.setAttribute("content", color));
+  }, [resolvedTheme]);
   return (
     <button
       className="theme-switch"

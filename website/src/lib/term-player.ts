@@ -118,7 +118,15 @@ export function startTerm(root: HTMLElement, T: TermData): () => void {
     return [b, onClick] as const;
   });
   const onSkip = () => renderInstant(cur, true);
-  const onClear = () => { token++; clearTimeout(timer); body.textContent = ""; mark(""); finish(); };
+  const onClear = () => {
+    token++;
+    clearTimeout(timer);
+    body.textContent = "";
+    mark("");
+    if (titleEl) titleEl.textContent = `${T.product} ${T.version} · stdio`;
+    if (live) live.textContent = "";
+    finish();
+  };
   skipBtn?.addEventListener("click", onSkip);
   clearBtn?.addEventListener("click", onClear);
   const first = [T.scenes[0]];

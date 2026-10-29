@@ -42,16 +42,14 @@ test("the release label comes from the manual's pinned tag", () => {
   assert.ok(release.notes.endsWith(`/releases/tag/${release.tag}`));
 });
 
-test("static assets get long-lived cache headers, other assets a day", () => {
+test("hashed build output is immutable, other assets (fonts included) cache for a day", () => {
   const cache = (source) =>
     config.headers
       .find((entry) => entry.source === source)
       ?.headers.find((entry) => entry.key === "Cache-Control")?.value;
   const immutable = "public, max-age=31536000, immutable";
   assert.equal(cache("/_next/static/(.*)"), immutable);
-  assert.equal(cache("/assets/fonts/(.*)"), immutable);
+  // Font filenames are not content-hashed, so fonts take the generic day-long rule.
+  assert.equal(cache("/assets/fonts/(.*)"), undefined);
   assert.equal(cache("/assets/(.*)"), "public, max-age=86400");
-  // Vercel applies later matching rules last, so the font rule must follow the generic one.
-  const sources = config.headers.map((entry) => entry.source);
-  assert.ok(sources.indexOf("/assets/fonts/(.*)") > sources.indexOf("/assets/(.*)"));
 });

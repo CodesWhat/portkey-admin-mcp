@@ -199,6 +199,15 @@ async function suite(browser, engine, base) {
     expect(!(await dark()), "light theme lost after reload");
   });
 
+  await check("theme: toggle updates the theme-color meta", {}, async (_, page) => {
+    await open(page, "/");
+    const colors = () => page.evaluate(() => [...document.querySelectorAll('meta[name="theme-color"]')].map((m) => m.content));
+    await page.locator(".theme-switch").click();
+    expect((await colors()).every((c) => c === "#16101e"), "theme-color not dark after toggle");
+    await page.locator(".theme-switch").click();
+    expect((await colors()).every((c) => c === "#f9f5fc"), "theme-color not light after toggle");
+  });
+
   await check("hero logo: static frame first, then the spin render plays once", {}, async (_, page) => {
     await open(page, "/");
     await page.waitForFunction(() => document.querySelector("#hero-logo")?.dataset.played === "1", null, { timeout: 10_000 });
@@ -226,6 +235,9 @@ async function suite(browser, engine, base) {
     expect(await page.locator('.tcmd[data-scene="validate"]').getAttribute("aria-pressed") === "true", "scene button not pressed");
     expect(await page.locator(".prov summary").isVisible(), "provenance disclosure missing");
     expect(!external.length, `external requests: ${external.join(", ")}`);
+    await page.locator("#term-clear").click();
+    expect(!(await page.locator("#term-title").innerText()).includes("validate"), "Clear left the scene title");
+    expect((await page.locator("#term-live").innerText()) === "", "Clear left the live region text");
   });
 
   await check("finder: results sit in page flow and do not cover the article at 390px", { viewport: { width: 390, height: 800 } }, async (_, page) => {
