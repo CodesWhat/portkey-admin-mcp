@@ -57,12 +57,12 @@
 		"jose": "^6.2.2",
 		"redis": "^6.3.0",
 		"zod": "^4.6.7",
-		"@modelcontextprotocol/server": "2.3.1",
-		"@modelcontextprotocol/node": "2.1.1"
+		"@modelcontextprotocol/server": "2.4.0",
+		"@modelcontextprotocol/node": "2.1.2"
 	},
 	"name": "portkey-admin-mcp",
 	"mcpName": "io.github.CodesWhat/portkey-admin-mcp",
-	"version": "0.15.1",
+	"version": "0.15.2",
 	"main": "build/index.js",
 	"keywords": [
 		"mcp",
@@ -101,6 +101,6 @@
 		"lefthook": "2.2.2",
 		"tsx": "4.23.15",
 		"typescript": "7.0.2",
-		"@modelcontextprotocol/client": "2.3.1"
+		"@modelcontextprotocol/client": "2.4.0"
 	}
 }

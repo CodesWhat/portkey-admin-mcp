@@ -424,7 +424,7 @@ jobs:
   publish-registry:
     needs: [release-ref, ci, publish-npm]
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 25
     environment: release
     permissions:
       contents: read
@@ -483,12 +483,12 @@ jobs:
         run: |
           set -euo pipefail
 
-          for attempt in $(seq 1 20); do
+          for attempt in $(seq 1 60); do
             if npm view "portkey-admin-mcp@${VERSION}" version >/dev/null 2>&1; then
               echo "Found portkey-admin-mcp@${VERSION} on npm"
               exit 0
             fi
-            echo "Waiting for portkey-admin-mcp@${VERSION} on npm (attempt ${attempt}/20)..."
+            echo "Waiting for portkey-admin-mcp@${VERSION} on npm (attempt ${attempt}/60)..."
             sleep 15
           done
 
