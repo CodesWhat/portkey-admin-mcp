@@ -79,6 +79,16 @@ for (const parts of routes) {
       `${path}: missing local destination ${href}`,
     );
   }
+  for (const [, raw] of html.matchAll(/\shref="(\/[^"]*)"/g)) {
+    const href = decode(raw);
+    if (href.startsWith("//") || href.startsWith("/_next/") || href.startsWith("/#")) continue;
+    const pathname = href.split(/[?#]/)[0];
+    if (/\.[A-Za-z0-9]+$/.test(pathname.split("/").pop())) continue;
+    assert.ok(
+      pathname.endsWith("/"),
+      `${path}: internal link ${raw} must end in a trailing slash (trailingSlash export redirects otherwise)`,
+    );
+  }
   const here = "/" + parts.join("/");
   for (const [, href] of html.matchAll(/href="([^"]*#[^"]*)"/g)) {
     const [base, ...frag] = decode(href).split("#");
