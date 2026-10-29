@@ -439,13 +439,15 @@ Marketplace listings on [LobeHub](https://lobehub.com/mcp/codeswhat-portkey-admi
 
 **[MIT License](LICENSE)** · Inspired by [r-huijts/portkey-admin-mcp-server](https://github.com/r-huijts/portkey-admin-mcp-server)
 
-<a href="https://github.com/CodesWhat">
+<a href="https://codeswhat.com">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="assets/codeswhat-logo-dark.svg" />
     <source media="(prefers-color-scheme: light)" srcset="assets/codeswhat-logo-original.svg" />
     <img src="assets/codeswhat-logo-original.svg" alt="CodesWhat" height="28">
   </picture>
 </a>
+
+[CodesWhat](https://codeswhat.com): small, sharp tools from one developer and a lot of agents.
 
 <a href="#portkey-admin-mcp-server">Back to top</a>
 

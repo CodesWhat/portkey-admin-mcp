@@ -4,8 +4,8 @@
 
 This guide describes how to self-deploy this MCP server on Vercel.
 
-This guide follows the **unreleased SDK v2 candidate**, not the published 0.14.x
-session/replay implementation. No deployment of this candidate has been verified.
+This guide follows the **SDK v2 implementation shipped in 0.15.0**, not the 0.14.x
+session/replay implementation. No Vercel deployment of it has been verified.
 Use the guide from your installed release when operating 0.14.x. See
 [compatibility and recovery](../COMPATIBILITY.md) before upgrading; the retirement and names-only warnings target 0.15.0.
 
