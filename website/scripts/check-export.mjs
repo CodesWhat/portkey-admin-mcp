@@ -85,8 +85,8 @@ for (const parts of routes) {
     const pathname = href.split(/[?#]/)[0];
     if (/\.[A-Za-z0-9]+$/.test(pathname.split("/").pop())) continue;
     assert.ok(
-      pathname.endsWith("/"),
-      `${path}: internal link ${raw} must end in a trailing slash (trailingSlash export redirects otherwise)`,
+      pathname.endsWith("/") && !pathname.includes("//"),
+      `${path}: internal link ${raw} must end in one trailing slash with no empty segments (trailingSlash export redirects otherwise)`,
     );
   }
   const here = "/" + parts.join("/");
