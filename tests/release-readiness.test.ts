@@ -372,11 +372,14 @@ function grantsIdTokenWrite(text: string, indent: number): boolean {
 		new RegExp(`^ {${indent}}permissions:`).test(l),
 	);
 	if (start < 0) return false;
-	const inline = lines[start]?.split("permissions:")[1]?.trim() ?? "";
+	const inline = (lines[start]?.split("permissions:")[1] ?? "")
+		.replace(/\s+#.*$/, "")
+		.trim();
 	if (inline === "write-all") return true;
+	if (inline.startsWith("{")) return /\bid-token\s*:\s*write\b/.test(inline);
 	for (const line of lines.slice(start + 1)) {
 		if (line.trim() && !line.startsWith(`${" ".repeat(indent + 1)}`)) break;
-		if (/^\s*id-token:\s*write\s*$/.test(line)) return true;
+		if (/^\s*id-token:\s*write\s*(?:#.*)?$/.test(line)) return true;
 	}
 	return false;
 }
@@ -409,17 +412,76 @@ function runBodies(text: string): string[] {
 	);
 }
 
+const oidcForbidden: [RegExp, string][] = [
+	[/\bnpm\s+run\b/, "npm run"],
+	[/\bnpm\s+(?:test|t)\b/, "npm test"],
+	[/\bnpx\b/, "npx"],
+	[/\bnpm\s+exec\b/, "npm exec"],
+	// Inline `node -e` / `node -p` are allowed; running a script file is not.
+	[/(?:^|[\s;&|(])node\s+(?!-[ep]\b)/m, "node <file>"],
+];
+
+function oidcBodyViolations(body: string): string[] {
+	const out: string[] = [];
+	for (const m of body.matchAll(/\bnpm\s+(?:ci|install|i|add)\b[^\n;&|]*/g)) {
+		if (!/--ignore-scripts/.test(m[0])) {
+			out.push(`installs dependencies with lifecycle scripts: ${m[0].trim()}`);
+		}
+	}
+	for (const [pattern, name] of oidcForbidden) {
+		if (pattern.test(body)) out.push(`runs "${name}"`);
+	}
+	if (/(?:^|[\s;&|(])node\s+-[ep]\b/m.test(body)) {
+		if (/\bimport\s*\(/.test(body)) out.push("inline node uses import()");
+		for (const m of body.matchAll(/\brequire\s*\(\s*([^)]*)\)/g)) {
+			if (!/^(['"`])[^'"`]*\.json\1$/.test((m[1] ?? "").trim())) {
+				out.push(`inline node requires a non-JSON module: ${m[0]}`);
+			}
+		}
+	}
+	return out;
+}
+
+test("OIDC guard helpers catch the known evasions", () => {
+	const flow = "permissions: { contents: read, id-token: write }\n";
+	assert.equal(grantsIdTokenWrite(flow, 0), true);
+	assert.equal(grantsIdTokenWrite("permissions:{id-token:write}\n", 0), true);
+	assert.equal(
+		grantsIdTokenWrite("permissions: { contents: read }\n", 0),
+		false,
+	);
+	assert.equal(
+		grantsIdTokenWrite(
+			"permissions:\n  id-token: write # needed for upload\n",
+			0,
+		),
+		true,
+	);
+	assert.equal(
+		grantsIdTokenWrite("permissions:\n  id-token: read # no\n", 0),
+		false,
+	);
+	assert.ok(oidcBodyViolations("npm exec foo").length > 0);
+	assert.ok(oidcBodyViolations("npx foo").length > 0);
+	assert.ok(oidcBodyViolations("node -e \"import('x')\"").length > 0);
+	assert.ok(oidcBodyViolations("node -p \"require('./a.js')\"").length > 0);
+	assert.ok(oidcBodyViolations('node -p "require(name)"').length > 0);
+	assert.deepEqual(
+		oidcBodyViolations("node -p \"require('./server.json').version\""),
+		[],
+	);
+	assert.ok(oidcBodyViolations("npm ci && npm ci --ignore-scripts").length > 0);
+	assert.deepEqual(
+		oidcBodyViolations("npm ci --ignore-scripts && echo hi"),
+		[],
+	);
+	assert.ok(oidcBodyViolations("npm ci --ignore-scripts\nnpm i").length > 0);
+});
+
 test("workflow jobs that hold id-token: write run no dependency or repository code", () => {
 	const dir = `${root}.github/workflows/`;
 	const files = readdirSync(dir).filter((f) => /\.ya?ml$/.test(f));
 	assert.ok(files.length > 0);
-	const forbidden: [RegExp, string][] = [
-		[/\bnpm\s+run\b/, "npm run"],
-		[/\bnpm\s+(?:test|t)\b/, "npm test"],
-		[/\bnpx\b/, "npx"],
-		// Inline `node -e` / `node -p` are allowed; running a script file is not.
-		[/(?:^|[\s;&|(])node\s+(?!-[ep]\b)/m, "node <file>"],
-	];
 	let checked = 0;
 	for (const file of files) {
 		const { topLevel, jobs } = splitWorkflow(
@@ -433,22 +495,11 @@ test("workflow jobs that hold id-token: write run no dependency or repository co
 			checked++;
 			for (const body of runBodies(job.text)) {
 				const label = `${file}#${job.name}`;
-				for (const m of body.matchAll(
-					/\bnpm\s+(?:ci|install|i|add)\b[^\n]*/g,
-				)) {
-					assert.match(
-						m[0],
-						/--ignore-scripts/,
-						`${label} installs dependencies with lifecycle scripts while holding id-token: write`,
-					);
-				}
-				for (const [pattern, name] of forbidden) {
-					assert.doesNotMatch(
-						body,
-						pattern,
-						`${label} runs "${name}" while holding id-token: write`,
-					);
-				}
+				assert.deepEqual(
+					oidcBodyViolations(body),
+					[],
+					`${label} breaks the OIDC job rules while holding id-token: write`,
+				);
 			}
 		}
 	}
