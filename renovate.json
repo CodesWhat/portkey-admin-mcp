@@ -52,6 +52,13 @@
 			"groupName": "biome major",
 			"groupSlug": "biome-major",
 			"minimumReleaseAge": "7 days"
+		},
+		{
+			"description": "Keep @types/node on the supported Node floor (engines >=24) so Node-26-only APIs can't slip in (root package only; the site has its own runtime)",
+			"matchFileNames": ["package.json"],
+			"matchPackageNames": ["@types/node"],
+			"allowedVersions": "<25",
+			"minimumReleaseAge": "7 days"
 		}
 	],
 	"prConcurrentLimit": 1,
