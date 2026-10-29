@@ -8,8 +8,8 @@ implementation controls, and public verification evidence. It complements
 [`SECURITY.md`](SECURITY.md) and the deployment guidance in
 [`docs/VERCEL_DEPLOYMENT.md`](docs/VERCEL_DEPLOYMENT.md).
 
-The unreleased SDK v2 candidate retires HTTP session and replay storage. The
-published 0.14.x implementation retains those controls. Candidate evidence below
+The SDK v2 implementation shipped in 0.15.0 retires HTTP session and replay storage. The
+0.14.x implementation retains those controls. The evidence below
 is local testing, not deployed assurance; [compatibility and recovery](COMPATIBILITY.md)
 records remaining lifecycle/release prerequisites.
 
@@ -88,7 +88,7 @@ the tool-specific test suites under [`tests/`](tests).
 
 Tool domains can be restricted at startup. Deployment guidance requires exact
 origins, authenticated production transports, TLS Redis connections, separate
-environment credentials and secrets stored outside the repository. The candidate
+environment credentials and secrets stored outside the repository. The server
 persists no MCP replay payloads. HTTP requests are independent and authenticated
 every time; a retired session ID grants no authority. An interrupted mutation
 can still complete upstream, so operators must inspect state before retrying.

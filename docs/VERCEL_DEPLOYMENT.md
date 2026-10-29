@@ -4,8 +4,8 @@
 
 This guide describes how to self-deploy this MCP server on Vercel.
 
-This guide follows the **unreleased SDK v2 candidate**, not the published 0.14.x
-session/replay implementation. No deployment of this candidate has been verified.
+This guide follows the **SDK v2 implementation shipped in 0.15.0**, not the 0.14.x
+session/replay implementation. No Vercel deployment of it has been verified.
 Use the guide from your installed release when operating 0.14.x. See
 [compatibility and recovery](../COMPATIBILITY.md) before upgrading; the retirement and names-only warnings target 0.15.0.
 
@@ -17,7 +17,7 @@ Use the guide from your installed release when operating 0.14.x. See
 - Redis: shared rate limiting only
 - Auth: `clerk` (preferred for teams) or `bearer` (internal-only)
 
-Each POST is independent. GET replay, session IDs and DELETE session operations are retired in the candidate. After an interrupted mutation, inspect Portkey state before retrying; see the recovery guide. Forward `MCP-Protocol-Version`, `Mcp-Method` and `Mcp-Name` through any proxy. No idle change-notification streams are advertised.
+Each POST is independent. GET replay, session IDs and DELETE session operations are retired in 0.15.0. After an interrupted mutation, inspect Portkey state before retrying; see the recovery guide. Forward `MCP-Protocol-Version`, `Mcp-Method` and `Mcp-Name` through any proxy. No idle change-notification streams are advertised.
 
 ## 1. Prerequisites
 
