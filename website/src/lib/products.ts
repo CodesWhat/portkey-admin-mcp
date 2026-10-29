@@ -33,7 +33,7 @@ export const product: Product = {
   repo: "CodesWhat/portkey-admin-mcp",
   action: "Connect your MCP client",
   external: `${release.source}#quick-start`,
-  note: "Targets the Portkey-compatible Admin API. Not a drop-in Prisma AIRS adapter. Replace your_key with your Portkey API key. Needs Node 24+.",
+  note: "Targets the Portkey-compatible Admin API. Not a drop-in Prisma AIRS adapter.",
   install: "claude mcp add -e PORTKEY_API_KEY=your_key portkey-admin -- npx -y portkey-admin-mcp",
   features: [
     {

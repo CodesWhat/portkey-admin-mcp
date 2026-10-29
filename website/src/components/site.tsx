@@ -139,8 +139,8 @@ export function Home({ product }: { product: Product }) {
               </pre>
               <p>
                 Cursor, Windsurf, VS Code and a plain <code>npx</code> run are
-                in the <a href={hrefFor("overview")}>docs</a>. Needs a Portkey
-                API key and Node 24+.
+                in the <a href={hrefFor("overview")}>docs</a>. Replace{" "}
+                <code>your_key</code> with your Portkey API key. Needs Node 24+.
               </p>
             </div>
             <ul className="strip" aria-label="At a glance">
