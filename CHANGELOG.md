@@ -17,6 +17,9 @@ release until that reference and the release notes say so.
 - The README footer links the CodesWhat logo to codeswhat.com, and the architecture guide, Vercel guide and security assurance case no longer call the SDK v2 implementation an unreleased candidate.
 - The site's manual now follows the v0.15.2 release, and its release label and links read the manual pin instead of a hard-coded version.
 
+### Security
+- The coverage workflow now runs dependency install and tests in a job without an OIDC credential, and uploads coverage from a separate job that runs no repository or dependency code. Found by a Claude Security scan.
+
 ## [0.15.2] - 2026-10-29
 
 ### Fixed

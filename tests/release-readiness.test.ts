@@ -3,6 +3,7 @@ import { spawn, spawnSync } from "node:child_process";
 import {
 	mkdirSync,
 	mkdtempSync,
+	readdirSync,
 	readFileSync,
 	rmSync,
 	writeFileSync,
@@ -340,4 +341,116 @@ test("LobeHub release automation updates the claimed listing and all MCP capabil
 	assert.match(generatorSource, /\blistResourceTemplates\b/);
 	assert.match(generatorSource, /finally/);
 	assert.match(releaseGuide, /plugin update/);
+});
+
+type WorkflowJob = { name: string; text: string };
+
+function splitWorkflow(source: string): {
+	topLevel: string;
+	jobs: WorkflowJob[];
+} {
+	const jobsStart = source.search(/^jobs:\s*$/m);
+	assert.ok(jobsStart >= 0, "workflow has no jobs: block");
+	const topLevel = source.slice(0, jobsStart);
+	const jobs: WorkflowJob[] = [];
+	let current: WorkflowJob | undefined;
+	for (const line of source.slice(jobsStart).split("\n").slice(1)) {
+		const header = /^ {2}([A-Za-z0-9_-]+):\s*$/.exec(line);
+		if (header?.[1]) {
+			current = { name: header[1], text: "" };
+			jobs.push(current);
+		} else if (current) {
+			current.text += `${line}\n`;
+		}
+	}
+	return { topLevel, jobs };
+}
+
+function grantsIdTokenWrite(text: string, indent: number): boolean {
+	const lines = text.split("\n");
+	const start = lines.findIndex((l) =>
+		new RegExp(`^ {${indent}}permissions:`).test(l),
+	);
+	if (start < 0) return false;
+	const inline = lines[start]?.split("permissions:")[1]?.trim() ?? "";
+	if (inline === "write-all") return true;
+	for (const line of lines.slice(start + 1)) {
+		if (line.trim() && !line.startsWith(`${" ".repeat(indent + 1)}`)) break;
+		if (/^\s*id-token:\s*write\s*$/.test(line)) return true;
+	}
+	return false;
+}
+
+function runBodies(text: string): string[] {
+	const lines = text.split("\n");
+	const bodies: string[] = [];
+	for (let i = 0; i < lines.length; i++) {
+		const match = /^(\s*)(?:- )?run:\s*(.*)$/.exec(lines[i] ?? "");
+		if (!match) continue;
+		const indent = (match[1] ?? "").length;
+		const first = (match[2] ?? "").trim();
+		if (!/^[|>][+-]?$/.test(first)) {
+			bodies.push(first);
+			continue;
+		}
+		const block: string[] = [];
+		for (let j = i + 1; j < lines.length; j++) {
+			const line = lines[j] ?? "";
+			if (line.trim() && line.search(/\S/) <= indent) break;
+			block.push(line);
+		}
+		bodies.push(block.join("\n"));
+	}
+	return bodies.map((body) =>
+		body
+			.split("\n")
+			.filter((line) => !line.trim().startsWith("#"))
+			.join("\n"),
+	);
+}
+
+test("workflow jobs that hold id-token: write run no dependency or repository code", () => {
+	const dir = `${root}.github/workflows/`;
+	const files = readdirSync(dir).filter((f) => /\.ya?ml$/.test(f));
+	assert.ok(files.length > 0);
+	const forbidden: [RegExp, string][] = [
+		[/\bnpm\s+run\b/, "npm run"],
+		[/\bnpm\s+(?:test|t)\b/, "npm test"],
+		[/\bnpx\b/, "npx"],
+		// Inline `node -e` / `node -p` are allowed; running a script file is not.
+		[/(?:^|[\s;&|(])node\s+(?!-[ep]\b)/m, "node <file>"],
+	];
+	let checked = 0;
+	for (const file of files) {
+		const { topLevel, jobs } = splitWorkflow(
+			readFileSync(`${dir}${file}`, "utf8"),
+		);
+		const topGrants = grantsIdTokenWrite(topLevel, 0);
+		for (const job of jobs) {
+			const hasOwn = /^ {4}permissions:/m.test(job.text);
+			const effective = hasOwn ? grantsIdTokenWrite(job.text, 4) : topGrants;
+			if (!effective) continue;
+			checked++;
+			for (const body of runBodies(job.text)) {
+				const label = `${file}#${job.name}`;
+				for (const m of body.matchAll(
+					/\bnpm\s+(?:ci|install|i|add)\b[^\n]*/g,
+				)) {
+					assert.match(
+						m[0],
+						/--ignore-scripts/,
+						`${label} installs dependencies with lifecycle scripts while holding id-token: write`,
+					);
+				}
+				for (const [pattern, name] of forbidden) {
+					assert.doesNotMatch(
+						body,
+						pattern,
+						`${label} runs "${name}" while holding id-token: write`,
+					);
+				}
+			}
+		}
+	}
+	assert.ok(checked >= 3, "expected to inspect the OIDC-bearing jobs");
 });

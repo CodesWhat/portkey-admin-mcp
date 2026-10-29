@@ -26,13 +26,20 @@ concurrency:
   group: coverage-${{ github.event_name }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
+# Two jobs so no dependency or repository code runs while an OIDC credential is
+# available. `test` runs `npm ci` (lifecycle scripts on) and the branch's test
+# code with no id-token. `upload` holds id-token: write but installs nothing and
+# runs nothing from the repo: it downloads the lcov artifact and hands it to the
+# pinned Qlty action. It does check the repo out, because the Qlty CLI resolves
+# report paths and validates them against the working tree; checkout alone
+# executes nothing. This mirrors release.yml's package-npm / publish-npm split.
+
 jobs:
-  qlty:
+  test:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       contents: read
-      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -50,6 +57,34 @@ jobs:
 
       - name: Tests with coverage
         run: npm run test:coverage:qlty
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: coverage-lcov
+          path: coverage/lcov.info
+          retention-days: 1
+          if-no-files-found: error
+
+  upload:
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      # Checkout only: no Node, no npm, nothing from the repo is executed.
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Download coverage report
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: coverage-lcov
+          path: coverage
 
       - name: Upload coverage to Qlty
         uses: qltysh/qlty-action/coverage@c9b09987143d1e4ac955f4803c7bea742102feb5 # v2.4.0
