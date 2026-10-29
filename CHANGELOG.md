@@ -11,6 +11,9 @@ release until that reference and the release notes say so.
 
 ## [Unreleased]
 
+### Changed
+- The site's manual now follows the v0.15.2 release, and its release label and links read the manual pin instead of a hard-coded version.
+
 ## [0.15.2] - 2026-10-29
 
 ### Fixed

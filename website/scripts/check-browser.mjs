@@ -7,6 +7,9 @@ import { extname, join, normalize, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { once } from "node:events";
 import { chromium, webkit } from "playwright-core";
+import manual from "../content/manual.config.json" with { type: "json" };
+const releaseVersion = manual.tag.replace(/^v/, "");
+const releaseUrl = `https://github.com/${manual.repo}/releases/tag/${manual.tag}`;
 
 const root = fileURLToPath(new URL("../out", import.meta.url));
 const mime = {
@@ -166,13 +169,13 @@ async function suite(browser, engine, base) {
     expect((await live.innerText()).trim() === "0 guides found", `nonsense count was "${await live.innerText()}"`);
   });
 
-  await check("release label: once per docs page, links to the v0.15.0 release", {}, async (_, page) => {
+  await check(`release label: once per docs page, links to the ${manual.tag} release`, {}, async (_, page) => {
     for (const path of ["/docs", "/docs/tools"]) {
       await open(page, path);
       const label = page.locator(".release-label a");
       expect(await label.count() === 1, `${path}: expected one release label`);
-      expect(/Docs for 0\.15\.0, the latest release/.test(await label.innerText()), `${path}: wrong label text`);
-      expect(await label.getAttribute("href") === "https://github.com/CodesWhat/portkey-admin-mcp/releases/tag/v0.15.0", `${path}: wrong link`);
+      expect((await label.innerText()).includes(`Docs for ${releaseVersion}, the latest release`), `${path}: wrong label text`);
+      expect(await label.getAttribute("href") === releaseUrl, `${path}: wrong link`);
     }
   });
 

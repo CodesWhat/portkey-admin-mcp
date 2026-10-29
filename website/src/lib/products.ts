@@ -1,3 +1,4 @@
+import manual from "../../content/manual.config.json" with { type: "json" };
 export type Product = {
   id: string;
   name: string;
@@ -11,13 +12,13 @@ export type Product = {
   note: string;
   features: { title: string; copy: string }[];
 };
+// Derived from the manual pin so moving it to a new release updates the label too.
 export const release = {
-  version: "0.15.0",
-  tag: "v0.15.0",
-  notes: "https://github.com/CodesWhat/portkey-admin-mcp/releases/tag/v0.15.0",
-  commit: "46556acebb77c9ee224e54836137c64fb5650594",
-  source:
-    "https://github.com/CodesWhat/portkey-admin-mcp/tree/46556acebb77c9ee224e54836137c64fb5650594",
+  version: manual.tag.replace(/^v/, ""),
+  tag: manual.tag,
+  notes: `https://github.com/${manual.repo}/releases/tag/${manual.tag}`,
+  commit: manual.commit,
+  source: `https://github.com/${manual.repo}/tree/${manual.commit}`,
 };
 export const product: Product = {
   id: "portkey",
@@ -42,7 +43,7 @@ export const product: Product = {
     },
     {
       title: "Make compatibility explicit.",
-      copy: "Version 0.15.0 runs on the MCP v2 SDK and serves older clients on the same endpoint. Check the compatibility notes before upgrading from 0.14.x.",
+      copy: "The 0.15 line runs on the MCP v2 SDK and serves older clients on the same endpoint. Check the compatibility notes before upgrading from 0.14.x.",
     },
   ],
 };
