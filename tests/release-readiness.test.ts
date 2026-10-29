@@ -424,7 +424,14 @@ const oidcForbidden: [RegExp, string][] = [
 function oidcBodyViolations(body: string): string[] {
 	const out: string[] = [];
 	for (const m of body.matchAll(/\bnpm\s+(?:ci|install|i|add)\b[^\n;&|]*/g)) {
-		if (!/--ignore-scripts/.test(m[0])) {
+		// A `#` after whitespace (or at line start) starts a shell comment.
+		const command = m[0].replace(/(?:^|\s)#.*$/, "");
+		const ignoresScripts = command
+			.split(/\s+/)
+			.some(
+				(arg) => arg === "--ignore-scripts" || arg === "--ignore-scripts=true",
+			);
+		if (!ignoresScripts) {
 			out.push(`installs dependencies with lifecycle scripts: ${m[0].trim()}`);
 		}
 	}
@@ -476,6 +483,10 @@ test("OIDC guard helpers catch the known evasions", () => {
 		[],
 	);
 	assert.ok(oidcBodyViolations("npm ci --ignore-scripts\nnpm i").length > 0);
+	assert.ok(oidcBodyViolations("npm ci # --ignore-scripts").length > 0);
+	assert.ok(oidcBodyViolations("npm ci --ignore-scripts=false").length > 0);
+	assert.deepEqual(oidcBodyViolations("npm ci --ignore-scripts"), []);
+	assert.deepEqual(oidcBodyViolations("npm ci --ignore-scripts=true"), []);
 });
 
 test("workflow jobs that hold id-token: write run no dependency or repository code", () => {
