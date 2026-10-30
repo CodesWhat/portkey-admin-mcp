@@ -27,12 +27,15 @@ export function HeroLogo() {
     motion.addEventListener("change", onMotion);
     const go = () => {
       const pre = new Image();
-      pre.onload = () => {
-        if (cancelled || motion.matches) return;
-        setSrc("/assets/portkey-spin-360.webp");
-        setPlayed(true);
-      };
-      pre.src = "/assets/portkey-spin-360.webp";
+      pre.src = "/assets/portkey-spin-alpha-360.webp";
+      pre
+        .decode()
+        .then(() => {
+          if (cancelled || motion.matches) return;
+          setSrc("/assets/portkey-spin-alpha-360.webp");
+          setPlayed(true);
+        })
+        .catch(() => {});
     };
     const after = () =>
       "requestIdleCallback" in window ? requestIdleCallback(go) : setTimeout(go, 200);
