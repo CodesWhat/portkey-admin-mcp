@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { product, release } from "@/lib/products";
-import { canonicalFor, docSlugs, resolveRoute, routesFor } from "@/lib/routes.mjs";
-import { getDocument } from "@/lib/content";
-import { Frame, Home, hrefFor } from "@/components/site";
+import { product, release, socialImage } from "@/lib/products";
+import { canonicalFor, resolveRoute, routesFor } from "@/lib/routes.mjs";
+import { getDocument, guideEntries } from "@/lib/content";
+import { Frame, Home } from "@/components/site";
 import { Disclosure, DocSearch } from "@/components/controls";
 
 type Props = { params: Promise<{ route?: string[] }> };
@@ -19,12 +19,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       robots: { index: false, follow: false },
     };
   const doc = resolved.page === "home" ? undefined : getDocument(resolved.page);
+  const title = doc
+    ? `${doc.data.title} · ${product.name}`
+    : `${product.name} · ${product.headline.join(" ")}`;
+  const description = doc?.data.description || product.description;
+  const url = canonicalFor(resolved.page);
   return {
-    title: doc
-      ? `${doc.data.title} · ${product.name}`
-      : `${product.name} · ${product.headline.join(" ")}`,
-    description: doc?.data.description || product.description,
-    alternates: { canonical: canonicalFor(resolved.page) },
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: { type: "website", siteName: product.name, title, description, url, images: [socialImage] },
+    twitter: { card: "summary_large_image", title, description, images: [socialImage.url] },
   };
 }
 export default async function Page({ params }: Props) {
@@ -33,15 +38,7 @@ export default async function Page({ params }: Props) {
   if (resolved.page === "home") return <Home product={product} />;
   const doc = getDocument(resolved.page);
   if (!doc) notFound();
-  const entries = docSlugs.map((slug) => {
-    const page = getDocument(slug)!;
-    return {
-      title: page.data.title,
-      description: page.data.description || "",
-      href: hrefFor(slug),
-      slug,
-    };
-  });
+  const entries = guideEntries();
   const nav = (
     <nav aria-label="Documentation">
       <p className="eyebrow">{product.name}</p>

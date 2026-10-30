@@ -12,7 +12,7 @@
       "source": "ENDPOINTS.md",
       "route": "/docs/tools",
       "sourceSha256": "b3101aa31d137592061b45de2290770bbd15c71118431a954df4c7485ed19729",
-      "generatedSha256": "7c856c5b284205a9e5c8dc97e7f578389b5163886dc9db52f0ddcb4a5c0ad02c"
+      "generatedSha256": "751d679f94c1e46d77173219368ac1cd6647399878e5a03807bc98549460d9bd"
     },
     {
       "source": "COMPATIBILITY.md",
@@ -48,13 +48,13 @@
       "source": "docs/DISTRIBUTION.md",
       "route": "/docs/distribution",
       "sourceSha256": "8d4a8a7c6ba0a17dc40c76640fb63be72596f7002b2665e07d0778c6aa1a182a",
-      "generatedSha256": "fc90aa20fc267de053cce115af7000994c676074286b5864b1d0ec2cbd6b7ff7"
+      "generatedSha256": "a520109aed3d24b717ff97431ed2631793270dc122061e1fa44bb3b54314ea4b"
     },
     {
       "source": "docs/VERIFY_RELEASE.md",
       "route": "/docs/verify-release",
       "sourceSha256": "64646e8da91c13f5a0b7e76951282da90624bef44f4f3a714831eabc1977d069",
-      "generatedSha256": "30b85f39a24c35d20140ea761309725a4c544b05bf41a977319b280f8b7dd809"
+      "generatedSha256": "23cf18f08bdfa3dbc60502027b041d80ab00a28ed88b8564c8a6d4005a3f7a8a"
     }
   ]
 }
