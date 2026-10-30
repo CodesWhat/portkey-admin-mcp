@@ -1,6 +1,10 @@
 import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
-import { CurrentPageSchema, PageSizeSchema } from "../lib/schemas.js";
+import {
+	CurrentPageSchema,
+	PageSizeSchema,
+	PathIdSchema,
+} from "../lib/schemas.js";
 import type { PortkeyService } from "../services/index.js";
 import type {
 	CreateScimWorkspaceMappingRequest,
@@ -120,12 +124,10 @@ const WORKSPACES_TOOL_SCHEMAS = {
 			.describe("Filter by workspace lifecycle status"),
 	},
 	getWorkspace: {
-		workspace_id: z
-			.string()
-			.describe(
-				"The unique identifier of the workspace to retrieve. " +
-					"This can be found in the workspace's URL or from the list_workspaces tool response",
-			),
+		workspace_id: PathIdSchema.describe(
+			"The unique identifier of the workspace to retrieve. " +
+				"This can be found in the workspace's URL or from the list_workspaces tool response",
+		),
 	},
 	createWorkspace: {
 		name: z.string().describe("Name of the workspace"),
@@ -153,7 +155,7 @@ const WORKSPACES_TOOL_SCHEMAS = {
 			.describe("Initial workspace rate-limit settings"),
 	},
 	updateWorkspace: {
-		workspace_id: z.string().describe("The workspace ID to update"),
+		workspace_id: PathIdSchema.describe("The workspace ID to update"),
 		name: z.string().optional().describe("New name for the workspace"),
 		slug: z.string().optional().describe("New slug for the workspace"),
 		description: z.string().optional().describe("New description"),
@@ -190,10 +192,12 @@ const WORKSPACES_TOOL_SCHEMAS = {
 			.describe("Replacement workspace rate-limit settings"),
 	},
 	deleteWorkspace: {
-		workspace_id: z.string().describe("The workspace ID to delete"),
+		workspace_id: PathIdSchema.describe("The workspace ID to delete"),
 	},
 	addWorkspaceMember: {
-		workspace_id: z.string().describe("The workspace ID to add the member to"),
+		workspace_id: PathIdSchema.describe(
+			"The workspace ID to add the member to",
+		),
 		user_id: z
 			.string()
 			.uuid(
@@ -207,7 +211,7 @@ const WORKSPACES_TOOL_SCHEMAS = {
 			.describe("Role in the workspace"),
 	},
 	listWorkspaceMembers: {
-		workspace_id: z.string().describe("The workspace ID to list members for"),
+		workspace_id: PathIdSchema.describe("The workspace ID to list members for"),
 		current_page: CurrentPageSchema.describe("Zero-based page number"),
 		page_size: PageSizeSchema.describe("Number of members per page"),
 		role: z
@@ -217,7 +221,7 @@ const WORKSPACES_TOOL_SCHEMAS = {
 		email: z.string().email().optional().describe("Filter by member email"),
 	},
 	getWorkspaceMember: {
-		workspace_id: z.string().describe("The workspace ID"),
+		workspace_id: PathIdSchema.describe("The workspace ID"),
 		user_id: z
 			.string()
 			.uuid(
@@ -228,7 +232,7 @@ const WORKSPACES_TOOL_SCHEMAS = {
 			),
 	},
 	updateWorkspaceMember: {
-		workspace_id: z.string().describe("The workspace ID"),
+		workspace_id: PathIdSchema.describe("The workspace ID"),
 		user_id: z
 			.string()
 			.uuid(
@@ -242,7 +246,7 @@ const WORKSPACES_TOOL_SCHEMAS = {
 			.describe("New role in the workspace"),
 	},
 	removeWorkspaceMember: {
-		workspace_id: z.string().describe("The workspace ID"),
+		workspace_id: PathIdSchema.describe("The workspace ID"),
 		user_id: z
 			.string()
 			.uuid(

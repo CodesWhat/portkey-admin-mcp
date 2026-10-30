@@ -12,11 +12,10 @@ export function routeFor(page) {
     throw new Error(`Unknown page: ${page}`);
   return page === "home"
     ? "/"
-    : `/docs${page === "overview" ? "" : `/${page}`}`;
+    : `/docs/${page === "overview" ? "" : `${page}/`}`;
 }
 export function canonicalFor(page) {
-  const path = routeFor(page);
-  return `${siteUrl}${path.endsWith("/") ? path : `${path}/`}`;
+  return `${siteUrl}${routeFor(page)}`;
 }
 export function routesFor() {
   return ["home", ...docSlugs].map((page) =>

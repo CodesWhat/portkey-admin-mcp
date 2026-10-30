@@ -1,6 +1,10 @@
 import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
-import { CurrentPageSchema, PageSizeSchema } from "../lib/schemas.js";
+import {
+	CurrentPageSchema,
+	PageSizeSchema,
+	PathIdSchema,
+} from "../lib/schemas.js";
 import type { PortkeyService } from "../services/index.js";
 import { jsonResult } from "./utils.js";
 
@@ -95,9 +99,9 @@ const GUARDRAILS_TOOL_SCHEMAS = {
 		current_page: CurrentPageSchema,
 	},
 	getGuardrail: {
-		guardrail_id: z
-			.string()
-			.describe("The guardrail UUID or slug (with guard_ prefix) to retrieve"),
+		guardrail_id: PathIdSchema.describe(
+			"The guardrail UUID or slug (with guard_ prefix) to retrieve",
+		),
 	},
 	createGuardrail: {
 		name: z.string().describe("Name of the guardrail"),
@@ -124,7 +128,7 @@ const GUARDRAILS_TOOL_SCHEMAS = {
 			.describe("Organisation ID (required if workspace_id not provided)"),
 	},
 	updateGuardrail: {
-		guardrail_id: z.string().describe("The guardrail UUID or slug to update"),
+		guardrail_id: PathIdSchema.describe("The guardrail UUID or slug to update"),
 		name: z.string().optional().describe("New name for the guardrail"),
 		checks: z
 			.array(guardrailCheckSchema)
@@ -136,7 +140,7 @@ const GUARDRAILS_TOOL_SCHEMAS = {
 			.describe("Updated actions configuration"),
 	},
 	deleteGuardrail: {
-		guardrail_id: z.string().describe("The guardrail UUID or slug to delete"),
+		guardrail_id: PathIdSchema.describe("The guardrail UUID or slug to delete"),
 	},
 	updateOrganisationDefaults: {
 		input_guardrails: z
@@ -167,10 +171,10 @@ const GUARDRAILS_TOOL_SCHEMAS = {
 			.describe("Replace existing exclusion states instead of merging changes"),
 	},
 	listGuardrailMcpServerMappings: {
-		guardrail_id: z.string().min(1).describe("Guardrail UUID or slug"),
+		guardrail_id: PathIdSchema.describe("Guardrail UUID or slug"),
 	},
 	replaceGuardrailMcpServerMappings: {
-		guardrail_id: z.string().min(1).describe("Guardrail UUID or slug"),
+		guardrail_id: PathIdSchema.describe("Guardrail UUID or slug"),
 		mcp_servers: z
 			.record(z.string().uuid(), guardrailMcpServerMappingConfigSchema)
 			.describe(
@@ -178,7 +182,7 @@ const GUARDRAILS_TOOL_SCHEMAS = {
 			),
 	},
 	upsertGuardrailMcpServerMapping: {
-		guardrail_id: z.string().min(1).describe("Guardrail UUID or slug"),
+		guardrail_id: PathIdSchema.describe("Guardrail UUID or slug"),
 		mcp_server_id: z.string().uuid().describe("MCP server UUID"),
 		...guardrailMcpServerMappingConfigShape,
 	},

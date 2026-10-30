@@ -547,7 +547,7 @@ export class AnalyticsService extends BaseService {
 			throw new Error("metadataKey is required");
 		}
 		return this.get<GroupAnalyticsResponse>(
-			`/analytics/groups/metadata/${encodeURIComponent(metadataKey)}`,
+			`/analytics/groups/metadata/${this.encodePathSegment(metadataKey)}`,
 			this.buildAnalyticsParams(params),
 		);
 	}

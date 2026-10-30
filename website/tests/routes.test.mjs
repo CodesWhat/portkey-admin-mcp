@@ -16,11 +16,11 @@ test("the site is always Portkey", () => {
 
 test("marketing is at the root and every docs page sits under /docs", () => {
   assert.equal(routeFor("home"), "/");
-  assert.equal(routeFor("overview"), "/docs");
-  assert.equal(routeFor("getting-started"), "/docs/getting-started");
-  assert.equal(routeFor("operations"), "/docs/operations");
-  assert.equal(routeFor("tools"), "/docs/tools");
-  assert.equal(routeFor("verify-release"), "/docs/verify-release");
+  assert.equal(routeFor("overview"), "/docs/");
+  assert.equal(routeFor("getting-started"), "/docs/getting-started/");
+  assert.equal(routeFor("operations"), "/docs/operations/");
+  assert.equal(routeFor("tools"), "/docs/tools/");
+  assert.equal(routeFor("verify-release"), "/docs/verify-release/");
   assert.deepEqual(routesFor(), [
     [],
     ["docs"],

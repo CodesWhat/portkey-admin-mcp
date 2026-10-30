@@ -222,7 +222,7 @@ async function suite(browser, engine, base) {
       expect((await page.locator("h1").innerText()).trim().length > 0, "no heading");
       expect((await page.locator("article.prose").innerText()).trim().length > 200, "article body is empty");
       if (width > 700) {
-        await page.locator('.desktop-nav a[href="/docs/tools"], .desktop-nav a[href="/docs"]').first().waitFor();
+        await page.locator('.desktop-nav a[href="/docs/tools/"], .desktop-nav a[href="/docs/"]').first().waitFor();
         await page.locator(".desktop-nav a", { hasText: "Docs" }).click();
         await page.waitForURL(/\/docs\/?$/);
       } else {
