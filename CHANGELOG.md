@@ -11,11 +11,17 @@ release until that reference and the release notes say so.
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-10-30
+
+Node 26 runtime image, refused dot path segments, and a redesigned site at portkey.codeswhat.com. The catalog is unchanged at 194 tools across 22 domains.
+
 ### Changed
 - The security assurance case limits its per-request authentication claim to MCP requests in bearer and Clerk modes, and names the health, readiness, status and auth-info routes that stay unauthenticated.
 - The Docker image now runs Node 26, and CI also tests Node 26. Node 24 remains the minimum (`engines.node` is still `>=24`), and the npm package is still built on Node 24.
 - The README footer links the CodesWhat logo to codeswhat.com, and the architecture guide, Vercel guide and security assurance case no longer call the SDK v2 implementation an unreleased candidate.
 - The site's manual now follows the v0.15.2 release, and its release label and links read the manual pin instead of a hard-coded version.
+- The site at portkey.codeswhat.com has a new design: an orchid and plum skin with self-hosted fonts, a replay of real stdio captures, favicon and social tags, a styled 404, and guide finder results in the page flow. Static assets are now cached.
+- Internal site links now carry the trailing slash, so navigation no longer redirects.
 
 ### Security
 - Path parameters of "." or ".." (including percent-encoded forms) are now refused before any request, so a tool can no longer be redirected to another Portkey endpoint and get past `PORTKEY_TOOL_DOMAINS` (e.g. `workspace_id` ".." reaching org user endpoints). Found by a Claude Security scan.
@@ -975,7 +981,8 @@ First stable release. Graduates from beta with 151 tools covering ~98% of the Po
 - Vercel deployment support
 - Contract tests, E2E tests, security tests
 
-[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.15.2...HEAD
+[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.0...HEAD
+[0.16.0]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.15.2...v0.16.0
 [0.15.2]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.15.1...v0.15.2
 [0.15.1]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.15.0...v0.15.1
 [0.15.0]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.14.1...v0.15.0
