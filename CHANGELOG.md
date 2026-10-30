@@ -19,6 +19,7 @@ release until that reference and the release notes say so.
 
 ### Security
 - Path parameters of "." or ".." (including percent-encoded forms) are now refused before any request, so a tool can no longer be redirected to another Portkey endpoint and get past `PORTKEY_TOOL_DOMAINS` (e.g. `workspace_id` ".." reaching org user endpoints). Found by a Claude Security scan.
+- The coverage workflow now runs dependency install and tests in a job without an OIDC credential, and uploads coverage from a separate job that runs no repository or dependency code. Found by a Claude Security scan.
 
 ## [0.15.2] - 2026-10-29
 
