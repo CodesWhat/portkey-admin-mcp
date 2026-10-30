@@ -3,6 +3,7 @@ import { spawn, spawnSync } from "node:child_process";
 import {
 	mkdirSync,
 	mkdtempSync,
+	readdirSync,
 	readFileSync,
 	rmSync,
 	writeFileSync,
@@ -340,4 +341,178 @@ test("LobeHub release automation updates the claimed listing and all MCP capabil
 	assert.match(generatorSource, /\blistResourceTemplates\b/);
 	assert.match(generatorSource, /finally/);
 	assert.match(releaseGuide, /plugin update/);
+});
+
+type WorkflowJob = { name: string; text: string };
+
+function splitWorkflow(source: string): {
+	topLevel: string;
+	jobs: WorkflowJob[];
+} {
+	const jobsStart = source.search(/^jobs:\s*$/m);
+	assert.ok(jobsStart >= 0, "workflow has no jobs: block");
+	const topLevel = source.slice(0, jobsStart);
+	const jobs: WorkflowJob[] = [];
+	let current: WorkflowJob | undefined;
+	for (const line of source.slice(jobsStart).split("\n").slice(1)) {
+		const header = /^ {2}([A-Za-z0-9_-]+):\s*$/.exec(line);
+		if (header?.[1]) {
+			current = { name: header[1], text: "" };
+			jobs.push(current);
+		} else if (current) {
+			current.text += `${line}\n`;
+		}
+	}
+	return { topLevel, jobs };
+}
+
+function grantsIdTokenWrite(text: string, indent: number): boolean {
+	const lines = text.split("\n");
+	const start = lines.findIndex((l) =>
+		new RegExp(`^ {${indent}}permissions:`).test(l),
+	);
+	if (start < 0) return false;
+	const inline = (lines[start]?.split("permissions:")[1] ?? "")
+		.replace(/\s+#.*$/, "")
+		.trim();
+	if (inline === "write-all") return true;
+	if (inline.startsWith("{")) return /\bid-token\s*:\s*write\b/.test(inline);
+	for (const line of lines.slice(start + 1)) {
+		if (line.trim() && !line.startsWith(`${" ".repeat(indent + 1)}`)) break;
+		if (/^\s*id-token:\s*write\s*(?:#.*)?$/.test(line)) return true;
+	}
+	return false;
+}
+
+function runBodies(text: string): string[] {
+	const lines = text.split("\n");
+	const bodies: string[] = [];
+	for (let i = 0; i < lines.length; i++) {
+		const match = /^(\s*)(?:- )?run:\s*(.*)$/.exec(lines[i] ?? "");
+		if (!match) continue;
+		const indent = (match[1] ?? "").length;
+		const first = (match[2] ?? "").trim();
+		if (!/^[|>][+-]?$/.test(first)) {
+			bodies.push(first);
+			continue;
+		}
+		const block: string[] = [];
+		for (let j = i + 1; j < lines.length; j++) {
+			const line = lines[j] ?? "";
+			if (line.trim() && line.search(/\S/) <= indent) break;
+			block.push(line);
+		}
+		bodies.push(block.join("\n"));
+	}
+	return bodies.map((body) =>
+		body
+			.split("\n")
+			.filter((line) => !line.trim().startsWith("#"))
+			.join("\n"),
+	);
+}
+
+const oidcForbidden: [RegExp, string][] = [
+	[/\bnpm\s+run\b/, "npm run"],
+	[/\bnpm\s+(?:test|t)\b/, "npm test"],
+	[/\bnpx\b/, "npx"],
+	[/\bnpm\s+exec\b/, "npm exec"],
+	// Inline `node -e` / `node -p` are allowed; running a script file is not.
+	[/(?:^|[\s;&|(])node\s+(?!-[ep]\b)/m, "node <file>"],
+];
+
+function oidcBodyViolations(body: string): string[] {
+	const out: string[] = [];
+	for (const m of body.matchAll(/\bnpm\s+(?:ci|install|i|add)\b[^\n;&|]*/g)) {
+		// A `#` after whitespace (or at line start) starts a shell comment.
+		const command = m[0].replace(/(?:^|\s)#.*$/, "");
+		const ignoresScripts = command
+			.split(/\s+/)
+			.some(
+				(arg) => arg === "--ignore-scripts" || arg === "--ignore-scripts=true",
+			);
+		if (!ignoresScripts) {
+			out.push(`installs dependencies with lifecycle scripts: ${m[0].trim()}`);
+		}
+	}
+	for (const [pattern, name] of oidcForbidden) {
+		if (pattern.test(body)) out.push(`runs "${name}"`);
+	}
+	if (/(?:^|[\s;&|(])node\s+-[ep]\b/m.test(body)) {
+		if (/\bimport\s*\(/.test(body)) out.push("inline node uses import()");
+		for (const m of body.matchAll(/\brequire\s*\(\s*([^)]*)\)/g)) {
+			if (!/^(['"`])[^'"`]*\.json\1$/.test((m[1] ?? "").trim())) {
+				out.push(`inline node requires a non-JSON module: ${m[0]}`);
+			}
+		}
+	}
+	return out;
+}
+
+test("OIDC guard helpers catch the known evasions", () => {
+	const flow = "permissions: { contents: read, id-token: write }\n";
+	assert.equal(grantsIdTokenWrite(flow, 0), true);
+	assert.equal(grantsIdTokenWrite("permissions:{id-token:write}\n", 0), true);
+	assert.equal(
+		grantsIdTokenWrite("permissions: { contents: read }\n", 0),
+		false,
+	);
+	assert.equal(
+		grantsIdTokenWrite(
+			"permissions:\n  id-token: write # needed for upload\n",
+			0,
+		),
+		true,
+	);
+	assert.equal(
+		grantsIdTokenWrite("permissions:\n  id-token: read # no\n", 0),
+		false,
+	);
+	assert.ok(oidcBodyViolations("npm exec foo").length > 0);
+	assert.ok(oidcBodyViolations("npx foo").length > 0);
+	assert.ok(oidcBodyViolations("node -e \"import('x')\"").length > 0);
+	assert.ok(oidcBodyViolations("node -p \"require('./a.js')\"").length > 0);
+	assert.ok(oidcBodyViolations('node -p "require(name)"').length > 0);
+	assert.deepEqual(
+		oidcBodyViolations("node -p \"require('./server.json').version\""),
+		[],
+	);
+	assert.ok(oidcBodyViolations("npm ci && npm ci --ignore-scripts").length > 0);
+	assert.deepEqual(
+		oidcBodyViolations("npm ci --ignore-scripts && echo hi"),
+		[],
+	);
+	assert.ok(oidcBodyViolations("npm ci --ignore-scripts\nnpm i").length > 0);
+	assert.ok(oidcBodyViolations("npm ci # --ignore-scripts").length > 0);
+	assert.ok(oidcBodyViolations("npm ci --ignore-scripts=false").length > 0);
+	assert.deepEqual(oidcBodyViolations("npm ci --ignore-scripts"), []);
+	assert.deepEqual(oidcBodyViolations("npm ci --ignore-scripts=true"), []);
+});
+
+test("workflow jobs that hold id-token: write run no dependency or repository code", () => {
+	const dir = `${root}.github/workflows/`;
+	const files = readdirSync(dir).filter((f) => /\.ya?ml$/.test(f));
+	assert.ok(files.length > 0);
+	let checked = 0;
+	for (const file of files) {
+		const { topLevel, jobs } = splitWorkflow(
+			readFileSync(`${dir}${file}`, "utf8"),
+		);
+		const topGrants = grantsIdTokenWrite(topLevel, 0);
+		for (const job of jobs) {
+			const hasOwn = /^ {4}permissions:/m.test(job.text);
+			const effective = hasOwn ? grantsIdTokenWrite(job.text, 4) : topGrants;
+			if (!effective) continue;
+			checked++;
+			for (const body of runBodies(job.text)) {
+				const label = `${file}#${job.name}`;
+				assert.deepEqual(
+					oidcBodyViolations(body),
+					[],
+					`${label} breaks the OIDC job rules while holding id-token: write`,
+				);
+			}
+		}
+	}
+	assert.ok(checked >= 3, "expected to inspect the OIDC-bearing jobs");
 });

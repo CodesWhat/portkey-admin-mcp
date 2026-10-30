@@ -1,7 +1,7 @@
 {
   "repo": "CodesWhat/portkey-admin-mcp",
-  "tag": "v0.15.0",
-  "commit": "46556acebb77c9ee224e54836137c64fb5650594",
+  "tag": "v0.15.2",
+  "commit": "50128613a61514319f23cf9ea27c0e98a4daa3ed",
   "starters": [
     "overview",
     "getting-started",
@@ -16,7 +16,8 @@
     {
       "slug": "tools",
       "source": "ENDPOINTS.md",
-      "title": "Tool reference"
+      "title": "Tool reference",
+      "description": "Every tool by domain with its Portkey route, the analytics endpoint matrix, and the tools tracked but not exposed."
     },
     {
       "slug": "compatibility",
@@ -48,12 +49,14 @@
     {
       "slug": "distribution",
       "source": "docs/DISTRIBUTION.md",
-      "title": "Distribution and directories"
+      "title": "Distribution and directories",
+      "description": "Where the package is listed: npm, the MCP Registry, LobeHub, the Awesome MCP Servers entry, the Docker submission and Glama, as dated observations."
     },
     {
       "slug": "verify-release",
       "source": "docs/VERIFY_RELEASE.md",
-      "title": "Verify a release"
+      "title": "Verify a release",
+      "description": "Check npm signatures and provenance, and the project metadata, for a stable release before you install it."
     }
   ]
 }

@@ -79,6 +79,16 @@ for (const parts of routes) {
       `${path}: missing local destination ${href}`,
     );
   }
+  for (const [, raw] of html.matchAll(/\shref="(\/[^"]*)"/g)) {
+    const href = decode(raw);
+    if (href.startsWith("//") || href.startsWith("/_next/") || href.startsWith("/#")) continue;
+    const pathname = href.split(/[?#]/)[0];
+    if (/\.[A-Za-z0-9]+$/.test(pathname.split("/").pop())) continue;
+    assert.ok(
+      pathname.endsWith("/") && !pathname.includes("//"),
+      `${path}: internal link ${raw} must end in one trailing slash with no empty segments (trailingSlash export redirects otherwise)`,
+    );
+  }
   const here = "/" + parts.join("/");
   for (const [, href] of html.matchAll(/href="([^"]*#[^"]*)"/g)) {
     const [base, ...frag] = decode(href).split("#");
@@ -123,7 +133,21 @@ assert.deepEqual(
   [...expectedCanonical.values()].sort(),
   "sitemap.xml lists every route and no others",
 );
+const notFound = readFileSync(join(root, "404.html"), "utf8");
+assert.match(notFound, /name="robots"[^>]*noindex|noindex[^>]*name="robots"/i, "404.html must stay noindex");
+assert.match(notFound, /Nothing to administer here/, "404.html is the styled page");
 const home = readFileSync(join(root, "index.html"), "utf8");
+for (const pattern of [
+  /rel="icon"[^>]*portkey-64\.webp/,
+  /name="theme-color"[^>]*#f9f5fc/,
+  /name="theme-color"[^>]*#16101e/,
+  /property="og:image"[^>]*content="https:\/\/portkey\.codeswhat\.com\/assets\/[^"]+"/,
+  /name="twitter:image"[^>]*content="https:\/\/portkey\.codeswhat\.com\/assets\//,
+  /not affiliated with or endorsed by Portkey or Palo Alto Networks/,
+  /id="see-it-work"/,
+])
+  assert.match(home, pattern, `home is missing ${pattern}`);
+assert.ok(!/id="product-animation"|Play product animation/.test(home), "the old play button is gone");
 assert.ok(!home.includes("All local previews"));
 assert.match(home, /Portkey Admin MCP/);
 console.log(

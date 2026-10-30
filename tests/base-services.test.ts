@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
+import { PathIdSchema } from "../src/lib/schemas.js";
 import { AuditService } from "../src/services/audit.service.js";
 import {
 	BaseService,
@@ -32,6 +33,7 @@ import {
 	UsersService,
 	WorkspacesService,
 } from "../src/services/index.js";
+import { registerAllTools } from "../src/tools/index.js";
 
 const BASE_URL = "https://api.example.com/v1";
 
@@ -475,5 +477,186 @@ describe("PortkeyService lifecycle", () => {
 			/PORTKEY_API_KEY is not configured\. Set the PORTKEY_API_KEY environment variable to a valid Portkey Admin API key\./,
 		);
 		assert.equal(capturedFetches.length, 0);
+	});
+});
+
+describe("path segment hardening", () => {
+	const REFUSED = /Invalid path segment/;
+
+	function service(): TestBaseService {
+		return new TestBaseService("test-key", BASE_URL);
+	}
+
+	it("encodePathSegment refuses empty, dot and percent-encoded dot segments", () => {
+		const svc = service();
+		for (const value of [
+			"",
+			".",
+			"..",
+			"%2e",
+			"%2E",
+			"%2e%2e",
+			"%2E%2E",
+			".%2e",
+			"%2e.",
+		]) {
+			assert.throws(() => svc.encode(value), REFUSED, JSON.stringify(value));
+		}
+	});
+
+	it("encodePathSegment still encodes ordinary ids, slugs and reserved characters", () => {
+		const svc = service();
+		assert.equal(svc.encode("ws-123"), "ws-123");
+		assert.equal(svc.encode("my.slug"), "my.slug");
+		assert.equal(svc.encode("..a"), "..a");
+		assert.equal(svc.encode("a b"), "a%20b");
+		assert.equal(svc.encode("a/b"), "a%2Fb");
+		assert.equal(svc.encode("%2e%2ex"), "%252e%252ex");
+	});
+
+	it("refuses a path that the URL parser would normalise, before fetch", async () => {
+		const svc = service();
+		await assert.rejects(
+			svc.replace("/admin/workspaces/../users/u1", {}),
+			/normalis/i,
+		);
+		await assert.rejects(
+			svc.read("/admin/workspaces/%2e%2e/users/u1"),
+			/normalis/i,
+		);
+		await assert.rejects(svc.remove("/a/./b"), /normalis/i);
+		assert.equal(capturedFetches.length, 0);
+	});
+
+	it("allows paths with query strings and trailing slashes through the guard", async () => {
+		const svc = service();
+		enqueue({});
+		await svc.read("/things/", { page: 1 });
+		enqueue({});
+		await svc.read("/providers/openai?workspace_id=ws%2F..");
+		assert.equal(capturedFetches.length, 2);
+		assert.equal(capturedUrl(1).pathname, "/v1/providers/openai");
+	});
+
+	it("workspace member operations refuse workspace_id '..' and send no request", async () => {
+		const svc = new WorkspacesService("test-key", BASE_URL);
+		const userId = "00000000-0000-0000-0000-000000000001";
+		await assert.rejects(
+			svc.updateWorkspaceMember("..", userId, { role: "admin" }),
+			REFUSED,
+		);
+		await assert.rejects(svc.removeWorkspaceMember("..", userId), REFUSED);
+		await assert.rejects(svc.getWorkspaceMember("..", userId), REFUSED);
+		await assert.rejects(svc.listWorkspaceMembers(".."), REFUSED);
+		await assert.rejects(
+			svc.addWorkspaceMember("%2e%2e", { user_id: userId, role: "admin" }),
+			REFUSED,
+		);
+		assert.equal(capturedFetches.length, 0);
+	});
+
+	it("guardrail MCP server mapping calls refuse guardrail_id '..' and send no request", async () => {
+		const svc = new GuardrailsService("test-key", BASE_URL);
+		await assert.rejects(svc.listGuardrailMcpServerMappings(".."), REFUSED);
+		assert.equal(capturedFetches.length, 0);
+	});
+
+	it("analytics metadata group key goes through encodePathSegment", async () => {
+		const svc = new AnalyticsService("test-key", BASE_URL);
+		await assert.rejects(
+			svc.getAnalyticsGroupMetadata("..", {
+				time_of_generation_min: "2026-01-01T00:00:00Z",
+				time_of_generation_max: "2026-01-02T00:00:00Z",
+			} as never),
+			REFUSED,
+		);
+		assert.equal(capturedFetches.length, 0);
+	});
+
+	it("tool layer: update_workspace_member with workspace_id '..' returns an error result and sends no request", async () => {
+		const callbacks = new Map<
+			string,
+			(...args: unknown[]) => Promise<unknown>
+		>();
+		registerAllTools(
+			{
+				registerTool(
+					name: string,
+					_config: Record<string, unknown>,
+					callback: (...args: unknown[]) => Promise<unknown>,
+				): never {
+					callbacks.set(name, callback);
+					return {} as never;
+				},
+			} as never,
+			{ workspaces: new WorkspacesService("test-key", BASE_URL) } as never,
+		);
+		const cb = callbacks.get("update_workspace_member");
+		assert.ok(cb);
+		const result = (await cb({
+			workspace_id: "..",
+			user_id: "00000000-0000-0000-0000-000000000001",
+			role: "admin",
+		})) as { isError?: boolean; content: Array<{ text: string }> };
+
+		assert.equal(result.isError, true);
+		assert.match(result.content[0]?.text ?? "", /Invalid path segment/);
+		assert.doesNotMatch(result.content[0]?.text ?? "", /test-key/);
+		assert.equal(capturedFetches.length, 0);
+	});
+
+	it("tool layer: registered inputSchema refuses dot segments for workspace_id and guardrail_id", () => {
+		const configs = new Map<string, Record<string, unknown>>();
+		registerAllTools(
+			{
+				registerTool(
+					name: string,
+					config: Record<string, unknown>,
+					_callback: (...args: unknown[]) => Promise<unknown>,
+				): never {
+					configs.set(name, config);
+					return {} as never;
+				},
+			} as never,
+			{
+				workspaces: new WorkspacesService("test-key", BASE_URL),
+				guardrails: new GuardrailsService("test-key", BASE_URL),
+			} as never,
+		);
+		const cases: Array<[string, string, Record<string, unknown>]> = [
+			[
+				"update_workspace_member",
+				"workspace_id",
+				{ user_id: "6f1c1f0e-3b8a-4c2d-9a47-0d5e8b2c7a11", role: "admin" },
+			],
+			["get_guardrail", "guardrail_id", {}],
+		];
+		for (const [tool, field, rest] of cases) {
+			const schema = configs.get(tool)?.inputSchema as
+				| { safeParse: (v: unknown) => { success: boolean } }
+				| undefined;
+			assert.ok(schema, `${tool} registers an inputSchema`);
+			for (const bad of ["..", ".", "%2e%2e", ""]) {
+				assert.equal(
+					schema.safeParse({ ...rest, [field]: bad }).success,
+					false,
+					`${tool}.${field} must reject ${JSON.stringify(bad)}`,
+				);
+			}
+			assert.equal(
+				schema.safeParse({ ...rest, [field]: "ws-1" }).success,
+				true,
+				`${tool}.${field} accepts a normal id`,
+			);
+		}
+	});
+
+	it("tool input schemas reject dot segments for path ids", () => {
+		for (const bad of ["..", ".", "%2e%2e", ""]) {
+			assert.equal(PathIdSchema.safeParse(bad).success, false, bad);
+		}
+		for (const good of ["ws-1", "my.slug", "guard_abc", "a b"]) {
+			assert.equal(PathIdSchema.safeParse(good).success, true, good);
+		}
 	});
 });

@@ -7,6 +7,9 @@ import { extname, join, normalize, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { once } from "node:events";
 import { chromium, webkit } from "playwright-core";
+import manual from "../content/manual.config.json" with { type: "json" };
+const releaseVersion = manual.tag.replace(/^v/, "");
+const releaseUrl = `https://github.com/${manual.repo}/releases/tag/${manual.tag}`;
 
 const root = fileURLToPath(new URL("../out", import.meta.url));
 const mime = {
@@ -32,7 +35,11 @@ async function serve() {
     let file = normalize(join(root, pathname));
     if (file !== root && !file.startsWith(root + sep)) return void response.writeHead(403).end();
     if (existsSync(file) && statSync(file).isDirectory()) file = join(file, "index.html");
-    if (!existsSync(file)) return void response.writeHead(404).end("Not found");
+    if (!existsSync(file)) {
+      const page404 = join(root, "404.html");
+      response.writeHead(404, { "content-type": mime[".html"] });
+      return void (existsSync(page404) ? createReadStream(page404).pipe(response) : response.end("Not found"));
+    }
     response.writeHead(200, { "content-type": mime[extname(file)] ?? "application/octet-stream" });
     createReadStream(file).pipe(response);
   });
@@ -166,13 +173,13 @@ async function suite(browser, engine, base) {
     expect((await live.innerText()).trim() === "0 guides found", `nonsense count was "${await live.innerText()}"`);
   });
 
-  await check("release label: once per docs page, links to the v0.15.0 release", {}, async (_, page) => {
+  await check(`release label: once per docs page, links to the ${manual.tag} release`, {}, async (_, page) => {
     for (const path of ["/docs", "/docs/tools"]) {
       await open(page, path);
       const label = page.locator(".release-label a");
       expect(await label.count() === 1, `${path}: expected one release label`);
-      expect(/Docs for 0\.15\.0, the latest release/.test(await label.innerText()), `${path}: wrong label text`);
-      expect(await label.getAttribute("href") === "https://github.com/CodesWhat/portkey-admin-mcp/releases/tag/v0.15.0", `${path}: wrong link`);
+      expect((await label.innerText()).includes(`Docs for ${releaseVersion}, the latest release`), `${path}: wrong label text`);
+      expect(await label.getAttribute("href") === releaseUrl, `${path}: wrong link`);
     }
   });
 
@@ -192,25 +199,78 @@ async function suite(browser, engine, base) {
     expect(!(await dark()), "light theme lost after reload");
   });
 
-  await check("animation: starts only on request and can be paused", {}, async (_, page) => {
+  await check("theme: toggle updates the theme-color meta", {}, async (_, page) => {
     await open(page, "/");
-    expect(await page.locator(".animated-mark").count() === 0, "animation is present before it is requested");
-    const button = page.locator(".product-animation button");
-    await button.click();
-    expect(await page.locator(".animated-mark").isVisible(), "animation did not start");
-    expect(/Pause/.test(await button.innerText()), "button does not offer Pause");
-    await button.click();
-    expect(await page.locator(".animated-mark").count() === 0, "animation did not stop");
+    const colors = () => page.evaluate(() => [...document.querySelectorAll('meta[name="theme-color"]')].map((m) => m.content));
+    await page.locator(".theme-switch").click();
+    expect((await colors()).every((c) => c === "#16101e"), "theme-color not dark after toggle");
+    await page.locator(".theme-switch").click();
+    expect((await colors()).every((c) => c === "#f9f5fc"), "theme-color not light after toggle");
   });
 
-  await check("reduced motion: animation and its control are hidden", { reducedMotion: "reduce" }, async (_, page) => {
+  await check("hero logo: static frame first, then the spin render plays once", {}, async (_, page) => {
+    await open(page, "/");
+    await page.waitForFunction(() => document.querySelector("#hero-logo")?.dataset.played === "1", null, { timeout: 10_000 });
+    expect((await page.locator("#hero-logo").getAttribute("src")).endsWith("/assets/portkey-spin-360.webp"), "spin render was not swapped in");
+  });
+
+  await check("reduced motion: hero logo stays on the still frame", { reducedMotion: "reduce" }, async (_, page) => {
     await open(page, "/");
     expect(await page.evaluate(() => matchMedia("(prefers-reduced-motion: reduce)").matches), "reduced motion not emulated");
-    expect(!(await page.locator(".product-animation button").isVisible()), "play control is visible");
-    expect(await page.locator(".animated-mark").count() === 0, "animated mark is rendered");
-    expect(await page.locator(".still-mark").isVisible(), "static mark is not shown");
+    await page.waitForTimeout(800);
+    expect((await page.locator("#hero-logo").getAttribute("src")).endsWith("/assets/portkey-360.webp"), "logo left the still frame");
+    expect(await page.locator("#hero-logo").getAttribute("data-played") === null, "logo reports it played");
     const transition = await page.evaluate(() => getComputedStyle(document.querySelector(".header")).transitionDuration);
     expect(/^0s(, 0s)*$/.test(transition), `transitions still run (${transition})`);
+  });
+
+  await check("terminal: replays a scene and makes no external requests", {}, async (_, page) => {
+    const external = [];
+    page.on("request", (request) => { if (!request.url().startsWith(base)) external.push(request.url()); });
+    await open(page, "/");
+    await page.locator("#term").scrollIntoViewIfNeeded();
+    await page.locator('.tcmd[data-scene="validate"]').click();
+    await page.waitForFunction(() => document.querySelector("#term")?.dataset.state === "done", null, { timeout: 20_000 });
+    expect(/validate_completion_metadata/.test(await page.locator("#term-body").innerText()), "scene output missing");
+    expect(await page.locator('.tcmd[data-scene="validate"]').getAttribute("aria-pressed") === "true", "scene button not pressed");
+    expect(await page.locator(".prov summary").isVisible(), "provenance disclosure missing");
+    expect(!external.length, `external requests: ${external.join(", ")}`);
+    await page.locator("#term-clear").click();
+    expect(!(await page.locator("#term-title").innerText()).includes("validate"), "Clear left the scene title");
+    expect((await page.locator("#term-live").innerText()) === "", "Clear left the live region text");
+  });
+
+  await check("terminal: Clear before first view stops the autoplay", {}, async (_, page) => {
+    await open(page, "/");
+    await page.locator("#term-clear").evaluate((el) => el.click());
+    await page.locator("#term").scrollIntoViewIfNeeded();
+    await page.evaluate(() => {
+      window.__termPlayed = false;
+      const term = document.querySelector("#term");
+      new MutationObserver(() => { if (term.dataset.state === "playing") window.__termPlayed = true; })
+        .observe(term, { attributes: true, attributeFilter: ["data-state"] });
+    });
+    await page.waitForTimeout(2000);
+    expect(!(await page.evaluate(() => window.__termPlayed)), "terminal autoplayed after Clear");
+    expect(await page.locator("#term").getAttribute("data-state") !== "playing", "terminal is playing after Clear");
+    expect((await page.locator("#term-body").innerText()).trim() === "", "terminal body repopulated after Clear");
+  });
+
+  await check("finder: results sit in page flow and do not cover the article at 390px", { viewport: { width: 390, height: 800 } }, async (_, page) => {
+    await open(page, "/docs");
+    await page.locator("#doc-query").fill("security");
+    const results = page.locator(".search-results");
+    expect(await results.evaluate((el) => getComputedStyle(el).position) === "static", "results are positioned over the page");
+    const [r, article] = await Promise.all([results.boundingBox(), page.locator("article.prose").boundingBox()]);
+    expect(r.y + r.height <= article.y + 0.5, "results overlap the article");
+  });
+
+  await check("404: styled, noindex, and offers the guide finder", {}, async (_, page) => {
+    const response = await page.goto(base + "/does-not-exist/", { waitUntil: "load" });
+    expect(response.status() === 404, `status ${response.status()}`);
+    expect(/Nothing to administer here/.test(await page.locator("h1").innerText()), "404 heading missing");
+    expect(await page.locator('meta[name="robots"][content*="noindex"]').count() >= 1, "404 is not noindex");
+    expect(await page.locator("#doc-query").count() === 1, "404 has no finder");
   });
 
   for (const [path, width] of [["/docs", 1280], ["/docs/tools", 1280], ["/docs", 390]])
@@ -219,7 +279,7 @@ async function suite(browser, engine, base) {
       expect((await page.locator("h1").innerText()).trim().length > 0, "no heading");
       expect((await page.locator("article.prose").innerText()).trim().length > 200, "article body is empty");
       if (width > 700) {
-        await page.locator('.desktop-nav a[href="/docs/tools"], .desktop-nav a[href="/docs"]').first().waitFor();
+        await page.locator('.desktop-nav a[href="/docs/tools/"], .desktop-nav a[href="/docs/"]').first().waitFor();
         await page.locator(".desktop-nav a", { hasText: "Docs" }).click();
         await page.waitForURL(/\/docs\/?$/);
       } else {

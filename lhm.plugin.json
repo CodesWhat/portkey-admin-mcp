@@ -1,7 +1,7 @@
 {
 	"identifier": "codeswhat-portkey-admin-mcp",
 	"name": "Portkey Admin MCP Server",
-	"version": "0.15.2",
+	"version": "0.16.0",
 	"description": "Portkey Admin API MCP server with current control-plane coverage, 194 tools, and Prisma AIRS interoperability guidance.",
 	"author": "CodesWhat",
 	"authorUrl": "https://github.com/CodesWhat",
@@ -1177,6 +1177,7 @@
 				"properties": {
 					"workspace_id": {
 						"type": "string",
+						"minLength": 1,
 						"description": "The unique identifier of the workspace to retrieve. This can be found in the workspace's URL or from the list_workspaces tool response"
 					}
 				},
@@ -1335,6 +1336,7 @@
 				"properties": {
 					"workspace_id": {
 						"type": "string",
+						"minLength": 1,
 						"description": "The workspace ID to update"
 					},
 					"name": {
@@ -1487,6 +1489,7 @@
 				"properties": {
 					"workspace_id": {
 						"type": "string",
+						"minLength": 1,
 						"description": "The workspace ID to delete"
 					}
 				},
@@ -1508,6 +1511,7 @@
 				"properties": {
 					"workspace_id": {
 						"type": "string",
+						"minLength": 1,
 						"description": "The workspace ID to add the member to"
 					},
 					"user_id": {
@@ -1540,6 +1544,7 @@
 				"properties": {
 					"workspace_id": {
 						"type": "string",
+						"minLength": 1,
 						"description": "The workspace ID to list members for"
 					},
 					"current_page": {
@@ -1584,6 +1589,7 @@
 				"properties": {
 					"workspace_id": {
 						"type": "string",
+						"minLength": 1,
 						"description": "The workspace ID"
 					},
 					"user_id": {
@@ -1611,6 +1617,7 @@
 				"properties": {
 					"workspace_id": {
 						"type": "string",
+						"minLength": 1,
 						"description": "The workspace ID"
 					},
 					"user_id": {
@@ -1643,6 +1650,7 @@
 				"properties": {
 					"workspace_id": {
 						"type": "string",
+						"minLength": 1,
 						"description": "The workspace ID"
 					},
 					"user_id": {
@@ -9244,6 +9252,7 @@
 				"properties": {
 					"guardrail_id": {
 						"type": "string",
+						"minLength": 1,
 						"description": "The guardrail UUID or slug (with guard_ prefix) to retrieve"
 					}
 				},
@@ -9523,6 +9532,7 @@
 				"properties": {
 					"guardrail_id": {
 						"type": "string",
+						"minLength": 1,
 						"description": "The guardrail UUID or slug to update"
 					},
 					"name": {
@@ -9645,6 +9655,7 @@
 				"properties": {
 					"guardrail_id": {
 						"type": "string",
+						"minLength": 1,
 						"description": "The guardrail UUID or slug to delete"
 					}
 				},

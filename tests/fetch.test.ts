@@ -8,9 +8,12 @@ import {
 	type NoContent,
 } from "../src/services/base.service.js";
 
-const REQUEST_DEADLINE_MS = 50;
+// The deadline has to cover response headers even on a loaded machine (the
+// pre-push hook runs suites in parallel), while the delayed body must always
+// land well after it. 50 ms raced the headers there; keep a wide gap.
+const REQUEST_DEADLINE_MS = 250;
 const ORDINARY_REQUEST_DEADLINE_MS = 5_000;
-const DELAYED_RESPONSE_MS = 400;
+const DELAYED_RESPONSE_MS = 2_000;
 
 class DeadlineTestService extends BaseService {
 	protected override readonly timeout: number = REQUEST_DEADLINE_MS;

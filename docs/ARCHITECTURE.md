@@ -5,7 +5,7 @@ clients and Portkey's Admin API. It exposes the same tool catalog over local
 stdio and an optional HTTP transport while keeping API access, validation, and
 transport policy in separate layers.
 
-This describes the unreleased SDK v2 candidate. Published 0.14.x retains its
+This describes the SDK v2 implementation shipped in 0.15.0. Published 0.14.x retains its
 session/replay implementation; use the architecture document from that release.
 See [compatibility and recovery](../COMPATIBILITY.md) before upgrading.
 
