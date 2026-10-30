@@ -125,6 +125,7 @@ function stripHtml(text) {
       .replace(/<div align="center">\s*<img[\s\S]*?<\/div>\s*/, "")
       .replace(/(?:<p align="center">[\s\S]*?<\/p>\s*)+/g, "")
       .replace(/<a href="https:\/\/github\.com\/CodesWhat">\s*<picture>[\s\S]*?<\/picture>\s*<\/a>\s*/g, "")
+      .replace(/<a href="https:\/\/codeswhat\.com">\s*<picture>[\s\S]*?<\/picture>\s*<\/a>\s*/g, "")
       .replace(/<a href="#portkey-admin-mcp-server">Back to top<\/a>\s*/g, "")
       .replace(/<a href="https:\/\/glama\.ai[^>]*><img[^>]*><\/a>\s*/g, "")
       .replace(
