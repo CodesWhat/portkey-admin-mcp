@@ -134,6 +134,11 @@ assert.deepEqual(
   "sitemap.xml lists every route and no others",
 );
 assert.ok(existsSync(join(root, "favicon.ico")), "out/favicon.ico is missing");
+const favicon = readFileSync(join(root, "favicon.ico"));
+assert.ok(
+  favicon.length >= 6 && favicon.readUInt16LE(0) === 0 && favicon.readUInt16LE(2) === 1,
+  "out/favicon.ico is not an ICO file",
+);
 const notFound = readFileSync(join(root, "404.html"), "utf8");
 assert.match(notFound, /name="robots"[^>]*noindex|noindex[^>]*name="robots"/i, "404.html must stay noindex");
 assert.match(notFound, /Nothing to administer here/, "404.html is the styled page");
