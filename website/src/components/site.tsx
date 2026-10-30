@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import { CopyInstall, Disclosure, HeroLogo, ThemeSwitch } from "./controls";
-import { Terminal } from "./terminal";
 import type { Product } from "@/lib/products";
 import { release } from "@/lib/products";
 import { routeFor } from "@/lib/routes.mjs";
@@ -156,28 +155,6 @@ export function Home({ product }: { product: Product }) {
         </section>
         <section className="wrap admin-layer">
           <McpIllustration />
-        </section>
-        <section id="see-it-work" className="wrap" aria-labelledby="see-h">
-          <div className="section-heading stacked">
-            <p className="eyebrow">RECORDED SESSION</p>
-            <h2 id="see-h">See it work.</h2>
-          </div>
-          <Terminal />
-          <details className="prov">
-            <summary>Full provenance</summary>
-            <p>
-              Recorded from portkey-admin-mcp {release.version} on 2026-10-29,
-              dummy key, loopback stub. Real output from the published{" "}
-              {release.version} build over stdio; over stdio it negotiated{" "}
-              <code>2025-11-25</code>. Nothing here touched Portkey.{" "}
-              <code>list_prompts</code> ran against a loopback stub with
-              invented prompts, so that scene is sample data. The tool list is
-              the real response, counted and grouped here by the catalog&apos;s
-              domain map. The <code>PORTKEY_TOOL_DOMAINS=prompts,analytics</code>{" "}
-              scene is a second recording of <code>tools/list</code> from the
-              same build, which returns 39 of the 194 tools.
-            </p>
-          </details>
         </section>
         <section id="how-it-works" className="features wrap">
           <div className="section-heading stacked">

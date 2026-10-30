@@ -144,7 +144,6 @@ for (const pattern of [
   /property="og:image"[^>]*content="https:\/\/portkey\.codeswhat\.com\/assets\/[^"]+"/,
   /name="twitter:image"[^>]*content="https:\/\/portkey\.codeswhat\.com\/assets\//,
   /not affiliated with or endorsed by Portkey or Palo Alto Networks/,
-  /id="see-it-work"/,
 ])
   assert.match(home, pattern, `home is missing ${pattern}`);
 assert.ok(!/id="product-animation"|Play product animation/.test(home), "the old play button is gone");
