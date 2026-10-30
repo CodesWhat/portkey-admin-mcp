@@ -19,8 +19,8 @@ export function HeroLogo() {
     if (motion.matches) return;
     let cancelled = false;
     const onMotion = () => {
-      if (!motion.matches) return;
-      cancelled = true;
+      cancelled = motion.matches;
+      if (!cancelled) return;
       setSrc("/assets/portkey-360.webp");
       setPlayed(false);
     };
@@ -68,7 +68,9 @@ export function CopyInstall({ command }: { command: string }) {
     selection.addRange(range);
   };
   const done = (ok: boolean) => {
-    setLabel(ok ? "Copied" : "Press Ctrl+C");
+    const nav = navigator as Navigator & { userAgentData?: { platform?: string } };
+    const apple = /Mac|iPhone|iPad/.test(nav.userAgentData?.platform ?? nav.platform ?? navigator.userAgent);
+    setLabel(ok ? "Copied" : apple ? "Press Cmd+C" : "Press Ctrl+C");
     setTimeout(() => setLabel("Copy"), 1600);
   };
   return (

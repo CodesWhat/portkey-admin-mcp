@@ -117,8 +117,12 @@ export function startTerm(root: HTMLElement, T: TermData): () => void {
     b.addEventListener("click", onClick);
     return [b, onClick] as const;
   });
+  let observer: IntersectionObserver | undefined;
+  let started = false;
   const onSkip = () => renderInstant(cur, true);
   const onClear = () => {
+    started = true;
+    observer?.disconnect();
     token++;
     clearTimeout(timer);
     body.textContent = "";
@@ -132,8 +136,6 @@ export function startTerm(root: HTMLElement, T: TermData): () => void {
   const first = [T.scenes[0]];
   cur = first;
   mark(first[0].id);
-  let observer: IntersectionObserver | undefined;
-  let started = false;
   const start = () => { if (!started) { started = true; play(first, true); } };
   if (reduce) renderInstant(first, true);
   else if ("IntersectionObserver" in window) {

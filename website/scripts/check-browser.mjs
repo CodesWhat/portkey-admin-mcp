@@ -240,6 +240,22 @@ async function suite(browser, engine, base) {
     expect((await page.locator("#term-live").innerText()) === "", "Clear left the live region text");
   });
 
+  await check("terminal: Clear before first view stops the autoplay", {}, async (_, page) => {
+    await open(page, "/");
+    await page.locator("#term-clear").evaluate((el) => el.click());
+    await page.locator("#term").scrollIntoViewIfNeeded();
+    await page.evaluate(() => {
+      window.__termPlayed = false;
+      const term = document.querySelector("#term");
+      new MutationObserver(() => { if (term.dataset.state === "playing") window.__termPlayed = true; })
+        .observe(term, { attributes: true, attributeFilter: ["data-state"] });
+    });
+    await page.waitForTimeout(2000);
+    expect(!(await page.evaluate(() => window.__termPlayed)), "terminal autoplayed after Clear");
+    expect(await page.locator("#term").getAttribute("data-state") !== "playing", "terminal is playing after Clear");
+    expect((await page.locator("#term-body").innerText()).trim() === "", "terminal body repopulated after Clear");
+  });
+
   await check("finder: results sit in page flow and do not cover the article at 390px", { viewport: { width: 390, height: 800 } }, async (_, page) => {
     await open(page, "/docs");
     await page.locator("#doc-query").fill("security");
