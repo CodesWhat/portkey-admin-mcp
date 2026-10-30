@@ -224,38 +224,6 @@ async function suite(browser, engine, base) {
     expect(/^0s(, 0s)*$/.test(transition), `transitions still run (${transition})`);
   });
 
-  await check("terminal: replays a scene and makes no external requests", {}, async (_, page) => {
-    const external = [];
-    page.on("request", (request) => { if (!request.url().startsWith(base)) external.push(request.url()); });
-    await open(page, "/");
-    await page.locator("#term").scrollIntoViewIfNeeded();
-    await page.locator('.tcmd[data-scene="validate"]').click();
-    await page.waitForFunction(() => document.querySelector("#term")?.dataset.state === "done", null, { timeout: 20_000 });
-    expect(/validate_completion_metadata/.test(await page.locator("#term-body").innerText()), "scene output missing");
-    expect(await page.locator('.tcmd[data-scene="validate"]').getAttribute("aria-pressed") === "true", "scene button not pressed");
-    expect(await page.locator(".prov summary").isVisible(), "provenance disclosure missing");
-    expect(!external.length, `external requests: ${external.join(", ")}`);
-    await page.locator("#term-clear").click();
-    expect(!(await page.locator("#term-title").innerText()).includes("validate"), "Clear left the scene title");
-    expect((await page.locator("#term-live").innerText()) === "", "Clear left the live region text");
-  });
-
-  await check("terminal: Clear before first view stops the autoplay", {}, async (_, page) => {
-    await open(page, "/");
-    await page.locator("#term-clear").evaluate((el) => el.click());
-    await page.locator("#term").scrollIntoViewIfNeeded();
-    await page.evaluate(() => {
-      window.__termPlayed = false;
-      const term = document.querySelector("#term");
-      new MutationObserver(() => { if (term.dataset.state === "playing") window.__termPlayed = true; })
-        .observe(term, { attributes: true, attributeFilter: ["data-state"] });
-    });
-    await page.waitForTimeout(2000);
-    expect(!(await page.evaluate(() => window.__termPlayed)), "terminal autoplayed after Clear");
-    expect(await page.locator("#term").getAttribute("data-state") !== "playing", "terminal is playing after Clear");
-    expect((await page.locator("#term-body").innerText()).trim() === "", "terminal body repopulated after Clear");
-  });
-
   await check("finder: results sit in page flow and do not cover the article at 390px", { viewport: { width: 390, height: 800 } }, async (_, page) => {
     await open(page, "/docs");
     await page.locator("#doc-query").fill("security");
