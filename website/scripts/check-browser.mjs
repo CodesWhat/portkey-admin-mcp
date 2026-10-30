@@ -211,7 +211,7 @@ async function suite(browser, engine, base) {
   await check("hero logo: static frame first, then the spin render plays once", {}, async (_, page) => {
     await open(page, "/");
     await page.waitForFunction(() => document.querySelector("#hero-logo")?.dataset.played === "1", null, { timeout: 10_000 });
-    expect((await page.locator("#hero-logo").getAttribute("src")).endsWith("/assets/portkey-spin-360.webp"), "spin render was not swapped in");
+    expect((await page.locator("#hero-logo").getAttribute("src")).endsWith("/assets/portkey-spin-alpha-360.webp"), "spin render was not swapped in");
   });
 
   await check("reduced motion: hero logo stays on the still frame", { reducedMotion: "reduce" }, async (_, page) => {
