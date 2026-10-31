@@ -51,7 +51,8 @@
   cursor: pointer;
   min-height: 32px;
 }
-.fbtn[aria-pressed="true"] {
+.fbtn[aria-pressed="true"],
+.fbtn[aria-checked="true"] {
   border-color: var(--accent);
   background: color-mix(in srgb, var(--accent) 16%, var(--surface));
   font-weight: 600;

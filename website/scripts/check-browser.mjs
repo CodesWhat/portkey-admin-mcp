@@ -178,7 +178,13 @@ async function suite(browser, engine, base) {
           .getAttribute("aria-selected")) === "true",
         "ArrowRight did not activate Cursor",
       );
-      await page.getByRole("tab", { name: "VS Code", exact: true }).click();
+      await page.keyboard.press("ArrowRight");
+      expect(
+        (await page
+          .getByRole("tab", { name: "VS Code", exact: true })
+          .getAttribute("aria-selected")) === "true",
+        "ArrowRight did not move from Cursor to VS Code",
+      );
       const config = JSON.parse(
         await page.locator('[role="tabpanel"]:visible pre code').innerText(),
       );
@@ -207,14 +213,23 @@ async function suite(browser, engine, base) {
     await page.getByRole("button", { name: "Show 40 more", exact: true }).click();
     expect((await page.locator(".tool-row").count()) === 80, "second page should show 80 tools");
     await page.locator(".dcard").filter({ hasText: "prompts" }).click();
-    await page.getByRole("switch", { name: "Enterprise only" }).click();
+    const enterpriseSwitch = page.getByRole("switch", { name: "Enterprise only" });
+    const inactiveBackground = await enterpriseSwitch.evaluate(
+      (el) => getComputedStyle(el).backgroundColor,
+    );
+    await enterpriseSwitch.click();
     expect(
-      (await page.locator("#tool-count").innerText()).includes("56"),
+      (await enterpriseSwitch.evaluate((el) => getComputedStyle(el).backgroundColor)) !==
+        inactiveBackground,
+      "checked Enterprise switch needs a visible active style",
+    );
+    expect(
+      (await page.locator("#tool-count").innerText()).startsWith("56 tools,"),
       "expected 56 Enterprise tools",
     );
     await page.locator("#tool-q").fill("rotate_api_key");
     expect(
-      (await page.locator("#tool-count").innerText()).includes("0"),
+      (await page.locator("#tool-count").innerText()).startsWith("0 tools,"),
       "Enterprise filter should hide workspace key rotation",
     );
     await page.getByRole("switch", { name: "Enterprise only" }).click();
@@ -232,6 +247,16 @@ async function suite(browser, engine, base) {
     expect(
       (await page.locator(".dcard:visible").count()) === 22,
       "Escape should restore domain grid",
+    );
+    expect(
+      (await page.locator("#tool-q").getAttribute("aria-controls")) === null,
+      "reset search references a missing results container",
+    );
+    await page.locator("#tool-q").fill("rotate_api_key");
+    expect(
+      (await page.locator("#tool-q").getAttribute("aria-controls")) === "tool-lists" &&
+        (await page.locator("#tool-lists").count()) === 1,
+      "active search must reference its results container",
     );
   });
   await check("docs: table of contents anchors and local code copy", {}, async (context, page) => {
@@ -262,6 +287,15 @@ async function suite(browser, engine, base) {
         { viewport: { width, height: 800 }, colorScheme, reducedMotion: "reduce" },
         async (_, page) => {
           await open(page, "/");
+          const expectedHeader =
+            colorScheme === "dark" ? "rgb(30, 22, 41)" : "rgb(239, 230, 246)";
+          expect(
+            (await page
+              .locator(".header")
+              .first()
+              .evaluate((el) => getComputedStyle(el).backgroundColor)) === expectedHeader,
+            `header background is not ${expectedHeader}`,
+          );
           expect(
             (await page.locator("h1").innerText()) === "Administer Portkey from your MCP client." ||
               (await page.locator("h1").innerText()).replace(/\s+/g, " ") ===

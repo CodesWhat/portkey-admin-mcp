@@ -42,7 +42,7 @@ export function ToolBrowser({ domains }: { domains: Domain[] }) {
             type="search"
             aria-label="Search tools"
             placeholder="Search tool names and descriptions…"
-            aria-controls="tool-lists"
+            aria-controls={showing ? "tool-lists" : undefined}
             aria-describedby="tool-count"
             value={query}
             onChange={(event) => {
