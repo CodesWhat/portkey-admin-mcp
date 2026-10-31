@@ -259,6 +259,30 @@ async function suite(browser, engine, base) {
       "active search must reference its results container",
     );
   });
+  await check("install: VS Code uses manual credential setup", {}, async (_, page) => {
+    await open(page, "/");
+    await page.getByRole("tab", { name: "VS Code", exact: true }).click();
+    expect((await page.locator('#panel-vscode a[href^="vscode:"]').count()) === 0,
+      "VS Code link installs an unusable credential placeholder");
+    expect((await page.locator("#panel-vscode").innerText()).includes("Replace your_api_key"),
+      "manual credential instructions are missing");
+  });
+  await check("docs: denied clipboard selects code with touch-safe instructions", { hasTouch: true }, async (context, page) => {
+    await context.addInitScript(() => {
+      Object.defineProperty(navigator, "clipboard", { value: {
+        writeText: async () => { throw new Error("Permission denied"); },
+      } });
+    });
+    await open(page, "/docs/manual/");
+    const block = page.locator(".doc-code").first();
+    await block.getByRole("button", { name: "Copy code" }).tap();
+    await page.waitForFunction(() =>
+      document.querySelector(".doc-code button")?.textContent === "Selected. Copy manually",
+      null, { timeout: 1500 },
+    );
+    expect((await page.evaluate(() => window.getSelection()?.toString())) ===
+      (await block.locator("pre").textContent()), "fallback did not select the code");
+  });
   await check("docs: table of contents anchors and local code copy", {}, async (context, page) => {
     if (engine === "chromium")
       await context.grantPermissions(["clipboard-read", "clipboard-write"]);
@@ -270,7 +294,7 @@ async function suite(browser, engine, base) {
     const block = page.locator(".doc-code").first();
     await block.getByRole("button", { name: "Copy code" }).click();
     await page.waitForFunction(() =>
-      /Copied|Press/.test(document.querySelector(".doc-code button")?.textContent || ""),
+      /Copied|Selected/.test(document.querySelector(".doc-code button")?.textContent || ""),
     );
     if (engine === "chromium")
       expect(
@@ -286,6 +310,7 @@ async function suite(browser, engine, base) {
         `visual: ${width}px ${colorScheme}`,
         { viewport: { width, height: 800 }, colorScheme, reducedMotion: "reduce" },
         async (_, page) => {
+          await page.route("https://img.shields.io/**", (route) => route.abort());
           await open(page, "/");
           const expectedHeader =
             colorScheme === "dark" ? "rgb(30, 22, 41)" : "rgb(239, 230, 246)";
@@ -306,7 +331,9 @@ async function suite(browser, engine, base) {
             mkdirSync(process.env.SITE_SHOTS_DIR, { recursive: true });
             await page.locator("#trust").scrollIntoViewIfNeeded();
             await page.waitForFunction(() =>
-              [...document.querySelectorAll("#trust img")].every(
+              [...document.querySelectorAll("#trust img")].filter(
+                (img) => new URL(img.src).origin === location.origin,
+              ).every(
                 (img) => img.complete && img.naturalWidth > 0,
               ),
             );

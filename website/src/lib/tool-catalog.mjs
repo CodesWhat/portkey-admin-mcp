@@ -2,7 +2,8 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const manifest = JSON.parse(readFileSync(resolve(process.cwd(), "..", "lhm.plugin.json"), "utf8"));
-const endpoints = readFileSync(resolve(process.cwd(), "..", "ENDPOINTS.md"), "utf8");
+const endpoints = readFileSync(resolve(process.cwd(), "..", "ENDPOINTS.md"), "utf8")
+  .replace(/\r\n?/g, "\n");
 const toolsByName = new Map(manifest.tools.map((tool) => [tool.name, tool]));
 
 export const toolDomains = [

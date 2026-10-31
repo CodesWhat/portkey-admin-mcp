@@ -18,7 +18,7 @@ const clients = [
     id: "claude",
     name: "Claude Code",
     file: "bash",
-    code: 'read -rs PORTKEY_API_KEY; export PORTKEY_API_KEY\nclaude mcp add -e PORTKEY_API_KEY="$PORTKEY_API_KEY" portkey-admin -- npx -y portkey-admin-mcp',
+    code: 'printf "Portkey API key: "; read -rs PORTKEY_API_KEY; echo; export PORTKEY_API_KEY\nclaude mcp add -e PORTKEY_API_KEY="$PORTKEY_API_KEY" portkey-admin -- npx -y portkey-admin-mcp',
   },
   {
     id: "cursor",
@@ -33,8 +33,6 @@ const clients = [
     name: "VS Code",
     file: ".vscode/mcp.json",
     code: vsConfig,
-    link: `vscode:mcp/install?${encodeURIComponent(JSON.stringify({ name: "portkey-admin", type: "stdio", ...server }))}`,
-    action: "Install in VS Code",
   },
   { id: "windsurf", name: "Windsurf", file: "~/.codeium/windsurf/mcp_config.json", code: config },
   { id: "desktop", name: "Claude Desktop", file: "claude_desktop_config.json", code: config },
@@ -42,7 +40,7 @@ const clients = [
     id: "other",
     name: "Other",
     file: "bash",
-    code: "read -rs PORTKEY_API_KEY; export PORTKEY_API_KEY\nnpx -y portkey-admin-mcp",
+    code: 'printf "Portkey API key: "; read -rs PORTKEY_API_KEY; echo; export PORTKEY_API_KEY\nnpx -y portkey-admin-mcp',
   },
 ];
 
@@ -97,6 +95,14 @@ export function Install() {
                 {client.action}
               </a>
             </div>
+          )}
+          {client.id === "vscode" && (
+            <p className="need">
+              Create .vscode/mcp.json with this configuration, or add portkey-admin to the existing
+              servers object. Replace your_api_key with your Portkey API key before connecting.
+              Keep the key private: add .vscode/mcp.json to .gitignore, and untrack the file first
+              if it is already tracked. Do not commit or share the file with a real key.
+            </p>
           )}
           <CodeBlock label={client.file} code={client.code} />
           {client.id === "other" && <CodeBlock label="json" code={config} />}
