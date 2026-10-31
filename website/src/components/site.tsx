@@ -1,7 +1,10 @@
 import type { ReactNode } from "react";
-import { CopyInstall, Disclosure, HeroLogo, ThemeSwitch } from "./controls";
+import { CodeBlock, Disclosure, HeroLogo, ThemeSwitch } from "./controls";
 import type { Product } from "@/lib/products";
-import { release } from "@/lib/products";
+import { toolDomains } from "@/lib/tool-catalog.mjs";
+import { Install } from "./install";
+import { ToolBrowser } from "./tool-browser";
+import { LowerSections } from "./site-lower";
 import { routeFor } from "@/lib/routes.mjs";
 
 export const hrefFor = (page = "home") => routeFor(page);
@@ -25,7 +28,8 @@ export function Frame({
 }) {
   const links = (
     <>
-      <a href={`${hrefFor()}#how-it-works`}>How it works</a>
+      <a href={`${hrefFor()}#install`}>Install</a>
+      <a href={`${hrefFor()}#tools`}>Tools</a>
       <a href={hrefFor("overview")} aria-current={docsPage === "overview" ? "page" : undefined}>
         Docs
       </a>
@@ -68,132 +72,80 @@ export function Frame({
         </div>
         <div className="footer-bottom">
           <span>
-            © 2026 CodesWhat. Released under the MIT License. Independent
-            project, not affiliated with or endorsed by Portkey or Palo Alto
-            Networks.
+            © 2026 CodesWhat. Released under the MIT License. Independent project, not affiliated
+            with or endorsed by Portkey or Palo Alto Networks.
           </span>
           <a href="https://codeswhat.com" className="pill">
-            <img src="/assets/codeswhat-52.webp" alt="" width="26" height="26" />
-            A CodesWhat project
+            <img src="/assets/codeswhat-52.webp" alt="" width="26" height="26" />A CodesWhat project
           </a>
         </div>
       </footer>
     </div>
   );
 }
-function McpIllustration() {
+function Section({
+  id,
+  label,
+  title,
+  children,
+}: {
+  id: string;
+  label: string;
+  title: string;
+  children: ReactNode;
+}) {
   return (
-    <figure className="mcp-visual" id="admin-flow">
-      <div className="visual-topline">
-        <span>THE ADMINISTRATION LAYER</span>
-        <span>STDIO</span>
+    <section id={id} className="home-section wrap" aria-labelledby={`${id}-h`}>
+      <div className="split">
+        <div className="sec-h">
+          <p className="eyebrow">{label}</p>
+          <h2 id={`${id}-h`}>{title}</h2>
+        </div>
+        <div className="section-body">{children}</div>
       </div>
-      <div className="mcp-art">
-        <span className="mono-word">PORTKEY</span>
-        <ol className="mcp-flow" aria-label="Request path">
-          <li>YOUR MCP CLIENT</li>
-          <li className="arrow" aria-hidden="true">↓</li>
-          <li className="mid">Portkey Admin MCP</li>
-          <li className="arrow" aria-hidden="true">↓</li>
-          <li>PORTKEY ADMIN API</li>
-        </ol>
-      </div>
-      <figcaption>
-        <span className="mono">prompts · configs · analytics</span>
-        <p>Bring the right tools into the conversation.</p>
-      </figcaption>
-    </figure>
+    </section>
   );
 }
 export function Home({ product }: { product: Product }) {
   return (
     <Frame product={product}>
-      <main id="main" tabIndex={-1}>
-        <section className="hero wrap">
+      <main id="main" tabIndex={-1} className="home">
+        <section className="hero wrap" id="hero">
           <div className="hero-copy">
-            <p className="eyebrow">{product.role}</p>
-            <p className="chip">v{release.version} · Open Source · MIT</p>
+            <p className="eyebrow">MCP server for Portkey admin</p>
             <h1>
-              {product.headline[0]}
-              <br />
-              <span>{product.headline[1]}</span>
+              Administer Portkey <span>from your MCP client.</span>
             </h1>
-            <p className="hero-description">{product.description}</p>
+            <p className="hero-description">
+              Bring Portkey administration into your MCP client. Prompts, configurations, analytics
+              and governance tools, and you choose which ones to expose.
+            </p>
+            <p className="facts" aria-label="At a glance">
+              194 tools · 22 domains · stdio · MIT · Node 24+
+            </p>
+            <div className="hero-command">
+              <CodeBlock label="npx command" code="npx -y portkey-admin-mcp" />
+            </div>
             <div className="hero-ctas">
-              <a className="button primary" href={hrefFor("getting-started")}>
-                {product.action} <span aria-hidden="true">↗</span>
+              <a className="button primary" href="#install">
+                Install
               </a>
               <a className="button" href={`https://github.com/${product.repo}`}>
-                View the source <span aria-hidden="true">↗</span>
+                GitHub ↗
               </a>
             </div>
-            <p className="hero-note">{product.note}</p>
-            <div className="install">
-              <div className="install-head">
-                <span className="eyebrow">INSTALL · CLAUDE CODE</span>
-                <CopyInstall command={product.install} />
-              </div>
-              <pre tabIndex={0}>
-                <code>{product.install}</code>
-              </pre>
-              <p>
-                Cursor, Windsurf, VS Code and a plain <code>npx</code> run are
-                in the <a href={hrefFor("overview")}>docs</a>. Replace{" "}
-                <code>your_key</code> with your Portkey API key. Needs Node 24+.
-              </p>
-            </div>
-            <ul className="strip" aria-label="At a glance">
-              <li><b>194</b> <span className="eyebrow">TOOLS</span></li>
-              <li><b>22</b> <span className="eyebrow">DOMAINS</span></li>
-              <li><b>stdio</b> <span className="eyebrow">TRANSPORT</span></li>
-              <li><b>MIT</b> <span className="eyebrow">LICENSE</span></li>
-            </ul>
           </div>
           <div className="hero-object">
             <HeroLogo />
           </div>
         </section>
-        <section className="wrap admin-layer">
-          <McpIllustration />
-        </section>
-        <section id="how-it-works" className="features wrap">
-          <div className="section-heading stacked">
-            <p className="eyebrow">SMALL TOOLS. CLEAR RESPONSIBILITIES.</p>
-            <h2>{product.intro}</h2>
-          </div>
-          <div className="feature-grid">
-            {product.features.map((feature, i) => (
-              <article key={feature.title}>
-                <span className="feature-number">0{i + 1}</span>
-                <h3>{feature.title}</h3>
-                <p>
-                  {feature.copy}
-                  {i === 2 && (
-                    <>
-                      {" "}
-                      <a className="inline-link" href={hrefFor("compatibility")}>
-                        Compatibility notes →
-                      </a>
-                    </>
-                  )}
-                </p>
-              </article>
-            ))}
-          </div>
-        </section>
-        <section className="closing wrap" id="get">
-          <div>
-            <p className="eyebrow">A GOOD PLACE TO START</p>
-            <h2>From a good idea to your setup.</h2>
-            <p>
-              Read the essentials, choose your configuration, and keep the
-              reference close.
-            </p>
-          </div>
-          <a className="button primary" href={hrefFor("overview")}>
-            Open the documentation <span aria-hidden="true">↗</span>
-          </a>
-        </section>
+        <Section id="install" label="Install" title="Add it to your client.">
+          <Install />
+        </Section>
+        <Section id="tools" label="Tools" title="194 tools in 22 domains.">
+          <ToolBrowser domains={toolDomains} />
+        </Section>
+        <LowerSections />
       </main>
     </Frame>
   );

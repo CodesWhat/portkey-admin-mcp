@@ -1,6 +1,6 @@
 # Portkey Admin MCP roadmap
 
-> Last reviewed: 2026-10-25
+> Last reviewed: 2026-10-31
 > Status: active compatibility maintenance
 > Current catalog: 194 tools across 22 domains, including 56 Enterprise-gated tools
 
@@ -42,7 +42,9 @@ README, endpoint catalog, domain counts, and Enterprise-gated inventory together
 
 ## Planned
 
-Reviewed 2026-10-24 against Portkey OpenAPI commit `c3dda80` (October 22).
+Reviewed 2026-10-31 against Portkey OpenAPI commit `4b6d01b` (October 30).
+The only change since the October 22 baseline renames an Assistants inference
+operation and its documentation navigation key; no admin route or schema changed.
 The newly documented organisation analytics filters, `include_all_workspaces`
 and `exclude_workspace_slugs`, are covered on all 25 analytics tools. The
 Anthropic Messages additions are inference routes outside this admin server's
@@ -66,6 +68,14 @@ but free AI Gateway management access has not been verified. A contributor with
 an appropriately scoped tenant can supply live contract evidence.
 
 ### Later
+
+## Completed 2026-10-30 (0.16.0)
+
+- Added Node 26 CI coverage and the Node 26 runtime image while retaining Node 24
+  as the supported floor and the npm build runtime.
+- Refused dot path segments before sending Portkey requests, preserving domain
+  restrictions, and separated coverage execution from the OIDC upload job.
+- Published the site design, metadata, styled 404, and guide finder improvements.
 
 ## Completed 2026-10-25 (0.15.0)
 
