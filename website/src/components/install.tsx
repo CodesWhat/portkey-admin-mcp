@@ -96,6 +96,14 @@ export function Install() {
               </a>
             </div>
           )}
+          {client.id === "cursor" && (
+            <p className="need">
+              After adding the server, replace your_api_key in .cursor/mcp.json with your Portkey
+              API key before connecting. Keep the key private: add .cursor/mcp.json to .gitignore,
+              and untrack the file first if it is already tracked. Do not commit or share the file
+              with a real key.
+            </p>
+          )}
           {client.id === "vscode" && (
             <p className="need">
               Create .vscode/mcp.json with this configuration, or add portkey-admin to the existing
