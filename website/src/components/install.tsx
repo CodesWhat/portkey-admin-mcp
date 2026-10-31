@@ -98,8 +98,10 @@ export function Install() {
           )}
           {client.id === "vscode" && (
             <p className="need">
-              Copy this configuration to .vscode/mcp.json. Replace your_api_key with your Portkey
-              API key before connecting.
+              Create .vscode/mcp.json with this configuration, or add portkey-admin to the existing
+              servers object. Replace your_api_key with your Portkey API key before connecting.
+              Keep the key private: add .vscode/mcp.json to .gitignore, and untrack the file first
+              if it is already tracked. Do not commit or share the file with a real key.
             </p>
           )}
           <CodeBlock label={client.file} code={client.code} />

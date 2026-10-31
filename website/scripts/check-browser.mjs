@@ -275,7 +275,7 @@ async function suite(browser, engine, base) {
     });
     await open(page, "/docs/manual/");
     const block = page.locator(".doc-code").first();
-    await block.getByRole("button", { name: "Copy code" }).click();
+    await block.getByRole("button", { name: "Copy code" }).tap();
     await page.waitForFunction(() =>
       document.querySelector(".doc-code button")?.textContent === "Selected. Copy manually",
       null, { timeout: 1500 },
