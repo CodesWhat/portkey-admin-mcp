@@ -4,7 +4,7 @@ import { product, release, socialImage } from "@/lib/products";
 import { canonicalFor, resolveRoute, routesFor } from "@/lib/routes.mjs";
 import { getDocument, guideEntries } from "@/lib/content";
 import { Frame, Home } from "@/components/site";
-import { Disclosure, DocSearch } from "@/components/controls";
+import { Disclosure, DocSearch, DocCode } from "@/components/controls";
 
 type Props = { params: Promise<{ route?: string[] }> };
 export const dynamicParams = false;
@@ -28,7 +28,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title,
     description,
     alternates: { canonical: url },
-    openGraph: { type: "website", siteName: product.name, title, description, url, images: [socialImage] },
+    openGraph: {
+      type: "website",
+      siteName: product.name,
+      title,
+      description,
+      url,
+      images: [socialImage],
+    },
     twitter: { card: "summary_large_image", title, description, images: [socialImage.url] },
   };
 }
@@ -56,9 +63,20 @@ export default async function Page({ params }: Props) {
       </a>
     </nav>
   );
-  const next =
-    entries[entries.findIndex((entry) => entry.slug === resolved.page) + 1];
+  const next = entries[entries.findIndex((entry) => entry.slug === resolved.page) + 1];
   const Body = doc.data.body;
+  const toc = doc.data.toc.length > 0 && (
+    <nav aria-label="On this page">
+      <h2>On this page</h2>
+      <ol>
+        {doc.data.toc.map((heading) => (
+          <li key={heading.url} className={`depth-${heading.depth}`}>
+            <a href={heading.url}>{heading.title}</a>
+          </li>
+        ))}
+      </ol>
+    </nav>
+  );
   return (
     <Frame product={product} docsPage={resolved.page}>
       <main id="main" tabIndex={-1} className="docs-layout wrap">
@@ -71,23 +89,24 @@ export default async function Page({ params }: Props) {
         <div className="doc-column">
           <div className="docs-toolbar">
             <div>
-              <span className="eyebrow">
-                DOCUMENTATION / {product.name.toUpperCase()}
-              </span>
+              <span className="eyebrow">DOCUMENTATION / {product.name.toUpperCase()}</span>
               <p className="release-label">
-                <a href={release.notes}>
-                  Docs for {release.version}, the latest release
-                </a>
+                <a href={release.notes}>Docs for {release.version}, the latest release</a>
               </p>
             </div>
             <DocSearch entries={entries} />
           </div>
+          {toc && (
+            <Disclosure className="mobile-toc" label="On this page">
+              {toc}
+            </Disclosure>
+          )}
           <article className="prose">
             <header>
               <h1>{doc.data.title}</h1>
               <p className="doc-description">{doc.data.description}</p>
             </header>
-            <Body />
+            <Body components={{ pre: DocCode }} />
           </article>
           {next && (
             <nav className="doc-next" aria-label="More guides">
@@ -98,10 +117,11 @@ export default async function Page({ params }: Props) {
             </nav>
           )}
           <p className="review-note">
-            Based on the published {release.version} release. The source
-            files are in the product repository.
+            Based on the published {release.version} release. The source files are in the product
+            repository.
           </p>
         </div>
+        {toc && <aside className="doc-toc">{toc}</aside>}
       </main>
     </Frame>
   );

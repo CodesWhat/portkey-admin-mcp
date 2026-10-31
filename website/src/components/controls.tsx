@@ -9,41 +9,39 @@ export function Provider({ children }: { children: ReactNode }) {
     </ThemeProvider>
   );
 }
-// Frame 0 is static; the spin render is fetched after load and plays once, then holds its last frame.
-// Reduced motion keeps the still.
 export function HeroLogo() {
-  const [src, setSrc] = useState("/assets/portkey-360.webp");
-  const [played, setPlayed] = useState(false);
+  const still = "/assets/portkey-360-v2.webp";
+  const spin = "/assets/portkey-spin-v3-360.webp";
+  const [src, setSrc] = useState(still);
   useEffect(() => {
     const motion = matchMedia("(prefers-reduced-motion: reduce)");
-    if (motion.matches) return;
-    let cancelled = false;
-    const onMotion = () => {
-      cancelled = motion.matches;
-      if (!cancelled) return;
-      setSrc("/assets/portkey-360.webp");
-      setPlayed(false);
-    };
-    motion.addEventListener("change", onMotion);
+    const wide = matchMedia("(min-width: 900px)");
+    let disposed = false;
+    let image: HTMLImageElement | undefined;
     const go = () => {
-      const pre = new Image();
-      pre.src = "/assets/portkey-spin-alpha-360.webp";
-      pre
-        .decode()
-        .then(() => {
-          if (cancelled || motion.matches) return;
-          setSrc("/assets/portkey-spin-alpha-360.webp");
-          setPlayed(true);
-        })
-        .catch(() => {});
+      if (disposed || motion.matches || !wide.matches) {
+        setSrc(still);
+        return;
+      }
+      image = new Image();
+      image.onload = () => {
+        if (!disposed && !motion.matches && wide.matches) setSrc(spin);
+      };
+      image.src = spin;
     };
-    const after = () =>
-      "requestIdleCallback" in window ? requestIdleCallback(go) : setTimeout(go, 200);
-    if (document.readyState === "complete") after();
-    else window.addEventListener("load", after, { once: true });
+    const after = () => {
+      if (document.readyState === "complete") go();
+    };
+    motion.addEventListener("change", after);
+    wide.addEventListener("change", after);
+    window.addEventListener("load", after, { once: true });
+    const timer = document.readyState === "complete" ? setTimeout(go, 200) : undefined;
     return () => {
-      cancelled = true;
-      motion.removeEventListener("change", onMotion);
+      disposed = true;
+      clearTimeout(timer);
+      if (image) image.onload = null;
+      motion.removeEventListener("change", after);
+      wide.removeEventListener("change", after);
       window.removeEventListener("load", after);
     };
   }, []);
@@ -52,52 +50,72 @@ export function HeroLogo() {
       className="logo"
       id="hero-logo"
       src={src}
-      data-played={played ? "1" : undefined}
+      data-played={src === spin ? "1" : undefined}
       alt="Portkey Admin MCP mascot, a glossy dark tile with a hexagon mark"
       width="360"
       height="360"
     />
   );
 }
-export function CopyInstall({ command }: { command: string }) {
-  const [label, setLabel] = useState("Copy");
-  const selectCommand = () => {
-    const code = document.querySelector(".install code");
-    const selection = window.getSelection();
-    if (!code || !selection) return;
-    const range = document.createRange();
-    range.selectNodeContents(code);
-    selection.removeAllRanges();
-    selection.addRange(range);
-  };
-  const done = (ok: boolean) => {
-    const nav = navigator as Navigator & { userAgentData?: { platform?: string } };
-    const apple = /Mac|iPhone|iPad/.test(nav.userAgentData?.platform ?? nav.platform ?? navigator.userAgent);
-    setLabel(ok ? "Copied" : apple ? "Press Cmd+C" : "Press Ctrl+C");
-    setTimeout(() => setLabel("Copy"), 1600);
+
+export function CodeBlock({ label, code }: { label: string; code: string }) {
+  return (
+    <DocCode label={label}>
+      <code>{code}</code>
+    </DocCode>
+  );
+}
+
+export function DocCode({
+  children,
+  label = "code",
+  ...props
+}: {
+  children?: ReactNode;
+  label?: string;
+  className?: string;
+}) {
+  const root = useRef<HTMLDivElement>(null);
+  const [status, setStatus] = useState("Copy");
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => () => clearTimeout(timer.current), []);
+  const copy = async () => {
+    const code = root.current?.querySelector("pre");
+    if (!code) return;
+    try {
+      await navigator.clipboard.writeText(code.textContent || "");
+      setStatus("Copied");
+    } catch {
+      const range = document.createRange();
+      range.selectNodeContents(code);
+      const selection = window.getSelection();
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+      setStatus(/Mac|iPhone|iPad/.test(navigator.platform) ? "Press Cmd+C" : "Press Ctrl+C");
+    }
+    clearTimeout(timer.current);
+    timer.current = setTimeout(() => setStatus("Copy"), 2000);
   };
   return (
-    <button
-      type="button"
-      className="copy"
-      aria-label="Copy the install command"
-      onClick={() => {
-        if (navigator.clipboard && window.isSecureContext)
-          navigator.clipboard.writeText(command).then(
-            () => done(true),
-            () => {
-              selectCommand();
-              done(false);
-            },
-          );
-        else {
-          selectCommand();
-          done(false);
-        }
-      }}
-    >
-      {label}
-    </button>
+    <div className="doc-code" ref={root}>
+      <div className="code-head">
+        <span>{label}</span>
+        <button
+          type="button"
+          className="copy"
+          aria-label={label === "code" ? "Copy code" : `Copy ${label}`}
+          onClick={copy}
+        >
+          {status}
+        </button>
+        <span className="sr-only" role="status">
+          {status === "Copy" ? "" : status}
+        </span>
+      </div>
+      <pre {...props} tabIndex={0}>
+        {children}
+      </pre>
+    </div>
   );
 }
 export function ThemeSwitch() {
@@ -137,11 +155,7 @@ export function Disclosure({
   useEffect(() => {
     const onPointerDown = (event: PointerEvent) => {
       const element = details.current;
-      if (
-        element?.open &&
-        event.target instanceof Node &&
-        !element.contains(event.target)
-      )
+      if (element?.open && event.target instanceof Node && !element.contains(event.target))
         element.open = false;
     };
     document.addEventListener("pointerdown", onPointerDown);
@@ -183,9 +197,7 @@ function Highlight({ text, terms }: { text: string; terms: string[] }) {
     `(${terms.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`,
     "gi",
   );
-  return text
-    .split(pattern)
-    .map((part, i) => (i % 2 ? <mark key={i}>{part}</mark> : part));
+  return text.split(pattern).map((part, i) => (i % 2 ? <mark key={i}>{part}</mark> : part));
 }
 export function DocSearch({
   entries,
@@ -195,9 +207,7 @@ export function DocSearch({
   const [query, setQuery] = useState("");
   const terms = query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
   const matches = entries.filter((entry) =>
-    terms.every((term) =>
-      `${entry.title} ${entry.description}`.toLocaleLowerCase().includes(term),
-    ),
+    terms.every((term) => `${entry.title} ${entry.description}`.toLocaleLowerCase().includes(term)),
   );
   return (
     <div className="doc-search">
