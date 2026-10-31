@@ -91,7 +91,7 @@ export function DocCode({
       const selection = window.getSelection();
       selection?.removeAllRanges();
       selection?.addRange(range);
-      setStatus(/Mac|iPhone|iPad/.test(navigator.platform) ? "Press Cmd+C" : "Press Ctrl+C");
+      setStatus("Selected. Copy manually");
     }
     clearTimeout(timer.current);
     timer.current = setTimeout(() => setStatus("Copy"), 2000);
