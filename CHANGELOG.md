@@ -11,6 +11,9 @@ release until that reference and the release notes say so.
 
 ## [Unreleased]
 
+### Fixed
+- The README's VS Code setup now uses the `servers` key and `type: "stdio"` that `.vscode/mcp.json` expects, and the Windsurf config path points at `~/.codeium/windsurf/mcp_config.json`.
+
 ## [0.16.0] - 2026-10-30
 
 Node 26 runtime image, refused dot path segments, and a redesigned site at portkey.codeswhat.com. The catalog is unchanged at 194 tools across 22 domains.
