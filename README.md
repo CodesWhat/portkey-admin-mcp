@@ -88,14 +88,33 @@ obsolete settings warn and are ignored. See
 claude mcp add -e PORTKEY_API_KEY=your_key portkey-admin -- npx -y portkey-admin-mcp
 ```
 
-### Cursor / Windsurf / VS Code
+### Cursor / Windsurf
 
-Add to your MCP config (`.cursor/mcp.json`, `.windsurf/mcp.json`, or `.vscode/mcp.json`):
+Add to your MCP config (Cursor: `.cursor/mcp.json` or `~/.cursor/mcp.json`; Windsurf: `~/.codeium/windsurf/mcp_config.json`):
 
 ```json
 {
   "mcpServers": {
     "portkey-admin": {
+      "command": "npx",
+      "args": ["-y", "portkey-admin-mcp"],
+      "env": {
+        "PORTKEY_API_KEY": "your_api_key"
+      }
+    }
+  }
+}
+```
+
+### VS Code
+
+VS Code's `.vscode/mcp.json` uses a top-level `servers` key and needs a `type`:
+
+```json
+{
+  "servers": {
+    "portkey-admin": {
+      "type": "stdio",
       "command": "npx",
       "args": ["-y", "portkey-admin-mcp"],
       "env": {
