@@ -7,7 +7,7 @@ not a public issue, for suspected vulnerabilities. See [`SECURITY.md`](SECURITY.
 
 1. Search existing issues and pull requests for related work.
 2. Fork the repository and create a focused branch from the active `dev/<minor>`
-   line, currently `dev/0.14`.
+   line, currently `dev/0.16`.
 3. Install Node.js 24+, npm 12, and the free [Qlty CLI](https://docs.qlty.sh/cli/quickstart), then run `npm install`. Qlty Cloud login is not required for CLI checks.
 4. Make the change with tests and documentation where required.
 5. Run `npm run ci`.
