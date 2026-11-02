@@ -83,6 +83,7 @@ export class HealthService extends BaseService {
 
 			const healthError = new Error(
 				`Health check failed: ${errorMessage} (${latency_ms}ms)`,
+				{ cause: error },
 			);
 			this.cachedFailure = {
 				error: healthError,

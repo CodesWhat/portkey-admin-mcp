@@ -283,6 +283,46 @@ export function LowerSections() {
           </div>
         </div>
       </section>
+
+      <section id="star-history" aria-labelledby="star-history-h" className="home-section wrap">
+        <div className="split">
+          <div className="sec-h">
+            <div className="eyebrow">Community</div>
+            <h2 className="section-title" id="star-history-h">
+              Star history.
+            </h2>
+          </div>
+          <div className="section-body">
+            <a
+              className="star-chart"
+              href="https://www.star-history.com/#CodesWhat/portkey-admin-mcp&type=date"
+            >
+              {/* Two images, toggled by the theme class, because the manual theme override
+                  would not move a prefers-color-scheme source. Only the visible one loads. */}
+              <img
+                className="star-chart-light"
+                src="https://api.star-history.com/chart?repos=CodesWhat/portkey-admin-mcp&type=date&legend=top-left"
+                alt="Star History chart for CodesWhat/portkey-admin-mcp"
+                width={800}
+                height={533}
+                loading="lazy"
+                decoding="async"
+                referrerPolicy="no-referrer"
+              />
+              <img
+                className="star-chart-dark"
+                src="https://api.star-history.com/chart?repos=CodesWhat/portkey-admin-mcp&type=date&legend=top-left&theme=dark"
+                alt="Star History chart for CodesWhat/portkey-admin-mcp"
+                width={800}
+                height={533}
+                loading="lazy"
+                decoding="async"
+                referrerPolicy="no-referrer"
+              />
+            </a>
+          </div>
+        </div>
+      </section>
     </>
   );
 }

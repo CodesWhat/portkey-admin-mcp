@@ -68,9 +68,15 @@ a test checks that its tag matches `tag` in `content/manual.config.json`.
 `vercel.json` belongs to the MCP HTTP adapter) sets `X-Content-Type-Options`,
 `Referrer-Policy`, `X-Frame-Options`, `Permissions-Policy` and a
 `Content-Security-Policy` on every route. The export loads only self-hosted
-scripts, styles and fonts. The only external origins are images in the manual pages:
-`https://img.shields.io` (badges) and `https://lobehub.com` (badge), so `img-src`
-lists exactly those. `connect-src` is `'self'`.
+scripts, styles and fonts. The only external origins are images:
+`https://img.shields.io` (badges) and `https://lobehub.com` (badge) in the manual
+pages, and `https://api.star-history.com` (the Star History chart) on the homepage,
+so `img-src` lists exactly those. `connect-src` is `'self'`.
+
+Privacy: the homepage Star History chart is a browser request from the visitor to
+star-history.com. The images use `referrerPolicy="no-referrer"` and `loading="lazy"`,
+so the request carries no referrer and only fires when the chart nears the viewport.
+Only the image for the active theme is requested.
 
 `script-src` uses `'unsafe-inline'` rather than hashes. Next's static export
 inlines the RSC payload in a `<script>` on every page, and across the 16 exported
