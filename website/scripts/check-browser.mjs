@@ -303,6 +303,8 @@ async function suite(browser, engine, base) {
     expect(first.every((name, index) => second[index] === name), "second page reordered the first page");
     const known = new Set(toolDomains.flatMap(({ tools }) => tools.map((tool) => tool.name)));
     expect(second.every((name) => known.has(name)), "a listed tool is not in the catalog");
+    const catalogOrder = toolDomains.flatMap(({ tools }) => tools.map((tool) => tool.name));
+    expect(second.every((name, index) => name === catalogOrder[index]), "second page does not match catalog order");
   });
   await check("tools: Enterprise filter rows are all Enterprise-gated tools", {}, async (_, page) => {
     await open(page, "/");
