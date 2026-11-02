@@ -402,7 +402,7 @@ also runs the standalone Qlty CLI and publishes `quality-reports` artifacts for
 each analyzed commit, including lint/security results, duplication, complexity,
 and metrics. The Qlty maintainability badge remains Cloud-generated; local
 analysis does not update it. Coverage is reported through Codecov, not Qlty,
-and the Coverage workflow uploads it on every PR and push.
+and the Coverage workflow uploads it on every PR and on pushes to `main` and `codex/**`.
 
 `npm run dev:http` now requires `MCP_AUTH_MODE=bearer` or `MCP_AUTH_MODE=clerk` by default. For deliberate local-only unauthenticated testing, set `MCP_ALLOW_UNAUTHENTICATED_HTTP=true`.
 

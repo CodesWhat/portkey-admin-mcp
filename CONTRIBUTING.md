@@ -70,7 +70,7 @@ the analyzed commit through the workflow run and are retained for 14 days.
 
 Qlty Cloud still owns the hosted maintainability badge and hosted issue
 history. Coverage goes to Codecov instead: the separate Coverage workflow
-uploads the report there on every PR and push, the status checks are
+uploads the report there on every PR and on pushes to `main` and `codex/**`, the status checks are
 informational, and the coverage badge and PR comparison come from Codecov.
 Cloud analysis limits do not affect the standalone CLI or the 80% coverage
 floor enforced by GitHub Actions. No supported import of local `check`, `smells`, or `metrics`
