@@ -13,6 +13,7 @@ release until that reference and the release notes say so.
 
 ### Fixed
 
+- The website's starter pages linked the product reference at the 0.15 source instead of the current release. They now point at the pinned 0.16.3 commit, and a website test fails if a starter links any other commit.
 - The "On this page" menu on docs pages did nothing in WebKit at small widths. WebKit moved focus as soon as a link was pressed, which closed the menu and moved the link away before the click landed. The menu now only closes on blur when you Tab out of it.
 
 ## [0.16.3] - 2026-11-02
