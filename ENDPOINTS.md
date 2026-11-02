@@ -138,9 +138,11 @@ Routes:
 
 - GET/POST `/configs`; GET/PUT/DELETE `/configs/{slug}`; GET `/configs/{slug}/versions`
 
+Portkey currently returns the full list from `GET /configs` and ignores `current_page` and `page_size`. `list_configs` keeps those inputs and does not slice client-side.
+
 | Tool | Selection guidance and result |
 |---|---|
-| `list_configs` | List configs in the org with id, slug, name, status, workspace, and timestamps. Use this summary view to find a slug; use get_config for the full routing, cache, retry, and target settings before updating or deleting. |
+| `list_configs` | List configs in the org with id, slug, name, status, workspace, and timestamps. Use this summary view to find a slug; use get_config for the full routing, cache, retry, and target settings before updating or deleting. Portkey currently returns the full list and ignores current_page and page_size. |
 | `get_config` | Get one config by slug and return its routing, cache, retry, and target settings. Requires a known slug; use list_configs to discover one before editing. |
 | `create_config` | Create a config that defines routing, cache, retry, and targets for requests; use update_config to modify an existing one and list_config_versions for history. At least one setting is required, new configs become active immediately once referenced by a key or prompt, and the call returns the new id and version_id. |
 | `update_config` | Update a config by slug; every call creates a new config version rather than overwriting, so earlier versions stay recoverable via list_config_versions. Only provided fields change: name, status, and all routing/cache/retry settings (cache_mode, cache_max_age, retry_attempts, retry_on_status_codes, strategy_mode, targets) are editable, while the slug stays fixed. Changes apply immediately to every API key and prompt referencing the config. Returns the update acknowledgement and new version_id. |

@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 import { once } from "node:events";
 import { chromium, webkit } from "playwright-core";
 import manual from "../content/manual.config.json" with { type: "json" };
+import { toolDomains } from "../src/lib/tool-catalog.mjs";
 const releaseVersion = manual.tag.replace(/^v/, "");
 const releaseUrl = `https://github.com/${manual.repo}/releases/tag/${manual.tag}`;
 
@@ -259,6 +260,79 @@ async function suite(browser, engine, base) {
       "active search must reference its results container",
     );
   });
+  await check("tools: Escape clears active Enterprise, flag and search filters", {}, async (_, page) => {
+    await open(page, "/");
+    const enterpriseSwitch = page.getByRole("switch", { name: "Enterprise only" });
+    await enterpriseSwitch.click();
+    await page.getByRole("button", { name: "Destructive", exact: true }).click();
+    await page.locator("#tool-q").fill("delete");
+    expect(
+      (await enterpriseSwitch.getAttribute("aria-checked")) === "true",
+      "Enterprise switch should be on before Escape",
+    );
+    expect(
+      (await page.getByRole("button", { name: "Destructive", exact: true }).getAttribute("aria-pressed")) === "true",
+      "Destructive filter should be pressed before Escape",
+    );
+    await page.locator("#tool-q").press("Escape");
+    expect((await page.locator("#tool-q").inputValue()) === "", "Escape did not clear the search");
+    expect(
+      (await enterpriseSwitch.getAttribute("aria-checked")) === "false",
+      "Escape did not clear the Enterprise filter",
+    );
+    expect(
+      (await page.getByRole("button", { name: "All", exact: true }).getAttribute("aria-pressed")) === "true" &&
+        (await page.getByRole("button", { name: "Destructive", exact: true }).getAttribute("aria-pressed")) === "false",
+      "Escape did not return the flag filter to All",
+    );
+    expect((await page.locator(".tool-row").count()) === 0, "Escape left tool rows showing");
+    expect(
+      /^Select a domain or search/.test(await page.locator("#tool-count").innerText()),
+      "Escape did not return to the empty browse state",
+    );
+  });
+  await check("tools: second page lists unique tool names after the first page", {}, async (_, page) => {
+    await open(page, "/");
+    await page.getByRole("button", { name: "Show all 194", exact: true }).click();
+    const names = () => page.locator(".tool-row .tn").allInnerTexts();
+    const first = await names();
+    await page.getByRole("button", { name: "Show 40 more", exact: true }).click();
+    const second = await names();
+    expect(first.length === 40 && second.length === 80, `expected 40 then 80 rows, got ${first.length} then ${second.length}`);
+    expect(new Set(second).size === 80, "second page repeats a tool name");
+    expect(first.every((name, index) => second[index] === name), "second page reordered the first page");
+    const known = new Set(toolDomains.flatMap(({ tools }) => tools.map((tool) => tool.name)));
+    expect(second.every((name) => known.has(name)), "a listed tool is not in the catalog");
+  });
+  await check("tools: Enterprise filter rows are all Enterprise-gated tools", {}, async (_, page) => {
+    await open(page, "/");
+    await page.getByRole("switch", { name: "Enterprise only" }).click();
+    const expected = toolDomains.flatMap(({ tools }) => tools).filter((tool) => tool.enterprise).map((tool) => tool.name);
+    for (let i = 0; i < 3; i++) {
+      const more = page.getByRole("button", { name: /^Show \d+ more$/ });
+      if (!(await more.count())) break;
+      await more.click();
+    }
+    const rows = await page.locator(".tool-row").evaluateAll((els) =>
+      els.map((el) => ({
+        name: el.querySelector(".tn")?.textContent,
+        chip: !!el.querySelector(".chip") && /Enterprise/.test(el.querySelector(".chip").textContent),
+      })),
+    );
+    expect(rows.length === expected.length, `expected ${expected.length} rows, got ${rows.length}`);
+    expect(rows.every((row) => row.chip), "an Enterprise-filtered row has no Enterprise chip");
+    expect(
+      new Set(rows.map((row) => row.name)).size === rows.length &&
+        rows.every((row) => expected.includes(row.name)),
+      "row names do not match the Enterprise-gated catalog tools",
+    );
+    await page.getByRole("switch", { name: "Enterprise only" }).click();
+    const open_ = toolDomains.flatMap(({ tools }) => tools).find((tool) => !tool.enterprise);
+    await page.locator("#tool-q").fill(open_.name);
+    const row = page.locator(".tool-row").filter({ has: page.locator(".tn", { hasText: new RegExp(`^${open_.name}$`) }) }).first();
+    expect((await row.count()) === 1, `${open_.name} should show without the Enterprise filter`);
+    expect((await row.locator(".chip").count()) === 0, `${open_.name} is not gated but shows an Enterprise chip`);
+  });
   await check("install: VS Code uses manual credential setup", {}, async (_, page) => {
     await open(page, "/");
     await page.getByRole("tab", { name: "VS Code", exact: true }).click();
@@ -282,6 +356,28 @@ async function suite(browser, engine, base) {
     );
     expect((await page.evaluate(() => window.getSelection()?.toString())) ===
       (await block.locator("pre").textContent()), "fallback did not select the code");
+  });
+  await check("docs: clipboard success shows Copied with a stubbed clipboard", {}, async (context, page) => {
+    await context.addInitScript(() => {
+      window.__copied = [];
+      Object.defineProperty(navigator, "clipboard", {
+        configurable: true,
+        value: { writeText: async (text) => void window.__copied.push(text) },
+      });
+    });
+    await open(page, "/docs/manual/");
+    const block = page.locator(".doc-code").first();
+    await block.getByRole("button", { name: "Copy code" }).click();
+    await page.waitForFunction(
+      () => document.querySelector(".doc-code button")?.textContent === "Copied",
+      null,
+      { timeout: 1500 },
+    );
+    const copied = await page.evaluate(() => window.__copied);
+    expect(
+      copied.length === 1 && copied[0] === (await block.locator("pre").textContent()),
+      "stubbed clipboard did not receive the code block text",
+    );
   });
   await check("docs: table of contents anchors and local code copy", {}, async (context, page) => {
     if (engine === "chromium")
@@ -473,6 +569,29 @@ async function suite(browser, engine, base) {
     await hydrated(page);
     expect(!(await dark()), "light theme lost after reload");
   });
+
+  for (const [system, stored] of [
+    ["light", "dark"],
+    ["dark", "light"],
+  ])
+    await check(
+      `theme: manual ${stored} override beats ${system} system preference in the header`,
+      { colorScheme: system },
+      async (context, page) => {
+        await context.addInitScript((value) => localStorage.setItem("theme", value), stored);
+        await open(page, "/");
+        expect(
+          await page.evaluate((value) => document.documentElement.classList.contains(value), stored),
+          `html is not in ${stored} mode`,
+        );
+        const expectedHeader = stored === "dark" ? "rgb(30, 22, 41)" : "rgb(239, 230, 246)";
+        expect(
+          (await page.locator(".header").first().evaluate((el) => getComputedStyle(el).backgroundColor)) ===
+            expectedHeader,
+          `header background is not ${expectedHeader}`,
+        );
+      },
+    );
 
   await check("theme: toggle updates the theme-color meta", {}, async (_, page) => {
     await open(page, "/");
