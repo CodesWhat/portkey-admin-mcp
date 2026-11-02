@@ -68,12 +68,12 @@ Each CI run publishes `quality-reports` artifacts containing the local check
 results, duplication/complexity report, and metrics. These reports identify
 the analyzed commit through the workflow run and are retained for 14 days.
 
-Qlty Cloud still owns the hosted maintainability and coverage badges, coverage
-dashboard, PR coverage comparison, and hosted issue history. The separate
-Coverage workflow still uploads reports there. Cloud analysis limits do not
-affect the standalone CLI or the 80% coverage floor enforced by GitHub Actions.
-Coverage publication still consumes one standard analysis minute per upload
-or merge part. No supported import of local `check`, `smells`, or `metrics`
+Qlty Cloud still owns the hosted maintainability badge and hosted issue
+history. Coverage goes to Codecov instead: the separate Coverage workflow
+uploads the report there on every PR and push, the status checks are
+informational, and the coverage badge and PR comparison come from Codecov.
+Cloud analysis limits do not affect the standalone CLI or the 80% coverage
+floor enforced by GitHub Actions. No supported import of local `check`, `smells`, or `metrics`
 results was found in the [CLI documentation](https://docs.qlty.sh/cli-vs-cloud)
 or the [public API](https://api.qlty.sh/openapi.json), so local enforcement does
 not refresh the official maintainability badge. Keeping that badge current
