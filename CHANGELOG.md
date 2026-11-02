@@ -11,13 +11,21 @@ release until that reference and the release notes say so.
 
 ## [Unreleased]
 
+## [0.16.3] - 2026-11-02
+
+Star History chart, Codecov coverage reporting, a smoke-suite outage fix and dependency patches. The catalog is unchanged at 194 tools across 22 domains.
+
 ### Added
+
 - The README and the website homepage show a Star History chart for the repository. The homepage loads it from `api.star-history.com` in the visitor's browser, lazily and without a referrer, and `img-src` allows that origin.
 
 ### Changed
+
 - Coverage is now reported through Codecov instead of Qlty. Qlty only grades maintainability. The 80% line-coverage gate still runs on every PR in the required `checks` job.
+- Runtime dependency patches in the lockfile: `redis` 6.3.1, `express-rate-limit` 8.7.2 and `jose` 6.2.14. The website moves to fumadocs-core 16.17.9, fumadocs-mdx 15.4.10 and React 19.3.1.
 
 ### Fixed
+
 - The live smoke suite now skips `ping` when Portkey returns a 502, 503 or 504, the same as every other endpoint, so an upstream outage doesn't fail CI.
 
 ## [0.16.2] - 2026-11-01
@@ -25,9 +33,11 @@ release until that reference and the release notes say so.
 Collection paging fix, a note on config paging, and a site security.txt. The catalog is unchanged at 194 tools across 22 domains.
 
 ### Added
+
 - The website serves `/.well-known/security.txt`, pointing at SECURITY.md and security@codeswhat.com.
 
 ### Fixed
+
 - `list_collections` now sends `current_page: 0` when only `page_size` is set, because Portkey ignores `page_size` unless it comes with `current_page`.
 - `list_configs` and ENDPOINTS.md now say that Portkey currently returns the full config list and ignores `current_page` and `page_size`. The tool still accepts both and does not slice client-side.
 - Documentation pages without headings no longer reserve an empty table of contents column on desktop.
@@ -37,11 +47,13 @@ Collection paging fix, a note on config paging, and a site security.txt. The cat
 Client setup corrections and a site redesign. The server catalog is unchanged at 194 tools across 22 domains.
 
 ### Changed
+
 - The homepage follows the approved MCP-first design, with six client install tabs, a searchable tool browser using the published annotations, safety guidance, example prompts and FAQs.
 - The hero uses the padded transparent assets. The looping animation loads only on wide screens and stays off under reduced motion.
 - Documentation pages have an "On this page" navigation, including a mobile disclosure, and copy controls for each code block.
 
 ### Fixed
+
 - The README's VS Code setup now uses the `servers` key and `type: "stdio"` that `.vscode/mcp.json` expects, and the Windsurf config path points at `~/.codeium/windsurf/mcp_config.json`.
 
 ## [0.16.0] - 2026-10-30
@@ -49,6 +61,7 @@ Client setup corrections and a site redesign. The server catalog is unchanged at
 Node 26 runtime image, refused dot path segments, and a redesigned site at portkey.codeswhat.com. The catalog is unchanged at 194 tools across 22 domains.
 
 ### Changed
+
 - The security assurance case limits its per-request authentication claim to MCP requests in bearer and Clerk modes, and names the health, readiness, status and auth-info routes that stay unauthenticated.
 - The Docker image now runs Node 26, and CI also tests Node 26. Node 24 remains the minimum (`engines.node` is still `>=24`), and the npm package is still built on Node 24.
 - The README footer links the CodesWhat logo to codeswhat.com, and the architecture guide, Vercel guide and security assurance case no longer call the SDK v2 implementation an unreleased candidate.
@@ -57,20 +70,24 @@ Node 26 runtime image, refused dot path segments, and a redesigned site at portk
 - Internal site links now carry the trailing slash, so navigation no longer redirects.
 
 ### Security
+
 - Path parameters of "." or ".." (including percent-encoded forms) are now refused before any request, so a tool can no longer be redirected to another Portkey endpoint and get past `PORTKEY_TOOL_DOMAINS` (e.g. `workspace_id` ".." reaching org user endpoints). Found by a Claude Security scan.
 - The coverage workflow now runs dependency install and tests in a job without an OIDC credential, and uploads coverage from a separate job that runs no repository or dependency code. Found by a Claude Security scan.
 
 ## [0.15.2] - 2026-10-29
 
 ### Fixed
+
 - The release workflow now waits up to 15 minutes for a new npm version to become visible before publishing to the MCP Registry. The 0.15.1 run gave up after 5 minutes, seconds before npm finished processing.
 
 ### Security
+
 - Moving to MCP TypeScript SDK 2.4.0 and the Node adapter 2.1.2 pulls `@hono/node-server` 2.1.x, which clears GHSA-rmxm-3fg6-px4f. The server never used the affected `serveStatic`.
 
 ## [0.15.1] - 2026-10-27
 
 ### Added
+
 - A Portkey marketing and documentation site under `website/`, built from the shared CodesWhat product web shell and published at https://portkey.codeswhat.com. It is not part of the npm package.
 - Tests now check the auth and probe path classifiers against Express's own routing across generated path variants, and exercise the 10,000-element tool input budget.
 - The site includes the full 0.15.0 manual (install and configuration, tool reference, compatibility, architecture, HTTP deployment, security, Prisma AIRS boundary, distribution, release verification), generated from the release tag with a drift check.
@@ -78,9 +95,11 @@ Node 26 runtime image, refused dot path segments, and a redesigned site at portk
 - Site pages are indexable with canonical URLs, and the site serves a robots.txt and sitemap.
 
 ### Changed
+
 - The compatibility table now qualifies the 401 on GET and DELETE by authentication mode (it applies when `MCP_AUTH_MODE` is not `none`), and the release verification guide states the npm 9.5.0 minimum for `npm audit signatures`.
 
 ### Fixed
+
 - The optional live smoke test reports Portkey 502, 503 and 504 responses as skipped with the status code instead of failing CI, and still fails when no endpoint passes.
 
 ## [0.15.0] - 2026-10-25
@@ -88,17 +107,21 @@ Node 26 runtime image, refused dot path segments, and a redesigned site at portk
 MCP specification `2026-07-28` support on the v2 SDK. The server speaks both protocol eras on one endpoint, so older clients keep working. HTTP session and GET replay storage is retired, which is breaking for operators who rely on replay or session affinity. The catalog is unchanged at 194 tools across 22 domains.
 
 ### Added
+
 - Analytics workspace scoping through `include_all_workspaces` and `exclude_workspace_slugs` on all 25 analytics tools. Organisation keys can aggregate across workspaces; an explicit `workspace_slug` keeps precedence. Cache summary and provider groups accept organisation scope as an alternative to a single workspace.
 
 ### Changed
+
 - Move to MCP SDK v2: serve modern `2026-07-28` and older clients on the same HTTP/stdio endpoint, with exact SDK pins. HTTP session/GET replay storage is retired; obsolete settings warn without logging values. Retain authentication, Origin/host/body guards, Redis rate limiting, tool filters and the concurrent-request bound. Static catalog hints are private for 60 seconds; unused change-notification capabilities are disabled. See `COMPATIBILITY.md` for interrupted-mutation recovery and the warning, ignored-setting and removal boundary, all of which start in this release.
 
 ## [0.14.1] - 2026-10-25
 
 ### Security
+
 - Refresh the dependency lock to patched `body-parser` 2.4.0, `fast-uri` 3.1.9, `hono` 4.13.13, and `ip-address` 10.7.4. The full npm audit reports no vulnerabilities.
 
 ### Changed
+
 - Classify test harnesses separately in Qlty maintainability reports, limit ordinary Renovate work to one concurrent PR and one new PR per hour with dashboard admission, and make CodeRabbit reviews explicit rather than automatic per push. Required checks, coverage gates, and urgent security updates are unchanged.
 - Enforce the free standalone Qlty CLI in CI, the full local pipeline, and pre-push while retaining existing required checks, coverage reporting, and Cloud badges. Keep duplication and complexity reports advisory. Use a JSON Docker health check and the existing numeric runtime user to clear the CLI baseline.
 - Update npm to 12.2.1 and the pinned CodeQL action to 4.39.0. Other non-security updates retain the seven-day minimum release age.
@@ -107,6 +130,7 @@ MCP specification `2026-07-28` support on the v2 SDK. The server speaks both pro
 - Updated the release-only MCP publisher to 1.8.1 and pinned the LobeHub maintenance CLI to 0.0.41. Runtime dependencies and the published package version are unchanged.
 
 ### Fixed
+
 - Normalize Docker transport selection like the server configuration and health probe, so surrounding whitespace in `MCP_TRANSPORT` does not start the wrong entry point.
 
 ## [0.14.0] - 2026-10-16
@@ -508,7 +532,7 @@ Security and correctness release from a multi-agent whole-application review, we
 
 ### Fixed
 
-- Stop leaking stateful session reservations when the MCP transport rejects an `initialize` request. The reservation that guards `MCP_MAX_SESSIONS` was released only in a `catch`, but the SDK transport *returns* a 406/415/400 for a bad `Accept` header, content-type, protocol version, or JSON-RPC body instead of throwing, so the release never ran. About `MCP_MAX_SESSIONS` malformed initializes from a single authenticated caller permanently exhausted stateful capacity for every tenant until restart. The release now runs in a `finally`, gated so a session that actually initialized is never double-released.
+- Stop leaking stateful session reservations when the MCP transport rejects an `initialize` request. The reservation that guards `MCP_MAX_SESSIONS` was released only in a `catch`, but the SDK transport _returns_ a 406/415/400 for a bad `Accept` header, content-type, protocol version, or JSON-RPC body instead of throwing, so the release never ran. About `MCP_MAX_SESSIONS` malformed initializes from a single authenticated caller permanently exhausted stateful capacity for every tenant until restart. The release now runs in a `finally`, gated so a session that actually initialized is never double-released.
 - Rate-limit `/mcp/` and `/MCP` like `/mcp`. Express 5 routes those forms to the same handler, but the rate limiters compared the path with exact string equality while auth used a looser `startsWith`, so failed-credential requests to a trailing-slash or uppercase path consumed no rate-limit bucket, and `/MCP` skipped the auth gate entirely and then 500'd on an unset principal. A shared `isMcpRequestPath` matcher (case-insensitive, one trailing slash) now backs both rate limiters and the auth gate, matching the router. The same fix was applied to the `/health` and `/ready` skips, which had the identical exact-string pattern.
 - Rate-limit and authenticate before parsing the request body. `express.json` ran ahead of the rate limiters and auth, so a malformed or oversized POST error-skipped straight to the parse-error handler without being counted or authenticated. The parser now runs after host/origin validation, both rate limiters, and auth, and still before the route handler that needs the parsed body.
 - Bound Redis event-store commands with a command timeout. `storeEvent` and event replay sit on the request-critical path and waited on Redis with no deadline, so a stalled-but-connected Redis hung MCP requests indefinitely. Commands now honour `MCP_EVENT_STORE_COMMAND_TIMEOUT_MS` (default 5000; `0` restores the old unbounded behaviour).
@@ -523,7 +547,7 @@ Security and correctness release from a multi-agent whole-application review, we
 
 ## [0.9.0] - 2026-08-10
 
-Cross-field argument validation now reads the same on every tool that has it. Tool inventory is unchanged at 171 and `tools/list` output is byte-identical to 0.8.0, so no client needs to re-sync schemas. The error *text* a client sees for these ten tools does change; anything matching on the old strings needs updating.
+Cross-field argument validation now reads the same on every tool that has it. Tool inventory is unchanged at 171 and `tools/list` output is byte-identical to 0.8.0, so no client needs to re-sync schemas. The error _text_ a client sees for these ten tools does change; anything matching on the old strings needs updating.
 
 ### Fixed
 
@@ -697,7 +721,7 @@ Security-hardening release. Remediates all eight findings (two high, four medium
 - `migrate_prompt`'s 0.4.1 description enumerated only two of the three `action` return values; the common re-run case returns `unchanged` (prompt found, content identical, no new version created). The description now covers all three outcomes plus the `message` field.
 - The LobeHub manifest generator inherited the caller's environment, so a stray `PORTKEY_TOOL_DOMAINS`/`MCP_TOOL_DOMAINS` export made it silently write a truncated manifest (reproduced: 34 of 150 tools). It now strips both variables, refuses to write fewer tools than the manifest already has, and carries each tool's `annotations` through to the manifest (previously dropped).
 - Pin the actionlint bootstrap script in CI to a commit SHA — the tag-based raw URL was the one remaining mutable reference in the hardened workflows.
-- Correct two claims in the 0.4.1 changelog entry (mirrored to its GitHub Release): the six tools carry the first *hand-authored* annotations, not the first annotations, and the manifest drift was 29 tool entries, not 34.
+- Correct two claims in the 0.4.1 changelog entry (mirrored to its GitHub Release): the six tools carry the first _hand-authored_ annotations, not the first annotations, and the manifest drift was 29 tool entries, not 34.
 
 ## [0.4.1] - 2026-07-02
 
@@ -811,7 +835,7 @@ Follow-up hardening release clearing the remaining low/medium items from the v0.
 
 ### Security
 
-- Redact outbound request debug logs: log query-param *keys* only, never the composed URL, so identifiers in query values cannot leak into logs.
+- Redact outbound request debug logs: log query-param _keys_ only, never the composed URL, so identifiers in query values cannot leak into logs.
 - Validate Redis event-store stream/event ids against `^[\w-]{1,128}$` before key construction, preventing key injection via a malformed `Last-Event-ID` header. Unknown/malformed ids resolve to "not found" instead of erroring.
 
 ### Changed
@@ -1014,7 +1038,8 @@ First stable release. Graduates from beta with 151 tools covering ~98% of the Po
 - Vercel deployment support
 - Contract tests, E2E tests, security tests
 
-[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.2...HEAD
+[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.3...HEAD
+[0.16.3]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.2...v0.16.3
 [0.16.2]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.1...v0.16.2
 [0.16.1]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.0...v0.16.1
 [0.16.0]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.15.2...v0.16.0
