@@ -57,7 +57,12 @@ export function registerCollectionsTools(
 			inputSchema: COLLECTIONS_TOOL_SCHEMAS.listCollections,
 		},
 		async (params) => {
-			const collections = await service.collections.listCollections(params);
+			const effectiveParams =
+				params.page_size !== undefined && params.current_page === undefined
+					? { ...params, current_page: 0 }
+					: params;
+			const collections =
+				await service.collections.listCollections(effectiveParams);
 			return jsonResult({
 				total: collections.total,
 				collections: collections.data.map((collection) => ({

@@ -277,6 +277,62 @@ describe("collections tools — curated list_collections response", () => {
 	});
 });
 
+describe("collections tools — list_collections pagination", () => {
+	const listCalls = async (params: Record<string, unknown>) => {
+		const calls: Array<Record<string, unknown> | undefined> = [];
+		const callbacks = registerToolCallbacks((server) => {
+			registerCollectionsTools(
+				server as never,
+				{
+					collections: {
+						listCollections: async (p?: Record<string, unknown>) => {
+							calls.push(p);
+							return { object: "list", total: 0, data: [] };
+						},
+					},
+				} as never,
+			);
+		});
+		const cb = callbacks.get("list_collections");
+		assert.ok(cb, "list_collections should be registered");
+		await cb(params);
+		return calls;
+	};
+
+	it("sends current_page 0 when page_size is set alone", async () => {
+		const calls = await listCalls({ page_size: 1 });
+		assert.equal(calls.length, 1);
+		assert.equal(calls[0]?.page_size, 1);
+		assert.equal(calls[0]?.current_page, 0);
+	});
+
+	it("preserves an explicit current_page", async () => {
+		const calls = await listCalls({ page_size: 5, current_page: 2 });
+		assert.equal(calls[0]?.page_size, 5);
+		assert.equal(calls[0]?.current_page, 2);
+	});
+
+	it("preserves search and workspace_id filters", async () => {
+		const calls = await listCalls({
+			page_size: 3,
+			search: "hour",
+			workspace_id: "ws_1",
+		});
+		assert.deepEqual(calls[0], {
+			page_size: 3,
+			current_page: 0,
+			search: "hour",
+			workspace_id: "ws_1",
+		});
+	});
+
+	it("sends no current_page when no paging params are given", async () => {
+		const calls = await listCalls({});
+		assert.equal(calls[0]?.current_page, undefined);
+		assert.equal(calls[0]?.page_size, undefined);
+	});
+});
+
 describe("collections tools — get_collection curated response", () => {
 	it("returns the curated collection fields", async () => {
 		const callbacks = registerToolCallbacks((server) => {

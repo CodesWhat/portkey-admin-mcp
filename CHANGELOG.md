@@ -11,6 +11,9 @@ release until that reference and the release notes say so.
 
 ## [Unreleased]
 
+### Fixed
+- `list_collections` now sends `current_page: 0` when only `page_size` is set, because Portkey ignores `page_size` unless it comes with `current_page`.
+
 ## [0.16.1] - 2026-10-31
 
 Client setup corrections and a site redesign. The server catalog is unchanged at 194 tools across 22 domains.
