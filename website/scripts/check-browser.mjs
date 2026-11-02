@@ -1,6 +1,6 @@
 // Rendered browser check for the exported site. Run `npm run build` first, then
 // `npm run check:browser`. Serves out/ on 127.0.0.1, drives Chromium (Playwright
-// build or system Chrome) and WebKit when installed. Local only: not part of CI.
+// build or system Chrome) and WebKit when installed. Runs in the website CI job.
 import { createReadStream, existsSync, statSync, mkdirSync } from "node:fs";
 import { createServer } from "node:http";
 import { extname, join, normalize, sep } from "node:path";
@@ -92,6 +92,12 @@ async function suite(browser, engine, base) {
       ...options,
     });
     try {
+      // Never depend on an outside host: abort anything that is not the local server.
+      // The request event still fires for aborted requests, so request assertions hold.
+      await context.route(
+        (url) => url.hostname !== "127.0.0.1",
+        (route) => route.abort(),
+      );
       await fn(context, await context.newPage());
       results.push(true);
       console.log(`PASS ${engine.padEnd(8)} ${name}`);
