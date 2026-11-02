@@ -33,6 +33,34 @@ describe("live smoke outcome classification", () => {
 		}
 	});
 
+	it("classifies a FetchError wrapped as the cause of another error", () => {
+		assert.equal(
+			expectedSmokeSkipReason(
+				"ping",
+				new Error("Health check failed: boom (5ms)", {
+					cause: new FetchError("HTTP error! status: 503", 503),
+				}),
+			),
+			"Portkey upstream unavailable (HTTP 503)",
+		);
+		assert.equal(
+			expectedSmokeSkipReason(
+				"ping",
+				new Error("Health check failed: nope (5ms)", {
+					cause: new FetchError("not permitted", 403),
+				}),
+			),
+			"configured credential lacks access (HTTP 403)",
+		);
+		assert.equal(
+			expectedSmokeSkipReason(
+				"ping",
+				new Error("wrapper", { cause: new Error("plain") }),
+			),
+			null,
+		);
+	});
+
 	it("no longer hides the gateway catch-all for management routes", () => {
 		// These three used to be allow-listed as "unavailable on the hosted
 		// API". They are not unavailable: they moved to /v2, and the 400 was
