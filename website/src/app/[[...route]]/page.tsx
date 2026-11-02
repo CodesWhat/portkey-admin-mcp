@@ -79,7 +79,7 @@ export default async function Page({ params }: Props) {
   );
   return (
     <Frame product={product} docsPage={resolved.page}>
-      <main id="main" tabIndex={-1} className="docs-layout wrap">
+      <main id="main" tabIndex={-1} className={`docs-layout wrap${toc ? "" : " no-toc"}`}>
         <aside className="docs-sidebar">
           <div className="desktop-doc-nav">{nav}</div>
           <Disclosure className="mobile-doc-nav" label="In this guide">
