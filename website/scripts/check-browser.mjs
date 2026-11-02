@@ -1,6 +1,6 @@
 // Rendered browser check for the exported site. Run `npm run build` first, then
 // `npm run check:browser`. Serves out/ on 127.0.0.1, drives Chromium (Playwright
-// build or system Chrome) and WebKit when installed. Local only: not part of CI.
+// build or system Chrome) and WebKit when installed. Runs in the website CI job.
 import { createReadStream, existsSync, statSync, mkdirSync } from "node:fs";
 import { createServer } from "node:http";
 import { extname, join, normalize, sep } from "node:path";
@@ -62,17 +62,24 @@ async function serve() {
   return `http://127.0.0.1:${server.address().port}`;
 }
 
+// In CI every engine must launch, and Chromium must be the pinned Playwright build.
+const strict = Boolean(process.env.CI);
+
 async function launch(engine) {
   const type = engine === "chromium" ? chromium : webkit;
   try {
     const bundled = existsSync(type.executablePath());
     const browser =
-      engine === "chromium" && !bundled
+      engine === "chromium" && !bundled && !strict
         ? await type.launch({ channel: "chrome", headless: true })
         : await type.launch({ headless: true });
     browsers.push(browser);
     return browser;
   } catch (error) {
+    if (strict)
+      throw new Error(
+        `${engine} could not launch in CI (${String(error.message).split("\n")[0]}). Install it with \`npx playwright-core install --with-deps chromium webkit\`.`,
+      );
     console.log(`SKIP ${engine}: not available (${String(error.message).split("\n")[0]})`);
     return null;
   }
@@ -92,6 +99,12 @@ async function suite(browser, engine, base) {
       ...options,
     });
     try {
+      // Never depend on an outside host: abort anything that is not the local server.
+      // The request event still fires for aborted requests, so request assertions hold.
+      await context.route(
+        (url) => url.hostname !== "127.0.0.1",
+        (route) => route.abort(),
+      );
       await fn(context, await context.newPage());
       results.push(true);
       console.log(`PASS ${engine.padEnd(8)} ${name}`);
@@ -105,6 +118,25 @@ async function suite(browser, engine, base) {
   const open = async (page, path) => {
     await page.goto(base + path, { waitUntil: "load" });
     await hydrated(page);
+  };
+  const openMobileToc = async (page) => {
+    await page.locator(".mobile-toc > summary").click();
+    expect(
+      await page.locator(".mobile-toc nav a").first().isVisible(),
+      "mobile TOC did not open",
+    );
+  };
+  const expectTocNavigated = async (page) => {
+    await page.waitForURL(/#/, { timeout: 3000 }).catch(() => {});
+    expect(page.url().includes("#"), "mobile TOC did not navigate to its heading");
+    const { top, header } = await page.evaluate(() => ({
+      top: document.getElementById(location.hash.slice(1))?.getBoundingClientRect().top,
+      header: document.querySelector(".header")?.getBoundingClientRect().bottom ?? 0,
+    }));
+    expect(
+      top !== undefined && top >= header - 1 && top < page.viewportSize().height,
+      `mobile TOC heading is not below the sticky header (top ${top}, header ${header})`,
+    );
   };
   const active = (page) =>
     page.evaluate(() => {
@@ -443,17 +475,43 @@ async function suite(browser, engine, base) {
           }
           if (width === 390) {
             await open(page, "/docs/manual/");
-            await page.locator(".mobile-toc > summary").click();
-            expect(
-              await page.locator(".mobile-toc nav a").first().isVisible(),
-              "mobile TOC did not open",
-            );
+            await openMobileToc(page);
             await page.locator(".mobile-toc nav a").first().click();
-            expect(page.url().includes("#"), "mobile TOC did not navigate to its heading");
+            await expectTocNavigated(page);
           }
         },
       );
     }
+
+  await check(
+    "mobile TOC: a touch tap navigates to the heading",
+    { viewport: { width: 390, height: 800 }, hasTouch: true },
+    async (_, page) => {
+      await open(page, "/docs/manual/");
+      await page.locator(".mobile-toc > summary").tap();
+      expect(
+        await page.locator(".mobile-toc nav a").first().isVisible(),
+        "mobile TOC did not open",
+      );
+      await page.locator(".mobile-toc nav a").first().tap();
+      await expectTocNavigated(page);
+    },
+  );
+
+  await check(
+    "mobile TOC: Tab past the last link closes the menu",
+    { viewport: { width: 390, height: 800 } },
+    async (_, page) => {
+      await open(page, "/docs/manual/");
+      await openMobileToc(page);
+      await page.locator(".mobile-toc nav a").last().focus();
+      await page.keyboard.press("Tab");
+      expect(
+        !(await page.locator(".mobile-toc").evaluate((el) => el.open)),
+        "mobile TOC stayed open after Tab left it",
+      );
+    },
+  );
 
   // Safari and its WebKit build leave links out of the Tab order unless the OS
   // setting "Press Tab to highlight each item" is on, so Tab-to-link checks only
@@ -604,8 +662,12 @@ async function suite(browser, engine, base) {
       `star history: ${stored} chart is the visible one with ${system} system preference`,
       { colorScheme: system },
       async (context, page) => {
-        // The check only reads the markup and CSS, so it never needs the network.
+        // The route stays aborted, so no network is needed: the request event still fires.
         await page.route("https://api.star-history.com/**", (route) => route.abort());
+        const chartRequests = [];
+        page.on("request", (request) => {
+          if (request.url().startsWith("https://api.star-history.com/")) chartRequests.push(request.url());
+        });
         await context.addInitScript((value) => localStorage.setItem("theme", value), stored);
         await open(page, "/");
         const charts = await page.locator("#star-history .star-chart img").evaluateAll((imgs) =>
@@ -630,6 +692,21 @@ async function suite(browser, engine, base) {
         }
         const visible = charts.filter((chart) => chart.visible).map((chart) => chart.theme);
         expect(visible.length === 1 && visible[0] === stored, `visible charts: ${visible.join(",") || "none"}, wanted ${stored}`);
+        await page.locator("#star-history").scrollIntoViewIfNeeded();
+        // A lazy image can report complete before it starts loading, so wait for the request first.
+        await page.waitForFunction(() => {
+          const img = [...document.querySelectorAll("#star-history .star-chart img")].find(
+            (el) => getComputedStyle(el).display !== "none",
+          );
+          return Boolean(img?.complete);
+        });
+        const deadline = Date.now() + 5000;
+        while (chartRequests.length === 0 && Date.now() < deadline) await page.waitForTimeout(50);
+        // Short settle so a second, wrongful request would be caught.
+        await page.waitForTimeout(500);
+        expect(chartRequests.length === 1, `expected 1 star history request, got ${chartRequests.length}`);
+        const requested = new URL(chartRequests[0]).searchParams.get("theme") === "dark" ? "dark" : "light";
+        expect(requested === stored, `requested the ${requested} chart, wanted ${stored}`);
       },
     );
 

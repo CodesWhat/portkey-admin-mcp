@@ -22,7 +22,7 @@ permissions:
 jobs:
   website:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: website
@@ -58,3 +58,9 @@ jobs:
 
       - name: Check export
         run: npm run check:export
+
+      - name: Install Playwright browsers
+        run: npx playwright-core install --with-deps chromium webkit
+
+      - name: Check browser
+        run: npm run check:browser

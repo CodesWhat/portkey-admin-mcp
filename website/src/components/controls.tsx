@@ -152,6 +152,11 @@ export function Disclosure({
 }) {
   const summary = useRef<HTMLElement>(null);
   const details = useRef<HTMLDetailsElement>(null);
+  // The blur close is only for tabbing out of the menu. WebKit reports the
+  // nearest focusable ancestor as relatedTarget when a pointer press lands on a
+  // link, so closing on any blur collapses the link before its click lands.
+  // Outside presses are handled by the document pointerdown listener below.
+  const tabbing = useRef(false);
   useEffect(() => {
     const onPointerDown = (event: PointerEvent) => {
       const element = details.current;
@@ -166,14 +171,21 @@ export function Disclosure({
       ref={details}
       className={`disclosure ${className}`}
       onKeyDown={(event) => {
+        if (event.key === "Tab") tabbing.current = true;
         if (event.key === "Escape" && event.currentTarget.open) {
           event.preventDefault();
           event.currentTarget.open = false;
           summary.current?.focus();
         }
       }}
+      onKeyUp={() => {
+        tabbing.current = false;
+      }}
       onBlur={(event) => {
+        const viaTab = tabbing.current;
+        tabbing.current = false;
         if (
+          viaTab &&
           event.relatedTarget instanceof Node &&
           !event.currentTarget.contains(event.relatedTarget)
         )
