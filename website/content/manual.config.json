@@ -1,7 +1,7 @@
 {
   "repo": "CodesWhat/portkey-admin-mcp",
-  "tag": "v0.16.0",
-  "commit": "73a7c0f8a0d04f65b9197847e2c66e3fb3d149cc",
+  "tag": "v0.16.2",
+  "commit": "a676b4f357213d837b738760cb1083fbee1fcd9e",
   "starters": [
     "overview",
     "getting-started",
