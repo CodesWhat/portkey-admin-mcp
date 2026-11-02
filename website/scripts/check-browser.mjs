@@ -407,6 +407,7 @@ async function suite(browser, engine, base) {
         { viewport: { width, height: 800 }, colorScheme, reducedMotion: "reduce" },
         async (_, page) => {
           await page.route("https://img.shields.io/**", (route) => route.abort());
+          await page.route("https://api.star-history.com/**", (route) => route.abort());
           await open(page, "/");
           const expectedHeader =
             colorScheme === "dark" ? "rgb(30, 22, 41)" : "rgb(239, 230, 246)";
@@ -590,6 +591,43 @@ async function suite(browser, engine, base) {
             expectedHeader,
           `header background is not ${expectedHeader}`,
         );
+      },
+    );
+
+  for (const [system, stored] of [
+    ["light", "dark"],
+    ["dark", "light"],
+  ])
+    await check(
+      `star history: ${stored} chart is the visible one with ${system} system preference`,
+      { colorScheme: system },
+      async (context, page) => {
+        // The check only reads the markup and CSS, so it never needs the network.
+        await page.route("https://api.star-history.com/**", (route) => route.abort());
+        await context.addInitScript((value) => localStorage.setItem("theme", value), stored);
+        await open(page, "/");
+        const charts = await page.locator("#star-history .star-chart img").evaluateAll((imgs) =>
+          imgs.map((img) => ({
+            theme: img.className.includes("dark") ? "dark" : "light",
+            src: img.getAttribute("src"),
+            alt: img.alt,
+            lazy: img.loading,
+            referrer: img.referrerPolicy,
+            visible: getComputedStyle(img).display !== "none",
+          })),
+        );
+        expect(charts.length === 2, `expected 2 chart images, found ${charts.length}`);
+        for (const chart of charts) {
+          const url = new URL(chart.src);
+          expect(url.origin === "https://api.star-history.com", `${chart.theme}: wrong host ${url.origin}`);
+          expect(url.pathname === "/chart", `${chart.theme}: wrong path ${url.pathname}`);
+          expect(url.searchParams.get("repos") === "CodesWhat/portkey-admin-mcp", `${chart.theme}: wrong repo`);
+          expect((url.searchParams.get("theme") === "dark") === (chart.theme === "dark"), `${chart.theme}: wrong theme parameter`);
+          expect(chart.alt.includes("CodesWhat/portkey-admin-mcp"), `${chart.theme}: weak alt text`);
+          expect(chart.lazy === "lazy" && chart.referrer === "no-referrer", `${chart.theme}: not lazy or leaks referrer`);
+        }
+        const visible = charts.filter((chart) => chart.visible).map((chart) => chart.theme);
+        expect(visible.length === 1 && visible[0] === stored, `visible charts: ${visible.join(",") || "none"}, wanted ${stored}`);
       },
     );
 

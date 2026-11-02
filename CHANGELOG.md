@@ -11,6 +11,9 @@ release until that reference and the release notes say so.
 
 ## [Unreleased]
 
+### Added
+- The README and the website homepage show a Star History chart for the repository. The homepage loads it from `api.star-history.com` in the visitor's browser, lazily and without a referrer, and `img-src` allows that origin.
+
 ## [0.16.2] - 2026-11-01
 
 Collection paging fix, a note on config paging, and a site security.txt. The catalog is unchanged at 194 tools across 22 domains.
