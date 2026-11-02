@@ -36,19 +36,24 @@ test("website flags and Enterprise status match published tool metadata", () => 
   assert.equal(tools.filter((tool) => tool.enterprise).length, 56);
 });
 
-test("website inventory accepts CRLF endpoint tables", () => {
-  const fixture = mkdtempSync(join(tmpdir(), "portkey-catalog-"));
-  try {
-    mkdirSync(join(fixture, "website"));
-    writeFileSync(join(fixture, "lhm.plugin.json"), JSON.stringify(manifest));
-    const endpoints = readFileSync(new URL("../../ENDPOINTS.md", import.meta.url), "utf8");
-    writeFileSync(join(fixture, "ENDPOINTS.md"), endpoints.replace(/\r?\n/g, "\r\n"));
-    const moduleUrl = new URL("../src/lib/tool-catalog.mjs", import.meta.url).href;
-    const output = execFileSync(process.execPath, ["--input-type=module", "-e",
-      `const { toolDomains } = await import(${JSON.stringify(moduleUrl)}); console.log(toolDomains.flatMap(d => d.tools).length);`
-    ], { cwd: join(fixture, "website"), encoding: "utf8", timeout: 10_000 });
-    assert.equal(output.trim(), "194");
-  } finally {
-    rmSync(fixture, { recursive: true, force: true });
-  }
-});
+for (const [label, eol] of [
+  ["CRLF", "\r\n"],
+  ["lone CR", "\r"],
+]) {
+  test(`website inventory accepts ${label} endpoint tables`, () => {
+    const fixture = mkdtempSync(join(tmpdir(), "portkey-catalog-"));
+    try {
+      mkdirSync(join(fixture, "website"));
+      writeFileSync(join(fixture, "lhm.plugin.json"), JSON.stringify(manifest));
+      const endpoints = readFileSync(new URL("../../ENDPOINTS.md", import.meta.url), "utf8");
+      writeFileSync(join(fixture, "ENDPOINTS.md"), endpoints.replace(/\r?\n/g, eol));
+      const moduleUrl = new URL("../src/lib/tool-catalog.mjs", import.meta.url).href;
+      const output = execFileSync(process.execPath, ["--input-type=module", "-e",
+        `const { toolDomains } = await import(${JSON.stringify(moduleUrl)}); console.log(toolDomains.flatMap(d => d.tools).length);`
+      ], { cwd: join(fixture, "website"), encoding: "utf8", timeout: 10_000 });
+      assert.equal(output.trim(), "194");
+    } finally {
+      rmSync(fixture, { recursive: true, force: true });
+    }
+  });
+}
