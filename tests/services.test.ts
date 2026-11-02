@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
+import { FetchError } from "../src/lib/fetch.js";
 import { AnalyticsService } from "../src/services/analytics.service.js";
 import {
 	BaseService,
@@ -1399,6 +1400,18 @@ describe("HealthService cache behavior", () => {
 		} finally {
 			Date.now = originalNow;
 		}
+	});
+
+	it("keeps the upstream FetchError as the cause of a failed ping", async () => {
+		const service = new HealthService("test-key", BASE_URL);
+		enqueueError(new FetchError("HTTP error! status: 503", 503));
+		await assert.rejects(service.ping(), (error: unknown) => {
+			assert.ok(error instanceof Error);
+			assert.match(error.message, /^Health check failed: /);
+			assert.ok(error.cause instanceof FetchError);
+			assert.equal(error.cause.status, 503);
+			return true;
+		});
 	});
 
 	it("coalesces concurrent cache misses into one upstream probe", async () => {

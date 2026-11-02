@@ -7,12 +7,24 @@ export function expectedSmokeSkipReason(
 	error: unknown,
 ): string | null {
 	void name;
-	if (!(error instanceof FetchError)) return null;
-	if (error.status === 401 || error.status === 403) {
-		return `configured credential lacks access (HTTP ${error.status})`;
+	// Services such as HealthService wrap the FetchError in a plain Error, so
+	// look one level down the cause chain.
+	const fetchError =
+		error instanceof FetchError
+			? error
+			: error instanceof Error && error.cause instanceof FetchError
+				? error.cause
+				: null;
+	if (!fetchError) return null;
+	if (fetchError.status === 401 || fetchError.status === 403) {
+		return `configured credential lacks access (HTTP ${fetchError.status})`;
 	}
-	if (error.status === 502 || error.status === 503 || error.status === 504) {
-		return `${UPSTREAM_UNAVAILABLE_PREFIX} (HTTP ${error.status})`;
+	if (
+		fetchError.status === 502 ||
+		fetchError.status === 503 ||
+		fetchError.status === 504
+	) {
+		return `${UPSTREAM_UNAVAILABLE_PREFIX} (HTTP ${fetchError.status})`;
 	}
 	return null;
 }
