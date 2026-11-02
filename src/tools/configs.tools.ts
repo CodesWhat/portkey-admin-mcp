@@ -188,7 +188,7 @@ export function registerConfigsTools(
 		"list_configs",
 		{
 			description:
-				"List configs in the org with id, slug, name, status, workspace, and timestamps. Use this summary view to find a slug; use get_config for the full routing, cache, retry, and target settings before updating or deleting.",
+				"List configs in the org with id, slug, name, status, workspace, and timestamps. Use this summary view to find a slug; use get_config for the full routing, cache, retry, and target settings before updating or deleting. Portkey currently returns the full list and ignores current_page and page_size.",
 			inputSchema: CONFIGS_TOOL_SCHEMAS.listConfigs,
 		},
 		async (params) => {

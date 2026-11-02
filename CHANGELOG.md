@@ -13,6 +13,7 @@ release until that reference and the release notes say so.
 
 ### Fixed
 - `list_collections` now sends `current_page: 0` when only `page_size` is set, because Portkey ignores `page_size` unless it comes with `current_page`.
+- `list_configs` and ENDPOINTS.md now say that Portkey currently returns the full config list and ignores `current_page` and `page_size`. The tool still accepts both and does not slice client-side.
 
 ## [0.16.1] - 2026-10-31
 

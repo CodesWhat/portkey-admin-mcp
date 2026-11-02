@@ -109,6 +109,7 @@ const DOMAINS = [
 		routes: [
 			"GET/POST `/configs`; GET/PUT/DELETE `/configs/{slug}`; GET `/configs/{slug}/versions`",
 		],
+		note: "Portkey currently returns the full list from `GET /configs` and ignores `current_page` and `page_size`. `list_configs` keeps those inputs and does not slice client-side.",
 	},
 	{
 		name: "deployments",
@@ -260,7 +261,7 @@ for (const domain of DOMAINS) {
 		return `| \`${name}\` | ${escapeCell(tool.description)} |`;
 	});
 	sections.push(
-		`## ${domain.name} (${names.length})\n\nRoutes:\n\n${domain.routes.map((route) => `- ${markUndocumented(route)}`).join("\n")}\n\n| Tool | Selection guidance and result |\n|---|---|\n${rows.join("\n")}`,
+		`## ${domain.name} (${names.length})\n\nRoutes:\n\n${domain.routes.map((route) => `- ${markUndocumented(route)}`).join("\n")}\n\n${domain.note ? `${domain.note}\n\n` : ""}| Tool | Selection guidance and result |\n|---|---|\n${rows.join("\n")}`,
 	);
 }
 
