@@ -604,8 +604,12 @@ async function suite(browser, engine, base) {
       `star history: ${stored} chart is the visible one with ${system} system preference`,
       { colorScheme: system },
       async (context, page) => {
-        // The check only reads the markup and CSS, so it never needs the network.
+        // The route stays aborted, so no network is needed: the request event still fires.
         await page.route("https://api.star-history.com/**", (route) => route.abort());
+        const chartRequests = [];
+        page.on("request", (request) => {
+          if (request.url().startsWith("https://api.star-history.com/")) chartRequests.push(request.url());
+        });
         await context.addInitScript((value) => localStorage.setItem("theme", value), stored);
         await open(page, "/");
         const charts = await page.locator("#star-history .star-chart img").evaluateAll((imgs) =>
@@ -630,6 +634,21 @@ async function suite(browser, engine, base) {
         }
         const visible = charts.filter((chart) => chart.visible).map((chart) => chart.theme);
         expect(visible.length === 1 && visible[0] === stored, `visible charts: ${visible.join(",") || "none"}, wanted ${stored}`);
+        await page.locator("#star-history").scrollIntoViewIfNeeded();
+        // A lazy image can report complete before it starts loading, so wait for the request first.
+        await page.waitForFunction(() => {
+          const img = [...document.querySelectorAll("#star-history .star-chart img")].find(
+            (el) => getComputedStyle(el).display !== "none",
+          );
+          return Boolean(img?.complete);
+        });
+        const deadline = Date.now() + 5000;
+        while (chartRequests.length === 0 && Date.now() < deadline) await page.waitForTimeout(50);
+        // Short settle so a second, wrongful request would be caught.
+        await page.waitForTimeout(500);
+        expect(chartRequests.length === 1, `expected 1 star history request, got ${chartRequests.length}`);
+        const requested = new URL(chartRequests[0]).searchParams.get("theme") === "dark" ? "dark" : "light";
+        expect(requested === stored, `requested the ${requested} chart, wanted ${stored}`);
       },
     );
 
