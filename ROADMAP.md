@@ -69,6 +69,12 @@ an appropriately scoped tenant can supply live contract evidence.
 
 ### Later
 
+## Completed 2026-11-01 (0.16.2)
+
+- `list_collections` sends the first page when only a page size is given.
+- Documented that Portkey ignores paging on `GET /configs`.
+- Added security.txt to the site and fixed the docs layout for pages without headings.
+
 ## Completed 2026-10-30 (0.16.0)
 
 - Added Node 26 CI coverage and the Node 26 runtime image while retaining Node 24
