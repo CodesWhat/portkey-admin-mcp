@@ -152,45 +152,40 @@ export function Disclosure({
 }) {
   const summary = useRef<HTMLElement>(null);
   const details = useRef<HTMLDetailsElement>(null);
-  // WebKit reports the nearest focusable ancestor as relatedTarget when a
-  // pointer press lands on a link, so the blur handler would close the details
-  // mid-click and the link would vanish before its navigation runs.
-  const pointerInside = useRef(false);
+  // The blur close is only for tabbing out of the menu. WebKit reports the
+  // nearest focusable ancestor as relatedTarget when a pointer press lands on a
+  // link, so closing on any blur collapses the link before its click lands.
+  // Outside presses are handled by the document pointerdown listener below.
+  const tabbing = useRef(false);
   useEffect(() => {
     const onPointerDown = (event: PointerEvent) => {
       const element = details.current;
       if (element?.open && event.target instanceof Node && !element.contains(event.target))
         element.open = false;
     };
-    const onPointerEnd = () => {
-      pointerInside.current = false;
-    };
     document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("pointerup", onPointerEnd);
-    document.addEventListener("pointercancel", onPointerEnd);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("pointerup", onPointerEnd);
-      document.removeEventListener("pointercancel", onPointerEnd);
-    };
+    return () => document.removeEventListener("pointerdown", onPointerDown);
   }, []);
   return (
     <details
       ref={details}
       className={`disclosure ${className}`}
       onKeyDown={(event) => {
+        if (event.key === "Tab") tabbing.current = true;
         if (event.key === "Escape" && event.currentTarget.open) {
           event.preventDefault();
           event.currentTarget.open = false;
           summary.current?.focus();
         }
       }}
-      onPointerDown={() => {
-        pointerInside.current = true;
+      onKeyUp={() => {
+        tabbing.current = false;
       }}
       onBlur={(event) => {
+        const viaTab = tabbing.current;
+        tabbing.current = false;
         if (
-          !pointerInside.current &&
+          viaTab &&
           event.relatedTarget instanceof Node &&
           !event.currentTarget.contains(event.relatedTarget)
         )

@@ -13,7 +13,7 @@ release until that reference and the release notes say so.
 
 ### Fixed
 
-- The "On this page" menu on docs pages did nothing in Safari on small screens. Safari moved focus as soon as you pressed a link, which closed the menu and moved the link out from under your finger before the tap landed. The menu now stays open until the press finishes.
+- The "On this page" menu on docs pages did nothing in WebKit at small widths. WebKit moved focus as soon as a link was pressed, which closed the menu and moved the link away before the click landed. The menu now only closes on blur when you Tab out of it.
 
 ## [0.16.3] - 2026-11-02
 
