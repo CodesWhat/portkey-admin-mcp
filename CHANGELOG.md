@@ -11,6 +11,18 @@ release until that reference and the release notes say so.
 
 ## [Unreleased]
 
+## [0.16.2] - 2026-11-01
+
+Collection paging fix, a note on config paging, and a site security.txt. The catalog is unchanged at 194 tools across 22 domains.
+
+### Added
+- The website serves `/.well-known/security.txt`, pointing at SECURITY.md and security@codeswhat.com.
+
+### Fixed
+- `list_collections` now sends `current_page: 0` when only `page_size` is set, because Portkey ignores `page_size` unless it comes with `current_page`.
+- `list_configs` and ENDPOINTS.md now say that Portkey currently returns the full config list and ignores `current_page` and `page_size`. The tool still accepts both and does not slice client-side.
+- Documentation pages without headings no longer reserve an empty table of contents column on desktop.
+
 ## [0.16.1] - 2026-10-31
 
 Client setup corrections and a site redesign. The server catalog is unchanged at 194 tools across 22 domains.
@@ -993,7 +1005,8 @@ First stable release. Graduates from beta with 151 tools covering ~98% of the Po
 - Vercel deployment support
 - Contract tests, E2E tests, security tests
 
-[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.1...HEAD
+[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.2...HEAD
+[0.16.2]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.1...v0.16.2
 [0.16.1]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.0...v0.16.1
 [0.16.0]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.15.2...v0.16.0
 [0.15.2]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.15.1...v0.15.2

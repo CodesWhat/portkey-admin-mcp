@@ -659,6 +659,11 @@
   grid-template-columns: 200px minmax(0, 1fr) 190px;
   gap: 32px;
 }
+@media (min-width: 1101px) {
+  .docs-layout.no-toc {
+    grid-template-columns: 200px minmax(0, 1fr);
+  }
+}
 .doc-toc {
   position: sticky;
   top: 88px;
