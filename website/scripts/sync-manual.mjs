@@ -126,6 +126,11 @@ function stripHtml(text) {
       .replace(/(?:<p align="center">[\s\S]*?<\/p>\s*)+/g, "")
       .replace(/<a href="https:\/\/github\.com\/CodesWhat">\s*<picture>[\s\S]*?<\/picture>\s*<\/a>\s*/g, "")
       .replace(/<a href="https:\/\/codeswhat\.com">\s*<picture>[\s\S]*?<\/picture>\s*<\/a>\s*/g, "")
+      // The homepage carries the themed chart, so the manual section just links to it.
+      .replace(
+        /<a href="(https:\/\/www\.star-history\.com\/[^"]*)">\s*<picture>[\s\S]*?<\/picture>\s*<\/a>/g,
+        "See the [star history chart]($1).",
+      )
       .replace(/<a href="#portkey-admin-mcp-server">Back to top<\/a>\s*/g, "")
       .replace(/<a href="https:\/\/glama\.ai[^>]*><img[^>]*><\/a>\s*/g, "")
       .replace(
