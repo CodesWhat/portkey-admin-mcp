@@ -812,3 +812,33 @@
     display: block;
   }
 }
+
+.star-chart {
+  display: block;
+  max-width: 800px;
+}
+.star-chart img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 800 / 533;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.star-chart .star-chart-dark {
+  display: none;
+}
+:root.dark .star-chart .star-chart-light {
+  display: none;
+}
+:root.dark .star-chart .star-chart-dark {
+  display: block;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not(.light):not(.dark) .star-chart .star-chart-light {
+    display: none;
+  }
+  :root:not(.light):not(.dark) .star-chart .star-chart-dark {
+    display: block;
+  }
+}

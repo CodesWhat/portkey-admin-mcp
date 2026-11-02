@@ -11,6 +11,9 @@ release until that reference and the release notes say so.
 
 ## [Unreleased]
 
+### Added
+- The README and the website homepage show a Star History chart for the repository. The homepage loads it from `api.star-history.com` in the visitor's browser, lazily and without a referrer, and `img-src` allows that origin.
+
 ### Changed
 - Coverage is now reported through Codecov instead of Qlty. Qlty only grades maintainability. The 80% line-coverage gate still runs on every PR in the required `checks` job.
 
