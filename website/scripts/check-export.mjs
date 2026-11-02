@@ -133,6 +133,18 @@ assert.deepEqual(
   [...expectedCanonical.values()].sort(),
   "sitemap.xml lists every route and no others",
 );
+const securityTxt = readFileSync(join(root, ".well-known", "security.txt"), "utf8");
+for (const line of [
+  "Contact: mailto:security@codeswhat.com",
+  "Canonical: https://portkey.codeswhat.com/.well-known/security.txt",
+  "Policy: https://github.com/CodesWhat/portkey-admin-mcp/blob/main/SECURITY.md",
+])
+  assert.ok(securityTxt.split("\n").includes(line), `security.txt is missing ${line}`);
+const securityExpires = securityTxt.match(/^Expires: (.+)$/m)?.[1];
+assert.ok(
+  securityExpires && Date.parse(securityExpires) > Date.now(),
+  "security.txt Expires is missing or in the past",
+);
 assert.ok(existsSync(join(root, "favicon.ico")), "out/favicon.ico is missing");
 const favicon = readFileSync(join(root, "favicon.ico"));
 assert.ok(
