@@ -110,7 +110,7 @@ jobs:
       pull-requests: read
       # No id-token here: ci.yml's reusable jobs (checks, actionlint) request no
       # id-token, so the release gate doesn't need to grant it. The OIDC-bearing
-      # Qlty coverage job lives outside the reusable path and only runs on
+      # Codecov coverage job lives outside the reusable path and only runs on
       # push/PR. See issue #60.
     secrets:
       PORTKEY_API_KEY_STAGING: ${{ secrets.PORTKEY_API_KEY_STAGING }}
