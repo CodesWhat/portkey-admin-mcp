@@ -1,10 +1,9 @@
 name: Website
 
 on:
+  # No paths filter on pull_request: the website-gate job has to report on every
+  # PR so it can be a required check. The changes job does the path filtering.
   pull_request:
-    paths:
-      - "website/**"
-      - ".github/workflows/website.yml"
   push:
     branches:
       - main
@@ -20,7 +19,44 @@ permissions:
   contents: read
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      website: ${{ steps.filter.outputs.website }}
+    steps:
+      - name: Detect site changes
+        id: filter
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" != "pull_request" ]; then
+            echo "website=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          files="$(mktemp)"
+          # Written to a file first so an API failure fails the job instead of
+          # vanishing into a pipeline (fails closed).
+          gh api --paginate "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/files" --jq '.[].filename' > "$files"
+          count="$(wc -l < "$files" | tr -d ' ')"
+          # The files API caps at 3000 entries; a list that long may be truncated.
+          if [ "$count" -ge 3000 ]; then
+            echo "website=true" >> "$GITHUB_OUTPUT"
+          elif grep -Eq '^(website/|\.github/workflows/website\.yml$)' "$files"; then
+            echo "website=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "website=false" >> "$GITHUB_OUTPUT"
+          fi
+
   website:
+    needs: changes
+    if: needs.changes.outputs.website == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     defaults:
@@ -64,3 +100,25 @@ jobs:
 
       - name: Check browser
         run: npm run check:browser
+
+  website-gate:
+    name: website-gate
+    needs: [changes, website]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require the website job to pass or be legitimately skipped
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          CHANGES_WEBSITE: ${{ needs.changes.outputs.website }}
+          WEBSITE_RESULT: ${{ needs.website.result }}
+        run: |
+          if [ "$CHANGES_RESULT" = "success" ] && [ "$WEBSITE_RESULT" = "success" ]; then
+            exit 0
+          fi
+          if [ "$CHANGES_RESULT" = "success" ] && [ "$CHANGES_WEBSITE" = "false" ] && [ "$WEBSITE_RESULT" = "skipped" ]; then
+            exit 0
+          fi
+          echo "changes=$CHANGES_RESULT (website=$CHANGES_WEBSITE), website=$WEBSITE_RESULT" >&2
+          exit 1
