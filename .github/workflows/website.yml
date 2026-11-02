@@ -10,6 +10,9 @@ on:
     paths:
       - "website/**"
       - ".github/workflows/website.yml"
+      # The tool catalog pages read these from the repository root.
+      - "lhm.plugin.json"
+      - "ENDPOINTS.md"
 
 concurrency:
   group: website-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
@@ -48,7 +51,7 @@ jobs:
           # The files API caps at 3000 entries; a list that long may be truncated.
           if [ "$count" -ge 3000 ]; then
             echo "website=true" >> "$GITHUB_OUTPUT"
-          elif grep -Eq '^(website/|\.github/workflows/website\.yml$)' "$files"; then
+          elif grep -Eq '^(website/|\.github/workflows/website\.yml$|lhm\.plugin\.json$|ENDPOINTS\.md$)' "$files"; then
             echo "website=true" >> "$GITHUB_OUTPUT"
           else
             echo "website=false" >> "$GITHUB_OUTPUT"
