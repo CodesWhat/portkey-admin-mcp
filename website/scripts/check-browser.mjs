@@ -106,6 +106,25 @@ async function suite(browser, engine, base) {
     await page.goto(base + path, { waitUntil: "load" });
     await hydrated(page);
   };
+  const openMobileToc = async (page) => {
+    await page.locator(".mobile-toc > summary").click();
+    expect(
+      await page.locator(".mobile-toc nav a").first().isVisible(),
+      "mobile TOC did not open",
+    );
+  };
+  const expectTocNavigated = async (page) => {
+    await page.waitForURL(/#/, { timeout: 3000 }).catch(() => {});
+    expect(page.url().includes("#"), "mobile TOC did not navigate to its heading");
+    const { top, header } = await page.evaluate(() => ({
+      top: document.getElementById(location.hash.slice(1))?.getBoundingClientRect().top,
+      header: document.querySelector(".header")?.getBoundingClientRect().bottom ?? 0,
+    }));
+    expect(
+      top !== undefined && top >= header - 1 && top < page.viewportSize().height,
+      `mobile TOC heading is not below the sticky header (top ${top}, header ${header})`,
+    );
+  };
   const active = (page) =>
     page.evaluate(() => {
       const el = document.activeElement;
@@ -443,17 +462,43 @@ async function suite(browser, engine, base) {
           }
           if (width === 390) {
             await open(page, "/docs/manual/");
-            await page.locator(".mobile-toc > summary").click();
-            expect(
-              await page.locator(".mobile-toc nav a").first().isVisible(),
-              "mobile TOC did not open",
-            );
+            await openMobileToc(page);
             await page.locator(".mobile-toc nav a").first().click();
-            expect(page.url().includes("#"), "mobile TOC did not navigate to its heading");
+            await expectTocNavigated(page);
           }
         },
       );
     }
+
+  await check(
+    "mobile TOC: a touch tap navigates to the heading",
+    { viewport: { width: 390, height: 800 }, hasTouch: true },
+    async (_, page) => {
+      await open(page, "/docs/manual/");
+      await page.locator(".mobile-toc > summary").tap();
+      expect(
+        await page.locator(".mobile-toc nav a").first().isVisible(),
+        "mobile TOC did not open",
+      );
+      await page.locator(".mobile-toc nav a").first().tap();
+      await expectTocNavigated(page);
+    },
+  );
+
+  await check(
+    "mobile TOC: Tab past the last link closes the menu",
+    { viewport: { width: 390, height: 800 } },
+    async (_, page) => {
+      await open(page, "/docs/manual/");
+      await openMobileToc(page);
+      await page.locator(".mobile-toc nav a").last().focus();
+      await page.keyboard.press("Tab");
+      expect(
+        !(await page.locator(".mobile-toc").evaluate((el) => el.open)),
+        "mobile TOC stayed open after Tab left it",
+      );
+    },
+  );
 
   // Safari and its WebKit build leave links out of the Tab order unless the OS
   // setting "Press Tab to highlight each item" is on, so Tab-to-link checks only
