@@ -62,17 +62,24 @@ async function serve() {
   return `http://127.0.0.1:${server.address().port}`;
 }
 
+// In CI every engine must launch, and Chromium must be the pinned Playwright build.
+const strict = Boolean(process.env.CI);
+
 async function launch(engine) {
   const type = engine === "chromium" ? chromium : webkit;
   try {
     const bundled = existsSync(type.executablePath());
     const browser =
-      engine === "chromium" && !bundled
+      engine === "chromium" && !bundled && !strict
         ? await type.launch({ channel: "chrome", headless: true })
         : await type.launch({ headless: true });
     browsers.push(browser);
     return browser;
   } catch (error) {
+    if (strict)
+      throw new Error(
+        `${engine} could not launch in CI (${String(error.message).split("\n")[0]}). Install it with \`npx playwright-core install --with-deps chromium webkit\`.`,
+      );
     console.log(`SKIP ${engine}: not available (${String(error.message).split("\n")[0]})`);
     return null;
   }
