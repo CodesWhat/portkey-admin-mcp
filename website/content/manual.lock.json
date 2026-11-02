@@ -1,60 +1,60 @@
 {
-  "commit": "a676b4f357213d837b738760cb1083fbee1fcd9e",
-  "tag": "v0.16.2",
+  "commit": "13a9f413049ca9283445e9c4877534c2d4d3c9cf",
+  "tag": "v0.16.3",
   "pages": [
     {
       "source": "README.md",
       "route": "/docs/manual",
-      "sourceSha256": "2d690a3d7ce171031131f56bf95196ef7bb5cbcff5618f2a40ef928d305b6bef",
-      "generatedSha256": "afec7cd603541adf4f4d635da1fa932fb87db841fd2fb2e138ed171e009ba2c3"
+      "sourceSha256": "f8c0a1abf6e75674b6f19e93ae95dca6ef28e2f3b04df19d4462fee596d1d292",
+      "generatedSha256": "d0d0634aac6aaca5d8ce591b5018c7ed69e606ac81aa09651890681c587ab1e9"
     },
     {
       "source": "ENDPOINTS.md",
       "route": "/docs/tools",
       "sourceSha256": "80f86da86fe1702ea1ecd83cf29f085073e80db595e636c94e81fc1d1f83a6a6",
-      "generatedSha256": "35c224c5682fc0a765204dfd9cfafc9855932bd5ccf445a3f1093131ebe77a53"
+      "generatedSha256": "cf762cb3f8535e73b7590b557bf05ebf8279b2e9c4bec08e9af127fd7dedd713"
     },
     {
       "source": "COMPATIBILITY.md",
       "route": "/docs/compatibility",
-      "sourceSha256": "a7dfc60fd6a5ddf3a5e85af2777e84753b6241a95f487da380af2a2a0fc4ac63",
-      "generatedSha256": "11c2b15a0e9be16a7ef676258332d0c3bf5d9de67fe36ac30c684ab42c72648c"
+      "sourceSha256": "b8f44ea195781a6af0ca11551d8376df3527e7f53fcadc642f7bf956d43f1b19",
+      "generatedSha256": "13f23ebdd7bb6eab86889d2cfc0cf977c69121c181e0fb2d43c2edec5628ecbf"
     },
     {
       "source": "docs/ARCHITECTURE.md",
       "route": "/docs/architecture",
       "sourceSha256": "27b2011ed1d6dbe99e70f491d8f3b59ca6c1cd52ee5b792605c2c030095ed3b4",
-      "generatedSha256": "8c4b329f608ef8ce0053c3cad8e2cbdc906e0391dc872eb340a5293bbd64e2b4"
+      "generatedSha256": "ce9e7146fa31594c9df971309c80a4d5a2e40815b2fde69f17ca5d00a0e92bd9"
     },
     {
       "source": "docs/VERCEL_DEPLOYMENT.md",
       "route": "/docs/http-deployment",
       "sourceSha256": "66672de1d5e116da47f6333e5fba7c8215f423198ee3b3d41f1237a8769e80f6",
-      "generatedSha256": "446a0617973f0a53fb9038693daa9b8d96cc92680e2912d24fe945d32433de21"
+      "generatedSha256": "b3b8e4ebe515019966026d7a845658c6bdd04994820552db22b78f672f623803"
     },
     {
       "source": "SECURITY-ASSURANCE.md",
       "route": "/docs/security",
       "sourceSha256": "a5a6d20e132705140fd1dd02359d6ce01b7eecb45af4900c0e31848cf6524c0a",
-      "generatedSha256": "623d45140d47485615f710778e40ee328ea0cc6c03bfe66a0fcd1f7f4f3683d2"
+      "generatedSha256": "1a14c2ce3b76dcd8b9a50f6ab8637be2cd9f7de8be02ef8d09305f8498dd09ce"
     },
     {
       "source": "docs/PRISMA_AIRS_INTEROPERABILITY.md",
       "route": "/docs/prisma-airs",
       "sourceSha256": "00a88d74933e7972e9f067792182ea459accd90ede0d80c424b03944a9747621",
-      "generatedSha256": "03e679e1274fad21cf10d331ae15e798ce1ae3d627e8b8086b84c28b5064d68e"
+      "generatedSha256": "8ad6a7c00c0f5e5f0fe21226567ee3097cf4ead55aa9113c4b046f9e5b04a6ce"
     },
     {
       "source": "docs/DISTRIBUTION.md",
       "route": "/docs/distribution",
-      "sourceSha256": "8d4a8a7c6ba0a17dc40c76640fb63be72596f7002b2665e07d0778c6aa1a182a",
-      "generatedSha256": "e4d9331333761c61c1b1841220675ffdab0eea3e6c4ab71d208d2ef3d3803620"
+      "sourceSha256": "f48605a53a0b592fa6ec42176d0d318f25a8ebe4964307e0eb1b909081b195f3",
+      "generatedSha256": "85a3411fd98c082e122e2fb5b63c296e92c6a724669b58bd78155be8f56782a5"
     },
     {
       "source": "docs/VERIFY_RELEASE.md",
       "route": "/docs/verify-release",
       "sourceSha256": "64646e8da91c13f5a0b7e76951282da90624bef44f4f3a714831eabc1977d069",
-      "generatedSha256": "8195c8aef6ebd07ab923daf648ec5eaebc93084c6919a826bd4e44f645c756ba"
+      "generatedSha256": "e3b4021b91c7c8388a5270a66551ae1833235321f31e2e91743b2c0058e90293"
     }
   ]
 }
