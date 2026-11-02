@@ -71,7 +71,7 @@ open and awaiting maintainer review as of 2026-10-16. Its `source.commit` is the
 release pin; refresh that pin, the PR release description, and discovery evidence
 after publication. It is not listed until Docker merges it and the catalog is live.
 
-[Smithery](https://smithery.ai/docs/build/publish) is deferred. Its current
+[Smithery](https://smithery.ai/) is deferred. Its current
 publishing paths expect a public Streamable HTTP endpoint or an MCPB bundle for a
 local server. This project intentionally supports npm-based stdio and self-hosted
 HTTP, and does not publish either Smithery artifact today.
