@@ -82,7 +82,7 @@ jobs:
     # whole-workflow preflight: release.yml gates on this file via
     # workflow_call, and if ANY job in ci.yml requested a permission the release
     # caller didn't grant, the entire Release run is rejected at startup (zero
-    # jobs, no logs) — the silent failure issue #60 exists to prevent. The Qlty
+    # jobs, no logs) — the silent failure issue #60 exists to prevent. The Codecov
     # coverage upload needs OIDC (id-token), so it lives entirely outside this
     # file, in coverage.yml, which release.yml never calls.
     permissions:
@@ -163,7 +163,7 @@ jobs:
 
       - name: Unit tests
         # Enforces the OpenSSF Silver 80% line-coverage gate. The lcov report it
-        # produces is uploaded to Qlty by the separate coverage.yml workflow, not
+        # produces is uploaded to Codecov by the separate coverage.yml workflow, not
         # here — see issue #60 for why coverage publishing lives outside the
         # reusable CI that release.yml gates on.
         run: npm run test:coverage:qlty
