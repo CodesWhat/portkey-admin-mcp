@@ -19,7 +19,7 @@
   <a href="https://securityscorecards.dev/viewer/?uri=github.com/CodesWhat/portkey-admin-mcp"><img src="https://img.shields.io/ossf-scorecard/github.com/CodesWhat/portkey-admin-mcp?label=openssf+scorecard&style=flat" alt="OpenSSF Scorecard"></a>
   <a href="https://www.bestpractices.dev/projects/14031"><img src="https://www.bestpractices.dev/projects/14031/badge" alt="OpenSSF Best Practices"></a>
   <a href="https://qlty.sh/gh/CodesWhat/projects/portkey-admin-mcp"><img src="https://qlty.sh/gh/CodesWhat/projects/portkey-admin-mcp/maintainability.svg" alt="Maintainability"></a>
-  <a href="https://qlty.sh/gh/CodesWhat/projects/portkey-admin-mcp"><img src="https://qlty.sh/gh/CodesWhat/projects/portkey-admin-mcp/coverage.svg" alt="Code Coverage"></a>
+  <a href="https://codecov.io/gh/CodesWhat/portkey-admin-mcp"><img src="https://codecov.io/gh/CodesWhat/portkey-admin-mcp/graph/badge.svg" alt="Code Coverage"></a>
 </p>
 
 <p align="center">
@@ -400,9 +400,9 @@ line, branch, and function coverage.
 The [CI workflow](https://github.com/CodesWhat/portkey-admin-mcp/actions/workflows/ci.yml)
 also runs the standalone Qlty CLI and publishes `quality-reports` artifacts for
 each analyzed commit, including lint/security results, duplication, complexity,
-and metrics. The existing Qlty maintainability and coverage badges remain
-Cloud-generated; local analysis does not update those badges. Coverage uploads
-and Cloud analysis still consume Qlty analysis minutes.
+and metrics. The Qlty maintainability badge remains Cloud-generated; local
+analysis does not update it. Coverage is reported through Codecov, not Qlty,
+and the Coverage workflow uploads it on every PR and push.
 
 `npm run dev:http` now requires `MCP_AUTH_MODE=bearer` or `MCP_AUTH_MODE=clerk` by default. For deliberate local-only unauthenticated testing, set `MCP_ALLOW_UNAUTHENTICATED_HTTP=true`.
 

@@ -1,7 +1,7 @@
 name: Coverage
 
-# Publishes test coverage to Qlty. Deliberately separate from ci.yml: it needs
-# id-token (OIDC) for Qlty's trusted upload, and ci.yml is reused by release.yml
+# Publishes test coverage to Codecov. Deliberately separate from ci.yml: it needs
+# id-token (OIDC) for Codecov's tokenless upload, and ci.yml is reused by release.yml
 # via workflow_call, where reusable-workflow permission validation is a single
 # whole-workflow preflight — any id-token request inside ci.yml would be checked
 # against (and exceed) the release caller's grant and reject the whole Release
@@ -10,7 +10,14 @@ name: Coverage
 #
 # The OpenSSF Silver 80% line-coverage gate is enforced by ci.yml's required
 # `checks` job (npm run test:coverage:qlty); this workflow only uploads the
-# report, so a Qlty outage can never fail a required check.
+# report, so a Codecov outage can never fail a required check. Qlty only grades
+# maintainability and gets no coverage from here.
+#
+# Commit identity: on pull_request both jobs check out the PR head commit
+# instead of the default merge ref, so the lcov report is of the same commit
+# Codecov labels it with. Using the merge ref and labelling it with the head SHA
+# would attribute coverage of a commit nobody pushed. The required `checks` job
+# in ci.yml still tests the merge result.
 
 on:
   push:
@@ -30,8 +37,8 @@ concurrency:
 # available. `test` runs `npm ci` (lifecycle scripts on) and the branch's test
 # code with no id-token. `upload` holds id-token: write but installs nothing and
 # runs nothing from the repo: it downloads the lcov artifact and hands it to the
-# pinned Qlty action. It does check the repo out, because the Qlty CLI resolves
-# report paths and validates them against the working tree; checkout alone
+# pinned Codecov action. It does check the repo out, because the Codecov CLI
+# resolves report paths and git metadata from the working tree; checkout alone
 # executes nothing. This mirrors release.yml's package-npm / publish-npm split.
 
 jobs:
@@ -44,6 +51,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
 
       - name: Setup Node.js
@@ -78,6 +86,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
 
       - name: Download coverage report
@@ -86,8 +95,11 @@ jobs:
           name: coverage-lcov
           path: coverage
 
-      - name: Upload coverage to Qlty
-        uses: qltysh/qlty-action/coverage@c9b09987143d1e4ac955f4803c7bea742102feb5 # v2.4.0
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
-          oidc: true
+          use_oidc: true
           files: coverage/lcov.info
+          disable_search: true
+          fail_ci_if_error: false
+          override_commit: ${{ github.event.pull_request.head.sha || github.sha }}
