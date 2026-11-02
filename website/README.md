@@ -104,8 +104,10 @@ required header. Revisit hashes or nonces if the host can inject them.
 
 ## Content
 
-The three starter guides are hand-written and grounded in the published 0.15.0
-release at `46556acebb77c9ee224e54836137c64fb5650594`. The rest of the docs are
+The three starter guides are hand-written. Their "full product reference" links
+point at the commit pinned in `content/manual.config.json`, and `npm test` fails
+if a starter links a different `tree/<sha>` or `blob/<sha>`, so bump those links
+whenever the pin moves. The rest of the docs are
 generated from that tag by `scripts/sync-manual.mjs`, which reads each source with
 `git show` (never the working tree), strips decorative README HTML, rewrites links
 and writes `content/docs/portkey/*.md` plus `content/manual.lock.json`. The pinned
