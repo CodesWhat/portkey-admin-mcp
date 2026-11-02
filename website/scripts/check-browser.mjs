@@ -449,7 +449,15 @@ async function suite(browser, engine, base) {
               "mobile TOC did not open",
             );
             await page.locator(".mobile-toc nav a").first().click();
+            await page.waitForURL(/#/, { timeout: 3000 }).catch(() => {});
             expect(page.url().includes("#"), "mobile TOC did not navigate to its heading");
+            const headingTop = await page.evaluate(
+              () => document.getElementById(location.hash.slice(1))?.getBoundingClientRect().top,
+            );
+            expect(
+              headingTop !== undefined && headingTop >= 0 && headingTop < page.viewportSize().height,
+              `mobile TOC heading is not in the viewport (top ${headingTop})`,
+            );
           }
         },
       );

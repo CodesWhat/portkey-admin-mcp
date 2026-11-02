@@ -11,6 +11,10 @@ release until that reference and the release notes say so.
 
 ## [Unreleased]
 
+### Fixed
+
+- The "On this page" menu on docs pages did nothing in Safari on small screens. Safari moved focus as soon as you pressed a link, which closed the menu and moved the link out from under your finger before the tap landed. The menu now stays open until the press finishes.
+
 ## [0.16.3] - 2026-11-02
 
 Star History chart, Codecov coverage reporting, a smoke-suite outage fix and dependency patches. The catalog is unchanged at 194 tools across 22 domains.

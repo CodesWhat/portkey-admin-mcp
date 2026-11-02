@@ -152,14 +152,27 @@ export function Disclosure({
 }) {
   const summary = useRef<HTMLElement>(null);
   const details = useRef<HTMLDetailsElement>(null);
+  // WebKit reports the nearest focusable ancestor as relatedTarget when a
+  // pointer press lands on a link, so the blur handler would close the details
+  // mid-click and the link would vanish before its navigation runs.
+  const pointerInside = useRef(false);
   useEffect(() => {
     const onPointerDown = (event: PointerEvent) => {
       const element = details.current;
       if (element?.open && event.target instanceof Node && !element.contains(event.target))
         element.open = false;
     };
+    const onPointerEnd = () => {
+      pointerInside.current = false;
+    };
     document.addEventListener("pointerdown", onPointerDown);
-    return () => document.removeEventListener("pointerdown", onPointerDown);
+    document.addEventListener("pointerup", onPointerEnd);
+    document.addEventListener("pointercancel", onPointerEnd);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("pointerup", onPointerEnd);
+      document.removeEventListener("pointercancel", onPointerEnd);
+    };
   }, []);
   return (
     <details
@@ -172,8 +185,12 @@ export function Disclosure({
           summary.current?.focus();
         }
       }}
+      onPointerDown={() => {
+        pointerInside.current = true;
+      }}
       onBlur={(event) => {
         if (
+          !pointerInside.current &&
           event.relatedTarget instanceof Node &&
           !event.currentTarget.contains(event.relatedTarget)
         )
