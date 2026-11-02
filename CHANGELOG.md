@@ -11,6 +11,9 @@ release until that reference and the release notes say so.
 
 ## [Unreleased]
 
+### Changed
+- Coverage is now reported through Codecov instead of Qlty. Qlty only grades maintainability. The 80% line-coverage gate still runs on every PR in the required `checks` job.
+
 ## [0.16.2] - 2026-11-01
 
 Collection paging fix, a note on config paging, and a site security.txt. The catalog is unchanged at 194 tools across 22 domains.

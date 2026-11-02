@@ -7,7 +7,7 @@ not a public issue, for suspected vulnerabilities. See [`SECURITY.md`](SECURITY.
 
 1. Search existing issues and pull requests for related work.
 2. Fork the repository and create a focused branch from the active `dev/<minor>`
-   line, currently `dev/0.14`.
+   line, currently `dev/0.16`.
 3. Install Node.js 24+, npm 12, and the free [Qlty CLI](https://docs.qlty.sh/cli/quickstart), then run `npm install`. Qlty Cloud login is not required for CLI checks.
 4. Make the change with tests and documentation where required.
 5. Run `npm run ci`.
@@ -68,12 +68,12 @@ Each CI run publishes `quality-reports` artifacts containing the local check
 results, duplication/complexity report, and metrics. These reports identify
 the analyzed commit through the workflow run and are retained for 14 days.
 
-Qlty Cloud still owns the hosted maintainability and coverage badges, coverage
-dashboard, PR coverage comparison, and hosted issue history. The separate
-Coverage workflow still uploads reports there. Cloud analysis limits do not
-affect the standalone CLI or the 80% coverage floor enforced by GitHub Actions.
-Coverage publication still consumes one standard analysis minute per upload
-or merge part. No supported import of local `check`, `smells`, or `metrics`
+Qlty Cloud still owns the hosted maintainability badge and hosted issue
+history. Coverage goes to Codecov instead: the separate Coverage workflow
+uploads the report there on every PR and on pushes to `main` and `codex/**`, the status checks are
+informational, and the coverage badge and PR comparison come from Codecov.
+Cloud analysis limits do not affect the standalone CLI or the 80% coverage
+floor enforced by GitHub Actions. No supported import of local `check`, `smells`, or `metrics`
 results was found in the [CLI documentation](https://docs.qlty.sh/cli-vs-cloud)
 or the [public API](https://api.qlty.sh/openapi.json), so local enforcement does
 not refresh the official maintainability badge. Keeping that badge current
