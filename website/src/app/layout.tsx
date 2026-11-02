@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Provider } from "@/components/controls";
 import { siteUrl } from "@/lib/routes.mjs";
 import "./styles.css";
+import "./redesign.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
