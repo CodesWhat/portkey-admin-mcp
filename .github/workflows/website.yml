@@ -12,7 +12,7 @@ on:
       - ".github/workflows/website.yml"
 
 concurrency:
-  group: website-${{ github.event_name }}-${{ github.head_ref || github.ref_name }}
+  group: website-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -43,7 +43,7 @@ jobs:
           files="$(mktemp)"
           # Written to a file first so an API failure fails the job instead of
           # vanishing into a pipeline (fails closed).
-          gh api --paginate "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/files" --jq '.[].filename' > "$files"
+          gh api --paginate "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/files" --jq '.[] | .filename, (.previous_filename // empty)' > "$files"
           count="$(wc -l < "$files" | tr -d ' ')"
           # The files API caps at 3000 entries; a list that long may be truncated.
           if [ "$count" -ge 3000 ]; then
