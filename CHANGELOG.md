@@ -13,6 +13,7 @@ release until that reference and the release notes say so.
 
 ### Fixed
 
+- `list_configs` described `current_page` and `page_size` as working paging inputs, but Portkey ignores them for configs and returns the full list. Both inputs are still accepted, and their descriptions now say they're ignored.
 - The website's starter pages linked the product reference at the 0.15 source instead of the current release. They now point at the pinned 0.16.3 commit, and a website test fails if a starter links any other commit.
 - The "On this page" menu on docs pages did nothing in WebKit at small widths. WebKit moved focus as soon as a link was pressed, which closed the menu and moved the link away before the click landed. The menu now only closes on blur when you Tab out of it.
 

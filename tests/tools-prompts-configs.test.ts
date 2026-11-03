@@ -671,6 +671,24 @@ describe("configuration query tools", () => {
 		]);
 	});
 
+	it("describes list_configs paging inputs as ignored by Portkey", () => {
+		let inputSchema: Record<string, { description?: string }> | undefined;
+		registerConfigsTools(
+			{
+				registerTool: (
+					name: string,
+					config: { inputSchema?: Record<string, { description?: string }> },
+				) => {
+					if (name === "list_configs") inputSchema = config.inputSchema;
+				},
+			} as never,
+			{ configs: {} } as never,
+		);
+		assert.ok(inputSchema, "expected list_configs to be registered");
+		assert.match(inputSchema.current_page?.description ?? "", /ignores it/);
+		assert.match(inputSchema.page_size?.description ?? "", /ignores it/);
+	});
+
 	it("returns nested routing, retry, cache, and target details", async () => {
 		const callback = configCallbacks({
 			getConfig: async () => ({
