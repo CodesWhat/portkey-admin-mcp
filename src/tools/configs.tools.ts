@@ -21,8 +21,12 @@ const configTargetSchema = z
 
 const CONFIGS_TOOL_SCHEMAS = {
 	listConfigs: {
-		current_page: CurrentPageSchema,
-		page_size: PageSizeSchema.describe("Number of results per page (max 100)"),
+		current_page: CurrentPageSchema.describe(
+			"Accepted for compatibility; Portkey ignores it for configs and GET /configs returns the full list",
+		),
+		page_size: PageSizeSchema.describe(
+			"Accepted for compatibility; Portkey ignores it for configs and GET /configs returns the full list",
+		),
 	},
 	getConfig: {
 		slug: z
