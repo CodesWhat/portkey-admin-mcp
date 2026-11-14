@@ -9,7 +9,7 @@ const toolsByName = new Map(manifest.tools.map((tool) => [tool.name, tool]));
 export const toolDomains = [
   ...endpoints.matchAll(/^## ([a-z-]+) \((\d+)\)\n([\s\S]*?)(?=^## |$(?![\s\S]))/gm),
 ].map(([, domain, count, body]) => {
-  const tools = [...body.matchAll(/^\| `([^`]+)` \|/gm)].map(([, name]) => {
+  const tools = [...body.matchAll(/^\|\s+`([^`]+)`\s+\|/gm)].map(([, name]) => {
     const tool = toolsByName.get(name);
     if (!tool) throw new Error(`Missing catalog tool: ${name}`);
     return {
