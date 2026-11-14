@@ -11,15 +11,25 @@ import type {
 	McpServer as PortkeyMcpServer,
 	TestMcpServerResponse,
 } from "../services/mcp-servers.service.js";
+import { resourceTagsSchema } from "./tags.schemas.js";
 import { formatFullName, jsonResult } from "./utils.js";
 
 const MCP_SERVERS_TOOL_SCHEMAS = {
 	listMcpServers: {
+		tags: resourceTagsSchema
+			.optional()
+			.describe("Match resources carrying all supplied tags"),
 		current_page: CurrentPageSchema,
 		page_size: PageSizeSchema.describe("Number of results per page (max 100)"),
 		workspace_id: z.string().optional().describe("Filter by workspace ID"),
 	},
 	createMcpServer: {
+		tags: resourceTagsSchema
+			.nullable()
+			.optional()
+			.describe(
+				"Key-value tags. Replaces existing tags; pass null to clear. Keys allow letters, numbers, underscores, and hyphens",
+			),
 		name: z.string().describe("Display name for the MCP server"),
 		mcp_integration_id: z
 			.string()
@@ -37,6 +47,12 @@ const MCP_SERVERS_TOOL_SCHEMAS = {
 		id: z.string().describe("The MCP server ID or slug to retrieve"),
 	},
 	updateMcpServer: {
+		tags: resourceTagsSchema
+			.nullable()
+			.optional()
+			.describe(
+				"Key-value tags. Replaces existing tags; pass null to clear. Keys allow letters, numbers, underscores, and hyphens",
+			),
 		id: z.string().describe("The MCP server ID or slug to update"),
 		name: z.string().optional().describe("New display name"),
 		description: z.string().optional().describe("New description"),
@@ -131,6 +147,7 @@ function formatMcpServer(server: PortkeyMcpServer): {
 	name: string;
 	slug: string;
 	description?: string | null;
+	tags?: Record<string, string> | null;
 	mcp_integration_id: string;
 	status: "active" | "archived";
 	created_at: string;
@@ -140,6 +157,7 @@ function formatMcpServer(server: PortkeyMcpServer): {
 		name: server.name,
 		slug: server.slug,
 		description: server.description,
+		tags: server.tags,
 		mcp_integration_id: server.mcp_integration_id,
 		status: server.status,
 		created_at: server.created_at,
@@ -295,7 +313,7 @@ export function registerMcpServersTools(
 		"update_mcp_server",
 		{
 			description:
-				"Update an MCP server's name or description. Changes apply immediately, but URL and auth live on the parent integration, so use update_mcp_integration for those fields.",
+				"Update an MCP server's name, description, or tags. Changes apply immediately, but URL and auth live on the parent integration, so use update_mcp_integration for those fields.",
 			inputSchema: MCP_SERVERS_TOOL_SCHEMAS.updateMcpServer,
 		},
 		async (params) => {

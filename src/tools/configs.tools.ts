@@ -37,6 +37,12 @@ const CONFIGS_TOOL_SCHEMAS = {
 			),
 	},
 	createConfig: {
+		auto_caching: z
+			.boolean()
+			.optional()
+			.describe(
+				"Automatically add Anthropic prompt caching. Set false to disable",
+			),
 		name: z.string().describe("Name for the new configuration"),
 		workspace_id: z
 			.string()
@@ -71,6 +77,12 @@ const CONFIGS_TOOL_SCHEMAS = {
 			.describe("Array of target providers with virtual keys"),
 	},
 	updateConfig: {
+		auto_caching: z
+			.boolean()
+			.optional()
+			.describe(
+				"Automatically add Anthropic prompt caching. Set false to disable",
+			),
 		slug: z.string().describe("Configuration slug to update"),
 		name: z.string().optional().describe("New name for the configuration"),
 		status: z
@@ -114,6 +126,7 @@ const CONFIGS_TOOL_SCHEMAS = {
 } as const;
 
 const configPayloadSchema = z.object({
+	auto_caching: z.boolean().optional(),
 	cache_mode: z.enum(["simple", "semantic"]).optional(),
 	cache_max_age: z.coerce.number().positive().optional(),
 	retry_attempts: z.coerce.number().positive().max(5).optional(),
@@ -150,6 +163,9 @@ function buildConfigPayload(params: ConfigPayloadParams) {
 			: undefined;
 
 	return {
+		...(params.auto_caching !== undefined
+			? { auto_caching: params.auto_caching }
+			: {}),
 		cache,
 		retry,
 		strategy:
@@ -164,6 +180,7 @@ function hasConfigSettings(
 	config: ReturnType<typeof buildConfigPayload>,
 ): boolean {
 	return (
+		config.auto_caching !== undefined ||
 		config.cache !== undefined ||
 		config.retry !== undefined ||
 		config.strategy !== undefined ||
@@ -178,7 +195,7 @@ const createConfigSchema = z
 			ctx.addIssue({
 				code: z.ZodIssueCode.custom,
 				message:
-					"At least one config setting (cache_mode, retry_attempts, strategy_mode, or targets) must be provided",
+					"At least one config setting (auto_caching, cache_mode, retry_attempts, strategy_mode, or targets) must be provided",
 			});
 		}
 	});
@@ -234,6 +251,7 @@ export function registerConfigsTools(
 				name: response.name,
 				status: response.status,
 				config: {
+					auto_caching: response.config.auto_caching,
 					cache: response.config.cache && {
 						mode: response.config.cache.mode,
 						max_age: response.config.cache.max_age,
@@ -287,7 +305,7 @@ export function registerConfigsTools(
 		"update_config",
 		{
 			description:
-				"Update a config by slug; every call creates a new config version rather than overwriting, so earlier versions stay recoverable via list_config_versions. Only provided fields change: name, status, and all routing/cache/retry settings (cache_mode, cache_max_age, retry_attempts, retry_on_status_codes, strategy_mode, targets) are editable, while the slug stays fixed. Changes apply immediately to every API key and prompt referencing the config. Returns the update acknowledgement and new version_id.",
+				"Update a config by slug; every call creates a new config version rather than overwriting, so earlier versions stay recoverable via list_config_versions. Only provided fields change: name, status, and all routing/cache/retry settings (auto_caching, cache_mode, cache_max_age, retry_attempts, retry_on_status_codes, strategy_mode, targets) are editable, while the slug stays fixed. Changes apply immediately to every API key and prompt referencing the config. Returns the update acknowledgement and new version_id.",
 			inputSchema: CONFIGS_TOOL_SCHEMAS.updateConfig,
 			annotations: {
 				readOnlyHint: false,

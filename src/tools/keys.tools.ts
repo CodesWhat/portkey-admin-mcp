@@ -476,6 +476,7 @@ function formatApiKeySummary(apiKey: ApiKey): {
 	expires_at: string | null;
 	created_at: string;
 	last_updated_at: string;
+	last_rotated_at?: string | null;
 	creation_mode: ApiKey["creation_mode"];
 } {
 	return {
@@ -495,6 +496,7 @@ function formatApiKeySummary(apiKey: ApiKey): {
 		expires_at: apiKey.expires_at,
 		created_at: apiKey.created_at,
 		last_updated_at: apiKey.last_updated_at,
+		last_rotated_at: apiKey.last_rotated_at,
 		creation_mode: apiKey.creation_mode,
 	};
 }
@@ -517,6 +519,7 @@ function formatApiKey(apiKey: ApiKey): {
 	reset_usage: number | null;
 	created_at: string;
 	last_updated_at: string;
+	last_rotated_at?: string | null;
 	creation_mode: ApiKey["creation_mode"];
 } {
 	return {
@@ -537,6 +540,7 @@ function formatApiKey(apiKey: ApiKey): {
 		reset_usage: apiKey.reset_usage,
 		created_at: apiKey.created_at,
 		last_updated_at: apiKey.last_updated_at,
+		last_rotated_at: apiKey.last_rotated_at,
 		creation_mode: apiKey.creation_mode,
 	};
 }
