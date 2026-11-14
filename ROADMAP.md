@@ -1,6 +1,6 @@
 # Portkey Admin MCP roadmap
 
-> Last reviewed: 2026-10-31
+> Last reviewed: 2026-11-13
 > Status: active compatibility maintenance
 > Current catalog: 194 tools across 22 domains, including 56 Enterprise-gated tools
 
@@ -42,13 +42,14 @@ README, endpoint catalog, domain counts, and Enterprise-gated inventory together
 
 ## Planned
 
-Reviewed 2026-10-31 against Portkey OpenAPI commit `4b6d01b` (October 30).
-The only change since the October 22 baseline renames an Assistants inference
-operation and its documentation navigation key; no admin route or schema changed.
-The newly documented organisation analytics filters, `include_all_workspaces`
-and `exclude_workspace_slugs`, are covered on all 25 analytics tools. The
-Anthropic Messages additions are inference routes outside this admin server's
-scope.
+Reviewed 2026-11-13 against Portkey OpenAPI commit `57ddb9ac` (November 10)
+and the backend 1.31.0 changelog. The November spec adds MCP integration and
+server tags, including create/update fields and list filters. The maintenance
+release also exposes config `auto_caching` and API-key `last_rotated_at`.
+OCR Python snippets and API-key curl path corrections require no runtime change.
+MCP request timeouts already pass through `configurations.request_timeout`;
+new organisation API-key scopes are accepted as strings.
+
 Access policies and egress allowlists are covered. Existing published contracts
 are unchanged from the September baseline. Egress calls use the hosted `/v2`
 base: `/v1` returns the inference gateway fallback, while `/v2` reaches the

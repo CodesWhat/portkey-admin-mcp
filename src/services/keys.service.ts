@@ -104,6 +104,7 @@ export interface ApiKeyRotationPolicy {
 }
 
 export interface ApiKey {
+	last_rotated_at?: string | null;
 	id: string;
 	key: string;
 	name: string;

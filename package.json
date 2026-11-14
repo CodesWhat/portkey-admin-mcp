@@ -31,7 +31,7 @@
 		"ci": "npm run quality && npm run lint && npm run knip && npm run typecheck && npm run typecheck:tests && npm run test:coverage && npm run build && npm run verify:tool-quality && npm run test:e2e && npm run verify:readme-tools && npm run verify:generated",
 		"start:http": "node build/server.js",
 		"generate:lobehub-tools": "npm run build && node scripts/generate-lobehub-tools.mjs && biome format --write lhm.plugin.json",
-		"generate:endpoints": "node scripts/generate-endpoints.mjs",
+		"generate:endpoints": "node scripts/generate-endpoints.mjs && biome format --write ENDPOINTS.md",
 		"update:lobehub": "npm run generate:lobehub-tools && npx -y @lobehub/market-cli@0.0.41 plugin update --dir \"$PWD\"",
 		"publish:lobehub": "npm run update:lobehub",
 		"prepare": "[ -n \"$CI\" ] || [ -f /.dockerenv ] || [ ! -d .git ] || lefthook install",
@@ -62,7 +62,7 @@
 	},
 	"name": "portkey-admin-mcp",
 	"mcpName": "io.github.CodesWhat/portkey-admin-mcp",
-	"version": "0.16.3",
+	"version": "0.16.4",
 	"main": "build/index.js",
 	"keywords": [
 		"mcp",
