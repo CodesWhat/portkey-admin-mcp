@@ -8,6 +8,7 @@ export interface McpIntegration {
 	name: string;
 	slug: string;
 	description?: string | null;
+	tags?: Record<string, string> | null;
 	owner_id: string;
 	workspace_id?: string;
 	status: "active" | "archived";
@@ -37,6 +38,7 @@ export interface ListMcpIntegrationsParams {
 	type?: "workspace" | "organisation" | "all";
 	workspace_id?: string;
 	search?: string;
+	tags?: Record<string, string>;
 }
 
 export interface CreateMcpIntegrationRequest {
@@ -51,6 +53,7 @@ export interface CreateMcpIntegrationRequest {
 		custom_headers?: Record<string, string>;
 	};
 	secret_mappings?: SecretMapping[];
+	tags?: Record<string, string> | null;
 }
 
 export interface CreateMcpIntegrationResponse {
@@ -68,6 +71,7 @@ export interface UpdateMcpIntegrationRequest {
 		custom_headers?: Record<string, string>;
 	};
 	secret_mappings?: SecretMapping[];
+	tags?: Record<string, string> | null;
 }
 
 // Sub-resource: Capabilities
@@ -154,6 +158,8 @@ export class McpIntegrationsService extends BaseService {
 			organisation_id: params?.organisation_id,
 			type: params?.type,
 			workspace_id: params?.workspace_id,
+			tags:
+				params?.tags === undefined ? undefined : JSON.stringify(params.tags),
 			search: params?.search,
 		});
 	}

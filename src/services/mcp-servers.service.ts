@@ -7,6 +7,7 @@ export interface McpServer {
 	name: string;
 	slug: string;
 	description?: string | null;
+	tags?: Record<string, string> | null;
 	mcp_integration_id: string;
 	status: "active" | "archived";
 	created_at: string;
@@ -23,6 +24,7 @@ export interface ListMcpServersParams {
 	current_page?: number;
 	page_size?: number;
 	workspace_id?: string;
+	tags?: Record<string, string>;
 }
 
 export interface CreateMcpServerRequest {
@@ -30,6 +32,7 @@ export interface CreateMcpServerRequest {
 	mcp_integration_id: string;
 	slug?: string;
 	description?: string;
+	tags?: Record<string, string> | null;
 }
 
 export interface CreateMcpServerResponse {
@@ -40,6 +43,7 @@ export interface CreateMcpServerResponse {
 export interface UpdateMcpServerRequest {
 	name?: string;
 	description?: string;
+	tags?: Record<string, string> | null;
 }
 
 // Sub-resource: Capabilities
@@ -169,6 +173,8 @@ export class McpServersService extends BaseService {
 			current_page: params?.current_page,
 			page_size: params?.page_size,
 			workspace_id: params?.workspace_id,
+			tags:
+				params?.tags === undefined ? undefined : JSON.stringify(params.tags),
 		});
 	}
 

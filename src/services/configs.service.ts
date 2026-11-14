@@ -27,6 +27,7 @@ export interface ConfigTarget {
 }
 
 export interface ConfigDetails {
+	auto_caching?: boolean;
 	retry?: {
 		attempts?: number;
 		on_status_codes?: number[];

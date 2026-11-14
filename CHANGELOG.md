@@ -11,8 +11,20 @@ release until that reference and the release notes say so.
 
 ## [Unreleased]
 
+## [0.16.4] - 2026-11-13
+
+### Added
+
+- MCP integration and server tools accept and return tags, including JSON-encoded list filters and `null` to clear tags.
+- Config tools accept and return `auto_caching`, including `false` to disable it. API-key list and get results include `last_rotated_at` without exposing key secrets.
+
+### Security
+
+- Updated Hono to 4.13.16 and its Node adapter to 2.1.6 to resolve seven dependency alerts. Refreshed the root and website lockfiles with versions older than seven days.
+
 ### Fixed
 
+- `list_configs` described `current_page` and `page_size` as working paging inputs, but Portkey ignores them for configs and returns the full list. Both inputs are still accepted, and their descriptions now say they're ignored.
 - The website's starter pages linked the product reference at the 0.15 source instead of the current release. They now point at the pinned 0.16.3 commit, and a website test fails if a starter links any other commit.
 - The "On this page" menu on docs pages did nothing in WebKit at small widths. WebKit moved focus as soon as a link was pressed, which closed the menu and moved the link away before the click landed. The menu now only closes on blur when you Tab out of it.
 
@@ -1043,7 +1055,8 @@ First stable release. Graduates from beta with 151 tools covering ~98% of the Po
 - Vercel deployment support
 - Contract tests, E2E tests, security tests
 
-[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.3...HEAD
+[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.4...HEAD
+[0.16.4]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.3...v0.16.4
 [0.16.3]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.2...v0.16.3
 [0.16.2]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.1...v0.16.2
 [0.16.1]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.0...v0.16.1

@@ -476,6 +476,7 @@ function formatApiKeySummary(apiKey: ApiKey): {
 	expires_at: string | null;
 	created_at: string;
 	last_updated_at: string;
+	last_rotated_at?: string | null;
 	creation_mode: ApiKey["creation_mode"];
 } {
 	return {
@@ -495,6 +496,7 @@ function formatApiKeySummary(apiKey: ApiKey): {
 		expires_at: apiKey.expires_at,
 		created_at: apiKey.created_at,
 		last_updated_at: apiKey.last_updated_at,
+		last_rotated_at: apiKey.last_rotated_at,
 		creation_mode: apiKey.creation_mode,
 	};
 }
@@ -517,6 +519,7 @@ function formatApiKey(apiKey: ApiKey): {
 	reset_usage: number | null;
 	created_at: string;
 	last_updated_at: string;
+	last_rotated_at?: string | null;
 	creation_mode: ApiKey["creation_mode"];
 } {
 	return {
@@ -537,6 +540,7 @@ function formatApiKey(apiKey: ApiKey): {
 		reset_usage: apiKey.reset_usage,
 		created_at: apiKey.created_at,
 		last_updated_at: apiKey.last_updated_at,
+		last_rotated_at: apiKey.last_rotated_at,
 		creation_mode: apiKey.creation_mode,
 	};
 }
@@ -743,7 +747,7 @@ export function registerKeysTools(
 		"list_api_keys",
 		{
 			description:
-				"List Portkey API keys for auditing access, scopes, defaults, limits, and expiration. Use this for API keys only; use list_virtual_keys for provider keys. Returns total plus id, type, status, workspace/user scope, limits, defaults, alert emails, and creation mode.",
+				"List Portkey API keys for auditing access, scopes, defaults, limits, and expiration. Use this for API keys only; use list_virtual_keys for provider keys. Returns total plus id, type, status, workspace/user scope, limits, defaults, alert emails, creation mode, and the last rotation timestamp when available.",
 			inputSchema: KEYS_TOOL_SCHEMAS.listApiKeys,
 		},
 		async (params) => {
@@ -765,7 +769,7 @@ export function registerKeysTools(
 		"get_api_key",
 		{
 			description:
-				"Fetch one API key by UUID without revealing the secret. Use this to inspect scopes, defaults, limits, expiration, and reset state before changing access.",
+				"Fetch one API key by UUID without revealing the secret. Use this to inspect scopes, defaults, limits, expiration, reset state, and the last rotation timestamp when available before changing access.",
 			inputSchema: KEYS_TOOL_SCHEMAS.getApiKey,
 		},
 		async (params) => {

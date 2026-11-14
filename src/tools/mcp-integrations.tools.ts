@@ -11,6 +11,7 @@ import {
 	createSecretMappingSchema,
 	uniqueSecretMappingsSchema,
 } from "./secret-mapping.schemas.js";
+import { resourceTagsSchema } from "./tags.schemas.js";
 import { jsonResult } from "./utils.js";
 
 const mcpSecretMappingSchema = createSecretMappingSchema({
@@ -42,6 +43,9 @@ const mcpConfigurationsSchema = z
 
 const MCP_INTEGRATIONS_TOOL_SCHEMAS = {
 	listMcpIntegrations: {
+		tags: resourceTagsSchema
+			.optional()
+			.describe("Match resources carrying all supplied tags"),
 		current_page: CurrentPageSchema,
 		page_size: pageSizeSchema(1000).describe(
 			"Number of results per page (max 1000)",
@@ -60,6 +64,12 @@ const MCP_INTEGRATIONS_TOOL_SCHEMAS = {
 		search: z.string().optional().describe("Search integrations by name"),
 	},
 	createMcpIntegration: {
+		tags: resourceTagsSchema
+			.nullable()
+			.optional()
+			.describe(
+				"Key-value tags. Replaces existing tags; pass null to clear. Keys allow letters, numbers, underscores, and hyphens",
+			),
 		name: z.string().describe("Display name for the MCP integration"),
 		url: z.string().describe("URL endpoint of the MCP server to integrate"),
 		auth_type: z
@@ -108,6 +118,12 @@ const MCP_INTEGRATIONS_TOOL_SCHEMAS = {
 		id: z.string().describe("The MCP integration ID or slug to retrieve"),
 	},
 	updateMcpIntegration: {
+		tags: resourceTagsSchema
+			.nullable()
+			.optional()
+			.describe(
+				"Key-value tags. Replaces existing tags; pass null to clear. Keys allow letters, numbers, underscores, and hyphens",
+			),
 		id: z.string().describe("The MCP integration ID or slug to update"),
 		name: z.string().optional().describe("New display name"),
 		description: z.string().optional().describe("New description"),
@@ -231,6 +247,7 @@ function formatMcpIntegration(integration: McpIntegration): {
 	name: string;
 	slug: string;
 	description?: string | null;
+	tags?: Record<string, string> | null;
 	owner_id: string;
 	workspace_id?: string;
 	status: "active" | "archived";
@@ -255,6 +272,7 @@ function formatMcpIntegration(integration: McpIntegration): {
 		name: integration.name,
 		slug: integration.slug,
 		description: integration.description,
+		tags: integration.tags,
 		owner_id: integration.owner_id,
 		workspace_id: integration.workspace_id,
 		status: integration.status,
@@ -396,7 +414,7 @@ export function registerMcpIntegrationsTools(
 		"update_mcp_integration",
 		{
 			description:
-				"Update an MCP integration's name, description, URL, auth, transport, headers, or runtime Secret Reference mappings. Only supplied fields change; URL, auth, header, and secret changes apply immediately and can break active clients, so inspect get_mcp_integration first. Use update_mcp_server when changing only a Portkey server instance's display metadata.",
+				"Update an MCP integration's name, description, tags, URL, auth, transport, headers, or runtime Secret Reference mappings. Only supplied fields change; URL, auth, header, and secret changes apply immediately and can break active clients, so inspect get_mcp_integration first. Use update_mcp_server when changing only a Portkey server instance's display metadata.",
 			inputSchema: MCP_INTEGRATIONS_TOOL_SCHEMAS.updateMcpIntegration,
 			annotations: {
 				title: "Update MCP Integration",

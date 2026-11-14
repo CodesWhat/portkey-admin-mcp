@@ -20,6 +20,7 @@ import { McpServersService } from "../src/services/mcp-servers.service.js";
 import { SecretReferencesService } from "../src/services/secret-references.service.js";
 import { WorkspacesService } from "../src/services/workspaces.service.js";
 import { registerCollectionsTools } from "../src/tools/collections.tools.js";
+import { registerConfigsTools } from "../src/tools/configs.tools.js";
 import { registerDeploymentsTools } from "../src/tools/deployments.tools.js";
 import { TOOL_DOMAIN_NAMES } from "../src/tools/index.js";
 import { registerIntegrationsTools } from "../src/tools/integrations.tools.js";
@@ -32,6 +33,197 @@ import {
 	parseToolResult,
 	registerToolCallbacks,
 } from "./helpers/tool-registry.js";
+
+describe("November admin API fields", () => {
+	for (const domain of ["integration", "server"] as const) {
+		it(`preserves MCP ${domain} tags in writes, filters, and reads`, async () => {
+			const calls: unknown[] = [];
+			const suffix = domain === "integration" ? "McpIntegration" : "McpServer";
+			const register =
+				domain === "integration"
+					? registerMcpIntegrationsTools
+					: registerMcpServersTools;
+			const record = {
+				id: "mcp-1",
+				name: "Test",
+				slug: "test",
+				tags: { env: "prod" },
+			};
+			const service = {
+				[`list${suffix}s`]: async (params: unknown) => {
+					calls.push(params);
+					return { total: 1, data: [record] };
+				},
+				[`create${suffix}`]: async (params: unknown) => {
+					calls.push(params);
+					return record;
+				},
+				[`update${suffix}`]: async (_id: string, params: unknown) => {
+					calls.push(params);
+					return { success: true };
+				},
+				[`get${suffix}`]: async () => record,
+			};
+			const callbacks = registerToolCallbacks((server) =>
+				register(
+					server as never,
+					{
+						[domain === "integration" ? "mcpIntegrations" : "mcpServers"]:
+							service,
+					} as never,
+				),
+			);
+			const list = parseToolResult(
+				await callbacks.get(`list_mcp_${domain}s`)?.({ tags: { env: "prod" } }),
+			);
+			assert.deepEqual(
+				(
+					list[domain === "integration" ? "integrations" : "servers"] as Array<
+						Record<string, unknown>
+					>
+				)[0].tags,
+				record.tags,
+			);
+			await callbacks.get(`create_mcp_${domain}`)?.({
+				name: "Test",
+				url: "https://example.com/mcp",
+				auth_type: "none",
+				transport: "http",
+				mcp_integration_id: "parent",
+				tags: record.tags,
+			});
+			await callbacks.get(`update_mcp_${domain}`)?.({
+				id: "mcp-1",
+				tags: null,
+			});
+			await callbacks.get(`update_mcp_${domain}`)?.({
+				id: "mcp-1",
+				name: "Renamed",
+			});
+			assert.deepEqual((calls[0] as Record<string, unknown>).tags, record.tags);
+			assert.deepEqual((calls[1] as Record<string, unknown>).tags, record.tags);
+			assert.equal((calls[2] as Record<string, unknown>).tags, null);
+			assert.equal("tags" in (calls[3] as object), false);
+			assert.deepEqual(
+				parseToolResult(
+					await callbacks.get(`get_mcp_${domain}`)?.({ id: "mcp-1" }),
+				).tags,
+				record.tags,
+			);
+			const schemas = registerToolSchemas((server) =>
+				register(server as never, {} as never),
+			);
+			const listTags = schemas.get(`list_mcp_${domain}s`)?.tags;
+			assert.equal(listTags?.safeParse(null).success, false);
+			assert.equal(listTags?.safeParse({ env: "prod" }).success, true);
+			for (const operation of ["create", "update"]) {
+				const tags = schemas.get(`${operation}_mcp_${domain}`)?.tags;
+				assert.equal(tags?.safeParse({ env: "prod" }).success, true);
+				assert.equal(tags?.safeParse(null).success, true);
+				assert.equal(tags?.safeParse({ "bad.key": "prod" }).success, false);
+				assert.equal(tags?.safeParse({ env: 1 }).success, false);
+			}
+		});
+	}
+
+	for (const Service of [McpIntegrationsService, McpServersService]) {
+		it(`JSON encodes tag filters in ${Service.name}`, async () => {
+			const service = new Service("test-dummy-key");
+			const params = { tags: { env: "prod" } };
+			const request = await captureServiceRequest(() =>
+				Service === McpIntegrationsService
+					? (service as McpIntegrationsService).listMcpIntegrations(
+							params as never,
+						)
+					: (service as McpServersService).listMcpServers(params as never),
+			);
+			assert.equal(
+				(request.params as Record<string, unknown>).tags,
+				JSON.stringify(params.tags),
+			);
+		});
+	}
+
+	it("creates, disables, and reads auto caching", async () => {
+		const writes: Array<Record<string, unknown>> = [];
+		const callbacks = registerToolCallbacks((server) =>
+			registerConfigsTools(
+				server as never,
+				{
+					configs: {
+						createConfig: async (data: Record<string, unknown>) => {
+							writes.push(data);
+							return { id: "c-1", version_id: "v-1" };
+						},
+						updateConfig: async (
+							_slug: string,
+							data: Record<string, unknown>,
+						) => {
+							writes.push(data);
+							return { success: true };
+						},
+						getConfig: async () => ({ config: { auto_caching: false } }),
+					},
+				} as never,
+			),
+		);
+		await callbacks.get("create_config")?.({
+			name: "Cache",
+			auto_caching: true,
+		});
+		await callbacks.get("update_config")?.({
+			slug: "cache",
+			auto_caching: false,
+		});
+		assert.equal(
+			(writes[0].config as Record<string, unknown>).auto_caching,
+			true,
+		);
+		assert.equal(
+			(writes[1].config as Record<string, unknown>).auto_caching,
+			false,
+		);
+		assert.equal(
+			(
+				parseToolResult(await callbacks.get("get_config")?.({ slug: "cache" }))
+					.config as Record<string, unknown>
+			).auto_caching,
+			false,
+		);
+	});
+
+	it("includes last rotation in API key list and get without exposing the secret", async () => {
+		const key = {
+			id: "key-1",
+			last_rotated_at: "2026-11-01T00:00:00Z",
+			key: "secret",
+			usage_limits: null,
+			rate_limits: null,
+		};
+		const callbacks = registerToolCallbacks((server) =>
+			registerKeysTools(
+				server as never,
+				{
+					keys: {
+						listApiKeys: async () => ({ total: 1, data: [key] }),
+						getApiKey: async () => key,
+					},
+				} as never,
+			),
+		);
+		const list = parseToolResult(await callbacks.get("list_api_keys")?.({}));
+		const detail = parseToolResult(
+			await callbacks.get("get_api_key")?.({ id: "key-1" }),
+		);
+		for (const result of [
+			(list.api_keys as Array<Record<string, unknown>>)[0],
+			detail,
+		]) {
+			assert.equal(result.last_rotated_at, key.last_rotated_at);
+			assert.equal("key" in result, false);
+		}
+	});
+});
 
 // ---------------------------------------------------------------------------
 // Shared helpers (mirrors unit.test.ts pattern exactly)

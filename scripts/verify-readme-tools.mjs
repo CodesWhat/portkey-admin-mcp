@@ -162,8 +162,11 @@ if (!endpointsCatalog) {
 	failures.push("ENDPOINTS.md generated tool catalog markers are missing");
 }
 for (const name of codeToolSet) {
-	const occurrences =
-		(endpointsCatalog ?? "").split(`| \`${name}\` |`).length - 1;
+	const occurrences = [
+		...(endpointsCatalog ?? "").matchAll(
+			new RegExp(`^\\|[ \\t]+\`${name}\`[ \\t]+\\|`, "gm"),
+		),
+	].length;
 	if (occurrences !== 1) {
 		failures.push(
 			`ENDPOINTS.md must contain exactly one catalog row for ${name}; found ${occurrences}`,
