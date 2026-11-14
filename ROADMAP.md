@@ -1,6 +1,6 @@
 # Portkey Admin MCP roadmap
 
-> Last reviewed: 2026-11-13
+> Last reviewed: 2026-11-14
 > Status: active compatibility maintenance
 > Current catalog: 194 tools across 22 domains, including 56 Enterprise-gated tools
 
@@ -40,12 +40,22 @@ The complete generated tool catalog and route matrix lives in
 [ENDPOINTS.md](./ENDPOINTS.md). `npm run verify:readme-tools` checks the source,
 README, endpoint catalog, domain counts, and Enterprise-gated inventory together.
 
+## Completed 2026-11-14 (0.16.4)
+
+- Revalidated Portkey OpenAPI commit `57ddb9ac` (November 10) and backend 1.31.0.
+  MCP integration and server tools now support tag fields and list filters.
+- Added config `auto_caching` and API-key `last_rotated_at` output.
+- Corrected the descriptions of ignored config paging inputs and fixed the
+  website's small-screen WebKit table-of-contents menu.
+- Patched Hono and its Node adapter to resolve seven dependency alerts, and
+  refreshed dependencies with versions older than seven days. Both npm audits
+  report zero vulnerabilities.
+- Verified 652 server tests, 28 website tests, and 194-tool discovery over both
+  container transports. Live read-only smoke: 39 passed, 0 failed, 30 expected
+  skips.
+
 ## Planned
 
-Reviewed 2026-11-13 against Portkey OpenAPI commit `57ddb9ac` (November 10)
-and the backend 1.31.0 changelog. The November spec adds MCP integration and
-server tags, including create/update fields and list filters. The maintenance
-release also exposes config `auto_caching` and API-key `last_rotated_at`.
 OCR Python snippets and API-key curl path corrections require no runtime change.
 MCP request timeouts already pass through `configurations.request_timeout`;
 new organisation API-key scopes are accepted as strings.
@@ -297,13 +307,14 @@ stable and public, or the stated live-verification prerequisite is met:
 
 - Docker MCP Catalog: submitted as
   [docker/mcp-registry #5026](https://github.com/docker/mcp-registry/pull/5026),
-  refreshed to the 0.14.0 release commit on 2026-10-16 with 194-tool discovery
-  evidence, and awaiting maintainer review.
+  refreshed to the 0.16.4 release commit on 2026-11-14. The maintenance tree
+  passed 194-tool container discovery; upstream maintainer review is pending.
 - Awesome MCP Servers: [#13074](https://github.com/punkpeye/awesome-mcp-servers/pull/13074)
   merged on 2026-09-13.
-- Glama: synced and rebuilt after 0.14.0 on 2026-10-16; the indexed release
-  commit and public schema show 194 tools. After each release, sync the
-  repository and run Build & Release on the listing (see `docs/RELEASE.md`).
+- Glama: the exact 0.16.4 indexed commit, build, inventory, and score breakdown
+  remain unverified as of 2026-11-14. The browser host is unavailable; the
+  claimed listing needs a logged-in sync/build session (see `docs/RELEASE.md`).
+  The last verified sync/build was 0.14.0 on 2026-10-16 with 194 tools.
   Generated descriptions and quality-score evaluation can lag the inventory.
 - Recheck PulseMCP after listing changes reopen. Its legacy record still uses the
   pre-organization namespace and is not currently editable.
