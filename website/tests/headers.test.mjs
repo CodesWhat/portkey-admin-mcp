@@ -32,12 +32,11 @@ test("the CSP carries the required directives", () => {
   assert.deepEqual(directives["base-uri"], ["'self'"]);
   assert.deepEqual(directives["form-action"], ["'self'"]);
   assert.deepEqual(directives["object-src"], ["'none'"]);
-  assert.ok(directives["script-src"].includes("'self'"));
   // PostHog's slim build lazy-loads its extension bundles from the ingestion
   // host, so that one origin is allowed for scripts and for events. No other
   // PostHog origin is.
   assert.deepEqual(directives["connect-src"], ["'self'", "https://e.codeswhat.com"]);
-  assert.ok(directives["script-src"].includes("https://e.codeswhat.com"));
+  assert.deepEqual(directives["script-src"], ["'self'", "'unsafe-inline'", "https://e.codeswhat.com"]);
   assert.doesNotMatch(csp, /posthog\.com/);
 });
 
