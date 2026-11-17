@@ -91,7 +91,7 @@ export function Install() {
         >
           {client.link && (
             <div className="deep">
-              <a className="button primary" href={client.link}>
+              <a className="button primary" href={client.link} data-cta="install_cursor:install">
                 {client.action}
               </a>
             </div>
@@ -112,8 +112,8 @@ export function Install() {
               if it is already tracked. Do not commit or share the file with a real key.
             </p>
           )}
-          <CodeBlock label={client.file} code={client.code} />
-          {client.id === "other" && <CodeBlock label="json" code={config} />}
+          <CodeBlock label={client.file} code={client.code} cta="install_copy:install" />
+          {client.id === "other" && <CodeBlock label="json" code={config} cta="install_copy:install" />}
         </div>
       ))}
       <p className="need">
