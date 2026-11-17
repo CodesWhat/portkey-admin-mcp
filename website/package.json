@@ -15,7 +15,7 @@
     "check:browser": "node scripts/check-browser.mjs"
   },
   "dependencies": {
-    "next": "16.4.3",
+    "next": "16.4.5",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "fumadocs-core": "16.17.9",
