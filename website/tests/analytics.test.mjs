@@ -8,6 +8,7 @@ import {
   buildWebVitalsEvent,
   canonicalizeAnalyticsRoute,
   createPostHogOptions,
+  hasPrivacySignal,
   isProductionHostname,
   POSTHOG_PROXY_HOST,
   POSTHOG_UI_HOST,
@@ -253,45 +254,27 @@ test("before_send keeps one sanitized Core Web Vitals envelope", () => {
   assert.equal(buildWebVitalsEvent("/", {}), null);
 });
 
-function fakeTimers() {
-  let next = 1;
-  const pending = new Map();
-  const delays = [];
-  return {
-    cancel: (timer) => pending.delete(timer),
-    delays,
-    fire() {
-      const callbacks = [...pending.values()];
-      pending.clear();
-      for (const callback of callbacks) callback();
-    },
-    pending,
-    schedule(callback, delay) {
-      const timer = next++;
-      delays.push(delay);
-      pending.set(timer, callback);
-      return timer;
-    },
-  };
-}
-
-test("web vitals reporter emits one complete canonical envelope", () => {
-  const timers = fakeTimers();
+// A fake lifecycle source: the runtime calls flush() on visibilitychange to
+// hidden and on pagehide, and a "clock" only orders events here, since the
+// reporter no longer uses timers.
+function newReporter(path = "/") {
   const emitted = [];
   const reporter = createWebVitalsReporter(
-    "/docs/tools/?customer=secret#private",
+    path,
     (event) => emitted.push(event),
     buildWebVitalsEvent,
     canonicalizeAnalyticsRoute,
-    timers.schedule,
-    timers.cancel,
   );
+  return { emitted, reporter };
+}
+
+test("web vitals reporter emits one complete canonical envelope", () => {
+  const { emitted, reporter } = newReporter("/docs/tools/?customer=secret#private");
   reporter.record("CLS", 0.01);
   reporter.record("FCP", 123.4);
   reporter.record("INP", 81.25);
+  assert.equal(emitted.length, 0);
   reporter.record("LCP", 456.7);
-  assert.deepEqual(timers.delays, [5_000]);
-  assert.equal(timers.pending.size, 0);
   assert.deepEqual(emitted, [
     {
       event: "$web_vitals",
@@ -307,36 +290,111 @@ test("web vitals reporter emits one complete canonical envelope", () => {
     },
   ]);
   reporter.record("LCP", 999);
-  timers.fire();
+  reporter.flush();
   assert.equal(emitted.length, 1);
 });
 
-test("web vitals reporter flushes one partial envelope and ignores bad or late metrics", () => {
-  const timers = fakeTimers();
-  const emitted = [];
-  const reporter = createWebVitalsReporter(
-    "/?customer=secret#private",
-    (event) => emitted.push(event),
-    buildWebVitalsEvent,
-    canonicalizeAnalyticsRoute,
-    timers.schedule,
-    timers.cancel,
-  );
+test("web vitals reporter ignores bad metrics and an empty flush", () => {
+  const { emitted, reporter } = newReporter("/?customer=secret#private");
   reporter.record("TTFB", 8);
   reporter.record("CLS", -1);
   reporter.record("FCP", Number.NaN);
-  assert.equal(timers.pending.size, 0);
-  reporter.record("CLS", 0.02);
-  reporter.record("LCP", 321);
-  timers.fire();
+  reporter.flush();
+  assert.equal(emitted.length, 0);
+});
+
+test("web vitals reporter delivers CLS and INP that finalize late, at hidden", () => {
+  const { emitted, reporter } = newReporter("/");
+  reporter.record("FCP", 100);
+  // ten seconds pass with nothing sent, then the page goes hidden
+  reporter.record("CLS", 0.05);
+  reporter.record("INP", 200);
+  assert.equal(emitted.length, 0);
+  reporter.flush();
   assert.deepEqual(emitted, [
     {
       event: "$web_vitals",
-      properties: { ...BASE, surface: "marketing", path: "/", $web_vitals_CLS_value: 0.02, $web_vitals_LCP_value: 321 },
+      properties: {
+        ...BASE,
+        surface: "marketing",
+        path: "/",
+        $web_vitals_CLS_value: 0.05,
+        $web_vitals_FCP_value: 100,
+        $web_vitals_INP_value: 200,
+      },
     },
   ]);
-  reporter.record("FCP", 111);
-  assert.equal(emitted.length, 1);
+});
+
+test("web vitals reporter flushes a partial envelope when a short visit goes hidden", () => {
+  const { emitted, reporter } = newReporter("/");
+  reporter.record("FCP", 90);
+  reporter.record("LCP", 300);
+  reporter.flush();
+  assert.deepEqual(emitted, [
+    {
+      event: "$web_vitals",
+      properties: { ...BASE, surface: "marketing", path: "/", $web_vitals_FCP_value: 90, $web_vitals_LCP_value: 300 },
+    },
+  ]);
+});
+
+test("web vitals reporter never sends the same metric twice across flushes", () => {
+  const { emitted, reporter } = newReporter("/");
+  reporter.record("FCP", 90);
+  reporter.record("LCP", 300);
+  reporter.flush();
+  reporter.flush();
+  reporter.record("FCP", 91);
+  reporter.record("CLS", 0.1);
+  reporter.flush();
+  reporter.record("LCP", 400);
+  reporter.flush();
+  assert.equal(emitted.length, 2);
+  assert.deepEqual(Object.keys(emitted[1].properties).filter((key) => key.startsWith("$web_vitals_")), [
+    "$web_vitals_CLS_value",
+  ]);
+  reporter.record("INP", 50);
+  assert.equal(emitted.length, 3);
+  assert.equal(emitted[2].properties.$web_vitals_INP_value, 50);
+});
+
+test("an unknown route keeps its surface through the builder and the sanitizer", () => {
+  for (const [raw, surface] of [
+    ["/docs/nope", "docs"],
+    ["/nope", "marketing"],
+  ]) {
+    const built = buildPageviewEvent(raw);
+    assert.equal(built.properties.path, "/_other");
+    assert.equal(built.properties.surface, surface);
+    const out = send("$pageview", { ...built.properties, $current_url: `https://portkey.codeswhat.com${raw}` });
+    assert.equal(out.properties.path, "/_other");
+    assert.equal(out.properties.surface, surface);
+  }
+  const forged = send("$pageview", { path: "/_other", surface: "bogus" });
+  assert.equal(forged.properties.surface, "marketing");
+});
+
+test("privacy signals are detected and suppress the event filter", () => {
+  assert.equal(hasPrivacySignal({ navigator: { doNotTrack: "1" } }), true);
+  assert.equal(hasPrivacySignal({ doNotTrack: "1" }), true);
+  assert.equal(hasPrivacySignal({ navigator: { msDoNotTrack: "1" } }), true);
+  assert.equal(hasPrivacySignal({ navigator: { globalPrivacyControl: true } }), true);
+  assert.equal(hasPrivacySignal({ navigator: { doNotTrack: "0", globalPrivacyControl: false } }), false);
+  assert.equal(hasPrivacySignal({}), false);
+  assert.equal(hasPrivacySignal(undefined), false);
+
+  const original = Object.getOwnPropertyDescriptor(globalThis, "window");
+  try {
+    globalThis.window = { navigator: { globalPrivacyControl: true } };
+    assert.equal(send("$pageview", { path: "/" }), null);
+    assert.equal(send("$pageleave", { path: "/" }), null);
+    globalThis.window = { navigator: {} };
+    assert.notEqual(send("$pageview", { path: "/" }), null);
+  } finally {
+    if (original) Object.defineProperty(globalThis, "window", original);
+    else delete globalThis.window;
+  }
 });
 
 test("PostHog initializes only with the exact production proxy contract", () => {

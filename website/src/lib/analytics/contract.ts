@@ -207,7 +207,32 @@ function rawPathFromProperties(properties: EventProperties): string | undefined 
   }
 }
 
+type PrivacySignalScope = {
+  doNotTrack?: unknown;
+  navigator?: {
+    doNotTrack?: unknown;
+    globalPrivacyControl?: unknown;
+    msDoNotTrack?: unknown;
+  };
+};
+
+// posthog-js 1.449.2 treats cookieless_mode "always" as capturing before it
+// checks DNT, so respect_dnt alone does nothing. Check the browser signals
+// ourselves, at call time, so a mid-session opt-in is honored too.
+export function hasPrivacySignal(
+  scope: PrivacySignalScope | undefined = typeof window === "undefined" ? undefined : window,
+): boolean {
+  if (!scope) return false;
+  return (
+    scope.navigator?.doNotTrack === "1" ||
+    scope.doNotTrack === "1" ||
+    scope.navigator?.msDoNotTrack === "1" ||
+    scope.navigator?.globalPrivacyControl === true
+  );
+}
+
 export const sanitizeEvent: BeforeSendFn = (envelope): CaptureResult | null => {
+  if (hasPrivacySignal()) return null;
   if (!envelope || typeof envelope.event !== "string" || !envelope.properties) return null;
   const rawPath = rawPathFromProperties(envelope.properties);
   const token = envelope.properties.token;
@@ -255,6 +280,17 @@ export const sanitizeEvent: BeforeSendFn = (envelope): CaptureResult | null => {
   }
 
   if (!sanitized) return null;
+  // An unknown route is already collapsed to OTHER_PATH by the builder that
+  // produced this envelope, so the raw path can't say which surface it was on.
+  // Keep the incoming surface, but only one of the two known values.
+  const incomingSurface = envelope.properties.surface;
+  if (
+    sanitized.properties.path === OTHER_PATH &&
+    normalizedPath(rawPath) === OTHER_PATH &&
+    (incomingSurface === "docs" || incomingSurface === "marketing")
+  ) {
+    sanitized.properties.surface = incomingSurface;
+  }
   // A fresh envelope: $set, $set_once ($initial_referrer is a full URL) and
   // every other key are left behind by construction.
   const output: CaptureResult = {

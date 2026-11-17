@@ -9,6 +9,7 @@ import {
   type CtaPlacement,
   canonicalizeAnalyticsRoute,
   createPostHogOptions,
+  hasPrivacySignal,
   isProductionHostname,
 } from "./contract";
 import { createWebVitalsReporter as createBufferedWebVitalsReporter } from "./web-vitals-buffer";
@@ -21,6 +22,7 @@ export function initializeAnalytics(
   uiHost: string | undefined,
 ): void {
   if (initialized || typeof window === "undefined") return;
+  if (hasPrivacySignal(window)) return;
   if (!isProductionHostname(window.location.hostname)) return;
   const options = createPostHogOptions(projectToken, proxyHost, uiHost);
   if (!options || !projectToken) return;
@@ -33,18 +35,27 @@ function capture(event: AnalyticsEvent | null): void {
   posthog.capture(event.event, event.properties);
 }
 
+// Used for the lifecycle flush: the page is going away, so skip the batch
+// queue and force a beacon.
+function captureOnUnload(event: AnalyticsEvent): void {
+  if (!initialized) return;
+  posthog.capture(event.event, event.properties, { transport: "sendBeacon", send_instantly: true });
+}
+
 export function capturePageview(path: string): void {
   capture(buildPageviewEvent(path));
 }
 
-export function createWebVitalsReporter(path: string): (name: string, value: number) => void {
-  const reporter = createBufferedWebVitalsReporter(
+export function createWebVitalsReporter(path: string): {
+  flush: () => void;
+  record: (name: string, value: number) => void;
+} {
+  return createBufferedWebVitalsReporter(
     path,
-    capture,
+    captureOnUnload,
     buildWebVitalsEvent,
     canonicalizeAnalyticsRoute,
   );
-  return reporter.record;
 }
 
 export function captureCta(path: string, ctaId: CtaId, placement: CtaPlacement): void {

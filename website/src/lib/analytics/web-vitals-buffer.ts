@@ -1,11 +1,7 @@
 import type { AnalyticsEvent, WebVitalName } from "./contract";
 
-export const WEB_VITALS_FLUSH_DELAY_MS = 5_000;
-
 const WEB_VITAL_NAMES = new Set<WebVitalName>(["CLS", "FCP", "INP", "LCP"]);
 
-type Schedule = (callback: () => void, delayMs: number) => unknown;
-type Cancel = (timer: unknown) => void;
 type BuildEvent = (
   path: string,
   metrics: Readonly<Partial<Record<WebVitalName, number>>>,
@@ -16,43 +12,40 @@ type CanonicalizePath = (path: string) => {
   surface: string;
 };
 
-const defaultSchedule: Schedule = (callback, delayMs) => setTimeout(callback, delayMs);
-const defaultCancel: Cancel = (timer) => clearTimeout(timer as ReturnType<typeof setTimeout>);
-
+// Next reports without reportAllChanges, so CLS and INP finalize when the page
+// goes hidden. Metrics are buffered and sent once all four are in, or on the
+// caller's lifecycle flush (visibility hidden / pagehide). A metric is never
+// sent twice; one that arrives after a flush goes out in the next envelope.
 export function createWebVitalsReporter(
   initialPath: string,
   emit: (event: AnalyticsEvent) => void,
   buildEvent: BuildEvent,
   canonicalizePath: CanonicalizePath,
-  schedule: Schedule = defaultSchedule,
-  cancel: Cancel = defaultCancel,
 ) {
   const path = canonicalizePath(initialPath).normalizedPath;
-  const metrics: Partial<Record<WebVitalName, number>> = {};
-  let timer: unknown;
-  let sent = false;
+  const pending: Partial<Record<WebVitalName, number>> = {};
+  const sent = new Set<WebVitalName>();
 
-  const flush = () => {
-    if (sent) return;
-    sent = true;
-    if (timer !== undefined) {
-      cancel(timer);
-      timer = undefined;
+  const flush = (): void => {
+    if (Object.keys(pending).length === 0) return;
+    const event = buildEvent(path, pending);
+    for (const name of Object.keys(pending) as WebVitalName[]) {
+      sent.add(name);
+      delete pending[name];
     }
-    const event = buildEvent(path, metrics);
     if (event) emit(event);
   };
 
   return {
+    flush,
     record(name: string, value: number): void {
-      if (sent || !WEB_VITAL_NAMES.has(name as WebVitalName)) return;
+      if (!WEB_VITAL_NAMES.has(name as WebVitalName)) return;
       if (!Number.isFinite(value) || value < 0) return;
+      const metric = name as WebVitalName;
+      if (sent.has(metric)) return;
 
-      metrics[name as WebVitalName] = value;
-      if (timer === undefined) {
-        timer = schedule(flush, WEB_VITALS_FLUSH_DELAY_MS);
-      }
-      if (WEB_VITAL_NAMES.size === Object.keys(metrics).length) flush();
+      pending[metric] = value;
+      if (sent.size + Object.keys(pending).length === WEB_VITAL_NAMES.size) flush();
     },
   };
 }

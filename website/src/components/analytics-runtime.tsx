@@ -34,9 +34,24 @@ export function AnalyticsRuntime() {
     return () => document.removeEventListener("click", onClick);
   }, [pathname]);
 
+  // CLS and INP only finalize when the page goes hidden, so that is when the
+  // buffered metrics are sent.
+  useEffect(() => {
+    const flush = () => webVitalsReporter.current?.flush();
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "hidden") flush();
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("pagehide", flush);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("pagehide", flush);
+    };
+  }, []);
+
   const reportWebVital = useCallback<Parameters<typeof useReportWebVitals>[0]>(
     ({ name, value }) => {
-      webVitalsReporter.current?.(name, value);
+      webVitalsReporter.current?.record(name, value);
     },
     [],
   );
