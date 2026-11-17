@@ -58,9 +58,9 @@ export function HeroLogo() {
   );
 }
 
-export function CodeBlock({ label, code }: { label: string; code: string }) {
+export function CodeBlock({ label, code, cta }: { label: string; code: string; cta?: string }) {
   return (
-    <DocCode label={label}>
+    <DocCode label={label} cta={cta}>
       <code>{code}</code>
     </DocCode>
   );
@@ -69,10 +69,12 @@ export function CodeBlock({ label, code }: { label: string; code: string }) {
 export function DocCode({
   children,
   label = "code",
+  cta,
   ...props
 }: {
   children?: ReactNode;
   label?: string;
+  cta?: string;
   className?: string;
 }) {
   const root = useRef<HTMLDivElement>(null);
@@ -104,6 +106,7 @@ export function DocCode({
           type="button"
           className="copy"
           aria-label={label === "code" ? "Copy code" : `Copy ${label}`}
+          data-cta={cta}
           onClick={copy}
         >
           {status}

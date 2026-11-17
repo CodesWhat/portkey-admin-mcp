@@ -30,10 +30,14 @@ export function Frame({
     <>
       <a href={`${hrefFor()}#install`}>Install</a>
       <a href={`${hrefFor()}#tools`}>Tools</a>
-      <a href={hrefFor("overview")} aria-current={docsPage === "overview" ? "page" : undefined}>
+      <a
+        href={hrefFor("overview")}
+        aria-current={docsPage === "overview" ? "page" : undefined}
+        data-cta="docs_root:header"
+      >
         Docs
       </a>
-      <a href={`https://github.com/${product.repo}`}>
+      <a href={`https://github.com/${product.repo}`} data-cta="github_repository:header">
         GitHub <span aria-hidden="true">↗</span>
       </a>
     </>
@@ -66,8 +70,12 @@ export function Frame({
           </div>
           <nav aria-label="Footer navigation">
             <h2>Project</h2>
-            <a href={hrefFor("overview")}>Documentation</a>
-            <a href={`https://github.com/${product.repo}`}>Source on GitHub ↗</a>
+            <a href={hrefFor("overview")} data-cta="docs_root:footer">
+              Documentation
+            </a>
+            <a href={`https://github.com/${product.repo}`} data-cta="github_repository:footer">
+              Source on GitHub ↗
+            </a>
           </nav>
         </div>
         <div className="footer-bottom">
@@ -124,13 +132,21 @@ export function Home({ product }: { product: Product }) {
               194 tools · 22 domains · stdio · MIT · Node 24+
             </p>
             <div className="hero-command">
-              <CodeBlock label="npx command" code="npx -y portkey-admin-mcp" />
+              <CodeBlock
+                label="npx command"
+                code="npx -y portkey-admin-mcp"
+                cta="install_copy:hero"
+              />
             </div>
             <div className="hero-ctas">
               <a className="button primary" href="#install">
                 Install
               </a>
-              <a className="button" href={`https://github.com/${product.repo}`}>
+              <a
+                className="button"
+                href={`https://github.com/${product.repo}`}
+                data-cta="github_repository:hero"
+              >
                 GitHub ↗
               </a>
             </div>
