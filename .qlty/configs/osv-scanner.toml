@@ -1,0 +1,14 @@
+# GHSA-fc5q-39xc-vjpf: picomatch <= 4.0.7 ReDoS via single-branch repeated
+# extglobs. No patched release exists yet (4.0.7 is the latest). It only
+# reaches us through dev and build tooling (knip/tinyglobby, the website
+# build), which never match untrusted globs. Production deps audit clean.
+# Expiry forces a recheck; drop this once picomatch ships a fix.
+[[IgnoredVulns]]
+id = "GHSA-fc5q-39xc-vjpf"
+ignoreUntil = 2026-12-17
+reason = "picomatch ReDoS, no patched release; dev/build-only path"
+
+[[IgnoredVulns]]
+id = "CVE-2026-112366"
+ignoreUntil = 2026-12-17
+reason = "Alias of GHSA-fc5q-39xc-vjpf"
