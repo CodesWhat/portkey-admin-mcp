@@ -55,7 +55,7 @@ export function LowerSections() {
                 </a>
               </li>
               <li>
-                <a href="https://www.npmjs.com/package/portkey-admin-mcp">
+                <a href="https://www.npmjs.com/package/portkey-admin-mcp" data-cta="npm_package:trust">
                   <img
                     src="https://img.shields.io/npm/v/portkey-admin-mcp.svg"
                     alt="npm version badge"

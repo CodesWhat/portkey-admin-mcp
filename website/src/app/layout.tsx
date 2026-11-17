@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
+import { AnalyticsRuntime } from "@/components/analytics-runtime";
 import { Provider } from "@/components/controls";
 import { siteUrl } from "@/lib/routes.mjs";
 import "./styles.css";
@@ -24,6 +25,7 @@ export default function Layout({ children }: { children: ReactNode }) {
     <html lang="en" suppressHydrationWarning>
       <body>
         <Provider>{children}</Provider>
+        <AnalyticsRuntime />
       </body>
     </html>
   );
