@@ -19,6 +19,7 @@ import {
 	buildRateLimits,
 	buildRateLimitsRpm,
 	buildUsageLimits,
+	buildUsageLimitsUpdate,
 } from "../src/lib/limits.js";
 import { BaseService } from "../src/services/base.service.js";
 import { registerAuditTools } from "../src/tools/audit.tools.js";
@@ -105,12 +106,19 @@ async function captureServiceRequest(
 // ---------------------------------------------------------------------------
 
 describe("buildUsageLimits", () => {
-	it("returns undefined when neither credit_limit nor alert_threshold is provided", () => {
+	it("returns undefined when no limit field is provided", () => {
 		assert.equal(buildUsageLimits({}), undefined);
-		assert.equal(
-			buildUsageLimits({ type: "cost", periodic_reset: "monthly" }),
-			undefined,
-		);
+	});
+
+	it("builds a payload from type or periodic_reset alone", () => {
+		assert.deepEqual(buildUsageLimits({ periodic_reset: "weekly" }), {
+			type: "cost",
+			periodic_reset: "weekly",
+		});
+		assert.deepEqual(buildUsageLimits({ type: "tokens" }), {
+			type: "tokens",
+			periodic_reset: "monthly",
+		});
 	});
 
 	it("preserves credit_limit=0 — does not treat zero as absent", () => {
@@ -161,6 +169,28 @@ describe("buildUsageLimits", () => {
 		assert.ok(result !== undefined);
 		assert.equal("credit_limit" in result, false);
 		assert.equal(result.alert_threshold, 80);
+	});
+});
+
+describe("buildUsageLimitsUpdate", () => {
+	it("returns undefined when no limit field is provided", () => {
+		assert.equal(buildUsageLimitsUpdate({}), undefined);
+	});
+
+	it("applies no defaults for omitted fields", () => {
+		assert.deepEqual(buildUsageLimitsUpdate({ alert_threshold: 80 }), {
+			alert_threshold: 80,
+		});
+		assert.deepEqual(buildUsageLimitsUpdate({ periodic_reset: "weekly" }), {
+			periodic_reset: "weekly",
+		});
+		assert.deepEqual(
+			buildUsageLimitsUpdate({ credit_limit: 0, type: "tokens" }),
+			{
+				credit_limit: 0,
+				type: "tokens",
+			},
+		);
 	});
 });
 

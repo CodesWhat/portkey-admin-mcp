@@ -11493,22 +11493,22 @@
 						"maximum": 100
 					},
 					"usage_limit_type": {
-						"description": "Type of usage limit: 'cost' (monetary) or 'tokens' (token count). Defaults to 'cost'.",
+						"description": "Type of usage limit: 'cost' (monetary) or 'tokens' (token count). Only sent when provided.",
 						"type": "string",
 						"enum": ["cost", "tokens"]
 					},
 					"periodic_reset": {
-						"description": "Period for resetting usage limits: 'monthly' or 'weekly'. Defaults to 'monthly'.",
+						"description": "Period for resetting usage limits: 'monthly' or 'weekly'. Only sent when provided.",
 						"type": "string",
 						"enum": ["monthly", "weekly"]
 					},
 					"rate_limit_value": {
-						"description": "New rate limit value",
+						"description": "New rate limit value. Must be provided together with rate_limit_unit.",
 						"type": "number",
 						"exclusiveMinimum": 0
 					},
 					"rate_limit_unit": {
-						"description": "Rate limit unit: 'rpm' (requests per minute), 'rph' (requests per hour), or 'rpd' (requests per day)",
+						"description": "Rate limit unit: 'rpm' (requests per minute), 'rph' (requests per hour), or 'rpd' (requests per day). Must be provided together with rate_limit_value.",
 						"type": "string",
 						"enum": ["rpm", "rph", "rpd"]
 					},
