@@ -588,16 +588,84 @@ function wrapToolCallback(
 	};
 }
 
-const registrationSchemas = new WeakMap<object, z.ZodType>();
+const registrationSchemas = new WeakMap<object, unknown>();
+const outputSchemasByTool = new Map<string, unknown>();
+
+let jsonSchemaConversions = 0;
+
+/**
+ * Number of real JSON Schema conversions performed so far. A cache hit does
+ * not count, so tests can assert that listing tools again is conversion-free.
+ */
+export function getJsonSchemaConversionCount(): number {
+	return jsonSchemaConversions;
+}
+
+type JsonSchemaConverter = (options: unknown) => Record<string, unknown>;
+
+/**
+ * Wrap a Standard Schema so its JSON Schema conversion runs once per schema
+ * identity, direction and options. tools/list converts every tool schema on
+ * every request, and the schemas never change after module load. The wrapper
+ * inherits everything else (validation included) from the original schema.
+ */
+function memoizeJsonSchemaConversion(schema: object): unknown {
+	const standard = (
+		schema as {
+			"~standard"?: {
+				jsonSchema?: {
+					input?: JsonSchemaConverter;
+					output?: JsonSchemaConverter;
+				};
+			};
+		}
+	)["~standard"];
+	const converters = standard?.jsonSchema;
+	if (!standard || !converters) return schema;
+
+	const memoize = (direction: "input" | "output") => {
+		const convert = converters[direction];
+		if (!convert) return undefined;
+		const results = new Map<string, Record<string, unknown>>();
+		return (options: unknown) => {
+			const key = JSON.stringify(options ?? null);
+			let result = results.get(key);
+			if (!result) {
+				jsonSchemaConversions += 1;
+				result = convert(options);
+				results.set(key, result);
+			}
+			return result;
+		};
+	};
+
+	return Object.create(schema, {
+		"~standard": {
+			value: {
+				...standard,
+				jsonSchema: { input: memoize("input"), output: memoize("output") },
+			},
+		},
+	});
+}
 
 function normalizeRegistrationSchema(schema: unknown): unknown {
-	if (!isRecord(schema) || "~standard" in schema) return schema;
-	let normalized = registrationSchemas.get(schema);
-	if (!normalized) {
-		normalized = z.object(schema as z.ZodRawShape);
-		registrationSchemas.set(schema, normalized);
-	}
+	if (!isRecord(schema)) return schema;
+	if (registrationSchemas.has(schema)) return registrationSchemas.get(schema);
+	const normalized = memoizeJsonSchemaConversion(
+		"~standard" in schema ? schema : z.object(schema as z.ZodRawShape),
+	);
+	registrationSchemas.set(schema, normalized);
 	return normalized;
+}
+
+function getRegistrationOutputSchema(toolName: string): unknown {
+	let schema = outputSchemasByTool.get(toolName);
+	if (!schema) {
+		schema = getToolOutputSchema(toolName);
+		outputSchemasByTool.set(toolName, schema);
+	}
+	return schema;
 }
 
 function createSafeToolServer(server: McpServer): McpServer {
@@ -619,7 +687,7 @@ function createSafeToolServer(server: McpServer): McpServer {
 				...(description === undefined ? {} : { description }),
 				inputSchema: normalizeRegistrationSchema(config.inputSchema),
 				outputSchema: normalizeRegistrationSchema(
-					config.outputSchema ?? getToolOutputSchema(name),
+					config.outputSchema ?? getRegistrationOutputSchema(name),
 				),
 				annotations: {
 					...inferToolAnnotations(name),

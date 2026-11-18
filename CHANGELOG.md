@@ -22,6 +22,7 @@ release until that reference and the release notes say so.
 
 - `update_*` and `archive_*` tools now report `destructiveHint: true` unless a tool sets its own, since they overwrite or retire existing state and MCP treats `false` as additive-only. This includes `update_config`, `update_organisation_defaults` and the MCP integration capability and workspace updates, which had overridden it to `false`.
 - The Docker image builds on Node 26.13 (26.13.1), pinned to the current multi-arch digest.
+- `tools/list` is cheaper. The server converts each tool's input and output schema to JSON Schema once per process instead of on every request, which cuts the CPU for a full catalog listing by roughly two thirds.
 - The README no longer says `tools/list` is paginated. The server returns all 194 tools in one response (about 500 KB of JSON). The VS Code section notes the 128-tool cap per chat request and points to `PORTKEY_TOOL_DOMAINS`. ENDPOINTS.md says the deployment ping route isn't exposed instead of calling it deprecated, since the spec doesn't deprecate it. The distribution notes say Smithery shut down its API, CLI, SDKs and accounts on 2026-10-31 and is directory-only now.
 
 ### Fixed
