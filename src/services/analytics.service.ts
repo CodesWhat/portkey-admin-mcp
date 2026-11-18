@@ -84,14 +84,12 @@ export interface RequestAnalyticsResponse {
 export interface TokenDataPoint {
 	timestamp: string;
 	total: number;
-	prompt: number;
-	completion: number;
+	avg: number;
 }
 
 export interface TokenSummary {
 	total: number;
-	prompt: number;
-	completion: number;
+	avg: number;
 }
 
 export interface TokenAnalyticsResponse {
@@ -174,15 +172,16 @@ export interface CacheHitLatencyResponse {
 // Cache Hit Rate
 export interface CacheHitRateDataPoint {
 	timestamp: string;
+	simple_hits: number;
+	semantic_hits: number;
 	rate: number;
-	hits: number;
-	misses: number;
+	cumulative_simple_cache_savings: number;
+	cumulative_semantic_cache_savings: number;
 }
 
 export interface CacheHitRateSummary {
+	total: number;
 	rate: number;
-	total_hits: number;
-	total_misses: number;
 }
 
 export interface CacheHitRateResponse {
@@ -194,13 +193,11 @@ export interface CacheHitRateResponse {
 // ==================== Users Analytics Types ====================
 export interface UsersDataPoint {
 	timestamp: string;
-	active_users: number;
-	new_users: number;
+	total: number;
 }
 
 export interface UsersSummary {
-	total_active_users: number;
-	total_new_users: number;
+	total: number;
 }
 
 export interface UsersAnalyticsResponse {

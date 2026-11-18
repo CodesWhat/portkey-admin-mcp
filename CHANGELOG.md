@@ -26,6 +26,7 @@ release until that reference and the release notes say so.
 
 ### Fixed
 
+- `get_token_analytics`, `get_users_analytics` and `get_cache_hit_rate` read fields that Portkey's spec doesn't return and dropped the ones it does. Token results now carry `total` and `avg` (the graph has no prompt/completion split), user results carry the unique-user `total`, and cache hit-rate results carry `simple_hits`, `semantic_hits`, `rate` and both cumulative savings fields per bucket, with `summary.total_hits` and `summary.hit_rate`.
 - `update_virtual_key`, `update_api_key` and `update_provider` no longer overwrite an existing budget. Changing only the alert threshold used to send `type: cost` and a monthly reset, which turned a weekly token budget into a monthly cost one. These updates now read the current limits first and change only the fields you pass, and an update that touches no limit field sends no `usage_limits` and does no extra read.
 - `create_provider` and `update_provider` no longer drop limit inputs. `usage_limit_type` and `periodic_reset` on their own used to be discarded while the call reported success, and a lone `rate_limit_value` or `rate_limit_unit` was silently ignored. Updates now forward only the usage fields you pass, and a half rate-limit pair is rejected.
 - `promote_prompt` into an existing target now replaces the target's version with the source version. It used to patch, so a source with no tools left the target's old `tools` and `tool_choice` in place. It also fails before writing when the source version has no model, string or virtual key.
