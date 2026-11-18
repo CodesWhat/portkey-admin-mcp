@@ -1,6 +1,6 @@
 # Portkey Admin MCP roadmap
 
-> Last reviewed: 2026-11-14
+> Last reviewed: 2026-11-18
 > Status: active compatibility maintenance
 > Current catalog: 194 tools across 22 domains, including 56 Enterprise-gated tools
 
@@ -39,6 +39,16 @@ track and is not treated as a compatible `PORTKEY_BASE_URL`.
 The complete generated tool catalog and route matrix lives in
 [ENDPOINTS.md](./ENDPOINTS.md). `npm run verify:readme-tools` checks the source,
 README, endpoint catalog, domain counts, and Enterprise-gated inventory together.
+
+## Completed 2026-11-18 (0.16.5)
+
+- Published 0.16.5: tag `v0.16.5` at `09f9d05e3bf409497709355fda49c259b86b0327`
+  (`main`, promotion #220), GitHub Release marked Latest, npm with SLSA
+  provenance, and the MCP Registry entry marked latest. Release workflow
+  44414517043 succeeded and the Vercel Production deploy succeeded.
+- LobeHub was updated to 0.16.5 (market API: 194 tools).
+- Pending or unverified: the Glama re-index and
+  the Docker catalog pin for #5026. See `docs/DISTRIBUTION.md`.
 
 ## Completed 2026-11-14 (0.16.4)
 
@@ -309,9 +319,10 @@ stable and public, or the stated live-verification prerequisite is met:
   [docker/mcp-registry #5026](https://github.com/docker/mcp-registry/pull/5026),
   refreshed to the 0.16.4 release commit on 2026-11-14. The maintenance tree
   passed 194-tool container discovery; upstream maintainer review is pending.
+  The 0.16.5 pin refresh is pending and unverified.
 - Awesome MCP Servers: [#13074](https://github.com/punkpeye/awesome-mcp-servers/pull/13074)
   merged on 2026-09-13.
-- Glama: the exact 0.16.4 indexed commit, build, inventory, and score breakdown
+- Glama: the 0.16.5 re-index is pending and unverified. The exact 0.16.4 indexed commit, build, inventory, and score breakdown
   remain unverified as of 2026-11-14. The browser host is unavailable; the
   claimed listing needs a logged-in sync/build session (see `docs/RELEASE.md`).
   The last verified sync/build was 0.14.0 on 2026-10-16 with 194 tools.
