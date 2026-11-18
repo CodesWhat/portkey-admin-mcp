@@ -165,7 +165,7 @@ describe("getHttpAuthConfig under clerk mode", () => {
 		);
 	});
 
-	it("rejects clerk mode without an explicit authorization policy", async () => {
+	it("rejects clerk mode without an identity-bound authorization policy", async () => {
 		process.env.MCP_AUTH_MODE = "clerk";
 		process.env.CLERK_ISSUER = "https://clerk.example.com";
 		process.env.CLERK_AUDIENCE = "my-audience";
@@ -174,7 +174,7 @@ describe("getHttpAuthConfig under clerk mode", () => {
 
 		assert.throws(
 			() => resetHttpAuthStateForTest(),
-			/MCP_AUTH_MODE=clerk requires an explicit authorization policy/,
+			/MCP_AUTH_MODE=clerk requires an identity-bound authorization policy/,
 		);
 	});
 
@@ -519,7 +519,7 @@ describe("mcpAuthMiddleware clerk JWT verification", () => {
 				delete process.env.CLERK_ALLOWED_SUBJECTS;
 				assert.throws(
 					() => resetHttpAuthStateForTest(),
-					/requires an explicit authorization policy/,
+					/requires an identity-bound authorization policy/,
 				);
 				await mcpAuthMiddleware(
 					createMockRequest({ authorization: `Bearer ${token}` }) as never,
@@ -731,6 +731,122 @@ describe("mcpAuthMiddleware clerk JWT verification", () => {
 				],
 			] as const) {
 				assert.throws(() => authorizeClerkClaims(claims, policy), message);
+			}
+		});
+	});
+});
+
+describe("clerk identity-bound policy", () => {
+	const issuer = "https://clerk.example.com";
+	const jwksUrl = `${issuer}/.well-known/jwks.json`;
+
+	afterEach(() => {
+		resetEnv();
+		resetHttpAuthStateForTest();
+	});
+
+	function configureClerk(extra: Record<string, string>): void {
+		process.env.MCP_AUTH_MODE = "clerk";
+		process.env.CLERK_ISSUER = issuer;
+		process.env.CLERK_AUDIENCE = "test-audience";
+		process.env.CLERK_JWKS_URL = jwksUrl;
+		for (const key of [
+			"CLERK_ALLOWED_SUBJECTS",
+			"CLERK_ALLOWED_ORGANIZATION_IDS",
+			"CLERK_ALLOWED_ROLES",
+			"CLERK_REQUIRED_PERMISSIONS",
+		]) {
+			delete process.env[key];
+		}
+		Object.assign(process.env, extra);
+	}
+
+	for (const [label, extra] of [
+		["roles only", { CLERK_ALLOWED_ROLES: "org:admin" }],
+		["permissions only", { CLERK_REQUIRED_PERMISSIONS: "org:billing:read" }],
+		[
+			"roles and permissions",
+			{
+				CLERK_ALLOWED_ROLES: "org:admin",
+				CLERK_REQUIRED_PERMISSIONS: "org:billing:read",
+			},
+		],
+	] as const) {
+		it(`rejects a ${label} policy at startup`, () => {
+			configureClerk(extra);
+			assert.throws(
+				() => resetHttpAuthStateForTest(),
+				/requires an identity-bound authorization policy/,
+			);
+		});
+	}
+
+	it("accepts a subject-only or organization-only policy", () => {
+		configureClerk({ CLERK_ALLOWED_SUBJECTS: "user_a" });
+		assert.doesNotThrow(() => resetHttpAuthStateForTest());
+		configureClerk({ CLERK_ALLOWED_ORGANIZATION_IDS: "org_a" });
+		assert.doesNotThrow(() => resetHttpAuthStateForTest());
+	});
+
+	it("keeps extra constraints conjunctive with the identity allowlist", () => {
+		configureClerk({
+			CLERK_ALLOWED_ORGANIZATION_IDS: "org_a",
+			CLERK_ALLOWED_ROLES: "org:admin",
+		});
+		resetHttpAuthStateForTest();
+		const config = getHttpAuthConfig();
+		assert.throws(
+			() =>
+				authorizeClerkClaims(
+					{ sub: "user_a", org_id: "org_a", org_role: "org:member" },
+					config,
+				),
+			/role is not authorized/,
+		);
+		assert.throws(
+			() =>
+				authorizeClerkClaims(
+					{ sub: "user_a", org_id: "org_b", org_role: "org:admin" },
+					config,
+				),
+			/organization is not authorized/,
+		);
+	});
+
+	it("rejects signed v1 and v2 tokens from another organization", async () => {
+		configureClerk({
+			CLERK_ALLOWED_ORGANIZATION_IDS: "org_primary",
+			CLERK_ALLOWED_ROLES: "org:admin",
+		});
+		const { publicKey, privateKey } = await generateKeyPair("RS256", {
+			extractable: true,
+		});
+		const publicJwk = await exportJWK(publicKey);
+		publicJwk.kid = "org-bound-key";
+		publicJwk.alg = "RS256";
+		publicJwk.use = "sig";
+		const sign = (claims: Record<string, unknown>) =>
+			new SignJWT(claims)
+				.setProtectedHeader({ alg: "RS256", kid: "org-bound-key" })
+				.setSubject("user_test")
+				.setIssuer(issuer)
+				.setAudience("test-audience")
+				.setIssuedAt()
+				.setExpirationTime("5m")
+				.sign(privateKey);
+		const v1 = await sign({ org_id: "org_other", org_role: "org:admin" });
+		const v2 = await sign({ v: 2, o: { id: "org_other", rol: "admin" } });
+
+		await withStubbedJwksFetch(jwksUrl, { keys: [publicJwk] }, async () => {
+			resetHttpAuthStateForTest();
+			for (const token of [v1, v2]) {
+				const { response, state } = createMockResponse();
+				await mcpAuthMiddleware(
+					createMockRequest({ authorization: `Bearer ${token}` }) as never,
+					response as never,
+					() => assert.fail("another organization must not pass"),
+				);
+				assert.equal(state.statusCode, 403);
 			}
 		});
 	});

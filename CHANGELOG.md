@@ -30,6 +30,7 @@ release until that reference and the release notes say so.
 
 ### Security
 
+- Clerk auth mode now requires `CLERK_ALLOWED_SUBJECTS` or `CLERK_ALLOWED_ORGANIZATION_IDS`. A roles-only or permissions-only policy was accepted at startup, so an admin of any organization in the same Clerk instance could pass it. Roles and permissions still narrow the policy, but can't satisfy startup validation alone.
 - Refreshed the root lockfile to Hono 4.13.19. Removed the osv-scanner ignores for GHSA-fc5q-39xc-vjpf and CVE-2026-112366, since the advisory was withdrawn on 2026-11-18.
 
 ## [0.16.4] - 2026-11-13

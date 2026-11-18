@@ -132,14 +132,9 @@ function getHttpAuthConfigFromEnv(): HttpAuthConfig {
 				`MCP_AUTH_MODE=clerk configuration error (${issues.join("; ")})`,
 			);
 		}
-		if (
-			!allowedSubjects &&
-			!allowedOrganizationIds &&
-			!allowedRoles &&
-			!requiredPermissions
-		) {
+		if (!allowedSubjects && !allowedOrganizationIds) {
 			throw new Error(
-				"MCP_AUTH_MODE=clerk requires an explicit authorization policy. Set at least one of CLERK_ALLOWED_SUBJECTS, CLERK_ALLOWED_ORGANIZATION_IDS, CLERK_ALLOWED_ROLES, or CLERK_REQUIRED_PERMISSIONS.",
+				"MCP_AUTH_MODE=clerk requires an identity-bound authorization policy. Set CLERK_ALLOWED_SUBJECTS or CLERK_ALLOWED_ORGANIZATION_IDS. CLERK_ALLOWED_ROLES and CLERK_REQUIRED_PERMISSIONS can narrow the policy but can't authorize on their own.",
 			);
 		}
 	}

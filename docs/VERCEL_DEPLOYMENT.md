@@ -70,9 +70,10 @@ Auth option A (recommended for teams): Clerk JWT
 - `CLERK_ISSUER=https://<your-clerk-domain>`
 - `CLERK_AUDIENCE=<your-audience>` (required)
 - `CLERK_JWKS_URL=...` (optional; auto-derived from issuer if omitted)
-- At least one authorization constraint: `CLERK_ALLOWED_SUBJECTS`,
-  `CLERK_ALLOWED_ORGANIZATION_IDS`, `CLERK_ALLOWED_ROLES`, or
-  `CLERK_REQUIRED_PERMISSIONS`. Every configured constraint must match.
+- At least one identity constraint: `CLERK_ALLOWED_SUBJECTS` or
+  `CLERK_ALLOWED_ORGANIZATION_IDS`. `CLERK_ALLOWED_ROLES` and
+  `CLERK_REQUIRED_PERMISSIONS` can narrow the policy but can't satisfy this on
+  their own. Every configured constraint must match.
 
 Auth option B (internal shared token):
 
