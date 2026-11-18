@@ -153,7 +153,7 @@ Portkey currently returns the full list from `GET /configs` and ignores `current
 
 Routes:
 
-- GET/POST `/deployments`; GET/PUT/DELETE `/deployments/{id}`. DELETE archives; deprecated `/ping` is intentionally omitted.
+- GET/POST `/deployments`; GET/PUT/DELETE `/deployments/{id}`. DELETE archives; `/deployments/{id}/ping` is not exposed (no tool yet).
 - Undocumented upstream: these tools call the `/v2` base (the `/v1` base with its suffix swapped to `/v2`), while the public OpenAPI lists `/deployments` under `/v1`.
 
 | Tool                  | Selection guidance and result                                                                                                                                                                                                                                                                                                                                                                 |
@@ -470,7 +470,7 @@ Routes:
 | `list_mcp_server_capabilities`     | List capabilities exposed by an MCP server instance. Returns total plus the current tool, resource, and prompt surface; use this instead of the integration-level capability list when you need server-specific exposure.                                                                                                                                                                                                                                                      |
 | `update_mcp_server_capabilities`   | Enable or disable capabilities on an MCP server. Changes take effect immediately and override the integration-level settings for this server; use list_mcp_server_capabilities first to inspect the current surface.                                                                                                                                                                                                                                                           |
 | `list_mcp_server_user_access`      | List per-user access for an MCP server. Returns the default access mode, override flags, and connection status so you can audit who can use it; use before update_mcp_server_user_access.                                                                                                                                                                                                                                                                                      |
-| `update_mcp_server_user_access`    | Grant or revoke individual user access to an MCP server. Changes take effect immediately and override the default access setting for the selected users; use list_mcp_server_user_access first if you need the current state.                                                                                                                                                                                                                                                  |
+| `update_mcp_server_user_access`    | Grant or revoke individual user access to an MCP server, and/or set the server default (default_user_access) for users without an override. Changes take effect immediately and override the default access setting for the selected users; use list_mcp_server_user_access first if you need the current state.                                                                                                                                                               |
 <!-- tool-catalog:end -->
 
 ## Current wire-contract notes
@@ -489,7 +489,7 @@ Routes:
 - Deployment registration or authentication rotation may return one-time secrets.
   Tool results warn that those values appear in the MCP transcript and must be
   stored immediately. Deployment tag maps remain flat strings and list filters
-  serialize them as JSON. The deprecated deployment ping operation is not exposed.
+  serialize them as JSON. The deployment ping operation (`GET /deployments/{id}/ping`) is not exposed; there is no tool for it yet.
 - Guardrails target either LLM or MCP-tool traffic. MCP-server bulk replacement
   removes omitted mappings, while the single-server upsert leaves other mappings
   unchanged.

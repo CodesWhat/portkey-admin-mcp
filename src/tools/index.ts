@@ -123,6 +123,8 @@ const DESTRUCTIVE_TOOL_PREFIXES = [
 	"remove_",
 	"cancel_",
 	"reset_",
+	"update_",
+	"archive_",
 ] as const;
 
 const ENTERPRISE_GATED_TOOL_NAMES = new Set([

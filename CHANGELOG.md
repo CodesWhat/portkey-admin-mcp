@@ -14,6 +14,23 @@ release until that reference and the release notes say so.
 ### Added
 
 - The website measures traffic with cookieless PostHog through `e.codeswhat.com`: pageviews, pageleaves, Core Web Vitals and a short fixed list of link and copy-button clicks. It sets no cookies, builds no person profiles, collects no campaign parameters, and keeps only the referring hostname, never the full referrer or any query string. It only runs on `portkey.codeswhat.com`, and the site's CSP allows that one origin for scripts and connections.
+- `create_mcp_server` accepts `workspace_id` (required with an organisation admin key) and `create_mcp_integration` accepts `organisation_id`, matching the Portkey API.
+- `update_mcp_server_user_access` accepts `default_user_access` (`allow` or `deny`); `users` is now optional as long as one of the two is given. `update_mcp_integration_workspaces` accepts an empty `workspaces` list plus `global_workspace_access` and `override_existing_workspace_access`.
+- `list_mcp_servers` accepts `id` and `search`, the two capability list tools accept a `type` filter, and `list_mcp_server_user_access` accepts `search`.
+
+### Changed
+
+- `update_*` and `archive_*` tools now report `destructiveHint: true` unless a tool sets its own, since they overwrite or retire existing state and MCP treats `false` as additive-only. This includes `update_config`, `update_organisation_defaults` and the MCP integration capability and workspace updates, which had overridden it to `false`.
+- The Docker image builds on Node 26.13 (26.13.1), pinned to the current multi-arch digest.
+- The README no longer says `tools/list` is paginated. The server returns all 194 tools in one response (about 500 KB of JSON). The VS Code section notes the 128-tool cap per chat request and points to `PORTKEY_TOOL_DOMAINS`. ENDPOINTS.md says the deployment ping route isn't exposed instead of calling it deprecated, since the spec doesn't deprecate it. The distribution notes say Smithery shut down its API, CLI, SDKs and accounts on 2026-10-31 and is directory-only now.
+
+### Fixed
+
+- `update_api_key` sent `reset_usage` as a number, but the Portkey API takes a boolean. It now accepts `true`/`false`, as `update_provider` does.
+
+### Security
+
+- Refreshed the root lockfile to Hono 4.13.19. Removed the osv-scanner ignores for GHSA-fc5q-39xc-vjpf and CVE-2026-112366, since the advisory was withdrawn on 2026-11-18.
 
 ## [0.16.4] - 2026-11-13
 

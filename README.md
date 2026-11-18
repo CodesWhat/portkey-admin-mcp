@@ -126,6 +126,9 @@ VS Code's `.vscode/mcp.json` uses a top-level `servers` key and needs a `type`:
 }
 ```
 
+VS Code caps a single chat request at 128 enabled tools, and this server exposes 194.
+Set `PORTKEY_TOOL_DOMAINS` in the server's `env` (for example `"PORTKEY_TOOL_DOMAINS": "prompts,analytics"`) to narrow the set below that limit.
+
 ### Run directly
 
 ```bash
@@ -141,8 +144,8 @@ npx -y portkey-admin-mcp
 ```
 
 Scoping domains is also the biggest lever on context cost, not just access. `tools/list`
-is paginated, and the complete 194-tool catalog is roughly 400 KB once a
-client follows `nextCursor` through every page. Narrowing to the domains a client
+returns every tool in a single response with no `nextCursor`, and the complete
+194-tool catalog is roughly 500 KB of JSON. Narrowing to the domains a client
 actually needs cuts that roughly proportionally.
 
 <details>

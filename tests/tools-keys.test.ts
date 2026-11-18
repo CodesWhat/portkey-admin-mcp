@@ -1056,6 +1056,35 @@ describe("update_api_key", () => {
 		assert.equal(payload.defaults, undefined);
 	});
 
+	it("forwards reset_usage as a boolean", async () => {
+		let capturedPayload: unknown;
+		const callbacks = registerToolCallbacks((server) => {
+			registerKeysTools(
+				server as never,
+				{
+					keys: {
+						updateApiKey: async (_id: string, payload: unknown) => {
+							capturedPayload = payload;
+							return { success: true };
+						},
+					},
+				} as never,
+			);
+		});
+
+		const cb = callbacks.get("update_api_key");
+		assert.ok(cb);
+		await cb({
+			id: "550e8400-e29b-41d4-a716-446655440000",
+			reset_usage: true,
+		});
+
+		assert.equal(
+			(capturedPayload as { reset_usage?: unknown }).reset_usage,
+			true,
+		);
+	});
+
 	it("preserves an explicit null rate-limit clear over the legacy RPM input", async () => {
 		let capturedPayload: unknown;
 		const callbacks = registerToolCallbacks((server) => {

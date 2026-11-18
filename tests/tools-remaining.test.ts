@@ -1255,6 +1255,124 @@ describe("MCP server lifecycle callbacks", () => {
 	});
 });
 
+describe("MCP access fields from the current spec", () => {
+	it("accepts default_user_access without users and rejects an empty update", async () => {
+		const calls: unknown[] = [];
+		const callbacks = callbacksFor(registerMcpServersTools, "mcpServers", {
+			updateMcpServerUserAccess: async (id: string, params: unknown) => {
+				calls.push([id, params]);
+			},
+		});
+		const update = callbacks.get("update_mcp_server_user_access");
+		assert.ok(update);
+
+		await update({ id: "server-1", default_user_access: "deny" });
+		await update({
+			id: "server-1",
+			users: [{ user_id: "user-1", enabled: true }],
+			default_user_access: "allow",
+		});
+		await assert.rejects(() => update({ id: "server-1" }));
+		assert.deepEqual(calls, [
+			["server-1", { default_user_access: "deny" }],
+			[
+				"server-1",
+				{
+					user_access: [{ user_id: "user-1", enabled: true }],
+					default_user_access: "allow",
+				},
+			],
+		]);
+	});
+
+	it("forwards list filters for servers, capabilities and user access", async () => {
+		const calls: unknown[] = [];
+		const callbacks = callbacksFor(registerMcpServersTools, "mcpServers", {
+			listMcpServers: async (params: unknown) => {
+				calls.push(["servers", params]);
+				return { total: 0, data: [] };
+			},
+			listMcpServerCapabilities: async (id: string, params: unknown) => {
+				calls.push(["capabilities", id, params]);
+				return { total: 0, has_more: false, data: [] };
+			},
+			listMcpServerUserAccess: async (id: string, params: unknown) => {
+				calls.push(["user-access", id, params]);
+				return {
+					default_user_access: "allow",
+					total: 0,
+					has_more: false,
+					data: [],
+				};
+			},
+		});
+		await callbacks.get("list_mcp_servers")?.({ id: "a,b", search: "docs" });
+		await callbacks.get("list_mcp_server_capabilities")?.({
+			id: "server-1",
+			type: "resource_template",
+		});
+		await callbacks.get("list_mcp_server_user_access")?.({
+			id: "server-1",
+			search: "ada",
+		});
+		assert.deepEqual(calls, [
+			["servers", { id: "a,b", search: "docs" }],
+			[
+				"capabilities",
+				"server-1",
+				{
+					current_page: undefined,
+					page_size: undefined,
+					type: "resource_template",
+				},
+			],
+			[
+				"user-access",
+				"server-1",
+				{ current_page: undefined, page_size: undefined, search: "ada" },
+			],
+		]);
+	});
+
+	it("allows empty workspaces and forwards global access fields", async () => {
+		const calls: unknown[] = [];
+		const callbacks = callbacksFor(
+			registerMcpIntegrationsTools,
+			"mcpIntegrations",
+			{
+				updateMcpIntegrationWorkspaces: async (id: string, params: unknown) => {
+					calls.push([id, params]);
+				},
+				listMcpIntegrationCapabilities: async (id: string, params: unknown) => {
+					calls.push(["capabilities", id, params]);
+					return { total: 0, data: [] };
+				},
+			},
+		);
+		await callbacks.get("update_mcp_integration_workspaces")?.({
+			id: "integration-1",
+			workspaces: [],
+			global_workspace_access: { enabled: true },
+			override_existing_workspace_access: true,
+		});
+		await callbacks.get("list_mcp_integration_capabilities")?.({
+			id: "integration-1",
+			type: "prompt",
+		});
+		assert.deepEqual(calls, [
+			[
+				"integration-1",
+				{
+					workspaces: [],
+					global_workspace_access: { enabled: true },
+					override_existing_workspace_access: true,
+				},
+			],
+			["capabilities", "integration-1", { type: "prompt" }],
+		]);
+	});
+});
+
 describe("integration model and workspace query callbacks", () => {
 	it("deletes an integration and lists or deletes its custom models", async () => {
 		const calls: unknown[] = [];
