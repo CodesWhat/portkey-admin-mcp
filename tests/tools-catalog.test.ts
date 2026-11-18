@@ -1031,6 +1031,7 @@ describe("providers tools — curated get_provider response", () => {
 		assert.equal(payload.slug, "my-openai");
 		assert.equal(payload.object, undefined);
 		assert.deepEqual(payload.usage_limits, {
+			type: "cost",
 			credit_limit: 100,
 			alert_threshold: 80,
 			periodic_reset: "monthly",

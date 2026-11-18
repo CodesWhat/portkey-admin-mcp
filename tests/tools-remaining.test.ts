@@ -465,6 +465,7 @@ describe("provider lifecycle callbacks", () => {
 							status: "active",
 							note: "primary",
 							usage_limits: {
+								type: "tokens",
 								credit_limit: 100,
 								alert_threshold: 80,
 								periodic_reset: "monthly",
@@ -504,6 +505,12 @@ describe("provider lifecycle callbacks", () => {
 			workspace_id: "workspace-1",
 		});
 		assert.equal(providers[0]?.slug, "openai-prod");
+		assert.deepEqual(providers[0]?.usage_limits, {
+			type: "tokens",
+			credit_limit: 100,
+			alert_threshold: 80,
+			periodic_reset: "monthly",
+		});
 		assert.equal(providers[1]?.usage_limits, null);
 		assert.equal(providers[1]?.rate_limits, null);
 	});

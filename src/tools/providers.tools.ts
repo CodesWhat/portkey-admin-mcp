@@ -215,6 +215,7 @@ export function registerProvidersTools(
 					note: provider.note,
 					usage_limits: provider.usage_limits
 						? {
+								type: provider.usage_limits.type,
 								credit_limit: provider.usage_limits.credit_limit,
 								alert_threshold: provider.usage_limits.alert_threshold,
 								periodic_reset: provider.usage_limits.periodic_reset,
@@ -297,6 +298,7 @@ export function registerProvidersTools(
 				note: provider.note,
 				usage_limits: provider.usage_limits
 					? {
+							type: provider.usage_limits.type,
 							credit_limit: provider.usage_limits.credit_limit,
 							alert_threshold: provider.usage_limits.alert_threshold,
 							periodic_reset: provider.usage_limits.periodic_reset,

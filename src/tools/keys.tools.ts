@@ -406,10 +406,11 @@ function formatKeyUsageLimits(
 	limits: VirtualKeyUsageLimits | ApiKeyUsageLimits | null,
 ): Pick<
 	VirtualKeyUsageLimits | ApiKeyUsageLimits,
-	"credit_limit" | "alert_threshold" | "periodic_reset"
+	"type" | "credit_limit" | "alert_threshold" | "periodic_reset"
 > | null {
 	return limits
 		? {
+				type: limits.type,
 				credit_limit: limits.credit_limit,
 				alert_threshold: limits.alert_threshold,
 				periodic_reset: limits.periodic_reset,

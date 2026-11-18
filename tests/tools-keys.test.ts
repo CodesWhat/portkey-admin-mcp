@@ -108,6 +108,7 @@ describe("list_virtual_keys", () => {
 				status: "active",
 				note: "primary",
 				usage_limits: {
+					type: "cost",
 					credit_limit: 100,
 					alert_threshold: 80,
 					periodic_reset: "monthly",
@@ -1193,5 +1194,87 @@ describe("key limit updates preserve existing budgets", () => {
 		assert.deepEqual(reads, []);
 		assert.equal(usageLimitsOf(writes[0]), undefined);
 		assert.equal(usageLimitsOf(writes[1]), undefined);
+	});
+});
+
+describe("usage limit type in key output", () => {
+	const tokensLimit = {
+		type: "tokens" as const,
+		credit_limit: 5000,
+		alert_threshold: 4000,
+		periodic_reset: "weekly" as const,
+	};
+
+	async function call(
+		tool: string,
+		keys: Record<string, unknown>,
+		args: Record<string, unknown>,
+	) {
+		const callbacks = registerToolCallbacks((server) => {
+			registerKeysTools(server as never, { keys } as never);
+		});
+		const result = (await callbacks.get(tool)?.(args)) as {
+			content: Array<{ text: string }>;
+		};
+		return JSON.parse(result.content[0]?.text ?? "{}") as Record<
+			string,
+			unknown
+		>;
+	}
+
+	it("includes type for get_virtual_key", async () => {
+		const payload = await call(
+			"get_virtual_key",
+			{
+				getVirtualKey: async () => ({
+					name: "vk",
+					slug: "vk",
+					status: "active",
+					note: null,
+					usage_limits: tokensLimit,
+					rate_limits: null,
+					reset_usage: null,
+					created_at: "2026-01-01T00:00:00.000Z",
+					model_config: {},
+				}),
+			},
+			{ slug: "vk" },
+		);
+		assert.deepEqual(payload.usage_limits, tokensLimit);
+	});
+
+	it("includes type for get_api_key and list_api_keys", async () => {
+		const apiKey = {
+			id: "key_1",
+			name: "k",
+			type: "workspace-user",
+			status: "active",
+			organisation_id: "org_1",
+			scopes: [],
+			usage_limits: tokensLimit,
+			rate_limits: null,
+			defaults: null,
+			alert_emails: [],
+			expires_at: null,
+			reset_usage: null,
+			created_at: "2026-01-01T00:00:00.000Z",
+			last_updated_at: "2026-01-02T00:00:00.000Z",
+			creation_mode: "api",
+		};
+		const detail = await call(
+			"get_api_key",
+			{ getApiKey: async () => apiKey },
+			{ id: "key_1" },
+		);
+		assert.deepEqual(detail.usage_limits, tokensLimit);
+		const list = await call(
+			"list_api_keys",
+			{ listApiKeys: async () => ({ total: 1, data: [apiKey] }) },
+			{},
+		);
+		assert.deepEqual(
+			(list.api_keys as Array<Record<string, unknown>>)[0]?.usage_limits,
+			tokensLimit,
+		);
 	});
 });
