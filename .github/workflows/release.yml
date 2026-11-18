@@ -100,7 +100,8 @@ jobs:
     needs: release-ref
     # Gate the release on the full CI suite for the tagged commit, so a broken
     # tag never produces a GitHub Release or an MCP Registry entry.
-    uses: ./.github/workflows/ci.yml
+    # The $/ self-repository form (GitHub, 2026-07) is untested in this release path; switch with a release dry run.
+    uses: ./.github/workflows/ci.yml # zizmor: ignore[self-repository]
     with:
       ref: ${{ needs.release-ref.outputs.ci_commit }}
     permissions:
