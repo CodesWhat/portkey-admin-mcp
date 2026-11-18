@@ -42,6 +42,12 @@ const MCP_SERVERS_TOOL_SCHEMAS = {
 			.string()
 			.optional()
 			.describe("Description of the MCP server"),
+		workspace_id: z
+			.string()
+			.optional()
+			.describe(
+				"Workspace ID or slug; required with an organisation admin API key",
+			),
 	},
 	getMcpServer: {
 		id: z.string().describe("The MCP server ID or slug to retrieve"),

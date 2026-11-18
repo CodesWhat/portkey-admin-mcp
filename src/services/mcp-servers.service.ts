@@ -32,6 +32,7 @@ export interface CreateMcpServerRequest {
 	mcp_integration_id: string;
 	slug?: string;
 	description?: string;
+	workspace_id?: string;
 	tags?: Record<string, string> | null;
 }
 

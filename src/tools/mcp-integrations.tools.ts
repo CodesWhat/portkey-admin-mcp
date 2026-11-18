@@ -108,6 +108,12 @@ const MCP_INTEGRATIONS_TOOL_SCHEMAS = {
 			.describe(
 				"Workspace ID — required when using organization admin API keys",
 			),
+		organisation_id: z
+			.string()
+			.optional()
+			.describe(
+				"Organisation ID; required with an organisation admin API key when workspace_id is omitted",
+			),
 		secret_mappings: mcpSecretMappingsSchema
 			.optional()
 			.describe(

@@ -48,6 +48,7 @@ export interface CreateMcpIntegrationRequest {
 	transport: string;
 	slug?: string;
 	description?: string;
+	organisation_id?: string;
 	workspace_id?: string;
 	configurations?: Record<string, unknown> & {
 		custom_headers?: Record<string, string>;

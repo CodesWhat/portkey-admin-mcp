@@ -1111,6 +1111,40 @@ describe("create_mcp_integration tool payload assembly", () => {
 		});
 	});
 
+	it("forwards organisation_id through the tool callback", async () => {
+		let capturedPayload: unknown;
+
+		const callbacks = registerToolCallbacks((server) => {
+			registerMcpIntegrationsTools(
+				server as never,
+				{
+					mcpIntegrations: {
+						createMcpIntegration: async (payload: unknown) => {
+							capturedPayload = payload;
+							return { id: "int-1", slug: "my-integration" };
+						},
+					},
+				} as never,
+			);
+		});
+
+		await callbacks.get("create_mcp_integration")?.({
+			name: "Org Integration",
+			url: "https://mcp.example.com/v1",
+			auth_type: "none",
+			transport: "http",
+			organisation_id: "org-1",
+		});
+
+		assert.deepEqual(capturedPayload, {
+			name: "Org Integration",
+			url: "https://mcp.example.com/v1",
+			auth_type: "none",
+			transport: "http",
+			organisation_id: "org-1",
+		});
+	});
+
 	it("maps custom_headers to configurations.custom_headers via tool callback", async () => {
 		let capturedPayload: unknown;
 
@@ -1647,6 +1681,7 @@ describe("create_mcp_server tool payload assembly", () => {
 			mcp_integration_id: "int-1",
 			slug: "my-server",
 			description: "A test server",
+			workspace_id: "ws-1",
 		})) as { content: Array<{ text: string }> };
 
 		assert.deepEqual(capturedPayload, {
@@ -1654,6 +1689,7 @@ describe("create_mcp_server tool payload assembly", () => {
 			mcp_integration_id: "int-1",
 			slug: "my-server",
 			description: "A test server",
+			workspace_id: "ws-1",
 		});
 
 		const payload = JSON.parse(result.content[0]?.text || "{}") as {

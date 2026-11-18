@@ -13613,6 +13613,10 @@
 						"description": "Workspace ID — required when using organization admin API keys",
 						"type": "string"
 					},
+					"organisation_id": {
+						"description": "Organisation ID; required with an organisation admin API key when workspace_id is omitted",
+						"type": "string"
+					},
 					"secret_mappings": {
 						"description": "Runtime Secret Reference mappings; every configurations.<field> target must be unique",
 						"type": "array",
@@ -14120,6 +14124,10 @@
 					},
 					"description": {
 						"description": "Description of the MCP server",
+						"type": "string"
+					},
+					"workspace_id": {
+						"description": "Workspace ID or slug; required with an organisation admin API key",
 						"type": "string"
 					}
 				},
