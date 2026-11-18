@@ -609,10 +609,13 @@ function wrapToolCallback(
 				metadata: { toolName },
 			});
 
-			return normalizeToolResult({
-				content: [{ type: "text", text }],
-				isError: true,
-			} satisfies CallToolResult);
+			return enforceToolResultLimit(
+				toolName,
+				normalizeToolResult({
+					content: [{ type: "text", text }],
+					isError: true,
+				} satisfies CallToolResult),
+			);
 		}
 	};
 }
