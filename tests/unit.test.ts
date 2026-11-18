@@ -3480,7 +3480,7 @@ describe("Tool annotations", () => {
 			"update_mcp_integration_workspaces",
 		]) {
 			assert.equal(
-				getAnnotations(toolName).destructiveHint,
+				getAnnotations(toolName)?.destructiveHint,
 				true,
 				`${toolName} should be marked destructive`,
 			);
