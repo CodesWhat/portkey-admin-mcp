@@ -321,23 +321,15 @@ type StandardToolEnvelope =
 	| StandardToolErrorEnvelope;
 
 const STANDARD_TOOL_OUTPUT_SCHEMA = {
-	ok: z
-		.boolean()
-		.describe("Whether the tool call succeeded and returned structured data"),
-	data: z
-		.unknown()
-		.optional()
-		.describe("Structured success payload when ok is true"),
+	ok: z.boolean().describe("Call succeeded"),
+	data: z.unknown().optional().describe("Success payload"),
 	error: z
 		.object({
-			message: z.string().describe("Human-readable error message"),
-			details: z
-				.unknown()
-				.optional()
-				.describe("Optional structured error details"),
+			message: z.string().describe("Error message"),
+			details: z.unknown().optional().describe("Extra error details"),
 		})
 		.optional()
-		.describe("Structured error payload when ok is false"),
+		.describe("Failure details"),
 } as const;
 
 /*
@@ -460,9 +452,7 @@ function getToolOutputSchema(toolName: string) {
 
 	return {
 		...STANDARD_TOOL_OUTPUT_SCHEMA,
-		data: dataSchema
-			.optional()
-			.describe("Structured success payload when ok is true"),
+		data: dataSchema.optional().describe("Success payload"),
 	};
 }
 

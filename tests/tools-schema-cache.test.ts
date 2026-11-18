@@ -82,4 +82,26 @@ describe("JSON Schema conversion cache", () => {
 			assert.equal(result.isError, true);
 		});
 	});
+
+	it("uses the short generic output schema descriptions", async () => {
+		const { tools } = await withClient(["configs"], (c) => c.listTools());
+		type Described = {
+			description?: string;
+			properties?: Record<string, Described>;
+		};
+		const properties = tools
+			.map((tool) => tool.outputSchema?.properties as Record<string, Described>)
+			.find((props) => props?.ok?.description === "Call succeeded");
+		assert.ok(properties, "no tool uses the generic output schema");
+		assert.equal(properties.data?.description, "Success payload");
+		assert.equal(properties.error?.description, "Failure details");
+		assert.equal(
+			properties.error?.properties?.message?.description,
+			"Error message",
+		);
+		assert.equal(
+			properties.error?.properties?.details?.description,
+			"Extra error details",
+		);
+	});
 });
