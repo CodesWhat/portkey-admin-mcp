@@ -26,6 +26,7 @@ release until that reference and the release notes say so.
 
 ### Fixed
 
+- `rotate_api_key` returned an output-validation error after the rotation had already run upstream, which dropped the one-time new key. This happened when Portkey sent `key_transition_expires_at` with an offset such as `+00:00`, or left it out. The schema now accepts both. `list_secret_references` and `get_secret_reference` accept offset timestamps too, and the list no longer fails on a status other than `ACTIVE`.
 - Virtual key, API key and provider results include `usage_limits.type`, so a tokens budget no longer looks like a cost one.
 - `run_prompt_completion` returns the model's `tool_calls` and legacy `function_call` instead of `response: null` after a billable call that ended in a tool request. They come back as data and the server never runs them.
 - `get_workspace` and `list_workspaces` now return `is_default`, `usage_limits` and `rate_limits`. Portkey sends the default flag at the top level with `defaults` set to null, so the flag was always missing, and the limits accepted on create and update were never shown back.

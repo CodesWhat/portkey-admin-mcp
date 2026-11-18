@@ -180,7 +180,7 @@ export interface RotateApiKeyRequest {
 export interface RotateApiKeyResponse {
 	id: string;
 	key: string;
-	key_transition_expires_at: string;
+	key_transition_expires_at?: string;
 }
 
 export interface ListVirtualKeysParams {

@@ -371,8 +371,12 @@ const TOOL_SUCCESS_DATA_SCHEMAS: Partial<Record<string, z.ZodType>> = {
 			.describe("Required handling guidance for the one-time secret"),
 		id: z.string().uuid().describe("Rotated API key UUID"),
 		key: z.string().describe("New API key secret, returned only once"),
+		// Offsets such as +00:00 are valid RFC 3339, and the field is optional in
+		// the spec. A strict schema here fails after the rotation already ran,
+		// which would drop the one-time secret.
 		key_transition_expires_at: z.iso
-			.datetime()
+			.datetime({ offset: true })
+			.optional()
 			.describe("Time when the previous key stops working"),
 	}),
 	create_secret_reference: z.object({
@@ -391,10 +395,14 @@ const TOOL_SUCCESS_DATA_SCHEMAS: Partial<Record<string, z.ZodType>> = {
 					manager_type: SecretManagerTypeSchema.describe(
 						"External secret manager type",
 					),
-					status: z.literal("ACTIVE").describe("Current reference status"),
-					created_at: z.iso.datetime().describe("ISO 8601 creation timestamp"),
+					status: z
+						.string()
+						.describe("Current reference status, ACTIVE for usable references"),
+					created_at: z.iso
+						.datetime({ offset: true })
+						.describe("ISO 8601 creation timestamp"),
 					last_updated_at: z.iso
-						.datetime()
+						.datetime({ offset: true })
 						.describe("ISO 8601 last-update timestamp"),
 				}),
 			)
@@ -425,9 +433,11 @@ const TOOL_SUCCESS_DATA_SCHEMAS: Partial<Record<string, z.ZodType>> = {
 			.describe("String metadata tags"),
 		status: z.literal("ACTIVE").describe("Current reference status"),
 		created_by: z.string().describe("Creator identifier"),
-		created_at: z.iso.datetime().describe("ISO 8601 creation timestamp"),
+		created_at: z.iso
+			.datetime({ offset: true })
+			.describe("ISO 8601 creation timestamp"),
 		last_updated_at: z.iso
-			.datetime()
+			.datetime({ offset: true })
 			.describe("ISO 8601 last-update timestamp"),
 		auth_config: z
 			.record(z.string(), z.unknown())
