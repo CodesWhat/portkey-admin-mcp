@@ -702,6 +702,7 @@ describe("PromptsService workflows", () => {
 			prompt_version_id: "source-version",
 			prompt_version: 4,
 			string: "Hello",
+			model: "gpt-4o",
 			parameters: {},
 			virtual_key: "vk-source",
 			template_metadata: { app: "support", env: "dev" },
@@ -895,6 +896,7 @@ describe("deep-review service regressions", () => {
 			prompt_version_id: "source-version",
 			prompt_version: 4,
 			string: "Hello",
+			model: "gpt-4o",
 			parameters: {},
 			virtual_key: "vk-staging",
 			template_metadata: { app: "support", env: "dev" },
@@ -935,6 +937,7 @@ describe("deep-review service regressions", () => {
 			prompt_version_id: "source-version",
 			prompt_version: 4,
 			string: "Hello",
+			model: "gpt-4o",
 			parameters: {},
 			virtual_key: "vk-staging",
 			template_metadata: { app: "support", env: "dev" },
@@ -961,6 +964,105 @@ describe("deep-review service regressions", () => {
 			(capturedBody(2) as Record<string, unknown>).virtual_key,
 			"vk-staging",
 		);
+	});
+});
+
+describe("prompt promotion into an existing target", () => {
+	const source = {
+		id: "source-1",
+		name: "support-dev",
+		slug: "support-dev",
+		collection_id: "collection-1",
+		workspace_id: "workspace-1",
+		created_at: "2026-08-01T00:00:00Z",
+		last_updated_at: "2026-08-02T00:00:00Z",
+		prompt_version_id: "source-version",
+		prompt_version: 4,
+		string: "Hello",
+		parameters: { temperature: 0.2 },
+		model: "gpt-4o",
+		virtual_key: "vk-source",
+		template_metadata: { app: "support", env: "dev" },
+	};
+
+	async function promote(sourceOverrides: Record<string, unknown>) {
+		capturedFetches.length = 0;
+		queuedResponses.length = 0;
+		enqueue({ ...source, ...sourceOverrides });
+		enqueue({
+			object: "list",
+			total: 1,
+			data: [{ id: "target-1", name: "support-prod", slug: "support-prod" }],
+		});
+		enqueue({
+			id: "target-1",
+			slug: "support-prod",
+			prompt_version_id: "target-v2",
+		});
+		return new PromptsService("test-key", BASE_URL).promotePrompt({
+			source_prompt_id: "source-1",
+			target_collection_id: "collection-2",
+			target_env: "prod",
+		});
+	}
+
+	it("replaces the target version instead of patching it", async () => {
+		await promote({});
+		const body = capturedBody(2) as Record<string, unknown>;
+		assert.equal(body.patch, false);
+		assert.equal(body.string, "Hello");
+		assert.equal(body.model, "gpt-4o");
+		assert.equal(body.virtual_key, "vk-source");
+		assert.deepEqual(body.parameters, { temperature: 0.2 });
+	});
+
+	it("sends empty tool lists and no tool_choice when the source has none", async () => {
+		for (const overrides of [
+			{},
+			{ tools: null, functions: null, tool_choice: null },
+			{ tools: [], functions: [] },
+		]) {
+			await promote(overrides);
+			const body = capturedBody(2) as Record<string, unknown>;
+			assert.deepEqual(body.tools, []);
+			assert.deepEqual(body.functions, []);
+			assert.equal("tool_choice" in body, false);
+		}
+	});
+
+	it("keeps populated source tools and tool_choice", async () => {
+		const tools = [
+			{
+				type: "function",
+				function: { name: "lookup", parameters: { type: "object" } },
+			},
+		];
+		await promote({ tools, tool_choice: "auto" });
+		const body = capturedBody(2) as Record<string, unknown>;
+		assert.deepEqual(body.tools, tools);
+		assert.equal(body.tool_choice, "auto");
+	});
+
+	it("fails before any write when the source version is incomplete", async () => {
+		for (const overrides of [
+			{ model: undefined },
+			{ string: "" },
+			{ virtual_key: undefined },
+		]) {
+			await assert.rejects(promote(overrides), /Cannot promote prompt/);
+			assert.equal(
+				capturedFetches.some((call) => call.init?.method === "PUT"),
+				false,
+			);
+		}
+	});
+
+	it("leaves ordinary partial updates in patch mode", async () => {
+		enqueue({ id: "p1", slug: "p1", prompt_version_id: "v2" });
+		await new PromptsService("test-key", BASE_URL).updatePrompt("p1", {
+			string: "Hi",
+		});
+		assert.equal((capturedBody(0) as Record<string, unknown>).patch, true);
 	});
 });
 

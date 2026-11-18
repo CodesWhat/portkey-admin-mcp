@@ -26,6 +26,7 @@ release until that reference and the release notes say so.
 
 ### Fixed
 
+- `promote_prompt` into an existing target now replaces the target's version with the source version. It used to patch, so a source with no tools left the target's old `tools` and `tool_choice` in place. It also fails before writing when the source version has no model, string or virtual key.
 - Clerk v2 session tokens now decode correctly. The role comes from `o.rol` without its `org:` prefix, so `CLERK_ALLOWED_ROLES=org:admin` never matched, and permissions packed into `fea`, `o.per` and `o.fpm` were dropped, so `CLERK_REQUIRED_PERMISSIONS` could never be met. Both are rebuilt the way Clerk's own parser does it. v1 tokens with flat `org_*` claims keep working.
 - `update_api_key` sent `reset_usage` as a number, but the Portkey API takes a boolean. It now accepts `true`/`false`, as `update_provider` does.
 
