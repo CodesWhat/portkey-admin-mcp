@@ -35,12 +35,6 @@ export type ExistingUsageLimits = Omit<
 	periodic_reset_days?: number | null;
 };
 
-export interface RateLimitRpm {
-	type: "requests";
-	unit: "rpm";
-	value: number;
-}
-
 export interface RateLimitWithUnit<
 	U extends "rpm" | "rph" | "rpd" = "rpm" | "rph" | "rpd",
 > {
@@ -48,6 +42,8 @@ export interface RateLimitWithUnit<
 	unit: U;
 	value: number;
 }
+
+export type RateLimitRpm = RateLimitWithUnit<"rpm">;
 
 function hasUsageLimitInput(params: UsageLimitsParams): boolean {
 	return (
@@ -163,13 +159,7 @@ export function buildRateLimitsRpm(
 	rpmValue: number | undefined,
 ): RateLimitRpm[] | undefined {
 	if (rpmValue !== undefined) {
-		return [
-			{
-				type: "requests",
-				unit: "rpm",
-				value: rpmValue,
-			},
-		];
+		return buildRateLimits({ value: rpmValue, unit: "rpm" });
 	}
 	return undefined;
 }
