@@ -119,7 +119,7 @@ async function captureServiceRequest(
 	const basePrototype = BaseService.prototype as unknown as {
 		get: (path: string, params?: object) => Promise<unknown>;
 		post: (path: string, body?: unknown) => Promise<unknown>;
-		put: (path: string, body?: unknown) => Promise<unknown>;
+		put: (path: string, body?: unknown, params?: object) => Promise<unknown>;
 		delete: (path: string, params?: object) => Promise<unknown>;
 	};
 	const originalMethods = {
@@ -138,8 +138,8 @@ async function captureServiceRequest(
 		captured = { method: "POST", path, body };
 		return {};
 	};
-	basePrototype.put = async (path: string, body?: unknown) => {
-		captured = { method: "PUT", path, body };
+	basePrototype.put = async (path: string, body?: unknown, params?: object) => {
+		captured = { method: "PUT", path, body, params };
 		return {};
 	};
 	basePrototype.delete = async (path: string, params?: object) => {
@@ -750,7 +750,7 @@ describe("ConfigsService response parsing", () => {
 		const service = new ConfigsService("test-dummy-key");
 		const basePrototype = BaseService.prototype as unknown as {
 			get: (path: string, params?: object) => Promise<unknown>;
-			put: (path: string, body?: unknown) => Promise<unknown>;
+			put: (path: string, body?: unknown, params?: object) => Promise<unknown>;
 		};
 		const originalGet = basePrototype.get;
 		const originalPut = basePrototype.put;
@@ -1727,8 +1727,8 @@ describe("Service path param encoding", () => {
 						),
 					),
 				expectedMethod: "PUT",
-				expectedPath:
-					"/providers/provider%2Fone%20two?workspace_id=workspace%2Fone%20two",
+				expectedPath: "/providers/provider%2Fone%20two",
+				expectedParams: { workspace_id: "workspace/one two" },
 			},
 			{
 				description: "integration slugs before query strings",
@@ -1776,6 +1776,13 @@ describe("Service path param encoding", () => {
 				testCase.expectedPath,
 				`${testCase.description}: path`,
 			);
+			if ("expectedParams" in testCase) {
+				assert.deepEqual(
+					request.params,
+					testCase.expectedParams,
+					`${testCase.description}: params`,
+				);
+			}
 		}
 	});
 });

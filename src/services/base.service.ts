@@ -447,9 +447,13 @@ export class BaseService {
 		);
 	}
 
-	protected async put<T>(path: string, body?: unknown): Promise<T> {
+	protected async put<T>(
+		path: string,
+		body?: unknown,
+		params?: object,
+	): Promise<T> {
 		return this.rejectNoContent(
-			await this.executeRequest<T>("PUT", path, { body }),
+			await this.executeRequest<T>("PUT", path, { body, params }),
 		);
 	}
 

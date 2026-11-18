@@ -1364,6 +1364,38 @@ describe("Catalog service request contracts", () => {
 	});
 });
 
+describe("ProvidersService workspace query", () => {
+	const cases: Array<[string, string | undefined, string | null]> = [
+		["omitted", undefined, null],
+		["empty", "", null],
+		["space", "work space", "work space"],
+		["reserved characters", "a&b=c/d?e#f", "a&b=c/d?e#f"],
+	];
+
+	for (const [label, workspaceId, expected] of cases) {
+		it(`sends workspace_id on update and delete (${label})`, async () => {
+			const service = new ProvidersService("test-key", BASE_URL);
+			await service.updateProvider("provider/one", { note: "x" }, workspaceId);
+			enqueue({ deleted: true });
+			await service.deleteProvider("provider/one", workspaceId);
+
+			for (const [index, method] of [
+				[0, "PUT"],
+				[1, "DELETE"],
+			] as const) {
+				const url = capturedUrl(index);
+				assert.equal(capturedFetches[index]?.init?.method, method);
+				assert.equal(url.pathname, "/v1/providers/provider%2Fone");
+				assert.equal(url.searchParams.get("workspace_id"), expected);
+				assert.deepEqual(
+					[...url.searchParams.keys()].length,
+					expected === null ? 0 : 1,
+				);
+			}
+		});
+	}
+});
+
 describe("KeysService request contracts", () => {
 	it("routes virtual and API key lifecycles", async () => {
 		const service = new KeysService("test-key", BASE_URL);
