@@ -36,6 +36,7 @@ const MANAGED_ENV_KEYS = [
 	"MCP_TRANSPORT",
 	"PORT",
 	"PORTKEY_API_KEY",
+	"PORTKEY_TOOL_DOMAINS",
 	"RATE_LIMIT_ENABLED",
 ] as const;
 
@@ -275,6 +276,34 @@ describe("final HTTP runtime edge behavior", { concurrency: false }, () => {
 				assert.equal(probe.status, 200);
 			},
 		);
+	});
+
+	it("rejects an invalid PORTKEY_TOOL_DOMAINS when the runtime is created", async () => {
+		await withEnvironment({ PORTKEY_TOOL_DOMAINS: "bogus" }, () => {
+			assert.throws(
+				() => createHttpAppRuntime(),
+				/Unknown tool domains in PORTKEY_TOOL_DOMAINS: bogus/,
+			);
+		});
+	});
+
+	it("answers 500 -32603 with the request id when per-request server creation fails", async () => {
+		await withListeningApp({}, async ({ baseUrl }) => {
+			// Break the configuration after startup to force the internal-error path.
+			process.env.PORTKEY_TOOL_DOMAINS = "bogus";
+			const response = await fetch(`${baseUrl}/mcp`, {
+				method: "POST",
+				headers: jsonHeaders(),
+				body: JSON.stringify({ ...INITIALIZE_BODY, id: 42 }),
+			});
+			assert.equal(response.status, 500);
+			const body = (await response.json()) as {
+				error: { code: number; message: string };
+				id: unknown;
+			};
+			assert.equal(body.error.code, -32603);
+			assert.equal(body.id, 42);
+		});
 	});
 
 	it("closes the listener on closeHttpApp so the port can be reused", async () => {

@@ -349,6 +349,36 @@ describe("HTTP server integration", () => {
 		);
 	});
 
+	it("exits non-zero at startup when PORTKEY_TOOL_DOMAINS names an unknown domain", async () => {
+		const child = spawn(process.execPath, [TSX_CLI_PATH, "src/server.ts"], {
+			cwd: process.cwd(),
+			env: {
+				...process.env,
+				PORT: String(await getFreePort()),
+				MCP_HOST: "127.0.0.1",
+				PORTKEY_API_KEY: "test-dummy-key",
+				MCP_AUTH_MODE: "bearer",
+				MCP_AUTH_TOKEN: AUTH_TOKEN,
+				RATE_LIMIT_ENABLED: "false",
+				PORTKEY_TOOL_DOMAINS: "bogus",
+			},
+			stdio: ["ignore", "pipe", "pipe"],
+		});
+		spawnedServers.add(child);
+		let output = "";
+		for (const stream of [child.stdout, child.stderr]) {
+			stream?.setEncoding("utf8");
+			stream?.on("data", (chunk: string) => {
+				output += chunk;
+			});
+		}
+
+		const [code] = (await once(child, "exit")) as [number | null];
+		spawnedServers.delete(child);
+		assert.notEqual(code, 0, output);
+		assert.match(output, /Unknown tool domains in PORTKEY_TOOL_DOMAINS: bogus/);
+	});
+
 	it("reports why Portkey readiness cannot run without an API key", async () => {
 		await withHttpServer(
 			{
