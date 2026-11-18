@@ -21,6 +21,8 @@ export default function NotFound() {
             alt="Portkey Admin MCP mascot, a glossy dark tile with a hexagon mark"
             width="128"
             height="128"
+            loading="lazy"
+            decoding="async"
           />
           <p className="eyebrow">ERROR 404 · {product.name.toUpperCase()}</p>
           <h1 id="nf-h">Nothing to administer here.</h1>
