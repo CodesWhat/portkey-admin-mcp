@@ -13609,7 +13609,7 @@
 						"additionalProperties": {}
 					},
 					"workspace_id": {
-						"description": "Workspace ID — required when using organization admin API keys",
+						"description": "Workspace ID; set it to create the integration at workspace level. With an organisation admin key, give this or organisation_id.",
 						"type": "string"
 					},
 					"organisation_id": {

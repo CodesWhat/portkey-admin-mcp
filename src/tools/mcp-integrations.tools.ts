@@ -106,7 +106,7 @@ const MCP_INTEGRATIONS_TOOL_SCHEMAS = {
 			.string()
 			.optional()
 			.describe(
-				"Workspace ID — required when using organization admin API keys",
+				"Workspace ID; set it to create the integration at workspace level. With an organisation admin key, give this or organisation_id.",
 			),
 		organisation_id: z
 			.string()
