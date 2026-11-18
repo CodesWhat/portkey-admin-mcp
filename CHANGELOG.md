@@ -11,6 +11,8 @@ release until that reference and the release notes say so.
 
 ## [Unreleased]
 
+## [0.16.5] - 2026-11-18
+
 ### Added
 
 - The website measures traffic with cookieless PostHog through `e.codeswhat.com`: pageviews, pageleaves, Core Web Vitals and a short fixed list of link and copy-button clicks. It sets no cookies, builds no person profiles, collects no campaign parameters, and keeps only the referring hostname, never the full referrer or any query string. It only runs on `portkey.codeswhat.com`, and the site's CSP allows that one origin for scripts and connections.
@@ -20,7 +22,7 @@ release until that reference and the release notes say so.
 
 ### Changed
 
-- Responses from Portkey are read with a size cap, and tool results have one too. A Portkey response body over 8 MiB fails the call with an explicit error instead of being buffered whole, and a tool result over 4 MiB (text block and `structuredContent` counted separately, after JSON escaping) is replaced by a short error that says how to narrow the request. Nothing is ever truncated. Both limits are configurable with `PORTKEY_MAX_UPSTREAM_BODY_BYTES` and `PORTKEY_MAX_TOOL_RESULT_BYTES`, and a malformed value stops the server at startup.
+- Responses from Portkey are read with a size cap, and tool results have one too. A Portkey response body over 8 MiB fails the call with an explicit error instead of being buffered whole, and a tool result over 4 MiB (text block and `structuredContent` counted separately, after JSON escaping) is replaced by a short error that says how to narrow the request. Nothing is ever truncated. Both limits are configurable with `PORTKEY_MAX_UPSTREAM_BODY_BYTES` and `PORTKEY_MAX_TOOL_RESULT_BYTES`, and a malformed value stops the server at startup. Because both copies count, the default result cap in practice allows about 2 MiB of JSON payload; raise `PORTKEY_MAX_TOOL_RESULT_BYTES` if a large list call that worked before now errors.
 - `update_*` and `archive_*` tools now report `destructiveHint: true` unless a tool sets its own, since they overwrite or retire existing state and MCP treats `false` as additive-only. This includes `update_config`, `update_organisation_defaults` and the MCP integration capability and workspace updates, which had overridden it to `false`.
 - The Docker image builds on Node 26.13 (26.13.1), pinned to the current multi-arch digest.
 - `tools/list` is cheaper. The server converts each tool's input and output schema to JSON Schema once per process instead of on every request, which cuts the CPU for a full catalog listing by roughly two thirds.
@@ -1094,7 +1096,8 @@ First stable release. Graduates from beta with 151 tools covering ~98% of the Po
 - Vercel deployment support
 - Contract tests, E2E tests, security tests
 
-[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.4...HEAD
+[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.5...HEAD
+[0.16.5]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.4...v0.16.5
 [0.16.4]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.3...v0.16.4
 [0.16.3]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.2...v0.16.3
 [0.16.2]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.1...v0.16.2
