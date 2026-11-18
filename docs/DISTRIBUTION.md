@@ -43,7 +43,7 @@ runtime catalog before release.
   0.16.5 as `isLatest=true`, published 2026-11-18T22:56:35Z.
 - The Vercel Production deploy of `09f9d05e` succeeded. The live docs show
   0.16.4 until this manual refresh ships.
-- LobeHub: the manual publish for 0.16.5 is pending and unverified.
+- LobeHub: `npm run update:lobehub` updated `codeswhat-portkey-admin-mcp` from 0.16.4 to 0.16.5. The market API reports version 0.16.5 with 194 tools, updated 2026-11-18T22:58:29Z.
 - Docker submission [#5026](https://github.com/docker/mcp-registry/pull/5026):
   the pin has not been refreshed to the 0.16.5 release commit. Pending and
   unverified; maintainer review and catalog publication also remain pending.

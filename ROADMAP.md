@@ -46,7 +46,8 @@ README, endpoint catalog, domain counts, and Enterprise-gated inventory together
   (`main`, promotion #220), GitHub Release marked Latest, npm with SLSA
   provenance, and the MCP Registry entry marked latest. Release workflow
   44414517043 succeeded and the Vercel Production deploy succeeded.
-- Pending or unverified: the LobeHub manual publish, the Glama re-index, and
+- LobeHub was updated to 0.16.5 (market API: 194 tools).
+- Pending or unverified: the Glama re-index and
   the Docker catalog pin for #5026. See `docs/DISTRIBUTION.md`.
 
 ## Completed 2026-11-14 (0.16.4)
