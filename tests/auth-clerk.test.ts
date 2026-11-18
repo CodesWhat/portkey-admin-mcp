@@ -1019,6 +1019,20 @@ describe("clerk v2 session token decoding", () => {
 		assert.deepEqual(principal.permissions, ["org:b:write"]);
 	});
 
+	it("skips an invalid mask but still grants from a valid one", () => {
+		const config = { ...policy, requiredPermissions: ["org:b:read"] };
+		const principal = authorizeClerkClaims(
+			{
+				sub: "user_a",
+				v: 2,
+				fea: "o:a,o:b",
+				o: { id: "org_a", per: "read", fpm: "abc,1" },
+			},
+			config,
+		);
+		assert.deepEqual(principal.permissions, ["org:b:read"]);
+	});
+
 	it("only counts org-scoped features and keeps their order", () => {
 		const principal = authorizeClerkClaims(
 			{

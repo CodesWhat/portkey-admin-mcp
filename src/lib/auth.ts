@@ -236,8 +236,10 @@ function unique(values: readonly string[]): string[] {
  * - `o.fpm` is a comma-separated list of decimal bitmasks, one per org-scoped
  *   feature. Bit N (least significant first) selects the Nth `o.per` entry.
  *
- * Masks are decoded with BigInt so they can be wider than 32 bits. Anything
- * malformed grants nothing.
+ * Masks are decoded with BigInt so they can be wider than 32 bits. Like
+ * Clerk's parser, an invalid mask skips only its own feature, so a valid mask
+ * for another feature can still grant. Structurally malformed input (missing
+ * claims, a `fea` entry without a scope) grants nothing.
  */
 function decodeClerkV2Permissions(
 	features: unknown,
