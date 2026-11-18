@@ -862,6 +862,14 @@ describe("clerk session and claim validation", () => {
 		process.env.CLERK_ISSUER = issuer;
 		process.env.CLERK_AUDIENCE = "test-audience";
 		process.env.CLERK_JWKS_URL = jwksUrl;
+		for (const key of [
+			"CLERK_ALLOWED_SUBJECTS",
+			"CLERK_ALLOWED_ORGANIZATION_IDS",
+			"CLERK_ALLOWED_ROLES",
+			"CLERK_REQUIRED_PERMISSIONS",
+		]) {
+			delete process.env[key];
+		}
 		process.env.CLERK_ALLOWED_SUBJECTS = "user_test";
 		const { publicKey, privateKey } = await generateKeyPair("RS256", {
 			extractable: true,
