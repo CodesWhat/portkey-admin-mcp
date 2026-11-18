@@ -217,11 +217,27 @@ export interface PromptCompletionRequest {
 	hyperparameters?: PromptHyperparameters;
 }
 
+export interface PromptCompletionToolCall {
+	id: string;
+	type: string;
+	function: {
+		name: string;
+		arguments: string;
+	};
+}
+
+export interface PromptCompletionFunctionCall {
+	name: string;
+	arguments: string;
+}
+
 export interface PromptCompletionChoice {
 	index: number;
 	message: {
 		role: string;
-		content: string;
+		content: string | null;
+		tool_calls?: PromptCompletionToolCall[];
+		function_call?: PromptCompletionFunctionCall;
 	};
 	finish_reason: string;
 }

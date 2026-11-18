@@ -26,6 +26,7 @@ release until that reference and the release notes say so.
 
 ### Fixed
 
+- `run_prompt_completion` returns the model's `tool_calls` and legacy `function_call` instead of `response: null` after a billable call that ended in a tool request. They come back as data and the server never runs them.
 - `get_workspace` and `list_workspaces` now return `is_default`, `usage_limits` and `rate_limits`. Portkey sends the default flag at the top level with `defaults` set to null, so the flag was always missing, and the limits accepted on create and update were never shown back.
 - `get_token_analytics`, `get_users_analytics` and `get_cache_hit_rate` read fields that Portkey's spec doesn't return and dropped the ones it does. Token results now carry `total` and `avg` (the graph has no prompt/completion split), user results carry the unique-user `total`, and cache hit-rate results carry `simple_hits`, `semantic_hits`, `rate` and both cumulative savings fields per bucket, with `summary.total_hits` and `summary.hit_rate`.
 - `update_virtual_key`, `update_api_key` and `update_provider` no longer overwrite an existing budget. Changing only the alert threshold used to send `type: cost` and a monthly reset, which turned a weekly token budget into a monthly cost one. These updates now read the current limits first and change only the fields you pass, and an update that touches no limit field sends no `usage_limits` and does no extra read.

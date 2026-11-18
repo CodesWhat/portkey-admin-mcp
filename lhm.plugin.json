@@ -3796,7 +3796,7 @@
 		},
 		{
 			"name": "run_prompt_completion",
-			"description": "Execute a prompt against the configured model and return the completion. This makes a billable model call, so use render_prompt first when you want to check the template and validate_completion_metadata when billing fields are uncertain.",
+			"description": "Execute a prompt against the configured model and return the completion text, plus any tool_calls or function_call the model requested (returned as data, never executed). This makes a billable model call, so use render_prompt first when you want to check the template and validate_completion_metadata when billing fields are uncertain.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
