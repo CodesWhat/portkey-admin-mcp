@@ -26,6 +26,7 @@ release until that reference and the release notes say so.
 
 ### Fixed
 
+- `update_virtual_key`, `update_api_key` and `update_provider` no longer overwrite an existing budget. Changing only the alert threshold used to send `type: cost` and a monthly reset, which turned a weekly token budget into a monthly cost one. These updates now read the current limits first and change only the fields you pass, and an update that touches no limit field sends no `usage_limits` and does no extra read.
 - `create_provider` and `update_provider` no longer drop limit inputs. `usage_limit_type` and `periodic_reset` on their own used to be discarded while the call reported success, and a lone `rate_limit_value` or `rate_limit_unit` was silently ignored. Updates now forward only the usage fields you pass, and a half rate-limit pair is rejected.
 - `promote_prompt` into an existing target now replaces the target's version with the source version. It used to patch, so a source with no tools left the target's old `tools` and `tool_choice` in place. It also fails before writing when the source version has no model, string or virtual key.
 - Clerk v2 session tokens now decode correctly. The role comes from `o.rol` without its `org:` prefix, so `CLERK_ALLOWED_ROLES=org:admin` never matched, and permissions packed into `fea`, `o.per` and `o.fpm` were dropped, so `CLERK_REQUIRED_PERMISSIONS` could never be met. Both are rebuilt the way Clerk's own parser does it. v1 tokens with flat `org_*` claims keep working.

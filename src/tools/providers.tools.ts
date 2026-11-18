@@ -4,6 +4,7 @@ import {
 	buildRateLimits,
 	buildUsageLimits,
 	buildUsageLimitsUpdate,
+	mergeUsageLimitsUpdate,
 } from "../lib/limits.js";
 import { CurrentPageSchema, PageSizeSchema } from "../lib/schemas.js";
 import type { PortkeyService } from "../services/index.js";
@@ -324,17 +325,27 @@ export function registerProvidersTools(
 		},
 		async (rawParams) => {
 			const params = updateProviderSchema.parse(rawParams);
+			const usageLimits = await mergeUsageLimitsUpdate(
+				buildUsageLimitsUpdate({
+					credit_limit: params.credit_limit,
+					alert_threshold: params.alert_threshold,
+					type: params.usage_limit_type,
+					periodic_reset: params.periodic_reset,
+				}),
+				async () =>
+					(
+						await service.providers.getProvider(
+							params.slug,
+							params.workspace_id,
+						)
+					).usage_limits,
+			);
 			const result = await service.providers.updateProvider(
 				params.slug,
 				{
 					name: params.name,
 					note: params.note,
-					usage_limits: buildUsageLimitsUpdate({
-						credit_limit: params.credit_limit,
-						alert_threshold: params.alert_threshold,
-						type: params.usage_limit_type,
-						periodic_reset: params.periodic_reset,
-					}),
+					usage_limits: usageLimits,
 					rate_limits:
 						params.rate_limit_value !== undefined &&
 						params.rate_limit_unit !== undefined

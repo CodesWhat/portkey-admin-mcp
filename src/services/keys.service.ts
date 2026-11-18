@@ -19,7 +19,7 @@ export interface VirtualKeyUsageLimits {
 	type: "cost" | "tokens";
 	alert_threshold: number;
 	credit_limit: number;
-	periodic_reset: "monthly" | "weekly";
+	periodic_reset: "monthly" | "weekly" | string | null;
 }
 
 export interface VirtualKey {
@@ -87,7 +87,7 @@ export interface ApiKeyRateLimit {
 export interface ApiKeyUsageLimits {
 	type: "cost" | "tokens";
 	credit_limit: number;
-	periodic_reset: "monthly" | "weekly";
+	periodic_reset: "monthly" | "weekly" | string | null;
 	alert_threshold: number;
 }
 

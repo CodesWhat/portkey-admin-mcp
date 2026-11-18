@@ -385,6 +385,7 @@ describe("update_virtual_key", () => {
 				server as never,
 				{
 					keys: {
+						getVirtualKey: async () => ({ usage_limits: null }),
 						updateVirtualKey: async (slug: string, payload: unknown) => {
 							capturedSlug = slug;
 							capturedPayload = payload;
@@ -980,6 +981,7 @@ describe("update_api_key", () => {
 				server as never,
 				{
 					keys: {
+						getApiKey: async () => ({ usage_limits: null }),
 						updateApiKey: async (id: string, payload: unknown) => {
 							capturedId = id;
 							capturedPayload = payload;
@@ -1113,5 +1115,83 @@ describe("update_api_key", () => {
 			(capturedPayload as { rate_limits?: unknown }).rate_limits,
 			null,
 		);
+	});
+});
+
+describe("key limit updates preserve existing budgets", () => {
+	const existing = {
+		type: "tokens",
+		credit_limit: 5000,
+		alert_threshold: 4000,
+		periodic_reset: "weekly",
+	};
+
+	function setup() {
+		const reads: string[] = [];
+		const writes: unknown[] = [];
+		const callbacks = registerToolCallbacks((server) => {
+			registerKeysTools(
+				server as never,
+				{
+					keys: {
+						getVirtualKey: async (slug: string) => {
+							reads.push(`virtual:${slug}`);
+							return { usage_limits: existing };
+						},
+						updateVirtualKey: async (_slug: string, payload: unknown) => {
+							writes.push(payload);
+							return { success: true };
+						},
+						getApiKey: async (id: string) => {
+							reads.push(`api:${id}`);
+							return { usage_limits: existing };
+						},
+						updateApiKey: async (_id: string, payload: unknown) => {
+							writes.push(payload);
+							return { success: true };
+						},
+					},
+				} as never,
+			);
+		});
+		return { callbacks, reads, writes };
+	}
+
+	const usageLimitsOf = (payload: unknown) =>
+		(payload as { usage_limits?: unknown }).usage_limits;
+
+	it("merges an alert-only virtual key update onto the existing limits", async () => {
+		const { callbacks, reads, writes } = setup();
+		await callbacks.get("update_virtual_key")?.({
+			slug: "vk",
+			alert_threshold: 80,
+		});
+		assert.deepEqual(reads, ["virtual:vk"]);
+		assert.deepEqual(usageLimitsOf(writes[0]), {
+			...existing,
+			alert_threshold: 80,
+		});
+	});
+
+	it("merges a credit-only API key update onto the existing limits", async () => {
+		const { callbacks, reads, writes } = setup();
+		await callbacks.get("update_api_key")?.({
+			id: "key-1",
+			credit_limit: 9000,
+		});
+		assert.deepEqual(reads, ["api:key-1"]);
+		assert.deepEqual(usageLimitsOf(writes[0]), {
+			...existing,
+			credit_limit: 9000,
+		});
+	});
+
+	it("does no read and sends no usage_limits on unrelated updates", async () => {
+		const { callbacks, reads, writes } = setup();
+		await callbacks.get("update_virtual_key")?.({ slug: "vk", name: "New" });
+		await callbacks.get("update_api_key")?.({ id: "key-1", name: "New" });
+		assert.deepEqual(reads, []);
+		assert.equal(usageLimitsOf(writes[0]), undefined);
+		assert.equal(usageLimitsOf(writes[1]), undefined);
 	});
 });

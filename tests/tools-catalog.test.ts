@@ -882,6 +882,14 @@ describe("providers tools — create_provider payload assembly", () => {
 });
 
 describe("providers tools — update_provider limit inputs", () => {
+	let readCount = 0;
+	const existing = {
+		type: "tokens",
+		credit_limit: 1000,
+		alert_threshold: 900,
+		periodic_reset: "weekly",
+	};
+
 	function setup() {
 		const updateCalls: unknown[] = [];
 		const callbacks = registerToolCallbacks((server) => {
@@ -889,6 +897,10 @@ describe("providers tools — update_provider limit inputs", () => {
 				server as never,
 				{
 					providers: {
+						getProvider: async () => {
+							readCount += 1;
+							return { usage_limits: existing };
+						},
 						updateProvider: async (slug: string, payload: unknown) => {
 							updateCalls.push({ slug, payload });
 							return { id: "prov_1", slug };
@@ -902,18 +914,39 @@ describe("providers tools — update_provider limit inputs", () => {
 		return { cb, updateCalls };
 	}
 
-	it("forwards modifier-only usage limit updates without inventing defaults", async () => {
+	it("forwards modifier-only updates merged onto the existing limits", async () => {
+		readCount = 0;
 		const { cb, updateCalls } = setup();
-		await cb({ slug: "my-openai", periodic_reset: "weekly" });
-		await cb({ slug: "my-openai", usage_limit_type: "tokens" });
+		await cb({ slug: "my-openai", periodic_reset: "monthly" });
+		await cb({ slug: "my-openai", usage_limit_type: "cost" });
+		await cb({ slug: "my-openai", alert_threshold: 50 });
+		assert.equal(readCount, 3);
 		assert.deepEqual(
 			updateCalls.map((call) =>
-				JSON.parse(JSON.stringify((call as { payload: unknown }).payload)),
+				JSON.parse(
+					JSON.stringify(
+						(call as { payload: { usage_limits: unknown } }).payload
+							.usage_limits,
+					),
+				),
 			),
 			[
-				{ usage_limits: { periodic_reset: "weekly" } },
-				{ usage_limits: { type: "tokens" } },
+				{ ...existing, periodic_reset: "monthly" },
+				{ ...existing, type: "cost" },
+				{ ...existing, alert_threshold: 50 },
 			],
+		);
+	});
+
+	it("does no read and sends no usage_limits on unrelated updates", async () => {
+		readCount = 0;
+		const { cb, updateCalls } = setup();
+		await cb({ slug: "my-openai", name: "Renamed" });
+		assert.equal(readCount, 0);
+		assert.equal(
+			(updateCalls[0] as { payload: { usage_limits?: unknown } }).payload
+				.usage_limits,
+			undefined,
 		);
 	});
 

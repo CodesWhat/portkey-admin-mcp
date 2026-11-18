@@ -20,6 +20,7 @@ import {
 	buildRateLimitsRpm,
 	buildUsageLimits,
 	buildUsageLimitsUpdate,
+	mergeUsageLimitsUpdate,
 } from "../src/lib/limits.js";
 import { BaseService } from "../src/services/base.service.js";
 import { registerAuditTools } from "../src/tools/audit.tools.js";
@@ -190,6 +191,49 @@ describe("buildUsageLimitsUpdate", () => {
 				credit_limit: 0,
 				type: "tokens",
 			},
+		);
+	});
+});
+
+describe("mergeUsageLimitsUpdate", () => {
+	it("does not read the existing limits when nothing was supplied", async () => {
+		let reads = 0;
+		const result = await mergeUsageLimitsUpdate(undefined, async () => {
+			reads += 1;
+			return null;
+		});
+		assert.equal(result, undefined);
+		assert.equal(reads, 0);
+	});
+
+	it("keeps a null or custom cadence from the existing limits", async () => {
+		assert.deepEqual(
+			await mergeUsageLimitsUpdate({ alert_threshold: 10 }, async () => ({
+				type: "tokens",
+				credit_limit: 1,
+				alert_threshold: 5,
+				periodic_reset: null,
+			})),
+			{
+				type: "tokens",
+				credit_limit: 1,
+				alert_threshold: 10,
+				periodic_reset: null,
+			},
+		);
+		assert.deepEqual(
+			await mergeUsageLimitsUpdate({ credit_limit: 2 }, async () => ({
+				type: "cost",
+				periodic_reset: "daily",
+			})),
+			{ type: "cost", credit_limit: 2, periodic_reset: "daily" },
+		);
+	});
+
+	it("falls back to the create defaults when there are no existing limits", async () => {
+		assert.deepEqual(
+			await mergeUsageLimitsUpdate({ alert_threshold: 80 }, async () => null),
+			{ type: "cost", periodic_reset: "monthly", alert_threshold: 80 },
 		);
 	});
 });

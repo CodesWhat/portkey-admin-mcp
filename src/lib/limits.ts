@@ -22,6 +22,17 @@ export interface UsageLimits {
 	periodic_reset: PeriodicReset;
 }
 
+/**
+ * Usage limits as they come back from the API. A resource can carry a reset
+ * cadence beyond monthly and weekly, or none at all.
+ */
+export type ExistingUsageLimits = Omit<
+	Partial<UsageLimits>,
+	"periodic_reset"
+> & {
+	periodic_reset?: string | null;
+};
+
 export interface RateLimitRpm {
 	type: "requests";
 	unit: "rpm";
@@ -94,6 +105,39 @@ export function buildUsageLimitsUpdate(
 		return undefined;
 	}
 	return copyDefinedUsageLimitFields(params, {});
+}
+
+/**
+ * Merges the usage-limit fields an update supplies onto the limits a resource
+ * already has, so changing the alert threshold doesn't reset the type, credit
+ * limit or cadence. The existing limits are read only when the update supplies
+ * at least one limit field. A resource with no limits yet gets the create
+ * defaults for whatever the caller leaves out.
+ */
+export async function mergeUsageLimitsUpdate(
+	supplied: Partial<UsageLimits> | undefined,
+	readExisting: () => Promise<ExistingUsageLimits | null | undefined>,
+): Promise<ExistingUsageLimits | undefined> {
+	if (supplied === undefined) {
+		return undefined;
+	}
+	const existing = await readExisting();
+	const base: ExistingUsageLimits = existing
+		? {}
+		: { type: "cost", periodic_reset: PERIODIC_RESET_DEFAULT };
+	if (existing) {
+		for (const key of [
+			"type",
+			"credit_limit",
+			"alert_threshold",
+			"periodic_reset",
+		] as const) {
+			if (existing[key] !== undefined) {
+				Object.assign(base, { [key]: existing[key] });
+			}
+		}
+	}
+	return { ...base, ...supplied };
 }
 
 /**

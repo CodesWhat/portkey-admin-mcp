@@ -513,6 +513,7 @@ describe("provider lifecycle callbacks", () => {
 	it("updates provider limits and deletes the selected workspace provider", async () => {
 		const calls: unknown[] = [];
 		const callbacks = callbacksFor(registerProvidersTools, "providers", {
+			getProvider: async () => ({ usage_limits: null }),
 			updateProvider: async (
 				slug: string,
 				params: unknown,
