@@ -54,6 +54,7 @@ export function HeroLogo() {
       alt="Portkey Admin MCP mascot, a glossy dark tile with a hexagon mark"
       width="360"
       height="360"
+      fetchPriority="high"
     />
   );
 }
@@ -135,11 +136,15 @@ export function ThemeSwitch() {
   return (
     <button
       className="theme-switch"
-      aria-label="Toggle color theme"
+      aria-label={`Toggle color theme (${mounted && resolvedTheme === "dark" ? "Dark" : "Light"})`}
       disabled={!mounted}
       onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
     >
-      <span aria-hidden="true">{mounted && resolvedTheme === "dark" ? "☾" : "☀"}</span>
+      <span
+        className="theme-icon"
+        aria-hidden="true"
+        data-icon={mounted && resolvedTheme === "dark" ? "☾" : "☀"}
+      />
       <span className="theme-label">{mounted && resolvedTheme === "dark" ? "Dark" : "Light"}</span>
     </button>
   );
