@@ -1117,6 +1117,27 @@ describe("prompt promotion into an existing target", () => {
 		assert.equal(body.tool_choice, "auto");
 	});
 
+	it("promotes a source that has only ai_model_id or finetune_id", async () => {
+		for (const [field, value] of [
+			["ai_model_id", "aim-1"],
+			["finetune_id", "ft-1"],
+		] as const) {
+			await promote({ model: undefined, [field]: value });
+			const body = capturedBody(2) as Record<string, unknown>;
+			assert.equal(body[field], value);
+			assert.equal("model" in body, false);
+			assert.equal(body.patch, false);
+		}
+	});
+
+	it("carries model, ai_model_id and finetune_id when all are set", async () => {
+		await promote({ ai_model_id: "aim-1", finetune_id: "ft-1" });
+		const body = capturedBody(2) as Record<string, unknown>;
+		assert.equal(body.model, "gpt-4o");
+		assert.equal(body.ai_model_id, "aim-1");
+		assert.equal(body.finetune_id, "ft-1");
+	});
+
 	it("fails before any write when the source version is incomplete", async () => {
 		for (const overrides of [
 			{ model: undefined },

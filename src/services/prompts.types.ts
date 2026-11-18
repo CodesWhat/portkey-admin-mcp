@@ -107,6 +107,8 @@ export interface PromptVersion {
 	string: string;
 	parameters: Record<string, unknown>;
 	model?: string;
+	ai_model_id?: string;
+	finetune_id?: string;
 	virtual_key?: string;
 	functions?: PromptFunctionDefinition[];
 	tools?: PromptToolDefinition[];
@@ -127,6 +129,8 @@ export interface RawGetPromptResponse {
 	last_updated_at: string;
 	status?: string;
 	model?: string;
+	ai_model_id?: string;
+	finetune_id?: string;
 	string?: string;
 	prompt_version_id?: string;
 	prompt_version?: number;
@@ -162,6 +166,8 @@ export interface UpdatePromptRequest {
 	string?: string;
 	parameters?: Record<string, unknown>;
 	model?: string;
+	ai_model_id?: string;
+	finetune_id?: string;
 	virtual_key?: string;
 	functions?: PromptFunctionDefinition[];
 	tools?: PromptToolDefinition[];
