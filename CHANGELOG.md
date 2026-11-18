@@ -22,6 +22,10 @@ release until that reference and the release notes say so.
 
 - `update_api_key` sent `reset_usage` as a number, but the Portkey API takes a boolean. It now accepts `true`/`false`, as `update_provider` does.
 
+### Security
+
+- Refreshed the root lockfile to Hono 4.13.19. Removed the osv-scanner ignores for GHSA-fc5q-39xc-vjpf and CVE-2026-112366, since the advisory was withdrawn on 2026-11-18.
+
 ### Documentation
 
 - The README no longer says `tools/list` is paginated. The server returns all 194 tools in one response (about 500 KB of JSON). The VS Code section notes the 128-tool cap per chat request and points to `PORTKEY_TOOL_DOMAINS`. ENDPOINTS.md says the deployment ping route isn't exposed instead of calling it deprecated, since the spec doesn't deprecate it. The distribution notes say Smithery shut down its API, CLI, SDKs and accounts on 2026-10-31 and is directory-only now.
