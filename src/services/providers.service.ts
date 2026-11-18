@@ -10,7 +10,7 @@ export interface ProviderRateLimit {
 export interface ProviderUsageLimits {
 	type: "cost" | "tokens";
 	credit_limit: number;
-	periodic_reset: "monthly" | "weekly";
+	periodic_reset: "monthly" | "weekly" | string | null;
 	alert_threshold: number;
 }
 

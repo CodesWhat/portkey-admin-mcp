@@ -815,7 +815,7 @@ export function registerPromptsTools(
 		"run_prompt_completion",
 		{
 			description:
-				"Execute a prompt against the configured model and return the completion. This makes a billable model call, so use render_prompt first when you want to check the template and validate_completion_metadata when billing fields are uncertain.",
+				"Execute a prompt against the configured model and return the completion text, plus any tool_calls or function_call the model requested (returned as data, never executed). This makes a billable model call, so use render_prompt first when you want to check the template and validate_completion_metadata when billing fields are uncertain.",
 			inputSchema: PROMPTS_TOOL_SCHEMAS.runPromptCompletion,
 		},
 		async (params) => {
@@ -834,6 +834,13 @@ export function registerPromptsTools(
 				id: result.id,
 				model: result.model,
 				response: choice?.message?.content ?? null,
+				// Returned as data only. The server never executes a tool call.
+				...(choice?.message?.tool_calls?.length
+					? { tool_calls: choice.message.tool_calls }
+					: {}),
+				...(choice?.message?.function_call
+					? { function_call: choice.message.function_call }
+					: {}),
 				finish_reason: choice?.finish_reason ?? null,
 				usage: result.usage
 					? {

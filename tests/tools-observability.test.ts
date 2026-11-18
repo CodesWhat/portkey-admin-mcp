@@ -19,6 +19,8 @@ import {
 	buildRateLimits,
 	buildRateLimitsRpm,
 	buildUsageLimits,
+	buildUsageLimitsUpdate,
+	mergeUsageLimitsUpdate,
 } from "../src/lib/limits.js";
 import { BaseService } from "../src/services/base.service.js";
 import { registerAuditTools } from "../src/tools/audit.tools.js";
@@ -105,12 +107,19 @@ async function captureServiceRequest(
 // ---------------------------------------------------------------------------
 
 describe("buildUsageLimits", () => {
-	it("returns undefined when neither credit_limit nor alert_threshold is provided", () => {
+	it("returns undefined when no limit field is provided", () => {
 		assert.equal(buildUsageLimits({}), undefined);
-		assert.equal(
-			buildUsageLimits({ type: "cost", periodic_reset: "monthly" }),
-			undefined,
-		);
+	});
+
+	it("builds a payload from type or periodic_reset alone", () => {
+		assert.deepEqual(buildUsageLimits({ periodic_reset: "weekly" }), {
+			type: "cost",
+			periodic_reset: "weekly",
+		});
+		assert.deepEqual(buildUsageLimits({ type: "tokens" }), {
+			type: "tokens",
+			periodic_reset: "monthly",
+		});
 	});
 
 	it("preserves credit_limit=0 — does not treat zero as absent", () => {
@@ -161,6 +170,100 @@ describe("buildUsageLimits", () => {
 		assert.ok(result !== undefined);
 		assert.equal("credit_limit" in result, false);
 		assert.equal(result.alert_threshold, 80);
+	});
+});
+
+describe("buildUsageLimitsUpdate", () => {
+	it("returns undefined when no limit field is provided", () => {
+		assert.equal(buildUsageLimitsUpdate({}), undefined);
+	});
+
+	it("applies no defaults for omitted fields", () => {
+		assert.deepEqual(buildUsageLimitsUpdate({ alert_threshold: 80 }), {
+			alert_threshold: 80,
+		});
+		assert.deepEqual(buildUsageLimitsUpdate({ periodic_reset: "weekly" }), {
+			periodic_reset: "weekly",
+		});
+		assert.deepEqual(
+			buildUsageLimitsUpdate({ credit_limit: 0, type: "tokens" }),
+			{
+				credit_limit: 0,
+				type: "tokens",
+			},
+		);
+	});
+});
+
+describe("mergeUsageLimitsUpdate", () => {
+	it("does not read the existing limits when nothing was supplied", async () => {
+		let reads = 0;
+		const result = await mergeUsageLimitsUpdate(undefined, async () => {
+			reads += 1;
+			return null;
+		});
+		assert.equal(result, undefined);
+		assert.equal(reads, 0);
+	});
+
+	it("keeps a null or custom cadence from the existing limits", async () => {
+		assert.deepEqual(
+			await mergeUsageLimitsUpdate({ alert_threshold: 10 }, async () => ({
+				type: "tokens",
+				credit_limit: 1,
+				alert_threshold: 5,
+				periodic_reset: null,
+			})),
+			{
+				type: "tokens",
+				credit_limit: 1,
+				alert_threshold: 10,
+				periodic_reset: null,
+			},
+		);
+		assert.deepEqual(
+			await mergeUsageLimitsUpdate({ credit_limit: 2 }, async () => ({
+				type: "cost",
+				periodic_reset: "daily",
+			})),
+			{ type: "cost", credit_limit: 2, periodic_reset: "daily" },
+		);
+	});
+
+	it("keeps periodic_reset_days and sends no periodic_reset", async () => {
+		assert.deepEqual(
+			await mergeUsageLimitsUpdate({ alert_threshold: 10 }, async () => ({
+				type: "cost",
+				credit_limit: 100,
+				periodic_reset: null,
+				periodic_reset_days: 30,
+				next_usage_reset_at: "2026-12-01T00:00:00Z",
+			})),
+			{
+				type: "cost",
+				credit_limit: 100,
+				alert_threshold: 10,
+				periodic_reset_days: 30,
+			},
+		);
+	});
+
+	it("drops inherited periodic_reset_days when periodic_reset is supplied", async () => {
+		assert.deepEqual(
+			await mergeUsageLimitsUpdate({ periodic_reset: "weekly" }, async () => ({
+				type: "cost",
+				periodic_reset: null,
+				periodic_reset_days: 30,
+			})),
+			{ type: "cost", periodic_reset: "weekly" },
+		);
+	});
+
+	it("falls back to the create defaults when there are no existing limits", async () => {
+		assert.deepEqual(
+			await mergeUsageLimitsUpdate({ alert_threshold: 80 }, async () => null),
+			{ type: "cost", periodic_reset: "monthly", alert_threshold: 80 },
+		);
 	});
 });
 

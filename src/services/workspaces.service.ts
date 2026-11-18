@@ -14,9 +14,10 @@ export interface Workspace {
 	description: string | null;
 	created_at: string;
 	last_updated_at: string;
+	is_default?: number;
 	defaults: WorkspaceDefaults | null;
-	usage_limits?: WorkspaceUsageLimit[];
-	rate_limits?: WorkspaceRateLimit[];
+	usage_limits?: WorkspaceUsageLimit[] | null;
+	rate_limits?: WorkspaceRateLimit[] | null;
 	object: "workspace";
 }
 
@@ -68,6 +69,7 @@ export interface SingleWorkspaceResponse {
 	description: string | null;
 	created_at: string;
 	last_updated_at: string;
+	is_default?: number;
 	defaults:
 		| (WorkspaceDefaults & {
 				is_default: number;
@@ -75,8 +77,8 @@ export interface SingleWorkspaceResponse {
 		  })
 		| null;
 	users: WorkspaceUser[];
-	usage_limits?: WorkspaceUsageLimit[];
-	rate_limits?: WorkspaceRateLimit[];
+	usage_limits?: WorkspaceUsageLimit[] | null;
+	rate_limits?: WorkspaceRateLimit[] | null;
 }
 
 export interface CreateWorkspaceRequest {

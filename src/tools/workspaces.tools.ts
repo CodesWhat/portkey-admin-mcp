@@ -11,6 +11,8 @@ import type {
 	SingleWorkspaceResponse,
 	Workspace,
 	WorkspaceDefaults,
+	WorkspaceRateLimit,
+	WorkspaceUsageLimit,
 	WorkspaceUser,
 } from "../services/workspaces.service.js";
 import { formatFullName, jsonResult } from "./utils.js";
@@ -318,6 +320,30 @@ function formatWorkspaceDefaults(
 	};
 }
 
+interface WorkspaceProjectionFields {
+	is_default?: number;
+	defaults: { is_default?: number; metadata?: Record<string, string> } | null;
+	usage_limits: WorkspaceUsageLimit[] | null;
+	rate_limits: WorkspaceRateLimit[] | null;
+}
+
+// Portkey returns is_default at the top level and may leave defaults null, so
+// read the top-level flag first and fall back to defaults.is_default. Zero is a
+// real value, hence ?? rather than ||.
+function formatWorkspaceFlagsAndLimits(workspace: {
+	is_default?: number;
+	defaults: WorkspaceDefaults | null;
+	usage_limits?: WorkspaceUsageLimit[] | null;
+	rate_limits?: WorkspaceRateLimit[] | null;
+}): WorkspaceProjectionFields {
+	return {
+		is_default: workspace.is_default ?? workspace.defaults?.is_default,
+		defaults: formatWorkspaceDefaults(workspace.defaults),
+		usage_limits: workspace.usage_limits ?? null,
+		rate_limits: workspace.rate_limits ?? null,
+	};
+}
+
 function formatWorkspaceSummary(workspace: Workspace): {
 	id: string;
 	name: string;
@@ -325,8 +351,7 @@ function formatWorkspaceSummary(workspace: Workspace): {
 	description: string | null;
 	created_at: string;
 	last_updated_at: string;
-	defaults: { is_default?: number; metadata?: Record<string, string> } | null;
-} {
+} & WorkspaceProjectionFields {
 	return {
 		id: workspace.id,
 		name: workspace.name,
@@ -334,7 +359,7 @@ function formatWorkspaceSummary(workspace: Workspace): {
 		description: workspace.description,
 		created_at: workspace.created_at,
 		last_updated_at: workspace.last_updated_at,
-		defaults: formatWorkspaceDefaults(workspace.defaults),
+		...formatWorkspaceFlagsAndLimits(workspace),
 	};
 }
 
@@ -365,9 +390,8 @@ function formatWorkspaceDetail(workspace: SingleWorkspaceResponse): {
 	description: string | null;
 	created_at: string;
 	last_updated_at: string;
-	defaults: { is_default?: number; metadata?: Record<string, string> } | null;
 	users: Array<ReturnType<typeof formatWorkspaceMember>>;
-} {
+} & WorkspaceProjectionFields {
 	return {
 		id: workspace.id,
 		name: workspace.name,
@@ -375,7 +399,7 @@ function formatWorkspaceDetail(workspace: SingleWorkspaceResponse): {
 		description: workspace.description,
 		created_at: workspace.created_at,
 		last_updated_at: workspace.last_updated_at,
-		defaults: formatWorkspaceDefaults(workspace.defaults),
+		...formatWorkspaceFlagsAndLimits(workspace),
 		users: workspace.users.map(formatWorkspaceMember),
 	};
 }

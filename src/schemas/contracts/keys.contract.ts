@@ -153,5 +153,5 @@ export const CreateApiKeyResponseSchema = z.object({
 export const RotateApiKeyResponseSchema = z.object({
 	id: z.string().uuid(),
 	key: z.string().min(1),
-	key_transition_expires_at: z.iso.datetime(),
+	key_transition_expires_at: z.iso.datetime({ offset: true }).optional(),
 });

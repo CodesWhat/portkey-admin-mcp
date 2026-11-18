@@ -165,7 +165,7 @@ describe("getHttpAuthConfig under clerk mode", () => {
 		);
 	});
 
-	it("rejects clerk mode without an explicit authorization policy", async () => {
+	it("rejects clerk mode without an identity-bound authorization policy", async () => {
 		process.env.MCP_AUTH_MODE = "clerk";
 		process.env.CLERK_ISSUER = "https://clerk.example.com";
 		process.env.CLERK_AUDIENCE = "my-audience";
@@ -174,7 +174,7 @@ describe("getHttpAuthConfig under clerk mode", () => {
 
 		assert.throws(
 			() => resetHttpAuthStateForTest(),
-			/MCP_AUTH_MODE=clerk requires an explicit authorization policy/,
+			/MCP_AUTH_MODE=clerk requires an identity-bound authorization policy/,
 		);
 	});
 
@@ -207,11 +207,9 @@ describe("getHttpAuthConfig under clerk mode", () => {
 		const principal = authorizeClerkClaims(
 			{
 				sub: "user_admin",
-				o: {
-					id: "org_primary",
-					rol: "org:admin",
-					per: ["org:sys_memberships:manage", "org:sys_domains:manage"],
-				},
+				v: 2,
+				fea: "o:sys_memberships,o:sys_domains",
+				o: { id: "org_primary", rol: "admin", per: "manage", fpm: "1,1" },
 			},
 			getHttpAuthConfig(),
 		);
@@ -519,7 +517,7 @@ describe("mcpAuthMiddleware clerk JWT verification", () => {
 				delete process.env.CLERK_ALLOWED_SUBJECTS;
 				assert.throws(
 					() => resetHttpAuthStateForTest(),
-					/requires an explicit authorization policy/,
+					/requires an identity-bound authorization policy/,
 				);
 				await mcpAuthMiddleware(
 					createMockRequest({ authorization: `Bearer ${token}` }) as never,
@@ -689,11 +687,9 @@ describe("mcpAuthMiddleware clerk JWT verification", () => {
 			const nestedPrincipal = authorizeClerkClaims(
 				{
 					sub: " user_test ",
-					o: {
-						id: "org_primary",
-						rol: "org:admin",
-						per: ["org:read", "org:write", "org:read", null],
-					},
+					org_id: "org_primary",
+					org_role: "org:admin",
+					org_permissions: ["org:read", "org:write", "org:read", null],
 					roles: ["org:admin", "org:viewer", "", 7],
 					permissions: ["org:write"],
 				},
@@ -733,5 +729,388 @@ describe("mcpAuthMiddleware clerk JWT verification", () => {
 				assert.throws(() => authorizeClerkClaims(claims, policy), message);
 			}
 		});
+	});
+});
+
+describe("clerk identity-bound policy", () => {
+	const issuer = "https://clerk.example.com";
+	const jwksUrl = `${issuer}/.well-known/jwks.json`;
+
+	afterEach(() => {
+		resetEnv();
+		resetHttpAuthStateForTest();
+	});
+
+	function configureClerk(extra: Record<string, string>): void {
+		process.env.MCP_AUTH_MODE = "clerk";
+		process.env.CLERK_ISSUER = issuer;
+		process.env.CLERK_AUDIENCE = "test-audience";
+		process.env.CLERK_JWKS_URL = jwksUrl;
+		for (const key of [
+			"CLERK_ALLOWED_SUBJECTS",
+			"CLERK_ALLOWED_ORGANIZATION_IDS",
+			"CLERK_ALLOWED_ROLES",
+			"CLERK_REQUIRED_PERMISSIONS",
+		]) {
+			delete process.env[key];
+		}
+		Object.assign(process.env, extra);
+	}
+
+	for (const [label, extra] of [
+		["roles only", { CLERK_ALLOWED_ROLES: "org:admin" }],
+		["permissions only", { CLERK_REQUIRED_PERMISSIONS: "org:billing:read" }],
+		[
+			"roles and permissions",
+			{
+				CLERK_ALLOWED_ROLES: "org:admin",
+				CLERK_REQUIRED_PERMISSIONS: "org:billing:read",
+			},
+		],
+	] as const) {
+		it(`rejects a ${label} policy at startup`, () => {
+			configureClerk(extra);
+			assert.throws(
+				() => resetHttpAuthStateForTest(),
+				/requires an identity-bound authorization policy/,
+			);
+		});
+	}
+
+	it("accepts a subject-only or organization-only policy", () => {
+		configureClerk({ CLERK_ALLOWED_SUBJECTS: "user_a" });
+		assert.doesNotThrow(() => resetHttpAuthStateForTest());
+		configureClerk({ CLERK_ALLOWED_ORGANIZATION_IDS: "org_a" });
+		assert.doesNotThrow(() => resetHttpAuthStateForTest());
+	});
+
+	it("keeps extra constraints conjunctive with the identity allowlist", () => {
+		configureClerk({
+			CLERK_ALLOWED_ORGANIZATION_IDS: "org_a",
+			CLERK_ALLOWED_ROLES: "org:admin",
+		});
+		resetHttpAuthStateForTest();
+		const config = getHttpAuthConfig();
+		assert.throws(
+			() =>
+				authorizeClerkClaims(
+					{ sub: "user_a", org_id: "org_a", org_role: "org:member" },
+					config,
+				),
+			/role is not authorized/,
+		);
+		assert.throws(
+			() =>
+				authorizeClerkClaims(
+					{ sub: "user_a", org_id: "org_b", org_role: "org:admin" },
+					config,
+				),
+			/organization is not authorized/,
+		);
+	});
+
+	it("rejects signed v1 and v2 tokens from another organization", async () => {
+		configureClerk({
+			CLERK_ALLOWED_ORGANIZATION_IDS: "org_primary",
+			CLERK_ALLOWED_ROLES: "org:admin",
+		});
+		const { publicKey, privateKey } = await generateKeyPair("RS256", {
+			extractable: true,
+		});
+		const publicJwk = await exportJWK(publicKey);
+		publicJwk.kid = "org-bound-key";
+		publicJwk.alg = "RS256";
+		publicJwk.use = "sig";
+		const sign = (claims: Record<string, unknown>) =>
+			new SignJWT(claims)
+				.setProtectedHeader({ alg: "RS256", kid: "org-bound-key" })
+				.setSubject("user_test")
+				.setIssuer(issuer)
+				.setAudience("test-audience")
+				.setIssuedAt()
+				.setExpirationTime("5m")
+				.sign(privateKey);
+		const v1 = await sign({ org_id: "org_other", org_role: "org:admin" });
+		const v2 = await sign({ v: 2, o: { id: "org_other", rol: "admin" } });
+
+		await withStubbedJwksFetch(jwksUrl, { keys: [publicJwk] }, async () => {
+			resetHttpAuthStateForTest();
+			for (const token of [v1, v2]) {
+				const { response, state } = createMockResponse();
+				await mcpAuthMiddleware(
+					createMockRequest({ authorization: `Bearer ${token}` }) as never,
+					response as never,
+					() => assert.fail("another organization must not pass"),
+				);
+				assert.equal(state.statusCode, 403);
+			}
+		});
+	});
+});
+
+describe("clerk session and claim validation", () => {
+	const issuer = "https://clerk.example.com";
+	const jwksUrl = `${issuer}/.well-known/jwks.json`;
+
+	afterEach(() => {
+		resetEnv();
+		resetHttpAuthStateForTest();
+	});
+
+	async function setup() {
+		process.env.MCP_AUTH_MODE = "clerk";
+		process.env.CLERK_ISSUER = issuer;
+		process.env.CLERK_AUDIENCE = "test-audience";
+		process.env.CLERK_JWKS_URL = jwksUrl;
+		process.env.CLERK_ALLOWED_SUBJECTS = "user_test";
+		const { publicKey, privateKey } = await generateKeyPair("RS256", {
+			extractable: true,
+		});
+		const publicJwk = await exportJWK(publicKey);
+		publicJwk.kid = "session-key";
+		publicJwk.alg = "RS256";
+		publicJwk.use = "sig";
+		const sign = (
+			claims: Record<string, unknown>,
+			overrides: {
+				issuer?: string;
+				audience?: string;
+				exp?: string | number;
+			} = {},
+		) =>
+			new SignJWT(claims)
+				.setProtectedHeader({ alg: "RS256", kid: "session-key" })
+				.setSubject("user_test")
+				.setIssuer(overrides.issuer ?? issuer)
+				.setAudience(overrides.audience ?? "test-audience")
+				.setIssuedAt(Math.floor(Date.now() / 1000) - 3600)
+				.setExpirationTime(overrides.exp ?? "5m")
+				.sign(privateKey);
+		return { jwks: { keys: [publicJwk] }, sign };
+	}
+
+	async function run(token: string) {
+		resetHttpAuthStateForTest();
+		const { response, state } = createMockResponse();
+		let nextCalled = false;
+		await mcpAuthMiddleware(
+			createMockRequest({ authorization: `Bearer ${token}` }) as never,
+			response as never,
+			() => {
+				nextCalled = true;
+			},
+		);
+		return { state, nextCalled };
+	}
+
+	it("rejects pending sessions with a generic 401", async () => {
+		const { jwks, sign } = await setup();
+		const token = await sign({ sts: "pending" });
+		await withStubbedJwksFetch(jwksUrl, jwks, async () => {
+			const { state, nextCalled } = await run(token);
+			assert.equal(nextCalled, false);
+			assert.equal(state.statusCode, 401);
+			assert.deepEqual(state.body, {
+				error: "Unauthorized: Token validation failed",
+			});
+		});
+	});
+
+	it("accepts active sessions and sessions with no sts", async () => {
+		const { jwks, sign } = await setup();
+		const active = await sign({ sts: "active" });
+		const bare = await sign({});
+		await withStubbedJwksFetch(jwksUrl, jwks, async () => {
+			assert.equal((await run(active)).nextCalled, true);
+			assert.equal((await run(bare)).nextCalled, true);
+		});
+	});
+
+	it("rejects tokens with the wrong audience, wrong issuer or an expired exp", async () => {
+		const { jwks, sign } = await setup();
+		const tokens = [
+			await sign({}, { audience: "someone-else" }),
+			await sign({}, { issuer: "https://evil.example.com" }),
+			await sign({}, { exp: Math.floor(Date.now() / 1000) - 600 }),
+		];
+		await withStubbedJwksFetch(jwksUrl, jwks, async () => {
+			for (const token of tokens) {
+				const { state, nextCalled } = await run(token);
+				assert.equal(nextCalled, false);
+				assert.equal(state.statusCode, 401);
+			}
+		});
+	});
+});
+
+describe("clerk v2 session token decoding", () => {
+	const issuer = "https://clerk.example.com";
+	const policy = { mode: "clerk" as const, issuer };
+
+	it("reads the organization and role from the compact o claim", () => {
+		const principal = authorizeClerkClaims(
+			{ sub: "user_a", v: 2, o: { id: "org_a", rol: "admin" } },
+			policy,
+		);
+		assert.equal(principal.organizationId, "org_a");
+		assert.deepEqual(principal.roles, ["org:admin"]);
+		assert.deepEqual(principal.permissions, []);
+	});
+
+	it("keeps v1 flat claims working", () => {
+		const principal = authorizeClerkClaims(
+			{
+				sub: "user_a",
+				v: 1,
+				org_id: "org_a",
+				org_role: "org:admin",
+				org_permissions: ["org:billing:read"],
+			},
+			policy,
+		);
+		assert.equal(principal.organizationId, "org_a");
+		assert.deepEqual(principal.roles, ["org:admin"]);
+		assert.deepEqual(principal.permissions, ["org:billing:read"]);
+	});
+
+	it("does not trust flat org claims on a v2 token", () => {
+		const principal = authorizeClerkClaims(
+			{
+				sub: "user_a",
+				v: 2,
+				org_id: "org_flat",
+				org_role: "org:admin",
+				org_permissions: ["org:billing:read"],
+			},
+			policy,
+		);
+		assert.equal(principal.organizationId, undefined);
+		assert.deepEqual(principal.roles, []);
+		assert.deepEqual(principal.permissions, []);
+	});
+
+	it("rebuilds permissions from fea, o.per and o.fpm (Clerk docs example)", () => {
+		const principal = authorizeClerkClaims(
+			{
+				sub: "user_a",
+				v: 2,
+				fea: "o:dashboard,o:teams",
+				o: { id: "org_a", rol: "admin", per: "manage,read", fpm: "3,2" },
+			},
+			policy,
+		);
+		assert.deepEqual(principal.permissions, [
+			"org:dashboard:manage",
+			"org:dashboard:read",
+			"org:teams:read",
+		]);
+	});
+
+	it("skips zero and missing masks", () => {
+		const principal = authorizeClerkClaims(
+			{
+				sub: "user_a",
+				v: 2,
+				fea: "o:a,o:b,o:c",
+				o: { id: "org_a", per: "read,write", fpm: "0,2" },
+			},
+			policy,
+		);
+		assert.deepEqual(principal.permissions, ["org:b:write"]);
+	});
+
+	it("only counts org-scoped features and keeps their order", () => {
+		const principal = authorizeClerkClaims(
+			{
+				sub: "user_a",
+				v: 2,
+				fea: "u:personal,o:teams,ou:shared",
+				o: { id: "org_a", per: "read", fpm: "1,1" },
+			},
+			policy,
+		);
+		assert.deepEqual(principal.permissions, [
+			"org:teams:read",
+			"org:shared:read",
+		]);
+	});
+
+	it("decodes masks wider than 32 bits", () => {
+		const names = Array.from({ length: 40 }, (_, i) => `p${i}`).join(",");
+		const principal = authorizeClerkClaims(
+			{
+				sub: "user_a",
+				v: 2,
+				fea: "o:wide",
+				// bits 0 and 35
+				o: { id: "org_a", per: names, fpm: String((1n << 35n) | 1n) },
+			},
+			policy,
+		);
+		assert.deepEqual(principal.permissions, ["org:wide:p0", "org:wide:p35"]);
+	});
+
+	it("ignores mask bits beyond the permission list", () => {
+		const principal = authorizeClerkClaims(
+			{
+				sub: "user_a",
+				v: 2,
+				fea: "o:f",
+				o: { id: "org_a", per: "read", fpm: "7" },
+			},
+			policy,
+		);
+		assert.deepEqual(principal.permissions, ["org:f:read"]);
+	});
+
+	it("grants nothing for malformed mappings", () => {
+		for (const claims of [
+			{ fea: "o:f", o: { id: "org_a", per: "read", fpm: "abc" } },
+			{ fea: "o:f", o: { id: "org_a", per: "read", fpm: "-1" } },
+			{ fea: "o:f", o: { id: "org_a", per: "read", fpm: "1.5" } },
+			{ fea: "nocolon", o: { id: "org_a", per: "read", fpm: "1" } },
+			{ fea: "o:f", o: { id: "org_a", per: ["read"], fpm: "1" } },
+			{ fea: "o:f", o: { id: "org_a", per: "read" } },
+			{ fea: ["o:f"], o: { id: "org_a", per: "read", fpm: "1" } },
+			{ o: { id: "org_a", per: "read", fpm: "1" } },
+		]) {
+			const principal = authorizeClerkClaims(
+				{ sub: "user_a", v: 2, ...claims },
+				policy,
+			);
+			assert.deepEqual(principal.permissions, [], JSON.stringify(claims));
+		}
+	});
+
+	it("authorizes a v2 token against role and permission constraints", () => {
+		const config = {
+			...policy,
+			allowedOrganizationIds: ["org_a"],
+			allowedRoles: ["org:admin"],
+			requiredPermissions: ["org:billing:read"],
+		};
+		const claims = {
+			sub: "user_a",
+			v: 2,
+			fea: "o:billing",
+			o: { id: "org_a", rol: "admin", per: "read", fpm: "1" },
+		};
+		assert.doesNotThrow(() => authorizeClerkClaims(claims, config));
+		assert.throws(
+			() =>
+				authorizeClerkClaims(
+					{ ...claims, o: { ...claims.o, rol: "member" } },
+					config,
+				),
+			/role is not authorized/,
+		);
+		assert.throws(
+			() =>
+				authorizeClerkClaims(
+					{ ...claims, o: { ...claims.o, fpm: "0" } },
+					config,
+				),
+			/missing a required permission/,
+		);
 	});
 });

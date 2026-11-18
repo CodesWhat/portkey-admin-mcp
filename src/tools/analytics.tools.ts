@@ -341,7 +341,7 @@ const GENERIC_GRAPH_ANALYTICS_TOOLS: ReadonlyArray<{
 	{
 		name: "get_user_requests_analytics",
 		description:
-			"Get per-user request-count time-series data with counts grouped by user. Use this to find heavy users and traffic concentration; use get_users_analytics for aggregate active and new user trends instead.",
+			"Get per-user request-count time-series data with counts grouped by user. Use this to find heavy users and traffic concentration; use get_users_analytics for aggregate unique-user trends instead.",
 		method: (analytics, params) => analytics.getUserRequestsAnalytics(params),
 	},
 	{
@@ -571,7 +571,7 @@ export function registerAnalyticsTools(
 		"get_token_analytics",
 		{
 			description:
-				"Get token-usage time-series data with summary.total_tokens, summary.prompt_tokens, summary.completion_tokens, and per-bucket total/prompt/completion counts. Use this for consumption trends; use get_cost_analytics when you need spend instead of token volume.",
+				"Get token-usage time-series data with summary.total and summary.avg (average tokens per request), and per-bucket total and avg. Portkey doesn't split prompt and completion tokens in this graph. Use this for consumption trends; use get_cost_analytics when you need spend instead of token volume.",
 			inputSchema: baseAnalyticsSchema,
 		},
 		async (params) => {
@@ -581,15 +581,13 @@ export function registerAnalyticsTools(
 			const dataPoints = analytics.data_points.map((point) => ({
 				timestamp: point.timestamp,
 				total: point.total,
-				prompt: point.prompt,
-				completion: point.completion,
+				avg: point.avg,
 			}));
 			return jsonResult(
 				formatGraphAnalytics(
 					{
-						total_tokens: analytics.summary.total,
-						prompt_tokens: analytics.summary.prompt,
-						completion_tokens: analytics.summary.completion,
+						total: analytics.summary.total,
+						avg: analytics.summary.avg,
 					},
 					dataPoints,
 				),
@@ -715,7 +713,7 @@ export function registerAnalyticsTools(
 		"get_cache_hit_rate",
 		{
 			description:
-				"Get cache-effectiveness time-series data with summary.hit_rate, summary.total_hits, summary.total_misses, and per-bucket hits/misses/rate. Use this to measure cache effectiveness; use get_cache_hit_latency for speed rather than hit/miss ratio.",
+				"Get cache-effectiveness time-series data with summary.hit_rate and summary.total_hits, and per-bucket simple_hits, semantic_hits, rate, and cumulative simple and semantic cache savings. Use this to measure cache effectiveness; use get_cache_hit_latency for speed rather than hit/miss ratio.",
 			inputSchema: baseAnalyticsSchema,
 		},
 		async (params) => {
@@ -724,16 +722,18 @@ export function registerAnalyticsTools(
 			);
 			const dataPoints = analytics.data_points.map((point) => ({
 				timestamp: point.timestamp,
+				simple_hits: point.simple_hits,
+				semantic_hits: point.semantic_hits,
 				rate: point.rate,
-				hits: point.hits,
-				misses: point.misses,
+				cumulative_simple_cache_savings: point.cumulative_simple_cache_savings,
+				cumulative_semantic_cache_savings:
+					point.cumulative_semantic_cache_savings,
 			}));
 			return jsonResult(
 				formatGraphAnalytics(
 					{
 						hit_rate: analytics.summary.rate,
-						total_hits: analytics.summary.total_hits,
-						total_misses: analytics.summary.total_misses,
+						total_hits: analytics.summary.total,
 					},
 					dataPoints,
 				),
@@ -763,7 +763,7 @@ export function registerAnalyticsTools(
 		"get_users_analytics",
 		{
 			description:
-				"Get user-growth time-series data with summary.total_active_users, summary.total_new_users, and per-bucket active/new user counts. Use this for growth and adoption trends; use get_user_requests_analytics for per-user traffic or get_analytics_group_users for per-user cost and token detail.",
+				"Get unique-user time-series data with summary.total and per-bucket total unique users. Use this for adoption trends; use get_user_requests_analytics for per-user traffic or get_analytics_group_users for per-user cost and token detail.",
 			inputSchema: baseAnalyticsSchema,
 		},
 		async (params) => {
@@ -772,14 +772,12 @@ export function registerAnalyticsTools(
 			);
 			const dataPoints = analytics.data_points.map((point) => ({
 				timestamp: point.timestamp,
-				active_users: point.active_users,
-				new_users: point.new_users,
+				total: point.total,
 			}));
 			return jsonResult(
 				formatGraphAnalytics(
 					{
-						total_active_users: analytics.summary.total_active_users,
-						total_new_users: analytics.summary.total_new_users,
+						total: analytics.summary.total,
 					},
 					dataPoints,
 				),
@@ -809,7 +807,7 @@ export function registerAnalyticsTools(
 		"get_analytics_group_users",
 		{
 			description:
-				"Get a paginated per-user breakdown with total_groups, group_count, and a users array containing request count, cost, and token usage. Use this for billing, audits, or top-consumer analysis; use get_users_analytics for aggregate active and new user trends.",
+				"Get a paginated per-user breakdown with total_groups, group_count, and a users array containing request count, cost, and token usage. Use this for billing, audits, or top-consumer analysis; use get_users_analytics for aggregate unique-user trends.",
 			inputSchema: paginatedAnalyticsSchema,
 		},
 		async (params) => {

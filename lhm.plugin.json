@@ -3796,7 +3796,7 @@
 		},
 		{
 			"name": "run_prompt_completion",
-			"description": "Execute a prompt against the configured model and return the completion. This makes a billable model call, so use render_prompt first when you want to check the template and validate_completion_metadata when billing fields are uncertain.",
+			"description": "Execute a prompt against the configured model and return the completion text, plus any tool_calls or function_call the model requested (returned as data, never executed). This makes a billable model call, so use render_prompt first when you want to check the template and validate_completion_metadata when billing fields are uncertain.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
@@ -4606,7 +4606,7 @@
 		},
 		{
 			"name": "get_token_analytics",
-			"description": "Get token-usage time-series data with summary.total_tokens, summary.prompt_tokens, summary.completion_tokens, and per-bucket total/prompt/completion counts. Use this for consumption trends; use get_cost_analytics when you need spend instead of token volume. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
+			"description": "Get token-usage time-series data with summary.total and summary.avg (average tokens per request), and per-bucket total and avg. Portkey doesn't split prompt and completion tokens in this graph. Use this for consumption trends; use get_cost_analytics when you need spend instead of token volume. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
@@ -5541,7 +5541,7 @@
 		},
 		{
 			"name": "get_cache_hit_rate",
-			"description": "Get cache-effectiveness time-series data with summary.hit_rate, summary.total_hits, summary.total_misses, and per-bucket hits/misses/rate. Use this to measure cache effectiveness; use get_cache_hit_latency for speed rather than hit/miss ratio. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
+			"description": "Get cache-effectiveness time-series data with summary.hit_rate and summary.total_hits, and per-bucket simple_hits, semantic_hits, rate, and cumulative simple and semantic cache savings. Use this to measure cache effectiveness; use get_cache_hit_latency for speed rather than hit/miss ratio. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
@@ -5916,7 +5916,7 @@
 		},
 		{
 			"name": "get_users_analytics",
-			"description": "Get user-growth time-series data with summary.total_active_users, summary.total_new_users, and per-bucket active/new user counts. Use this for growth and adoption trends; use get_user_requests_analytics for per-user traffic or get_analytics_group_users for per-user cost and token detail. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
+			"description": "Get unique-user time-series data with summary.total and per-bucket total unique users. Use this for adoption trends; use get_user_requests_analytics for per-user traffic or get_analytics_group_users for per-user cost and token detail. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
@@ -6477,7 +6477,7 @@
 		},
 		{
 			"name": "get_user_requests_analytics",
-			"description": "Get per-user request-count time-series data with counts grouped by user. Use this to find heavy users and traffic concentration; use get_users_analytics for aggregate active and new user trends instead. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
+			"description": "Get per-user request-count time-series data with counts grouped by user. Use this to find heavy users and traffic concentration; use get_users_analytics for aggregate unique-user trends instead. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
@@ -7599,7 +7599,7 @@
 		},
 		{
 			"name": "get_analytics_group_users",
-			"description": "Get a paginated per-user breakdown with total_groups, group_count, and a users array containing request count, cost, and token usage. Use this for billing, audits, or top-consumer analysis; use get_users_analytics for aggregate active and new user trends. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
+			"description": "Get a paginated per-user breakdown with total_groups, group_count, and a users array containing request count, cost, and token usage. Use this for billing, audits, or top-consumer analysis; use get_users_analytics for aggregate unique-user trends. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
@@ -11493,22 +11493,22 @@
 						"maximum": 100
 					},
 					"usage_limit_type": {
-						"description": "Type of usage limit: 'cost' (monetary) or 'tokens' (token count). Defaults to 'cost'.",
+						"description": "Type of usage limit: 'cost' (monetary) or 'tokens' (token count). Only sent when provided.",
 						"type": "string",
 						"enum": ["cost", "tokens"]
 					},
 					"periodic_reset": {
-						"description": "Period for resetting usage limits: 'monthly' or 'weekly'. Defaults to 'monthly'.",
+						"description": "Period for resetting usage limits: 'monthly' or 'weekly'. Only sent when provided.",
 						"type": "string",
 						"enum": ["monthly", "weekly"]
 					},
 					"rate_limit_value": {
-						"description": "New rate limit value",
+						"description": "New rate limit value. Must be provided together with rate_limit_unit.",
 						"type": "number",
 						"exclusiveMinimum": 0
 					},
 					"rate_limit_unit": {
-						"description": "Rate limit unit: 'rpm' (requests per minute), 'rph' (requests per hour), or 'rpd' (requests per day)",
+						"description": "Rate limit unit: 'rpm' (requests per minute), 'rph' (requests per hour), or 'rpd' (requests per day). Must be provided together with rate_limit_value.",
 						"type": "string",
 						"enum": ["rpm", "rph", "rpd"]
 					},

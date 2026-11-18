@@ -1051,13 +1051,15 @@ describe("origin security configuration", () => {
 			issuer: "https://clerk.example.com",
 			allowedSubjects: ["user-2"],
 			allowedOrganizationIds: ["org-2"],
-			allowedRoles: ["admin"],
-			requiredPermissions: ["read"],
+			allowedRoles: ["org:admin"],
+			requiredPermissions: ["org:data:read"],
 		};
 		const clerkPrincipal = authorizeClerkClaims(
 			{
 				sub: "user-2",
-				o: { id: "org-2", rol: "admin", per: ["read", "read", null] },
+				v: 2,
+				fea: "o:data",
+				o: { id: "org-2", rol: "admin", per: "read,read", fpm: "1" },
 				roles: "ignored",
 			},
 			clerkConfig,
@@ -1067,8 +1069,8 @@ describe("origin security configuration", () => {
 			mode: "clerk",
 			subject: "user-2",
 			organizationId: "org-2",
-			roles: ["admin"],
-			permissions: ["read"],
+			roles: ["org:admin"],
+			permissions: ["org:data:read"],
 		});
 		for (const [payload, message] of [
 			[{}, /missing a subject/],
@@ -1079,7 +1081,7 @@ describe("origin security configuration", () => {
 				/role is not authorized/,
 			],
 			[
-				{ sub: "user-2", org_id: "org-2", org_role: "admin" },
+				{ sub: "user-2", org_id: "org-2", org_role: "org:admin" },
 				/missing a required permission/,
 			],
 		] as const) {

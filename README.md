@@ -59,18 +59,18 @@
 
 <h2 align="center" id="documentation">Documentation</h2>
 
-| Resource | Link |
-| --- | --- |
-| Tool reference | [ENDPOINTS.md](./ENDPOINTS.md) |
-| Compatibility and deprecations | [COMPATIBILITY.md](./COMPATIBILITY.md) |
-| Changelog | [CHANGELOG.md](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/CHANGELOG.md) |
-| Roadmap | [ROADMAP.md](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/ROADMAP.md) |
-| Architecture | [Architecture](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/docs/ARCHITECTURE.md) |
-| Deployment | [HTTP configuration](#http-server), [Vercel guide](./docs/VERCEL_DEPLOYMENT.md) |
-| Distribution | [Directories and release records](./docs/DISTRIBUTION.md), [verify a release](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/docs/VERIFY_RELEASE.md) |
-| Prisma AIRS | [Interoperability guide](./docs/PRISMA_AIRS_INTEROPERABILITY.md) |
-| Contributing and governance | [CONTRIBUTING.md](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/CONTRIBUTING.md), [GOVERNANCE.md](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/GOVERNANCE.md), [Code of Conduct](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/CODE_OF_CONDUCT.md) |
-| Security | [Reporting policy](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/SECURITY.md), [assurance case](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/SECURITY-ASSURANCE.md) |
+| Resource                       | Link                                                                                                                                                                                                                                                                                 |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Tool reference                 | [ENDPOINTS.md](./ENDPOINTS.md)                                                                                                                                                                                                                                                       |
+| Compatibility and deprecations | [COMPATIBILITY.md](./COMPATIBILITY.md)                                                                                                                                                                                                                                               |
+| Changelog                      | [CHANGELOG.md](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/CHANGELOG.md)                                                                                                                                                                                                |
+| Roadmap                        | [ROADMAP.md](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/ROADMAP.md)                                                                                                                                                                                                    |
+| Architecture                   | [Architecture](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/docs/ARCHITECTURE.md)                                                                                                                                                                                        |
+| Deployment                     | [HTTP configuration](#http-server), [Vercel guide](./docs/VERCEL_DEPLOYMENT.md)                                                                                                                                                                                                      |
+| Distribution                   | [Directories and release records](./docs/DISTRIBUTION.md), [verify a release](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/docs/VERIFY_RELEASE.md)                                                                                                                       |
+| Prisma AIRS                    | [Interoperability guide](./docs/PRISMA_AIRS_INTEROPERABILITY.md)                                                                                                                                                                                                                     |
+| Contributing and governance    | [CONTRIBUTING.md](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/CONTRIBUTING.md), [GOVERNANCE.md](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/GOVERNANCE.md), [Code of Conduct](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/CODE_OF_CONDUCT.md) |
+| Security                       | [Reporting policy](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/SECURITY.md), [assurance case](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/SECURITY-ASSURANCE.md)                                                                                           |
 
 <hr>
 
@@ -95,15 +95,15 @@ Add to your MCP config (Cursor: `.cursor/mcp.json` or `~/.cursor/mcp.json`; Wind
 
 ```json
 {
-  "mcpServers": {
-    "portkey-admin": {
-      "command": "npx",
-      "args": ["-y", "portkey-admin-mcp"],
-      "env": {
-        "PORTKEY_API_KEY": "your_api_key"
-      }
-    }
-  }
+	"mcpServers": {
+		"portkey-admin": {
+			"command": "npx",
+			"args": ["-y", "portkey-admin-mcp"],
+			"env": {
+				"PORTKEY_API_KEY": "your_api_key"
+			}
+		}
+	}
 }
 ```
 
@@ -113,16 +113,16 @@ VS Code's `.vscode/mcp.json` uses a top-level `servers` key and needs a `type`:
 
 ```json
 {
-  "servers": {
-    "portkey-admin": {
-      "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "portkey-admin-mcp"],
-      "env": {
-        "PORTKEY_API_KEY": "your_api_key"
-      }
-    }
-  }
+	"servers": {
+		"portkey-admin": {
+			"type": "stdio",
+			"command": "npx",
+			"args": ["-y", "portkey-admin-mcp"],
+			"env": {
+				"PORTKEY_API_KEY": "your_api_key"
+			}
+		}
+	}
 }
 ```
 
@@ -160,15 +160,15 @@ npm install && npm run build
 Then use this config:
 ```json
 {
-  "mcpServers": {
-    "portkey-admin": {
-      "command": "node",
-      "args": ["/path/to/portkey-admin-mcp/build/index.js"],
-      "env": {
-        "PORTKEY_API_KEY": "your_api_key"
-      }
-    }
-  }
+	"mcpServers": {
+		"portkey-admin": {
+			"command": "node",
+			"args": ["/path/to/portkey-admin-mcp/build/index.js"],
+			"env": {
+				"PORTKEY_API_KEY": "your_api_key"
+			}
+		}
+	}
 }
 ```
 
@@ -178,31 +178,31 @@ Then use this config:
 
 <h2 align="center" id="what-you-can-do">What You Can Do</h2>
 
-| Category | Tools | Examples |
-|----------|-------|---------|
-| **Prompts** | 14 | Create, version, render, execute, migrate, promote prompts |
-| **Prompt Partials** | 7 | Reusable prompt fragments with versioning |
-| **Prompt Labels** | 5 | Organize prompt versions (production, staging, dev) |
-| **Configs** | 6 | Gateway routing, caching, retry, loadbalancing |
-| **Deployments** | 5 | Register, inspect, update, and archive self-hosted Gateways |
-| **API Keys** | 6 | Create, rotate, and manage scoped API keys |
-| **Secret References** | 5 | Manage AWS, Azure, and HashiCorp external-secret references |
-| **Virtual Keys** | 5 | Manage provider access keys |
-| **Collections** | 5 | Group prompts by app or project |
-| **Providers** | 5 | Manage AI provider configurations |
-| **Integrations** | 11 | Provider integrations, model pricing, models, workspace access |
-| **MCP Integrations** | 10 | External MCP tool integrations |
-| **MCP Servers** | 12 | MCP server registry, capabilities, and live connections |
-| **Guardrails** | 14 | LLM and MCP-tool policies, server mappings, organisation defaults, workspace exclusions |
-| **Access Policies** | 5 | Allow/deny users, groups, and agents access to MCP tools and provider models |
-| **Egress Allowlist** | 5 | Organisation trust for custom outbound hosts |
-| **Usage Limits** | 7 | Cost and token consumption limits |
-| **Rate Limits** | 5 | Request frequency controls |
-| **Analytics** | 25 | Cost, latency, errors, tokens, cache, feedback, provider, MCP, A2A, and workspace groups; organisation scope and workspace exclusions |
-| **Logging** | 10 | Log retrieval, ingestion, export, and field restrictions |
-| **Tracing** | 2 | Feedback creation and updates on traces |
-| **Users & Workspaces** | 24 | User management, invites, workspace members, SCIM group mappings |
-| **Audit** | 1 | Audit log access |
+| Category               | Tools | Examples                                                                                                                              |
+| ---------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| **Prompts**            | 14    | Create, version, render, execute, migrate, promote prompts                                                                            |
+| **Prompt Partials**    | 7     | Reusable prompt fragments with versioning                                                                                             |
+| **Prompt Labels**      | 5     | Organize prompt versions (production, staging, dev)                                                                                   |
+| **Configs**            | 6     | Gateway routing, caching, retry, loadbalancing                                                                                        |
+| **Deployments**        | 5     | Register, inspect, update, and archive self-hosted Gateways                                                                           |
+| **API Keys**           | 6     | Create, rotate, and manage scoped API keys                                                                                            |
+| **Secret References**  | 5     | Manage AWS, Azure, and HashiCorp external-secret references                                                                           |
+| **Virtual Keys**       | 5     | Manage provider access keys                                                                                                           |
+| **Collections**        | 5     | Group prompts by app or project                                                                                                       |
+| **Providers**          | 5     | Manage AI provider configurations                                                                                                     |
+| **Integrations**       | 11    | Provider integrations, model pricing, models, workspace access                                                                        |
+| **MCP Integrations**   | 10    | External MCP tool integrations                                                                                                        |
+| **MCP Servers**        | 12    | MCP server registry, capabilities, and live connections                                                                               |
+| **Guardrails**         | 14    | LLM and MCP-tool policies, server mappings, organisation defaults, workspace exclusions                                               |
+| **Access Policies**    | 5     | Allow/deny users, groups, and agents access to MCP tools and provider models                                                          |
+| **Egress Allowlist**   | 5     | Organisation trust for custom outbound hosts                                                                                          |
+| **Usage Limits**       | 7     | Cost and token consumption limits                                                                                                     |
+| **Rate Limits**        | 5     | Request frequency controls                                                                                                            |
+| **Analytics**          | 25    | Cost, latency, errors, tokens, cache, feedback, provider, MCP, A2A, and workspace groups; organisation scope and workspace exclusions |
+| **Logging**            | 10    | Log retrieval, ingestion, export, and field restrictions                                                                              |
+| **Tracing**            | 2     | Feedback creation and updates on traces                                                                                               |
+| **Users & Workspaces** | 24    | User management, invites, workspace members, SCIM group mappings                                                                      |
+| **Audit**              | 1     | Audit log access                                                                                                                      |
 
 **194 tools total across 22 tool domains.** See [ENDPOINTS.md](./ENDPOINTS.md) for the full list with descriptions.
 
@@ -226,23 +226,23 @@ If a tool returns a `403` with Portkey error `AB03`, it means missing scopes —
 
 The following tools require an **organisation-level scope that is only available on Portkey Enterprise plans**. They return `403 You do not have enough permissions to execute this request` on workspace plans. Their descriptions include an `Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.` suffix so MCP clients know upfront.
 
-| Area | Tools | Required scope |
-|---|---|---|
-| Analytics (25) | `get_cost_analytics`, `get_request_analytics`, `get_token_analytics`, `get_latency_analytics`, `get_error_analytics`, `get_error_rate_analytics`, `get_cache_hit_latency`, `get_cache_hit_rate`, `get_cache_summary`, `get_users_analytics`, `get_error_stacks_analytics`, `get_error_status_codes_analytics`, `get_user_requests_analytics`, `get_rescued_requests_analytics`, `get_feedback_analytics`, `get_feedback_models_analytics`, `get_feedback_scores_analytics`, `get_feedback_weighted_analytics`, `get_analytics_group_users`, `get_analytics_group_models`, `get_analytics_group_metadata`, `get_analytics_group_providers`, `get_analytics_group_mcp`, `get_analytics_group_a2a`, `get_analytics_group_workspaces` | org-level `analytics.view` |
-| Deployments (5) | `list_deployments`, `register_deployment`, `get_deployment`, `update_deployment`, `archive_deployment` | Enterprise deployment administration |
-| Audit | `list_audit_logs` | `audit_logs.list` |
-| Org-level integrations | `get_integration`, `list_integration_models`, `list_integration_workspaces` | `organisation_integrations.read` |
-| Org-level users | `list_all_users`, `get_user`, `get_user_stats`, `list_user_invites` | `organisation_users.list` / `organisation_users.read` |
-| Organisation guardrails (6) | `get_organisation_defaults`, `update_organisation_defaults`, `list_input_guardrail_workspace_exclusions`, `update_input_guardrail_workspace_exclusions`, `list_output_guardrail_workspace_exclusions`, `update_output_guardrail_workspace_exclusions` | `organisation_settings.read/update` and `organisation_exclusions.list/update` |
-| Log exports (8) | `create_log_export`, `list_log_exports`, `get_log_export`, `start_log_export`, `cancel_log_export`, `download_log_export`, `update_log_export`, `get_log_export_field_restrictions` | Enterprise Logs Export + `logs.export` |
-| SCIM groups (4) | `list_scim_groups`, `list_scim_workspace_mappings`, `create_scim_workspace_mapping`, `delete_scim_workspace_mapping` | SCIM enabled + organisation admin access |
+| Area                        | Tools                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Required scope                                                                |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Analytics (25)              | `get_cost_analytics`, `get_request_analytics`, `get_token_analytics`, `get_latency_analytics`, `get_error_analytics`, `get_error_rate_analytics`, `get_cache_hit_latency`, `get_cache_hit_rate`, `get_cache_summary`, `get_users_analytics`, `get_error_stacks_analytics`, `get_error_status_codes_analytics`, `get_user_requests_analytics`, `get_rescued_requests_analytics`, `get_feedback_analytics`, `get_feedback_models_analytics`, `get_feedback_scores_analytics`, `get_feedback_weighted_analytics`, `get_analytics_group_users`, `get_analytics_group_models`, `get_analytics_group_metadata`, `get_analytics_group_providers`, `get_analytics_group_mcp`, `get_analytics_group_a2a`, `get_analytics_group_workspaces` | org-level `analytics.view`                                                    |
+| Deployments (5)             | `list_deployments`, `register_deployment`, `get_deployment`, `update_deployment`, `archive_deployment`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Enterprise deployment administration                                          |
+| Audit                       | `list_audit_logs`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `audit_logs.list`                                                             |
+| Org-level integrations      | `get_integration`, `list_integration_models`, `list_integration_workspaces`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | `organisation_integrations.read`                                              |
+| Org-level users             | `list_all_users`, `get_user`, `get_user_stats`, `list_user_invites`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | `organisation_users.list` / `organisation_users.read`                         |
+| Organisation guardrails (6) | `get_organisation_defaults`, `update_organisation_defaults`, `list_input_guardrail_workspace_exclusions`, `update_input_guardrail_workspace_exclusions`, `list_output_guardrail_workspace_exclusions`, `update_output_guardrail_workspace_exclusions`                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | `organisation_settings.read/update` and `organisation_exclusions.list/update` |
+| Log exports (8)             | `create_log_export`, `list_log_exports`, `get_log_export`, `start_log_export`, `cancel_log_export`, `download_log_export`, `update_log_export`, `get_log_export_field_restrictions`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | Enterprise Logs Export + `logs.export`                                        |
+| SCIM groups (4)             | `list_scim_groups`, `list_scim_workspace_mappings`, `create_scim_workspace_mapping`, `delete_scim_workspace_mapping`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | SCIM enabled + organisation admin access                                      |
 
 ### Other scope requirements
 
-| Feature | Required |
-|---------|----------|
-| Prompt completions (`run_prompt_completion`) | `completions.write` scope + billing metadata (`app`, `env`) |
-| Org-level service API key creation via `create_api_key` | `organisation_service_api_keys.create` (Enterprise) |
+| Feature                                                 | Required                                                    |
+| ------------------------------------------------------- | ----------------------------------------------------------- |
+| Prompt completions (`run_prompt_completion`)            | `completions.write` scope + billing metadata (`app`, `env`) |
+| Org-level service API key creation via `create_api_key` | `organisation_service_api_keys.create` (Enterprise)         |
 
 </details>
 
@@ -281,49 +281,49 @@ For local-only HTTP use, leave `MCP_HOST` at its default `127.0.0.1`. Set `MCP_H
 <details>
 <summary><strong>Full environment variable reference</strong></summary>
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `PORTKEY_API_KEY` | (required) | Your Portkey API key |
-| `PORTKEY_BASE_URL` | `https://api.portkey.ai/v1` | Portkey Admin API base URL. Prisma AIRS/SCM URLs are not compatible; credentialed requests never auto-follow redirects |
-| `PORTKEY_ALLOW_PRIVATE_BASE_URL` | — | Set to `true` to allow a literal loopback/private `PORTKEY_BASE_URL` |
-| `PORTKEY_ALLOW_INSECURE_HTTP` | — | Separately set to `true` only when a trusted self-hosted gateway cannot use HTTPS |
-| `PORTKEY_TOOL_DOMAINS` | — | Server-side allowlist of the 22 domains: `users`, `workspaces`, `configs`, `deployments`, `keys`, `collections`, `prompts`, `analytics`, `guardrails`, `limits`, `audit`, `labels`, `partials`, `tracing`, `logging`, `providers`, `secret-references`, `integrations`, `mcp-integrations`, `mcp-servers`, `access-policies`, `egress-allowlist`. HTTP `?tools=` may narrow it but cannot expand it |
-| `MCP_TOOL_DOMAINS` | — | Fallback for `PORTKEY_TOOL_DOMAINS`, used only when that is unset |
-| `MCP_TRANSPORT` | `stdio` | `stdio` or `http`; the Docker image picks its entrypoint from this (set `http` for the HTTP server) |
-| `MCP_HOST` | `127.0.0.1` | Bind address |
-| `MCP_PORT` | `3000` | Port |
-| `PORT` | — | Port override; takes precedence over `MCP_PORT` when set |
-| `MCP_PUBLIC_BASE_URL` | — | Public absolute base URL to advertise from `/auth/info` and the status page; recommended for hosted deployments |
-| `MCP_AUTH_MODE` | `none` | `none`, `bearer`, or `clerk` (`none` is blocked for HTTP unless explicitly overridden) |
-| `MCP_AUTH_TOKEN` | — | Secret for bearer auth |
-| `CLERK_ISSUER` / `CLERK_AUDIENCE` | — | Required issuer and audience when `MCP_AUTH_MODE=clerk` |
-| `CLERK_JWKS_URL` | `<CLERK_ISSUER>/.well-known/jwks.json` | JWKS endpoint for Clerk JWT verification; must be HTTPS. Set it only when the JWKS isn't at the default path |
-| `CLERK_ALLOWED_SUBJECTS` | — | Optional CSV subject allowlist for Clerk; at least one Clerk authorization policy is required |
-| `CLERK_ALLOWED_ORGANIZATION_IDS` / `CLERK_ALLOWED_ROLES` | — | Optional CSV organization and role constraints; every configured constraint must match |
-| `CLERK_REQUIRED_PERMISSIONS` | — | Optional CSV permissions that must all be present in the verified Clerk JWT |
-| `MCP_ALLOW_UNAUTHENTICATED_HTTP` | — | Set to `true` only for intentional local unauthenticated HTTP debugging |
-| `MCP_MAX_SESSIONS` | `100` | Maximum concurrent HTTP MCP request handlers (retained name) |
-| `MCP_REDIS_URL` | — | Fallback Redis URL for shared rate limiting, after `RATE_LIMIT_REDIS_URL` and before `REDIS_URL`; production requires `rediss://` |
-| `MCP_SESSION_MODE`, `MCP_SESSION_TIMEOUT`, `MCP_EVENT_*`, `MCP_REDIS_KEY_PREFIX` | Ignored as of 0.15.0 | Old session/replay settings produce a warning containing names only. 0.14.x behavior is unchanged; see [compatibility](./COMPATIBILITY.md). |
-| `MCP_TLS_KEY_PATH` | — | TLS key for native HTTPS |
-| `MCP_TLS_CERT_PATH` | — | TLS cert for native HTTPS |
-| `MCP_TLS_CA_PATH` | — | Optional CA bundle for native HTTPS; only used when the TLS key and cert are set |
-| `MCP_SHUTDOWN_TIMEOUT_MS` | `10000` | How long graceful shutdown waits before the process is forced to exit, in milliseconds; must be positive |
-| `MCP_MAX_REQUEST_SIZE` | `1mb` | Maximum HTTP request body size; tool arguments also have a fixed budget of 10,000 array elements and object members, counted across nested input |
-| `MCP_READY_CHECK_MODE` | `local` | `local` or `portkey`; `portkey` makes `/ready` also check Portkey connectivity |
-| `LOG_LEVEL` | `info` | `debug`, `info`, `warn`, or `error` |
-| `ALLOWED_ORIGINS` | — | CORS allow-list; also used to validate the `Host` header (DNS-rebinding protection) when `MCP_AUTH_MODE=none` |
-| `CORS_ORIGIN` | — | Legacy fallback for `ALLOWED_ORIGINS`, used only when that is unset |
-| `MCP_TRUST_PROXY` | `loopback` | Express trust-proxy policy. Use an exact nonnegative hop count or trusted proxy subnet; `true` is rejected because it trusts forwarding headers from every peer |
-| `RATE_LIMIT_STORE` | `memory` | `redis` for multi-instance/serverless deployments; production memory mode requires `RATE_LIMIT_SINGLE_PROCESS=true` |
-| `RATE_LIMIT_ENABLED` | `true` | Set to `false` to turn the pre-authentication rate limiter off |
-| `RATE_LIMIT_SINGLE_PROCESS` | — | Set to `true` to acknowledge a single-process deployment when using in-memory limiting in production |
-| `RATE_LIMIT_REDIS_URL` | — | Shared limiter Redis URL, falling back to `MCP_REDIS_URL`/`REDIS_URL`; production requires `rediss://` |
-| `RATE_LIMIT_REDIS_KEY_PREFIX` | `mcp:rate-limit` | Redis namespace for atomic pre-authentication IP and principal-plus-IP token buckets |
-| `RATE_LIMIT_MAX` | `60` | Maximum tokens in each pre-authentication IP and principal-plus-IP bucket |
-| `RATE_LIMIT_WINDOW_MS` | `60000` | Rate-limit window in milliseconds |
-| `RATE_LIMIT_REFILL` | `60` | Tokens refilled each window |
-| `RATE_LIMIT_MAX_BUCKETS` | `10000` | Maximum local buckets in explicit memory mode before new clients share overflow capacity |
+| Variable                                                                         | Default                                | Description                                                                                                                                                                                                                                                                                                                                                                                         |
+| -------------------------------------------------------------------------------- | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PORTKEY_API_KEY`                                                                | (required)                             | Your Portkey API key                                                                                                                                                                                                                                                                                                                                                                                |
+| `PORTKEY_BASE_URL`                                                               | `https://api.portkey.ai/v1`            | Portkey Admin API base URL. Prisma AIRS/SCM URLs are not compatible; credentialed requests never auto-follow redirects                                                                                                                                                                                                                                                                              |
+| `PORTKEY_ALLOW_PRIVATE_BASE_URL`                                                 | —                                      | Set to `true` to allow a literal loopback/private `PORTKEY_BASE_URL`                                                                                                                                                                                                                                                                                                                                |
+| `PORTKEY_ALLOW_INSECURE_HTTP`                                                    | —                                      | Separately set to `true` only when a trusted self-hosted gateway cannot use HTTPS                                                                                                                                                                                                                                                                                                                   |
+| `PORTKEY_TOOL_DOMAINS`                                                           | —                                      | Server-side allowlist of the 22 domains: `users`, `workspaces`, `configs`, `deployments`, `keys`, `collections`, `prompts`, `analytics`, `guardrails`, `limits`, `audit`, `labels`, `partials`, `tracing`, `logging`, `providers`, `secret-references`, `integrations`, `mcp-integrations`, `mcp-servers`, `access-policies`, `egress-allowlist`. HTTP `?tools=` may narrow it but cannot expand it |
+| `MCP_TOOL_DOMAINS`                                                               | —                                      | Fallback for `PORTKEY_TOOL_DOMAINS`, used only when that is unset                                                                                                                                                                                                                                                                                                                                   |
+| `MCP_TRANSPORT`                                                                  | `stdio`                                | `stdio` or `http`; the Docker image picks its entrypoint from this (set `http` for the HTTP server)                                                                                                                                                                                                                                                                                                 |
+| `MCP_HOST`                                                                       | `127.0.0.1`                            | Bind address                                                                                                                                                                                                                                                                                                                                                                                        |
+| `MCP_PORT`                                                                       | `3000`                                 | Port                                                                                                                                                                                                                                                                                                                                                                                                |
+| `PORT`                                                                           | —                                      | Port override; takes precedence over `MCP_PORT` when set                                                                                                                                                                                                                                                                                                                                            |
+| `MCP_PUBLIC_BASE_URL`                                                            | —                                      | Public absolute base URL to advertise from `/auth/info` and the status page; recommended for hosted deployments                                                                                                                                                                                                                                                                                     |
+| `MCP_AUTH_MODE`                                                                  | `none`                                 | `none`, `bearer`, or `clerk` (`none` is blocked for HTTP unless explicitly overridden)                                                                                                                                                                                                                                                                                                              |
+| `MCP_AUTH_TOKEN`                                                                 | —                                      | Secret for bearer auth                                                                                                                                                                                                                                                                                                                                                                              |
+| `CLERK_ISSUER` / `CLERK_AUDIENCE`                                                | —                                      | Required issuer and audience when `MCP_AUTH_MODE=clerk`                                                                                                                                                                                                                                                                                                                                             |
+| `CLERK_JWKS_URL`                                                                 | `<CLERK_ISSUER>/.well-known/jwks.json` | JWKS endpoint for Clerk JWT verification; must be HTTPS. Set it only when the JWKS isn't at the default path                                                                                                                                                                                                                                                                                        |
+| `CLERK_ALLOWED_SUBJECTS`                                                         | —                                      | CSV subject allowlist for Clerk. Clerk mode requires this or `CLERK_ALLOWED_ORGANIZATION_IDS`                                                                                                                                                                                                                                                                                                       |
+| `CLERK_ALLOWED_ORGANIZATION_IDS` / `CLERK_ALLOWED_ROLES`                         | —                                      | CSV organization and role constraints. Organization IDs can satisfy the identity requirement on their own; roles can only narrow it. Every configured constraint must match                                                                                                                                                                                                                         |
+| `CLERK_REQUIRED_PERMISSIONS`                                                     | —                                      | Optional CSV permissions that must all be present in the verified Clerk JWT. Can only narrow the policy, not satisfy the identity requirement                                                                                                                                                                                                                                                       |
+| `MCP_ALLOW_UNAUTHENTICATED_HTTP`                                                 | —                                      | Set to `true` only for intentional local unauthenticated HTTP debugging                                                                                                                                                                                                                                                                                                                             |
+| `MCP_MAX_SESSIONS`                                                               | `100`                                  | Maximum concurrent HTTP MCP request handlers (retained name)                                                                                                                                                                                                                                                                                                                                        |
+| `MCP_REDIS_URL`                                                                  | —                                      | Fallback Redis URL for shared rate limiting, after `RATE_LIMIT_REDIS_URL` and before `REDIS_URL`; production requires `rediss://`                                                                                                                                                                                                                                                                   |
+| `MCP_SESSION_MODE`, `MCP_SESSION_TIMEOUT`, `MCP_EVENT_*`, `MCP_REDIS_KEY_PREFIX` | Ignored as of 0.15.0                   | Old session/replay settings produce a warning containing names only. 0.14.x behavior is unchanged; see [compatibility](./COMPATIBILITY.md).                                                                                                                                                                                                                                                         |
+| `MCP_TLS_KEY_PATH`                                                               | —                                      | TLS key for native HTTPS                                                                                                                                                                                                                                                                                                                                                                            |
+| `MCP_TLS_CERT_PATH`                                                              | —                                      | TLS cert for native HTTPS                                                                                                                                                                                                                                                                                                                                                                           |
+| `MCP_TLS_CA_PATH`                                                                | —                                      | Optional CA bundle for native HTTPS; only used when the TLS key and cert are set                                                                                                                                                                                                                                                                                                                    |
+| `MCP_SHUTDOWN_TIMEOUT_MS`                                                        | `10000`                                | How long graceful shutdown waits before the process is forced to exit, in milliseconds; must be positive                                                                                                                                                                                                                                                                                            |
+| `MCP_MAX_REQUEST_SIZE`                                                           | `1mb`                                  | Maximum HTTP request body size; tool arguments also have a fixed budget of 10,000 array elements and object members, counted across nested input                                                                                                                                                                                                                                                    |
+| `MCP_READY_CHECK_MODE`                                                           | `local`                                | `local` or `portkey`; `portkey` makes `/ready` also check Portkey connectivity                                                                                                                                                                                                                                                                                                                      |
+| `LOG_LEVEL`                                                                      | `info`                                 | `debug`, `info`, `warn`, or `error`                                                                                                                                                                                                                                                                                                                                                                 |
+| `ALLOWED_ORIGINS`                                                                | —                                      | CORS allow-list; also used to validate the `Host` header (DNS-rebinding protection) when `MCP_AUTH_MODE=none`                                                                                                                                                                                                                                                                                       |
+| `CORS_ORIGIN`                                                                    | —                                      | Legacy fallback for `ALLOWED_ORIGINS`, used only when that is unset                                                                                                                                                                                                                                                                                                                                 |
+| `MCP_TRUST_PROXY`                                                                | `loopback`                             | Express trust-proxy policy. Use an exact nonnegative hop count or trusted proxy subnet; `true` is rejected because it trusts forwarding headers from every peer                                                                                                                                                                                                                                     |
+| `RATE_LIMIT_STORE`                                                               | `memory`                               | `redis` for multi-instance/serverless deployments; production memory mode requires `RATE_LIMIT_SINGLE_PROCESS=true`                                                                                                                                                                                                                                                                                 |
+| `RATE_LIMIT_ENABLED`                                                             | `true`                                 | Set to `false` to turn the pre-authentication rate limiter off                                                                                                                                                                                                                                                                                                                                      |
+| `RATE_LIMIT_SINGLE_PROCESS`                                                      | —                                      | Set to `true` to acknowledge a single-process deployment when using in-memory limiting in production                                                                                                                                                                                                                                                                                                |
+| `RATE_LIMIT_REDIS_URL`                                                           | —                                      | Shared limiter Redis URL, falling back to `MCP_REDIS_URL`/`REDIS_URL`; production requires `rediss://`                                                                                                                                                                                                                                                                                              |
+| `RATE_LIMIT_REDIS_KEY_PREFIX`                                                    | `mcp:rate-limit`                       | Redis namespace for atomic pre-authentication IP and principal-plus-IP token buckets                                                                                                                                                                                                                                                                                                                |
+| `RATE_LIMIT_MAX`                                                                 | `60`                                   | Maximum tokens in each pre-authentication IP and principal-plus-IP bucket                                                                                                                                                                                                                                                                                                                           |
+| `RATE_LIMIT_WINDOW_MS`                                                           | `60000`                                | Rate-limit window in milliseconds                                                                                                                                                                                                                                                                                                                                                                   |
+| `RATE_LIMIT_REFILL`                                                              | `60`                                   | Tokens refilled each window                                                                                                                                                                                                                                                                                                                                                                         |
+| `RATE_LIMIT_MAX_BUCKETS`                                                         | `10000`                                | Maximum local buckets in explicit memory mode before new clients share overflow capacity                                                                                                                                                                                                                                                                                                            |
 
 Production containers must choose their rate-limit topology explicitly: set
 `RATE_LIMIT_STORE=redis` for multi-instance deployments, or set
@@ -369,11 +369,11 @@ This example runs one long-lived container with in-memory rate limiting. Use
 
 ### Health Endpoints
 
-| Path | Purpose |
-|------|---------|
-| `GET /health` | Server liveness |
-| `GET /ready` | Readiness (includes optional Portkey connectivity check) |
-| `GET /auth/info` | Auth configuration metadata |
+| Path             | Purpose                                                  |
+| ---------------- | -------------------------------------------------------- |
+| `GET /health`    | Server liveness                                          |
+| `GET /ready`     | Readiness (includes optional Portkey connectivity check) |
+| `GET /auth/info` | Auth configuration metadata                              |
 
 <hr>
 

@@ -385,11 +385,11 @@ describe("get_request_analytics", () => {
 });
 
 // ---------------------------------------------------------------------------
-// get_users_analytics — distinct body (active/new user growth, not requests)
+// get_users_analytics — distinct body (unique-user totals, not requests)
 // ---------------------------------------------------------------------------
 
 describe("get_users_analytics", () => {
-	it("curates active/new user growth fields distinct from request/cost shapes", async () => {
+	it("keeps the unique-user total from the spec's summary and per-bucket shape", async () => {
 		let capturedParams: unknown;
 		const callbacks = registerToolCallbacks((server) => {
 			registerAnalyticsTools(
@@ -400,12 +400,11 @@ describe("get_users_analytics", () => {
 							capturedParams = params;
 							return {
 								object: "analytics-graph" as const,
-								summary: { total_active_users: 42, total_new_users: 7 },
+								summary: { total: 42 },
 								data_points: [
 									{
 										timestamp: "2024-01-01T00:00:00Z",
-										active_users: 5,
-										new_users: 1,
+										total: 5,
 									},
 								],
 							};
@@ -428,12 +427,9 @@ describe("get_users_analytics", () => {
 			summary?: Record<string, unknown>;
 			data_points?: Array<Record<string, unknown>>;
 		};
-		assert.deepEqual(payload.summary, {
-			total_active_users: 42,
-			total_new_users: 7,
-		});
+		assert.deepEqual(payload.summary, { total: 42 });
 		assert.deepEqual(payload.data_points, [
-			{ timestamp: "2024-01-01T00:00:00Z", active_users: 5, new_users: 1 },
+			{ timestamp: "2024-01-01T00:00:00Z", total: 5 },
 		]);
 	});
 });

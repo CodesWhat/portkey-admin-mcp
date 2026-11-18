@@ -144,7 +144,7 @@ function registerServerPromptsAndResources(server: McpServer): void {
 	);
 }
 
-function parseConfiguredToolDomains(
+export function parseConfiguredToolDomains(
 	rawValue: string | undefined = process.env.PORTKEY_TOOL_DOMAINS?.trim() ||
 		process.env.MCP_TOOL_DOMAINS?.trim(),
 ): ToolDomain[] | undefined {

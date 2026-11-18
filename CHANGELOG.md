@@ -26,10 +26,24 @@ release until that reference and the release notes say so.
 
 ### Fixed
 
+- Updating a key's or provider's alert threshold or credit limit no longer drops a custom reset cadence. `periodic_reset_days` is now carried over and sent without `periodic_reset`, and an explicit `periodic_reset` replaces inherited days. `get_secret_reference` no longer fails on a status other than `ACTIVE`.
+- The HTTP server now validates `PORTKEY_TOOL_DOMAINS` at startup and exits on an unknown domain. It used to start, report `/ready` healthy and then answer every `/mcp` request with a 500.
+- `rotate_api_key` returned an output-validation error after the rotation had already run upstream, which dropped the one-time new key. This happened when Portkey sent `key_transition_expires_at` with an offset such as `+00:00`, or left it out. The schema now accepts both. `list_secret_references` and `get_secret_reference` accept offset timestamps too, and the list no longer fails on a status other than `ACTIVE`.
+- Virtual key, API key and provider results include `usage_limits.type`, so a tokens budget no longer looks like a cost one.
+- `run_prompt_completion` returns the model's `tool_calls` and legacy `function_call` instead of `response: null` after a billable call that ended in a tool request. They come back as data and the server never runs them.
+- `get_workspace` and `list_workspaces` now return `is_default`, `usage_limits` and `rate_limits`. Portkey sends the default flag at the top level with `defaults` set to null, so the flag was always missing, and the limits accepted on create and update were never shown back.
+- `get_token_analytics`, `get_users_analytics` and `get_cache_hit_rate` read fields that Portkey's spec doesn't return and dropped the ones it does. Token results now carry `total` and `avg` (the graph has no prompt/completion split), user results carry the unique-user `total`, and cache hit-rate results carry `simple_hits`, `semantic_hits`, `rate` and both cumulative savings fields per bucket, with `summary.total_hits` and `summary.hit_rate`.
+- `update_virtual_key`, `update_api_key` and `update_provider` no longer overwrite an existing budget. Changing only the alert threshold used to send `type: cost` and a monthly reset, which turned a weekly token budget into a monthly cost one. These updates now read the current limits first and change only the fields you pass, and an update that touches no limit field sends no `usage_limits` and does no extra read.
+- `create_provider` and `update_provider` no longer drop limit inputs. `usage_limit_type` and `periodic_reset` on their own used to be discarded while the call reported success, and a lone `rate_limit_value` or `rate_limit_unit` was silently ignored. Updates now forward only the usage fields you pass, and a half rate-limit pair is rejected.
+- `promote_prompt` into an existing target now replaces the target's version with the source version. It used to patch, so a source with no tools left the target's old `tools` and `tool_choice` in place. It also fails before writing when the source version has no model, string or virtual key.
+- Clerk v2 session tokens now decode correctly. The role comes from `o.rol` without its `org:` prefix, so `CLERK_ALLOWED_ROLES=org:admin` never matched, and permissions packed into `fea`, `o.per` and `o.fpm` were dropped, so `CLERK_REQUIRED_PERMISSIONS` could never be met. Both are rebuilt the way Clerk's own parser does it. v1 tokens with flat `org_*` claims keep working.
 - `update_api_key` sent `reset_usage` as a number, but the Portkey API takes a boolean. It now accepts `true`/`false`, as `update_provider` does.
 
 ### Security
 
+- `/ready` no longer returns the upstream Portkey error text when `MCP_READY_CHECK_MODE=portkey`. The route is unauthenticated, so the message could expose admin-key state. It returns a fixed `Upstream readiness check failed` and logs the details server-side.
+- Clerk auth mode rejects pending sessions (`sts: "pending"`). Those sessions still have unfinished tasks such as MFA setup or a password reset, and the token was accepted anyway. Tokens with no `sts` claim still pass.
+- Clerk auth mode now requires `CLERK_ALLOWED_SUBJECTS` or `CLERK_ALLOWED_ORGANIZATION_IDS`. A roles-only or permissions-only policy was accepted at startup, so an admin of any organization in the same Clerk instance could pass it. Roles and permissions still narrow the policy, but can't satisfy startup validation alone.
 - Refreshed the root lockfile to Hono 4.13.19. Removed the osv-scanner ignores for GHSA-fc5q-39xc-vjpf and CVE-2026-112366, since the advisory was withdrawn on 2026-11-18.
 
 ## [0.16.4] - 2026-11-13

@@ -40,26 +40,20 @@ describe("distinct analytics callbacks", () => {
 			method: "getTokenAnalytics",
 			response: {
 				object: "analytics-graph",
-				summary: { total: 120, prompt: 80, completion: 40 },
+				summary: { total: 120, avg: 30 },
 				data_points: [
 					{
 						timestamp: "2026-01-01T00:00:00Z",
 						total: 12,
-						prompt: 8,
-						completion: 4,
+						avg: 3,
 					},
 				],
 			},
-			expectedSummary: {
-				total_tokens: 120,
-				prompt_tokens: 80,
-				completion_tokens: 40,
-			},
+			expectedSummary: { total: 120, avg: 30 },
 			expectedPoint: {
 				timestamp: "2026-01-01T00:00:00Z",
 				total: 12,
-				prompt: 8,
-				completion: 4,
+				avg: 3,
 			},
 		},
 		{
@@ -140,22 +134,26 @@ describe("distinct analytics callbacks", () => {
 			method: "getCacheHitRate",
 			response: {
 				object: "analytics-graph",
-				summary: { rate: 90, total_hits: 900, total_misses: 100 },
+				summary: { total: 900, rate: 90 },
 				data_points: [
 					{
 						timestamp: "2026-01-01T00:00:00Z",
+						simple_hits: 60,
+						semantic_hits: 20,
 						rate: 80,
-						hits: 80,
-						misses: 20,
+						cumulative_simple_cache_savings: 150,
+						cumulative_semantic_cache_savings: 40,
 					},
 				],
 			},
-			expectedSummary: { hit_rate: 90, total_hits: 900, total_misses: 100 },
+			expectedSummary: { hit_rate: 90, total_hits: 900 },
 			expectedPoint: {
 				timestamp: "2026-01-01T00:00:00Z",
+				simple_hits: 60,
+				semantic_hits: 20,
 				rate: 80,
-				hits: 80,
-				misses: 20,
+				cumulative_simple_cache_savings: 150,
+				cumulative_semantic_cache_savings: 40,
 			},
 		},
 	] as const;
@@ -467,6 +465,7 @@ describe("provider lifecycle callbacks", () => {
 							status: "active",
 							note: "primary",
 							usage_limits: {
+								type: "tokens",
 								credit_limit: 100,
 								alert_threshold: 80,
 								periodic_reset: "monthly",
@@ -506,6 +505,12 @@ describe("provider lifecycle callbacks", () => {
 			workspace_id: "workspace-1",
 		});
 		assert.equal(providers[0]?.slug, "openai-prod");
+		assert.deepEqual(providers[0]?.usage_limits, {
+			type: "tokens",
+			credit_limit: 100,
+			alert_threshold: 80,
+			periodic_reset: "monthly",
+		});
 		assert.equal(providers[1]?.usage_limits, null);
 		assert.equal(providers[1]?.rate_limits, null);
 	});
@@ -513,6 +518,7 @@ describe("provider lifecycle callbacks", () => {
 	it("updates provider limits and deletes the selected workspace provider", async () => {
 		const calls: unknown[] = [];
 		const callbacks = callbacksFor(registerProvidersTools, "providers", {
+			getProvider: async () => ({ usage_limits: null }),
 			updateProvider: async (
 				slug: string,
 				params: unknown,

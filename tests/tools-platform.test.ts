@@ -11,6 +11,7 @@
  */
 
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 import { BaseService } from "../src/services/base.service.js";
 import { DeploymentsService } from "../src/services/deployments.service.js";
@@ -2398,5 +2399,106 @@ describe("WorkspacesService path encoding", () => {
 
 		assert.equal(request.method, "DELETE");
 		assert.equal(request.path, "/admin/workspaces/ws%2Fdel%20id");
+	});
+});
+
+// ---------------------------------------------------------------------------
+// workspace projection — is_default, usage_limits and rate_limits
+// ---------------------------------------------------------------------------
+
+describe("workspace projection of is_default and limits", () => {
+	const BASE = {
+		id: "ws-1",
+		name: "Eng",
+		slug: "eng",
+		description: null,
+		created_at: "2026-01-01T00:00:00.000Z",
+		last_updated_at: "2026-01-02T00:00:00.000Z",
+		object: "workspace" as const,
+	};
+
+	async function project(workspace: Record<string, unknown>) {
+		const callbacks = registerToolCallbacks((server) => {
+			registerWorkspacesTools(
+				server as never,
+				{
+					workspaces: {
+						listWorkspaces: async () => ({
+							total: 1,
+							object: "list",
+							data: [{ ...BASE, ...workspace }],
+						}),
+						getWorkspace: async () => ({ ...BASE, ...workspace, users: [] }),
+					},
+				} as never,
+			);
+		});
+		const list = (await callbacks.get("list_workspaces")?.({})) as {
+			content: Array<{ text: string }>;
+		};
+		const get = (await callbacks.get("get_workspace")?.({
+			workspace_id: "ws-1",
+		})) as { content: Array<{ text: string }> };
+		return {
+			summary: (
+				JSON.parse(list.content[0]?.text ?? "{}") as {
+					workspaces: Array<Record<string, unknown>>;
+				}
+			).workspaces[0] as Record<string, unknown>,
+			detail: JSON.parse(get.content[0]?.text ?? "{}") as Record<
+				string,
+				unknown
+			>,
+		};
+	}
+
+	it("exposes the top-level is_default from the recorded fixture", async () => {
+		const fixture = JSON.parse(
+			readFileSync(
+				new URL("./fixtures/responses/workspaces-get.json", import.meta.url),
+				"utf-8",
+			),
+		) as Record<string, unknown>;
+		const { summary, detail } = await project(fixture);
+		for (const projected of [summary, detail]) {
+			assert.equal(projected.is_default, 1);
+			assert.equal(projected.defaults, null);
+			assert.equal(projected.usage_limits, null);
+			assert.equal(projected.rate_limits, null);
+		}
+	});
+
+	it("falls back to defaults.is_default when there is no top-level flag", async () => {
+		const { summary, detail } = await project({
+			defaults: { is_default: 1, object: "workspace" },
+		});
+		assert.equal(summary.is_default, 1);
+		assert.equal(detail.is_default, 1);
+	});
+
+	it("lets a top-level 0 win over defaults.is_default", async () => {
+		const { summary, detail } = await project({
+			is_default: 0,
+			defaults: { is_default: 1, object: "workspace" },
+		});
+		assert.equal(summary.is_default, 0);
+		assert.equal(detail.is_default, 0);
+	});
+
+	it("keeps populated usage and rate limits", async () => {
+		const usage = [
+			{ type: "cost", credit_limit: 10, periodic_reset: "weekly" },
+		];
+		const rate = [{ type: "requests", unit: "rpm", value: 5 }];
+		const { summary, detail } = await project({
+			defaults: null,
+			usage_limits: usage,
+			rate_limits: rate,
+		});
+		for (const projected of [summary, detail]) {
+			assert.deepEqual(projected.usage_limits, usage);
+			assert.deepEqual(projected.rate_limits, rate);
+			assert.equal("is_default" in projected, false);
+		}
 	});
 });

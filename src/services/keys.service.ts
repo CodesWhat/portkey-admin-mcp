@@ -19,7 +19,7 @@ export interface VirtualKeyUsageLimits {
 	type: "cost" | "tokens";
 	alert_threshold: number;
 	credit_limit: number;
-	periodic_reset: "monthly" | "weekly";
+	periodic_reset: "monthly" | "weekly" | string | null;
 }
 
 export interface VirtualKey {
@@ -87,7 +87,7 @@ export interface ApiKeyRateLimit {
 export interface ApiKeyUsageLimits {
 	type: "cost" | "tokens";
 	credit_limit: number;
-	periodic_reset: "monthly" | "weekly";
+	periodic_reset: "monthly" | "weekly" | string | null;
 	alert_threshold: number;
 }
 
@@ -180,7 +180,7 @@ export interface RotateApiKeyRequest {
 export interface RotateApiKeyResponse {
 	id: string;
 	key: string;
-	key_transition_expires_at: string;
+	key_transition_expires_at?: string;
 }
 
 export interface ListVirtualKeysParams {
