@@ -301,13 +301,20 @@ function createReadyHandler(deps: ReadyHandlerDeps): express.RequestHandler {
 					});
 					return;
 				} catch (error) {
+					// /ready is unauthenticated, so the upstream error text stays in the
+					// server log instead of the response.
+					Logger.error("Portkey readiness check failed", {
+						metadata: {
+							error: error instanceof Error ? error.message : "Unknown error",
+						},
+					});
 					res.status(503).json({
 						status: "not_ready",
 						activeRequests,
 						sessionMode: "stateless",
 						portkey: {
 							status: "error",
-							error: error instanceof Error ? error.message : "Unknown error",
+							error: "Upstream readiness check failed",
 						},
 						timestamp: new Date().toISOString(),
 					});

@@ -366,6 +366,45 @@ describe("HTTP server integration", () => {
 		);
 	});
 
+	it("does not leak upstream error text from the unauthenticated readiness probe", async () => {
+		const marker = "upstream-marker-7f3a9c";
+		const upstreamPort = await getFreePort();
+		const upstream = createHttpServer((_request, response) => {
+			response.writeHead(401, { "content-type": "application/json" });
+			response.end(JSON.stringify({ error: { message: marker } }));
+		});
+		await new Promise<void>((resolveListen) => {
+			upstream.listen(upstreamPort, "127.0.0.1", resolveListen);
+		});
+
+		try {
+			await withHttpServer(
+				{
+					MCP_READY_CHECK_MODE: "portkey",
+					PORTKEY_BASE_URL: `http://127.0.0.1:${upstreamPort}`,
+					PORTKEY_ALLOW_PRIVATE_BASE_URL: "true",
+					PORTKEY_ALLOW_INSECURE_HTTP: "true",
+				},
+				async ({ baseUrl }) => {
+					const response = await fetch(`${baseUrl}/ready`);
+					assert.equal(response.status, 503);
+					const text = await response.text();
+					assert.equal(text.includes(marker), false);
+					const body = JSON.parse(text) as Record<string, unknown>;
+					assert.equal(body.status, "not_ready");
+					assert.deepEqual(body.portkey, {
+						status: "error",
+						error: "Upstream readiness check failed",
+					});
+				},
+			);
+		} finally {
+			await new Promise<void>((resolveClose, reject) => {
+				upstream.close((error) => (error ? reject(error) : resolveClose()));
+			});
+		}
+	});
+
 	it("includes a successful Portkey API check in readiness", async () => {
 		const upstreamPort = await getFreePort();
 		const upstream = createHttpServer((_request, response) => {
