@@ -207,11 +207,9 @@ describe("getHttpAuthConfig under clerk mode", () => {
 		const principal = authorizeClerkClaims(
 			{
 				sub: "user_admin",
-				o: {
-					id: "org_primary",
-					rol: "org:admin",
-					per: ["org:sys_memberships:manage", "org:sys_domains:manage"],
-				},
+				v: 2,
+				fea: "o:sys_memberships,o:sys_domains",
+				o: { id: "org_primary", rol: "admin", per: "manage", fpm: "1,1" },
 			},
 			getHttpAuthConfig(),
 		);
@@ -689,11 +687,9 @@ describe("mcpAuthMiddleware clerk JWT verification", () => {
 			const nestedPrincipal = authorizeClerkClaims(
 				{
 					sub: " user_test ",
-					o: {
-						id: "org_primary",
-						rol: "org:admin",
-						per: ["org:read", "org:write", "org:read", null],
-					},
+					org_id: "org_primary",
+					org_role: "org:admin",
+					org_permissions: ["org:read", "org:write", "org:read", null],
 					roles: ["org:admin", "org:viewer", "", 7],
 					permissions: ["org:write"],
 				},
@@ -944,5 +940,177 @@ describe("clerk session and claim validation", () => {
 				assert.equal(state.statusCode, 401);
 			}
 		});
+	});
+});
+
+describe("clerk v2 session token decoding", () => {
+	const issuer = "https://clerk.example.com";
+	const policy = { mode: "clerk" as const, issuer };
+
+	it("reads the organization and role from the compact o claim", () => {
+		const principal = authorizeClerkClaims(
+			{ sub: "user_a", v: 2, o: { id: "org_a", rol: "admin" } },
+			policy,
+		);
+		assert.equal(principal.organizationId, "org_a");
+		assert.deepEqual(principal.roles, ["org:admin"]);
+		assert.deepEqual(principal.permissions, []);
+	});
+
+	it("keeps v1 flat claims working", () => {
+		const principal = authorizeClerkClaims(
+			{
+				sub: "user_a",
+				v: 1,
+				org_id: "org_a",
+				org_role: "org:admin",
+				org_permissions: ["org:billing:read"],
+			},
+			policy,
+		);
+		assert.equal(principal.organizationId, "org_a");
+		assert.deepEqual(principal.roles, ["org:admin"]);
+		assert.deepEqual(principal.permissions, ["org:billing:read"]);
+	});
+
+	it("does not trust flat org claims on a v2 token", () => {
+		const principal = authorizeClerkClaims(
+			{
+				sub: "user_a",
+				v: 2,
+				org_id: "org_flat",
+				org_role: "org:admin",
+				org_permissions: ["org:billing:read"],
+			},
+			policy,
+		);
+		assert.equal(principal.organizationId, undefined);
+		assert.deepEqual(principal.roles, []);
+		assert.deepEqual(principal.permissions, []);
+	});
+
+	it("rebuilds permissions from fea, o.per and o.fpm (Clerk docs example)", () => {
+		const principal = authorizeClerkClaims(
+			{
+				sub: "user_a",
+				v: 2,
+				fea: "o:dashboard,o:teams",
+				o: { id: "org_a", rol: "admin", per: "manage,read", fpm: "3,2" },
+			},
+			policy,
+		);
+		assert.deepEqual(principal.permissions, [
+			"org:dashboard:manage",
+			"org:dashboard:read",
+			"org:teams:read",
+		]);
+	});
+
+	it("skips zero and missing masks", () => {
+		const principal = authorizeClerkClaims(
+			{
+				sub: "user_a",
+				v: 2,
+				fea: "o:a,o:b,o:c",
+				o: { id: "org_a", per: "read,write", fpm: "0,2" },
+			},
+			policy,
+		);
+		assert.deepEqual(principal.permissions, ["org:b:write"]);
+	});
+
+	it("only counts org-scoped features and keeps their order", () => {
+		const principal = authorizeClerkClaims(
+			{
+				sub: "user_a",
+				v: 2,
+				fea: "u:personal,o:teams,ou:shared",
+				o: { id: "org_a", per: "read", fpm: "1,1" },
+			},
+			policy,
+		);
+		assert.deepEqual(principal.permissions, [
+			"org:teams:read",
+			"org:shared:read",
+		]);
+	});
+
+	it("decodes masks wider than 32 bits", () => {
+		const names = Array.from({ length: 40 }, (_, i) => `p${i}`).join(",");
+		const principal = authorizeClerkClaims(
+			{
+				sub: "user_a",
+				v: 2,
+				fea: "o:wide",
+				// bits 0 and 35
+				o: { id: "org_a", per: names, fpm: String((1n << 35n) | 1n) },
+			},
+			policy,
+		);
+		assert.deepEqual(principal.permissions, ["org:wide:p0", "org:wide:p35"]);
+	});
+
+	it("ignores mask bits beyond the permission list", () => {
+		const principal = authorizeClerkClaims(
+			{
+				sub: "user_a",
+				v: 2,
+				fea: "o:f",
+				o: { id: "org_a", per: "read", fpm: "7" },
+			},
+			policy,
+		);
+		assert.deepEqual(principal.permissions, ["org:f:read"]);
+	});
+
+	it("grants nothing for malformed mappings", () => {
+		for (const claims of [
+			{ fea: "o:f", o: { id: "org_a", per: "read", fpm: "abc" } },
+			{ fea: "o:f", o: { id: "org_a", per: "read", fpm: "-1" } },
+			{ fea: "o:f", o: { id: "org_a", per: "read", fpm: "1.5" } },
+			{ fea: "nocolon", o: { id: "org_a", per: "read", fpm: "1" } },
+			{ fea: "o:f", o: { id: "org_a", per: ["read"], fpm: "1" } },
+			{ fea: "o:f", o: { id: "org_a", per: "read" } },
+			{ fea: ["o:f"], o: { id: "org_a", per: "read", fpm: "1" } },
+			{ o: { id: "org_a", per: "read", fpm: "1" } },
+		]) {
+			const principal = authorizeClerkClaims(
+				{ sub: "user_a", v: 2, ...claims },
+				policy,
+			);
+			assert.deepEqual(principal.permissions, [], JSON.stringify(claims));
+		}
+	});
+
+	it("authorizes a v2 token against role and permission constraints", () => {
+		const config = {
+			...policy,
+			allowedOrganizationIds: ["org_a"],
+			allowedRoles: ["org:admin"],
+			requiredPermissions: ["org:billing:read"],
+		};
+		const claims = {
+			sub: "user_a",
+			v: 2,
+			fea: "o:billing",
+			o: { id: "org_a", rol: "admin", per: "read", fpm: "1" },
+		};
+		assert.doesNotThrow(() => authorizeClerkClaims(claims, config));
+		assert.throws(
+			() =>
+				authorizeClerkClaims(
+					{ ...claims, o: { ...claims.o, rol: "member" } },
+					config,
+				),
+			/role is not authorized/,
+		);
+		assert.throws(
+			() =>
+				authorizeClerkClaims(
+					{ ...claims, o: { ...claims.o, fpm: "0" } },
+					config,
+				),
+			/missing a required permission/,
+		);
 	});
 });
