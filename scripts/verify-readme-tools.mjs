@@ -177,7 +177,10 @@ for (const name of codeToolSet) {
 for (const [label, sources] of README_CATEGORY_SOURCES) {
 	const escapedLabel = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 	const match = readme.match(
-		new RegExp(`^\\| \\*\\*${escapedLabel}\\*\\* \\| (\\d+) \\|`, "m"),
+		new RegExp(
+			`^\\|\\s*\\*\\*${escapedLabel}\\*\\*\\s*\\|\\s*(\\d+)\\s*\\|`,
+			"m",
+		),
 	);
 	const expected = expectedCategoryCount(sources);
 	if (!match) {
