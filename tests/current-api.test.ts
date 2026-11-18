@@ -1406,6 +1406,18 @@ describe("current Portkey integration schemas and model pricing", () => {
 			}).success,
 			true,
 		);
+		assert.equal(
+			safeParseToolInput(
+				mcpDefinitions.get("update_mcp_integration_workspaces"),
+				{
+					id: "integration-1",
+					workspaces: [],
+					global_workspace_access: { enabled: true },
+					override_existing_workspace_access: false,
+				},
+			).success,
+			true,
+		);
 	});
 });
 

@@ -13848,6 +13848,11 @@
 					"id": {
 						"type": "string",
 						"description": "The MCP integration ID or slug"
+					},
+					"type": {
+						"description": "Only return capabilities of this type",
+						"type": "string",
+						"enum": ["tool", "prompt", "resource", "resource_template"]
 					}
 				},
 				"required": ["id"],
@@ -13937,7 +13942,6 @@
 						"description": "The MCP integration ID or slug"
 					},
 					"workspaces": {
-						"minItems": 1,
 						"type": "array",
 						"items": {
 							"type": "object",
@@ -13953,7 +13957,22 @@
 							},
 							"required": ["id", "enabled"]
 						},
-						"description": "Array of workspace access updates"
+						"description": "Array of workspace access updates; may be empty when only changing global_workspace_access"
+					},
+					"global_workspace_access": {
+						"description": "Organisation-wide workspace access default",
+						"type": "object",
+						"properties": {
+							"enabled": {
+								"type": "boolean",
+								"description": "Whether every workspace gets access by default"
+							}
+						},
+						"required": ["enabled"]
+					},
+					"override_existing_workspace_access": {
+						"description": "When true, global_workspace_access replaces existing per-workspace settings",
+						"type": "boolean"
 					}
 				},
 				"required": ["id", "workspaces"],
@@ -14074,6 +14093,15 @@
 					"workspace_id": {
 						"description": "Filter by workspace ID",
 						"type": "string"
+					},
+					"id": {
+						"description": "Filter by MCP server ID, or several IDs separated by commas",
+						"type": "string"
+					},
+					"search": {
+						"description": "Search MCP servers (up to 255 characters)",
+						"type": "string",
+						"maxLength": 255
 					}
 				},
 				"$schema": "https://json-schema.org/draft/2020-12/schema"
@@ -14271,6 +14299,11 @@
 						"type": "integer",
 						"exclusiveMinimum": 0,
 						"maximum": 100
+					},
+					"type": {
+						"description": "Only return capabilities of this type",
+						"type": "string",
+						"enum": ["tool", "prompt", "resource", "resource_template"]
 					}
 				},
 				"required": ["id"],
@@ -14349,6 +14382,10 @@
 						"type": "integer",
 						"exclusiveMinimum": 0,
 						"maximum": 100
+					},
+					"search": {
+						"description": "Search by user name or email",
+						"type": "string"
 					}
 				},
 				"required": ["id"],
@@ -14363,7 +14400,7 @@
 		},
 		{
 			"name": "update_mcp_server_user_access",
-			"description": "Grant or revoke individual user access to an MCP server. Changes take effect immediately and override the default access setting for the selected users; use list_mcp_server_user_access first if you need the current state.",
+			"description": "Grant or revoke individual user access to an MCP server, and/or set the server default (default_user_access) for users without an override. Changes take effect immediately and override the default access setting for the selected users; use list_mcp_server_user_access first if you need the current state.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
@@ -14372,6 +14409,7 @@
 						"description": "The MCP server ID or slug"
 					},
 					"users": {
+						"description": "Array of user access updates",
 						"minItems": 1,
 						"type": "array",
 						"items": {
@@ -14387,11 +14425,15 @@
 								}
 							},
 							"required": ["user_id", "enabled"]
-						},
-						"description": "Array of user access updates"
+						}
+					},
+					"default_user_access": {
+						"description": "Server default for users without an explicit override. Provide this, users, or both",
+						"type": "string",
+						"enum": ["allow", "deny"]
 					}
 				},
-				"required": ["id", "users"],
+				"required": ["id"],
 				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {

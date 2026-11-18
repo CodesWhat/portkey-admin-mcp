@@ -128,6 +128,8 @@ export interface UpdateMcpIntegrationWorkspacesRequest {
 		id: string;
 		enabled: boolean;
 	}>;
+	global_workspace_access?: { enabled: boolean };
+	override_existing_workspace_access?: boolean;
 }
 
 // Sub-resource: Metadata
@@ -198,9 +200,11 @@ export class McpIntegrationsService extends BaseService {
 
 	async listMcpIntegrationCapabilities(
 		id: string,
+		params?: { type?: McpIntegrationCapability["type"] },
 	): Promise<ListMcpIntegrationCapabilitiesResponse> {
 		return this.get<ListMcpIntegrationCapabilitiesResponse>(
 			`/mcp-integrations/${this.encodePathSegment(id)}/capabilities`,
+			{ type: params?.type },
 		);
 	}
 

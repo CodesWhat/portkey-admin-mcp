@@ -22,6 +22,15 @@ const MCP_SERVERS_TOOL_SCHEMAS = {
 		current_page: CurrentPageSchema,
 		page_size: PageSizeSchema.describe("Number of results per page (max 100)"),
 		workspace_id: z.string().optional().describe("Filter by workspace ID"),
+		id: z
+			.string()
+			.optional()
+			.describe("Filter by MCP server ID, or several IDs separated by commas"),
+		search: z
+			.string()
+			.max(255)
+			.optional()
+			.describe("Search MCP servers (up to 255 characters)"),
 	},
 	createMcpServer: {
 		tags: resourceTagsSchema
@@ -73,6 +82,10 @@ const MCP_SERVERS_TOOL_SCHEMAS = {
 		id: z.string().describe("The MCP server ID or slug"),
 		current_page: CurrentPageSchema,
 		page_size: PageSizeSchema.describe("Number of results per page (max 100)"),
+		type: z
+			.enum(["tool", "prompt", "resource", "resource_template"])
+			.optional()
+			.describe("Only return capabilities of this type"),
 	},
 	updateMcpServerCapabilities: {
 		id: z.string().describe("The MCP server ID or slug"),
@@ -93,6 +106,7 @@ const MCP_SERVERS_TOOL_SCHEMAS = {
 		id: z.string().describe("The MCP server ID or slug"),
 		current_page: CurrentPageSchema,
 		page_size: PageSizeSchema.describe("Number of results per page (max 100)"),
+		search: z.string().optional().describe("Search by user name or email"),
 	},
 	updateMcpServerUserAccess: {
 		id: z.string().describe("The MCP server ID or slug"),
@@ -104,7 +118,14 @@ const MCP_SERVERS_TOOL_SCHEMAS = {
 				}),
 			)
 			.min(1)
+			.optional()
 			.describe("Array of user access updates"),
+		default_user_access: z
+			.enum(["allow", "deny"])
+			.optional()
+			.describe(
+				"Server default for users without an explicit override. Provide this, users, or both",
+			),
 	},
 	listMcpServerConnections: {
 		id: z.string().describe("MCP server ID or slug whose connections to list"),
@@ -147,6 +168,17 @@ const MCP_SERVERS_TOOL_SCHEMAS = {
 			),
 	},
 } as const;
+
+const updateMcpServerUserAccessSchema = z
+	.object(MCP_SERVERS_TOOL_SCHEMAS.updateMcpServerUserAccess)
+	.refine(
+		(value) =>
+			value.users !== undefined || value.default_user_access !== undefined,
+		{
+			message: "Provide users, default_user_access, or both",
+			path: ["users"],
+		},
+	);
 
 function formatMcpServer(server: PortkeyMcpServer): {
 	id: string;
@@ -374,6 +406,7 @@ export function registerMcpServersTools(
 				{
 					current_page: params.current_page,
 					page_size: params.page_size,
+					type: params.type,
 				},
 			);
 			return jsonResult({
@@ -415,6 +448,7 @@ export function registerMcpServersTools(
 				{
 					current_page: params.current_page,
 					page_size: params.page_size,
+					search: params.search,
 				},
 			);
 			return jsonResult({
@@ -430,12 +464,16 @@ export function registerMcpServersTools(
 		"update_mcp_server_user_access",
 		{
 			description:
-				"Grant or revoke individual user access to an MCP server. Changes take effect immediately and override the default access setting for the selected users; use list_mcp_server_user_access first if you need the current state.",
+				"Grant or revoke individual user access to an MCP server, and/or set the server default (default_user_access) for users without an override. Changes take effect immediately and override the default access setting for the selected users; use list_mcp_server_user_access first if you need the current state.",
 			inputSchema: MCP_SERVERS_TOOL_SCHEMAS.updateMcpServerUserAccess,
 		},
-		async (params) => {
+		async (rawParams) => {
+			const params = updateMcpServerUserAccessSchema.parse(rawParams);
 			await service.mcpServers.updateMcpServerUserAccess(params.id, {
-				user_access: params.users,
+				...(params.users !== undefined ? { user_access: params.users } : {}),
+				...(params.default_user_access !== undefined
+					? { default_user_access: params.default_user_access }
+					: {}),
 			});
 			return jsonResult({
 				message: `Successfully updated user access for MCP server "${params.id}"`,

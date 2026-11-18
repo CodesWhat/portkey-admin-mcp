@@ -15,6 +15,8 @@ release until that reference and the release notes say so.
 
 - The website measures traffic with cookieless PostHog through `e.codeswhat.com`: pageviews, pageleaves, Core Web Vitals and a short fixed list of link and copy-button clicks. It sets no cookies, builds no person profiles, collects no campaign parameters, and keeps only the referring hostname, never the full referrer or any query string. It only runs on `portkey.codeswhat.com`, and the site's CSP allows that one origin for scripts and connections.
 - `create_mcp_server` accepts `workspace_id` (required with an organisation admin key) and `create_mcp_integration` accepts `organisation_id`, matching the Portkey API.
+- `update_mcp_server_user_access` accepts `default_user_access` (`allow` or `deny`); `users` is now optional as long as one of the two is given. `update_mcp_integration_workspaces` accepts an empty `workspaces` list plus `global_workspace_access` and `override_existing_workspace_access`.
+- `list_mcp_servers` accepts `id` and `search`, the two capability list tools accept a `type` filter, and `list_mcp_server_user_access` accepts `search`.
 
 ### Fixed
 
