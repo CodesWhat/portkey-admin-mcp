@@ -120,13 +120,13 @@ const PROVIDERS_TOOL_SCHEMAS = {
 			.enum(["cost", "tokens"])
 			.optional()
 			.describe(
-				"Type of usage limit: 'cost' (monetary) or 'tokens' (token count). Only sent when provided.",
+				"Usage limit type: 'cost' or 'tokens'. If omitted, preserves the existing type; defaults to 'cost' when no limits exist.",
 			),
 		periodic_reset: z
 			.enum(["monthly", "weekly"])
 			.optional()
 			.describe(
-				"Period for resetting usage limits: 'monthly' or 'weekly'. Only sent when provided.",
+				"Reset period: 'monthly' or 'weekly'. If omitted, preserves the existing cadence, including custom reset days; defaults to 'monthly' when no limits exist.",
 			),
 		rate_limit_value: z.coerce
 			.number()
