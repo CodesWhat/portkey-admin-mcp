@@ -457,6 +457,22 @@ describe("PortkeyService lifecycle", () => {
 		assert.notEqual(otherBaseUrl, first);
 	});
 
+	it("rejects an empty base URL even after a default client is cached", () => {
+		delete process.env.PORTKEY_BASE_URL;
+		const cached = getSharedPortkeyService("shared-key-empty-url");
+		assert.equal(getSharedPortkeyService("shared-key-empty-url"), cached);
+
+		process.env.PORTKEY_BASE_URL = "";
+		assert.throws(
+			() => getSharedPortkeyService("shared-key-empty-url"),
+			/Invalid base URL/,
+		);
+		assert.throws(
+			() => new PortkeyService("shared-key-empty-url"),
+			/Invalid base URL/,
+		);
+	});
+
 	it("allows shared startup without credentials while preserving cache reuse", () => {
 		delete process.env.PORTKEY_API_KEY;
 		delete process.env.PORTKEY_BASE_URL;

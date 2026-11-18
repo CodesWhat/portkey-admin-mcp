@@ -4,6 +4,10 @@ import type {
 	ToolCallback,
 } from "@modelcontextprotocol/server";
 import { z } from "zod";
+import {
+	getMaxToolResultBytes,
+	MAX_TOOL_RESULT_BYTES_ENV,
+} from "../lib/fetch.js";
 import { Logger } from "../lib/logger.js";
 import { isRecord } from "../lib/type-guards.js";
 import {
@@ -321,23 +325,15 @@ type StandardToolEnvelope =
 	| StandardToolErrorEnvelope;
 
 const STANDARD_TOOL_OUTPUT_SCHEMA = {
-	ok: z
-		.boolean()
-		.describe("Whether the tool call succeeded and returned structured data"),
-	data: z
-		.unknown()
-		.optional()
-		.describe("Structured success payload when ok is true"),
+	ok: z.boolean().describe("Call succeeded"),
+	data: z.unknown().optional().describe("Success payload"),
 	error: z
 		.object({
-			message: z.string().describe("Human-readable error message"),
-			details: z
-				.unknown()
-				.optional()
-				.describe("Optional structured error details"),
+			message: z.string().describe("Error message"),
+			details: z.unknown().optional().describe("Extra error details"),
 		})
 		.optional()
-		.describe("Structured error payload when ok is false"),
+		.describe("Failure details"),
 } as const;
 
 /*
@@ -460,9 +456,7 @@ function getToolOutputSchema(toolName: string) {
 
 	return {
 		...STANDARD_TOOL_OUTPUT_SCHEMA,
-		data: dataSchema
-			.optional()
-			.describe("Structured success payload when ok is true"),
+		data: dataSchema.optional().describe("Success payload"),
 	};
 }
 
@@ -559,13 +553,48 @@ function normalizeToolResult(result: CallToolResult): CallToolResult {
 	};
 }
 
+/**
+ * Bytes this result puts on the wire. The envelope travels twice: as the text
+ * block, which JSON-RPC escapes as a string, and as structuredContent.
+ */
+function measureToolResultBytes(result: CallToolResult): number {
+	const text = getFirstTextContent(result) ?? "";
+	return Buffer.byteLength(JSON.stringify(text)) + Buffer.byteLength(text);
+}
+
+/**
+ * Replace an oversized result with a small explicit error. A truncated JSON
+ * payload would look valid and mislead the caller, so nothing is cut.
+ */
+function enforceToolResultLimit(
+	toolName: string,
+	result: CallToolResult,
+): CallToolResult {
+	const limit = getMaxToolResultBytes();
+	const bytes = measureToolResultBytes(result);
+	if (bytes <= limit) return result;
+
+	return normalizeToolResult({
+		content: [
+			{
+				type: "text",
+				text: `Tool "${toolName}" produced a ${bytes}-byte result, over the ${limit}-byte limit (${MAX_TOOL_RESULT_BYTES_ENV}). Nothing was truncated. Narrow the request with filters, a smaller page_size or a shorter time range, or raise the limit.`,
+			},
+		],
+		isError: true,
+	} satisfies CallToolResult);
+}
+
 function wrapToolCallback(
 	toolName: string,
 	callback: ToolCallback,
 ): ToolCallback {
 	return async (...args) => {
 		try {
-			return normalizeToolResult((await callback(...args)) as CallToolResult);
+			return enforceToolResultLimit(
+				toolName,
+				normalizeToolResult((await callback(...args)) as CallToolResult),
+			);
 		} catch (error) {
 			const message = getToolErrorMessage(error);
 			// A validation failure is the caller's to fix, not a tool malfunction,
@@ -588,16 +617,84 @@ function wrapToolCallback(
 	};
 }
 
-const registrationSchemas = new WeakMap<object, z.ZodType>();
+const registrationSchemas = new WeakMap<object, unknown>();
+const outputSchemasByTool = new Map<string, unknown>();
+
+let jsonSchemaConversions = 0;
+
+/**
+ * Number of real JSON Schema conversions performed so far. A cache hit does
+ * not count, so tests can assert that listing tools again is conversion-free.
+ */
+export function getJsonSchemaConversionCount(): number {
+	return jsonSchemaConversions;
+}
+
+type JsonSchemaConverter = (options: unknown) => Record<string, unknown>;
+
+/**
+ * Wrap a Standard Schema so its JSON Schema conversion runs once per schema
+ * identity, direction and options. tools/list converts every tool schema on
+ * every request, and the schemas never change after module load. The wrapper
+ * inherits everything else (validation included) from the original schema.
+ */
+function memoizeJsonSchemaConversion(schema: object): unknown {
+	const standard = (
+		schema as {
+			"~standard"?: {
+				jsonSchema?: {
+					input?: JsonSchemaConverter;
+					output?: JsonSchemaConverter;
+				};
+			};
+		}
+	)["~standard"];
+	const converters = standard?.jsonSchema;
+	if (!standard || !converters) return schema;
+
+	const memoize = (direction: "input" | "output") => {
+		const convert = converters[direction];
+		if (!convert) return undefined;
+		const results = new Map<string, Record<string, unknown>>();
+		return (options: unknown) => {
+			const key = JSON.stringify(options ?? null);
+			let result = results.get(key);
+			if (!result) {
+				jsonSchemaConversions += 1;
+				result = convert(options);
+				results.set(key, result);
+			}
+			return result;
+		};
+	};
+
+	return Object.create(schema, {
+		"~standard": {
+			value: {
+				...standard,
+				jsonSchema: { input: memoize("input"), output: memoize("output") },
+			},
+		},
+	});
+}
 
 function normalizeRegistrationSchema(schema: unknown): unknown {
-	if (!isRecord(schema) || "~standard" in schema) return schema;
-	let normalized = registrationSchemas.get(schema);
-	if (!normalized) {
-		normalized = z.object(schema as z.ZodRawShape);
-		registrationSchemas.set(schema, normalized);
-	}
+	if (!isRecord(schema)) return schema;
+	if (registrationSchemas.has(schema)) return registrationSchemas.get(schema);
+	const normalized = memoizeJsonSchemaConversion(
+		"~standard" in schema ? schema : z.object(schema as z.ZodRawShape),
+	);
+	registrationSchemas.set(schema, normalized);
 	return normalized;
+}
+
+function getRegistrationOutputSchema(toolName: string): unknown {
+	let schema = outputSchemasByTool.get(toolName);
+	if (!schema) {
+		schema = getToolOutputSchema(toolName);
+		outputSchemasByTool.set(toolName, schema);
+	}
+	return schema;
 }
 
 function createSafeToolServer(server: McpServer): McpServer {
@@ -619,7 +716,7 @@ function createSafeToolServer(server: McpServer): McpServer {
 				...(description === undefined ? {} : { description }),
 				inputSchema: normalizeRegistrationSchema(config.inputSchema),
 				outputSchema: normalizeRegistrationSchema(
-					config.outputSchema ?? getToolOutputSchema(name),
+					config.outputSchema ?? getRegistrationOutputSchema(name),
 				),
 				annotations: {
 					...inferToolAnnotations(name),

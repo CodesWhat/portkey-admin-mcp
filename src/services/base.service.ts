@@ -3,12 +3,16 @@ import {
 	buildQueryString,
 	FetchError,
 	fetchWithTimeout,
+	getMaxUpstreamBodyBytes,
+	MAX_UPSTREAM_BODY_BYTES_ENV,
 	parseErrorResponse,
+	ResponseBodyTooLargeError,
+	readBoundedJson,
 } from "../lib/fetch.js";
 import { Logger } from "../lib/logger.js";
 import { isInvalidPathSegment } from "../lib/path-segment.js";
 
-const DEFAULT_BASE_URL = "https://api.portkey.ai/v1";
+export const DEFAULT_BASE_URL = "https://api.portkey.ai/v1";
 const DEFAULT_PUBLIC_BASE_URL = "https://api.portkey.ai";
 
 /**
@@ -325,6 +329,8 @@ export class BaseService {
 			},
 		});
 
+		const maxBodyBytes = getMaxUpstreamBodyBytes();
+
 		try {
 			const response = await fetchWithTimeout(url, {
 				method,
@@ -337,7 +343,7 @@ export class BaseService {
 			const duration_ms = Date.now() - startTime;
 
 			if (!response.ok) {
-				const apiError = await parseErrorResponse(response);
+				const apiError = await parseErrorResponse(response, maxBodyBytes);
 				Logger.error("HTTP request failed", {
 					requestId,
 					method,
@@ -361,7 +367,18 @@ export class BaseService {
 				return NO_CONTENT;
 			}
 
-			return (await response.json()) as T;
+			try {
+				return await readBoundedJson<T>(response, maxBodyBytes);
+			} catch (error) {
+				if (error instanceof ResponseBodyTooLargeError) {
+					// Never truncate: a partial JSON body is useless, so say what
+					// happened and how to get a smaller response or a bigger limit.
+					throw new Error(
+						`Portkey ${method} ${path} returned a response larger than ${maxBodyBytes} bytes (${MAX_UPSTREAM_BODY_BYTES_ENV}). Narrow the request with filters or a smaller page_size, or raise the limit.`,
+					);
+				}
+				throw error;
+			}
 		} catch (error) {
 			const duration_ms = Date.now() - startTime;
 			// Only log network/system errors (TypeError, AbortError, etc.)
@@ -447,9 +464,13 @@ export class BaseService {
 		);
 	}
 
-	protected async put<T>(path: string, body?: unknown): Promise<T> {
+	protected async put<T>(
+		path: string,
+		body?: unknown,
+		params?: object,
+	): Promise<T> {
 		return this.rejectNoContent(
-			await this.executeRequest<T>("PUT", path, { body }),
+			await this.executeRequest<T>("PUT", path, { body, params }),
 		);
 	}
 

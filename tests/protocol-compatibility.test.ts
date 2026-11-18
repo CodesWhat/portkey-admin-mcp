@@ -8,6 +8,7 @@ import {
 import { McpServer } from "@modelcontextprotocol/server";
 import { resetHttpAuthStateForTest } from "../src/lib/auth.js";
 import { createHttpAppRuntime } from "../src/lib/http-app.js";
+import { startUpstreamStub } from "./helpers/upstream-stub.js";
 
 type RpcResponse = {
 	result?: {
@@ -173,9 +174,11 @@ test("serves modern and legacy discovery on the same authenticated HTTP endpoint
 
 for (const mode of ["legacy", "auto", { pin: "2026-07-28" }] as const) {
 	test(`HTTP SDK client negotiation ${JSON.stringify(mode)} respects deployment and request tool filters`, async (t) => {
+		const upstream = await startUpstreamStub();
+		t.after(() => upstream.close());
 		await withProtocolServer(
 			t,
-			{ PORTKEY_TOOL_DOMAINS: "prompts,analytics" },
+			{ PORTKEY_TOOL_DOMAINS: "prompts,analytics", ...upstream.env },
 			async (url) => {
 				const client = new Client(
 					{ name: "http-negotiation-test", version: "1" },
@@ -204,6 +207,7 @@ for (const mode of ["legacy", "auto", { pin: "2026-07-28" }] as const) {
 						true,
 						"invalid input must not reach Portkey",
 					);
+					assert.equal(upstream.hits.length, 0, "no upstream call expected");
 					const resources = await client.listResources();
 					assert.equal(resources.resources.length, 1);
 					const guide = await client.readResource({

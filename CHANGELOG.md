@@ -20,13 +20,17 @@ release until that reference and the release notes say so.
 
 ### Changed
 
+- Responses from Portkey are read with a size cap, and tool results have one too. A Portkey response body over 8 MiB fails the call with an explicit error instead of being buffered whole, and a tool result over 4 MiB (text block and `structuredContent` counted separately, after JSON escaping) is replaced by a short error that says how to narrow the request. Nothing is ever truncated. Both limits are configurable with `PORTKEY_MAX_UPSTREAM_BODY_BYTES` and `PORTKEY_MAX_TOOL_RESULT_BYTES`, and a malformed value stops the server at startup.
 - `update_*` and `archive_*` tools now report `destructiveHint: true` unless a tool sets its own, since they overwrite or retire existing state and MCP treats `false` as additive-only. This includes `update_config`, `update_organisation_defaults` and the MCP integration capability and workspace updates, which had overridden it to `false`.
 - The Docker image builds on Node 26.13 (26.13.1), pinned to the current multi-arch digest.
+- `tools/list` is cheaper. The server converts each tool's input and output schema to JSON Schema once per process instead of on every request, which cuts the CPU for a full catalog listing by roughly two thirds.
+- The generic output schema descriptions that every tool repeats in `tools/list` are shorter, which trims the catalog by about 25 KB (518,112 to 493,280 bytes). Validation is unchanged.
 - The README no longer says `tools/list` is paginated. The server returns all 194 tools in one response (about 500 KB of JSON). The VS Code section notes the 128-tool cap per chat request and points to `PORTKEY_TOOL_DOMAINS`. ENDPOINTS.md says the deployment ping route isn't exposed instead of calling it deprecated, since the spec doesn't deprecate it. The distribution notes say Smithery shut down its API, CLI, SDKs and accounts on 2026-10-31 and is directory-only now.
 
 ### Fixed
 
 - Updating a key's or provider's alert threshold or credit limit no longer drops a custom reset cadence. `periodic_reset_days` is now carried over and sent without `periodic_reset`, and an explicit `periodic_reset` replaces inherited days. `get_secret_reference` no longer fails on a status other than `ACTIVE`.
+- An empty `PORTKEY_BASE_URL` no longer slips through once a default client has been created. The shared client cache treated an empty value as unset and returned the cached default client. It now fails with an invalid base URL error, like a fresh client does.
 - The HTTP server now validates `PORTKEY_TOOL_DOMAINS` at startup and exits on an unknown domain. It used to start, report `/ready` healthy and then answer every `/mcp` request with a 500.
 - `rotate_api_key` returned an output-validation error after the rotation had already run upstream, which dropped the one-time new key. This happened when Portkey sent `key_transition_expires_at` with an offset such as `+00:00`, or left it out. The schema now accepts both. `list_secret_references` and `get_secret_reference` accept offset timestamps too, and the list no longer fails on a status other than `ACTIVE`.
 - Virtual key, API key and provider results include `usage_limits.type`, so a tokens budget no longer looks like a cost one.
