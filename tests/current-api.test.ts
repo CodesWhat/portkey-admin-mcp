@@ -1524,10 +1524,6 @@ describe("new tool quality contract", () => {
 				{ readOnlyHint: true, destructiveHint: false, idempotentHint: true },
 			],
 			[
-				"update_organisation_defaults",
-				{ readOnlyHint: false, destructiveHint: false, idempotentHint: true },
-			],
-			[
 				"list_input_guardrail_workspace_exclusions",
 				{ readOnlyHint: true, destructiveHint: false, idempotentHint: true },
 			],

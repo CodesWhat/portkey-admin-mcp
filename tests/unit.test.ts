@@ -3467,6 +3467,24 @@ describe("Tool annotations", () => {
 			idempotentHint: true,
 			openWorldHint: true,
 		});
+		// update_* and archive_* change or retire existing state, so they infer
+		// destructiveHint true. Explicit overrides were removed from the config,
+		// MCP integration capability/workspace and organisation-defaults updates
+		// so they inherit it.
+		for (const toolName of [
+			"update_prompt",
+			"archive_deployment",
+			"update_config",
+			"update_organisation_defaults",
+			"update_mcp_integration_capabilities",
+			"update_mcp_integration_workspaces",
+		]) {
+			assert.equal(
+				getAnnotations(toolName).destructiveHint,
+				true,
+				`${toolName} should be marked destructive`,
+			);
+		}
 		// Side-effecting tools must not be marked read-only: run_* triggers a
 		// billable completion and test_* opens an outbound connection.
 		assert.deepEqual(getAnnotations("run_prompt_completion"), {

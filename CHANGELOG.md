@@ -24,6 +24,7 @@ release until that reference and the release notes say so.
 
 ### Changed
 
+- `update_*` and `archive_*` tools now report `destructiveHint: true` unless a tool sets its own, since they overwrite or retire existing state and MCP treats `false` as additive-only. This includes `update_config`, `update_organisation_defaults` and the MCP integration capability and workspace updates, which had overridden it to `false`.
 - The Docker image builds on Node 26.13 (26.13.1), pinned to the current multi-arch digest.
 
 ## [0.16.4] - 2026-11-13

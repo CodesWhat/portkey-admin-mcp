@@ -242,7 +242,6 @@ export function registerGuardrailsTools(
 			annotations: {
 				title: "Update Organisation Guardrail Defaults",
 				readOnlyHint: false,
-				destructiveHint: false,
 				idempotentHint: true,
 				openWorldHint: true,
 			},

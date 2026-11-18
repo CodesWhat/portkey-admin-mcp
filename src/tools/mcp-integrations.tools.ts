@@ -532,7 +532,6 @@ export function registerMcpIntegrationsTools(
 				MCP_INTEGRATIONS_TOOL_SCHEMAS.updateMcpIntegrationCapabilities,
 			annotations: {
 				readOnlyHint: false,
-				destructiveHint: false,
 				idempotentHint: true,
 				openWorldHint: false,
 			},
@@ -578,7 +577,6 @@ export function registerMcpIntegrationsTools(
 			inputSchema: MCP_INTEGRATIONS_TOOL_SCHEMAS.updateMcpIntegrationWorkspaces,
 			annotations: {
 				readOnlyHint: false,
-				destructiveHint: false,
 				idempotentHint: true,
 				openWorldHint: false,
 			},
