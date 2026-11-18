@@ -19,6 +19,7 @@ let upstreamCalls: Array<{ url: string; method: string }>;
 
 beforeEach(() => {
 	process.env.PORTKEY_API_KEY = "test-key-output-validation";
+	delete process.env.PORTKEY_TOOL_DOMAINS;
 	originalFetch = globalThis.fetch;
 	upstreamCalls = [];
 	globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {

@@ -862,6 +862,14 @@ describe("clerk session and claim validation", () => {
 		process.env.CLERK_ISSUER = issuer;
 		process.env.CLERK_AUDIENCE = "test-audience";
 		process.env.CLERK_JWKS_URL = jwksUrl;
+		for (const key of [
+			"CLERK_ALLOWED_SUBJECTS",
+			"CLERK_ALLOWED_ORGANIZATION_IDS",
+			"CLERK_ALLOWED_ROLES",
+			"CLERK_REQUIRED_PERMISSIONS",
+		]) {
+			delete process.env[key];
+		}
 		process.env.CLERK_ALLOWED_SUBJECTS = "user_test";
 		const { publicKey, privateKey } = await generateKeyPair("RS256", {
 			extractable: true,
@@ -1017,6 +1025,40 @@ describe("clerk v2 session token decoding", () => {
 			policy,
 		);
 		assert.deepEqual(principal.permissions, ["org:b:write"]);
+	});
+
+	it("skips an invalid mask but still grants from a valid one", () => {
+		const config = { ...policy, requiredPermissions: ["org:b:read"] };
+		const principal = authorizeClerkClaims(
+			{
+				sub: "user_a",
+				v: 2,
+				fea: "o:a,o:b",
+				o: { id: "org_a", per: "read", fpm: "abc,1" },
+			},
+			config,
+		);
+		assert.deepEqual(principal.permissions, ["org:b:read"]);
+	});
+
+	it("merges top-level permissions and roles on a v2 token", () => {
+		const config = {
+			...policy,
+			allowedRoles: ["custom_role"],
+			requiredPermissions: ["mcp:invoke"],
+		};
+		const principal = authorizeClerkClaims(
+			{
+				sub: "user_a",
+				v: 2,
+				permissions: ["mcp:invoke"],
+				roles: ["custom_role"],
+				o: { id: "org_a" },
+			},
+			config,
+		);
+		assert.deepEqual(principal.permissions, ["mcp:invoke"]);
+		assert.deepEqual(principal.roles, ["custom_role"]);
 	});
 
 	it("only counts org-scoped features and keeps their order", () => {

@@ -2484,7 +2484,7 @@
 		},
 		{
 			"name": "update_virtual_key",
-			"description": "Update a virtual key's name, secret, note, or limits. Rotating the key takes effect immediately, and limit changes apply to downstream prompts and configs using this slug. Returns success when Portkey accepts the update.",
+			"description": "Update a virtual key's name, secret, note, or limits. Rotating the key takes effect immediately, and limit changes apply to downstream prompts and configs using this slug. Returns success when Portkey accepts the update. Limit updates read the current limits and write them back, and Portkey has no conditional writes, so concurrent limit updates to the same resource can overwrite each other. Serialize them.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
@@ -2850,7 +2850,7 @@
 		},
 		{
 			"name": "update_api_key",
-			"description": "Update an API key's name, description, scopes, defaults, or limits, unlike delete_api_key which revokes it or create_api_key which issues a new one. Changes take effect immediately for downstream callers, type and sub-type stay fixed after creation, and the call returns success without rotating the secret.",
+			"description": "Update an API key's name, description, scopes, defaults, or limits, unlike delete_api_key which revokes it or create_api_key which issues a new one. Changes take effect immediately for downstream callers, type and sub-type stay fixed after creation, and the call returns success without rotating the secret. Limit updates read the current limits and write them back, and Portkey has no conditional writes, so concurrent limit updates to the same resource can overwrite each other. Serialize them.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
@@ -11461,7 +11461,7 @@
 		},
 		{
 			"name": "update_provider",
-			"description": "Update a provider's metadata, limits, or expiration. reset_usage clears accumulated usage counters immediately, so use it only when you intend to reset quota tracking. Returns the updated provider id and slug.",
+			"description": "Update a provider's metadata, limits, or expiration. reset_usage clears accumulated usage counters immediately, so use it only when you intend to reset quota tracking. Returns the updated provider id and slug. Limit updates read the current limits and write them back, and Portkey has no conditional writes, so concurrent limit updates to the same resource can overwrite each other. Serialize them.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
@@ -11493,12 +11493,12 @@
 						"maximum": 100
 					},
 					"usage_limit_type": {
-						"description": "Type of usage limit: 'cost' (monetary) or 'tokens' (token count). Only sent when provided.",
+						"description": "Usage limit type: 'cost' or 'tokens'. If omitted, preserves the existing type; defaults to 'cost' when no limits exist.",
 						"type": "string",
 						"enum": ["cost", "tokens"]
 					},
 					"periodic_reset": {
-						"description": "Period for resetting usage limits: 'monthly' or 'weekly'. Only sent when provided.",
+						"description": "Reset period: 'monthly' or 'weekly'. If omitted, preserves the existing cadence, including custom reset days; defaults to 'monthly' when no limits exist.",
 						"type": "string",
 						"enum": ["monthly", "weekly"]
 					},

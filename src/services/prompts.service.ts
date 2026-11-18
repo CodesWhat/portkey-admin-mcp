@@ -72,6 +72,8 @@ export class PromptsService extends BaseService {
 						string: raw.string ?? "",
 						parameters: raw.parameters ?? {},
 						model: raw.model,
+						ai_model_id: raw.ai_model_id,
+						finetune_id: raw.finetune_id,
 						virtual_key: raw.virtual_key,
 						functions: raw.functions ?? undefined,
 						tools: raw.tools ?? undefined,
@@ -411,9 +413,17 @@ export class PromptsService extends BaseService {
 
 		if (existingTarget) {
 			const virtualKey = data.virtual_key || sourceVersion.virtual_key;
-			if (!sourceVersion.string || !sourceVersion.model || !virtualKey) {
+			if (
+				!sourceVersion.string ||
+				!(
+					sourceVersion.model ||
+					sourceVersion.ai_model_id ||
+					sourceVersion.finetune_id
+				) ||
+				!virtualKey
+			) {
 				throw new Error(
-					"Cannot promote prompt: source version needs a string, a model and a virtual_key (or a virtual_key override)",
+					"Cannot promote prompt: source version needs a string, a model (model, ai_model_id or finetune_id) and a virtual_key (or a virtual_key override)",
 				);
 			}
 
@@ -425,7 +435,13 @@ export class PromptsService extends BaseService {
 				{
 					string: sourceVersion.string,
 					parameters: sourceVersion.parameters ?? {},
-					model: sourceVersion.model,
+					...(sourceVersion.model && { model: sourceVersion.model }),
+					...(sourceVersion.ai_model_id && {
+						ai_model_id: sourceVersion.ai_model_id,
+					}),
+					...(sourceVersion.finetune_id && {
+						finetune_id: sourceVersion.finetune_id,
+					}),
 					virtual_key: virtualKey,
 					functions: sourceVersion.functions ?? [],
 					tools: sourceVersion.tools ?? [],

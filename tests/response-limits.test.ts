@@ -322,6 +322,32 @@ describe("tool result size limit", () => {
 		assert.equal(result.isError, true);
 	});
 
+	it("caps an oversized error result too", async () => {
+		process.env.PORTKEY_MAX_TOOL_RESULT_BYTES = "6000";
+		globalThis.fetch = (async () =>
+			new Response(JSON.stringify({ error: { message: BIG } }), {
+				status: 500,
+			})) as typeof globalThis.fetch;
+		const result = await callTool("get_log", { log_id: "log-1" }, ["logging"]);
+
+		assert.equal(result.isError, true);
+		const text = JSON.stringify(result.content);
+		assert.match(text, /over the 6000-byte limit/);
+		assert.ok(!text.includes(BIG));
+		assert.ok(text.length < 1000);
+	});
+
+	it("keeps a short error message unchanged", async () => {
+		globalThis.fetch = (async () =>
+			new Response(JSON.stringify({ error: { message: "nope" } }), {
+				status: 400,
+			})) as typeof globalThis.fetch;
+		const result = await callTool("get_log", { log_id: "log-1" }, ["logging"]);
+
+		assert.equal(result.isError, true);
+		assert.match(JSON.stringify(result.content), /failed: .*nope/);
+	});
+
 	it("passes a result under the limit through unchanged", async () => {
 		respondWith({ id: "log-1", request: { body: "small" } });
 		const result = await callTool("get_log", { log_id: "log-1" }, ["logging"]);
