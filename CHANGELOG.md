@@ -20,6 +20,7 @@ release until that reference and the release notes say so.
 
 ### Changed
 
+- Responses from Portkey are read with a size cap, and tool results have one too. A Portkey response body over 8 MiB fails the call with an explicit error instead of being buffered whole, and a tool result over 4 MiB (text block and `structuredContent` counted separately, after JSON escaping) is replaced by a short error that says how to narrow the request. Nothing is ever truncated. Both limits are configurable with `PORTKEY_MAX_UPSTREAM_BODY_BYTES` and `PORTKEY_MAX_TOOL_RESULT_BYTES`, and a malformed value stops the server at startup.
 - `update_*` and `archive_*` tools now report `destructiveHint: true` unless a tool sets its own, since they overwrite or retire existing state and MCP treats `false` as additive-only. This includes `update_config`, `update_organisation_defaults` and the MCP integration capability and workspace updates, which had overridden it to `false`.
 - The Docker image builds on Node 26.13 (26.13.1), pinned to the current multi-arch digest.
 - `tools/list` is cheaper. The server converts each tool's input and output schema to JSON Schema once per process instead of on every request, which cuts the CPU for a full catalog listing by roughly two thirds.

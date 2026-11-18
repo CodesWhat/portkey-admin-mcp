@@ -49,13 +49,9 @@ import { registerToolCallbacks } from "./helpers/tool-registry.js";
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Build a minimal Response whose .json() resolves to `body`. */
+/** Build a Response whose body is the JSON encoding of `body`. */
 function fakeResponse(status: number, body: unknown): Response {
-	return {
-		ok: false,
-		status,
-		json: () => Promise.resolve(body),
-	} as unknown as Response;
+	return new Response(JSON.stringify(body), { status });
 }
 
 function _createFakeTransport() {
@@ -334,7 +330,7 @@ describe("BaseService HTTP execution", () => {
 		const fetchCalls: Array<{ url: string; options: RequestInit }> = [];
 		const debugLogs: Array<{ message: string; extra?: object }> = [];
 		const infoLogs: Array<{ message: string; extra?: object }> = [];
-		let deleteJsonCalls = 0;
+		let deleteResponse: Response | undefined;
 
 		globalThis.fetch = (async (
 			url: string | URL | Request,
@@ -343,32 +339,14 @@ describe("BaseService HTTP execution", () => {
 			fetchCalls.push({ url: String(url), options: options ?? {} });
 			switch (fetchCalls.length) {
 				case 1:
-					return {
-						ok: true,
-						status: 200,
-						json: async () => ({ method: "GET" }),
-					} as Response;
+					return Response.json({ method: "GET" });
 				case 2:
-					return {
-						ok: true,
-						status: 201,
-						json: async () => ({ method: "POST" }),
-					} as Response;
+					return Response.json({ method: "POST" }, { status: 201 });
 				case 3:
-					return {
-						ok: true,
-						status: 200,
-						json: async () => ({ method: "PUT" }),
-					} as Response;
+					return Response.json({ method: "PUT" });
 				case 4:
-					return {
-						ok: true,
-						status: 204,
-						json: async () => {
-							deleteJsonCalls += 1;
-							return {};
-						},
-					} as Response;
+					deleteResponse = new Response(null, { status: 204 });
+					return deleteResponse;
 				default:
 					throw new Error(`Unexpected fetch call ${fetchCalls.length}`);
 			}
@@ -469,7 +447,7 @@ describe("BaseService HTTP execution", () => {
 					},
 				],
 			);
-			assert.equal(deleteJsonCalls, 0);
+			assert.equal(deleteResponse?.bodyUsed, false);
 			assert.equal(debugLogs.length, 4);
 			assert.equal(infoLogs.length, 4);
 			for (const log of debugLogs) {
@@ -548,20 +526,18 @@ describe("BaseService.executeRequest non-ok branch", () => {
 		const loggedErrors: Array<{ message: string; extra?: object }> = [];
 
 		globalThis.fetch = (async () => {
-			return {
-				ok: false,
-				status: 403,
-				json: () =>
-					Promise.resolve({
-						status_code: 403,
-						success: false,
-						error: {
-							message: "Forbidden: insufficient permissions",
-							slug: "forbidden",
-							code: "FORBIDDEN",
-						},
-					}),
-			} as Response;
+			return Response.json(
+				{
+					status_code: 403,
+					success: false,
+					error: {
+						message: "Forbidden: insufficient permissions",
+						slug: "forbidden",
+						code: "FORBIDDEN",
+					},
+				},
+				{ status: 403 },
+			);
 		}) as typeof globalThis.fetch;
 
 		Logger.error = ((message: string, extra?: object) => {
@@ -620,11 +596,7 @@ describe("BaseService.executeRequest non-ok branch", () => {
 		const loggedErrors: Array<{ message: string; extra?: object }> = [];
 
 		globalThis.fetch = (async () => {
-			return {
-				ok: false,
-				status: 502,
-				json: () => Promise.reject(new Error("not json")),
-			} as Response;
+			return new Response("<html>bad gateway</html>", { status: 502 });
 		}) as typeof globalThis.fetch;
 
 		Logger.error = ((message: string, extra?: object) => {
@@ -696,11 +668,7 @@ describe("BaseService.getPublic", () => {
 				url: String(url),
 				headers: (options?.headers ?? {}) as Record<string, string>,
 			});
-			return {
-				ok: true,
-				status: 200,
-				json: async () => ({ input_cost_per_unit: 0.000002 }),
-			} as Response;
+			return Response.json({ input_cost_per_unit: 0.000002 });
 		}) as typeof globalThis.fetch;
 
 		process.env.PORTKEY_API_KEY = "test-dummy-key";

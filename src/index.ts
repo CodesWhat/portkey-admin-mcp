@@ -3,11 +3,13 @@
  * Portkey MCP Server - stdio transport entry point
  */
 import { serveStdio } from "@modelcontextprotocol/server/stdio";
+import { assertByteLimitsConfigured } from "./lib/fetch.js";
 import { Logger } from "./lib/logger.js";
 import { createMcpServer } from "./lib/mcp-server.js";
 
 function main() {
 	try {
+		assertByteLimitsConfigured();
 		if (!process.env.PORTKEY_API_KEY) {
 			// The catalog (initialize/tools/list) still works without credentials,
 			// but every tool call will fail until this is set. Logger writes to

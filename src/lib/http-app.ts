@@ -30,6 +30,7 @@ import {
 	mcpAuthMiddleware,
 } from "./auth.js";
 import { getServerConfig, type ServerConfig } from "./config.js";
+import { assertByteLimitsConfigured } from "./fetch.js";
 import { Logger } from "./logger.js";
 import {
 	createMcpServer,
@@ -545,6 +546,7 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 	// it per request, so an invalid value would otherwise pass /ready while every
 	// /mcp request returned 500.
 	parseConfiguredToolDomains();
+	assertByteLimitsConfigured();
 	const readyCheckMode = getReadyCheckMode();
 	const requestBodyLimit = process.env.MCP_MAX_REQUEST_SIZE?.trim() || "1mb";
 	const allowedOrigins = getAllowedOrigins();

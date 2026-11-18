@@ -4,6 +4,10 @@ import type {
 	ToolCallback,
 } from "@modelcontextprotocol/server";
 import { z } from "zod";
+import {
+	getMaxToolResultBytes,
+	MAX_TOOL_RESULT_BYTES_ENV,
+} from "../lib/fetch.js";
 import { Logger } from "../lib/logger.js";
 import { isRecord } from "../lib/type-guards.js";
 import {
@@ -549,13 +553,48 @@ function normalizeToolResult(result: CallToolResult): CallToolResult {
 	};
 }
 
+/**
+ * Bytes this result puts on the wire. The envelope travels twice: as the text
+ * block, which JSON-RPC escapes as a string, and as structuredContent.
+ */
+function measureToolResultBytes(result: CallToolResult): number {
+	const text = getFirstTextContent(result) ?? "";
+	return Buffer.byteLength(JSON.stringify(text)) + Buffer.byteLength(text);
+}
+
+/**
+ * Replace an oversized result with a small explicit error. A truncated JSON
+ * payload would look valid and mislead the caller, so nothing is cut.
+ */
+function enforceToolResultLimit(
+	toolName: string,
+	result: CallToolResult,
+): CallToolResult {
+	const limit = getMaxToolResultBytes();
+	const bytes = measureToolResultBytes(result);
+	if (bytes <= limit) return result;
+
+	return normalizeToolResult({
+		content: [
+			{
+				type: "text",
+				text: `Tool "${toolName}" produced a ${bytes}-byte result, over the ${limit}-byte limit (${MAX_TOOL_RESULT_BYTES_ENV}). Nothing was truncated. Narrow the request with filters, a smaller page_size or a shorter time range, or raise the limit.`,
+			},
+		],
+		isError: true,
+	} satisfies CallToolResult);
+}
+
 function wrapToolCallback(
 	toolName: string,
 	callback: ToolCallback,
 ): ToolCallback {
 	return async (...args) => {
 		try {
-			return normalizeToolResult((await callback(...args)) as CallToolResult);
+			return enforceToolResultLimit(
+				toolName,
+				normalizeToolResult((await callback(...args)) as CallToolResult),
+			);
 		} catch (error) {
 			const message = getToolErrorMessage(error);
 			// A validation failure is the caller's to fix, not a tool malfunction,

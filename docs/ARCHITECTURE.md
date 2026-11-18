@@ -34,8 +34,13 @@ See [compatibility and recovery](../COMPATIBILITY.md) before upgrading.
    facade.
 5. `BaseService` builds the authenticated HTTPS request to the configured
    Portkey API, then the domain service validates or normalizes the response.
+   It reads the response body through a byte-counting reader capped at 8 MiB
+   (`PORTKEY_MAX_UPSTREAM_BODY_BYTES`) and fails with an explicit error above it.
 6. The tool adapter returns a compact MCP result instead of forwarding the raw
-   Admin API response.
+   Admin API response. The shared tool wrapper measures the serialized result
+   (text block after JSON escaping, plus `structuredContent`) and replaces one
+   over 4 MiB (`PORTKEY_MAX_TOOL_RESULT_BYTES`) with an explicit error. Neither
+   limit truncates anything. A malformed value for either stops startup.
 
 The Portkey API key is used only by the service layer. Tool results, logs, MCP
 request metadata, and service-cache identifiers do not expose the raw key.
