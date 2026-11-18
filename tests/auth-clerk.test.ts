@@ -1033,6 +1033,26 @@ describe("clerk v2 session token decoding", () => {
 		assert.deepEqual(principal.permissions, ["org:b:read"]);
 	});
 
+	it("merges top-level permissions and roles on a v2 token", () => {
+		const config = {
+			...policy,
+			allowedRoles: ["custom_role"],
+			requiredPermissions: ["mcp:invoke"],
+		};
+		const principal = authorizeClerkClaims(
+			{
+				sub: "user_a",
+				v: 2,
+				permissions: ["mcp:invoke"],
+				roles: ["custom_role"],
+				o: { id: "org_a" },
+			},
+			config,
+		);
+		assert.deepEqual(principal.permissions, ["mcp:invoke"]);
+		assert.deepEqual(principal.roles, ["custom_role"]);
+	});
+
 	it("only counts org-scoped features and keeps their order", () => {
 		const principal = authorizeClerkClaims(
 			{
