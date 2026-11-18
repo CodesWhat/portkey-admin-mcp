@@ -8,7 +8,7 @@ import {
 import { Logger } from "../lib/logger.js";
 import { isInvalidPathSegment } from "../lib/path-segment.js";
 
-const DEFAULT_BASE_URL = "https://api.portkey.ai/v1";
+export const DEFAULT_BASE_URL = "https://api.portkey.ai/v1";
 const DEFAULT_PUBLIC_BASE_URL = "https://api.portkey.ai";
 
 /**

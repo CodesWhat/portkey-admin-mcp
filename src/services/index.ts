@@ -51,7 +51,10 @@ import { createHmac, randomBytes } from "node:crypto";
 import { AccessPoliciesService } from "./access-policies.service.js";
 import { AnalyticsService } from "./analytics.service.js";
 import { AuditService } from "./audit.service.js";
-import { MISSING_API_KEY_PLACEHOLDER, validateUrl } from "./base.service.js";
+import {
+	DEFAULT_BASE_URL,
+	MISSING_API_KEY_PLACEHOLDER,
+} from "./base.service.js";
 import { CollectionsService } from "./collections.service.js";
 import { ConfigsService } from "./configs.service.js";
 import { DeploymentsService } from "./deployments.service.js";
@@ -99,7 +102,7 @@ function getSharedServiceCacheKey(apiKey: string): string {
 		.digest("hex");
 	return JSON.stringify({
 		apiKey: keyDigest,
-		baseUrl: process.env.PORTKEY_BASE_URL?.trim() || "",
+		baseUrl: process.env.PORTKEY_BASE_URL ?? DEFAULT_BASE_URL,
 	});
 }
 
@@ -135,9 +138,7 @@ export class PortkeyService {
 
 	constructor(apiKey?: string) {
 		const resolvedApiKey = resolvePortkeyApiKey(apiKey);
-		const resolvedBaseUrl =
-			process.env.PORTKEY_BASE_URL ?? "https://api.portkey.ai/v1";
-		validateUrl(resolvedBaseUrl);
+		const resolvedBaseUrl = process.env.PORTKEY_BASE_URL ?? DEFAULT_BASE_URL;
 		this.accessPolicies = new AccessPoliciesService(
 			resolvedApiKey,
 			resolvedBaseUrl,
