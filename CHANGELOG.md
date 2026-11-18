@@ -15,6 +15,10 @@ release until that reference and the release notes say so.
 
 - The website measures traffic with cookieless PostHog through `e.codeswhat.com`: pageviews, pageleaves, Core Web Vitals and a short fixed list of link and copy-button clicks. It sets no cookies, builds no person profiles, collects no campaign parameters, and keeps only the referring hostname, never the full referrer or any query string. It only runs on `portkey.codeswhat.com`, and the site's CSP allows that one origin for scripts and connections.
 
+### Changed
+
+- The Docker image builds on Node 26.13 (26.13.1), pinned to the current multi-arch digest.
+
 ## [0.16.4] - 2026-11-13
 
 ### Added
