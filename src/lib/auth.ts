@@ -311,6 +311,12 @@ async function verifyClerkToken(
 		clockTolerance: "5s",
 	});
 
+	// Pending sessions still have unfinished tasks (MFA setup, password reset).
+	// https://clerk.com/docs/guides/sessions/manual-jwt-verification
+	if (payload.sts === "pending") {
+		throw new Error("Clerk session is pending");
+	}
+
 	return authorizeClerkClaims(payload, config);
 }
 

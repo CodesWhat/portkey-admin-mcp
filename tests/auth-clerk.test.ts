@@ -851,3 +851,98 @@ describe("clerk identity-bound policy", () => {
 		});
 	});
 });
+
+describe("clerk session and claim validation", () => {
+	const issuer = "https://clerk.example.com";
+	const jwksUrl = `${issuer}/.well-known/jwks.json`;
+
+	afterEach(() => {
+		resetEnv();
+		resetHttpAuthStateForTest();
+	});
+
+	async function setup() {
+		process.env.MCP_AUTH_MODE = "clerk";
+		process.env.CLERK_ISSUER = issuer;
+		process.env.CLERK_AUDIENCE = "test-audience";
+		process.env.CLERK_JWKS_URL = jwksUrl;
+		process.env.CLERK_ALLOWED_SUBJECTS = "user_test";
+		const { publicKey, privateKey } = await generateKeyPair("RS256", {
+			extractable: true,
+		});
+		const publicJwk = await exportJWK(publicKey);
+		publicJwk.kid = "session-key";
+		publicJwk.alg = "RS256";
+		publicJwk.use = "sig";
+		const sign = (
+			claims: Record<string, unknown>,
+			overrides: {
+				issuer?: string;
+				audience?: string;
+				exp?: string | number;
+			} = {},
+		) =>
+			new SignJWT(claims)
+				.setProtectedHeader({ alg: "RS256", kid: "session-key" })
+				.setSubject("user_test")
+				.setIssuer(overrides.issuer ?? issuer)
+				.setAudience(overrides.audience ?? "test-audience")
+				.setIssuedAt(Math.floor(Date.now() / 1000) - 3600)
+				.setExpirationTime(overrides.exp ?? "5m")
+				.sign(privateKey);
+		return { jwks: { keys: [publicJwk] }, sign };
+	}
+
+	async function run(token: string) {
+		resetHttpAuthStateForTest();
+		const { response, state } = createMockResponse();
+		let nextCalled = false;
+		await mcpAuthMiddleware(
+			createMockRequest({ authorization: `Bearer ${token}` }) as never,
+			response as never,
+			() => {
+				nextCalled = true;
+			},
+		);
+		return { state, nextCalled };
+	}
+
+	it("rejects pending sessions with a generic 401", async () => {
+		const { jwks, sign } = await setup();
+		const token = await sign({ sts: "pending" });
+		await withStubbedJwksFetch(jwksUrl, jwks, async () => {
+			const { state, nextCalled } = await run(token);
+			assert.equal(nextCalled, false);
+			assert.equal(state.statusCode, 401);
+			assert.deepEqual(state.body, {
+				error: "Unauthorized: Token validation failed",
+			});
+		});
+	});
+
+	it("accepts active sessions and sessions with no sts", async () => {
+		const { jwks, sign } = await setup();
+		const active = await sign({ sts: "active" });
+		const bare = await sign({});
+		await withStubbedJwksFetch(jwksUrl, jwks, async () => {
+			assert.equal((await run(active)).nextCalled, true);
+			assert.equal((await run(bare)).nextCalled, true);
+		});
+	});
+
+	it("rejects tokens with the wrong audience, wrong issuer or an expired exp", async () => {
+		const { jwks, sign } = await setup();
+		const tokens = [
+			await sign({}, { audience: "someone-else" }),
+			await sign({}, { issuer: "https://evil.example.com" }),
+			await sign({}, { exp: Math.floor(Date.now() / 1000) - 600 }),
+		];
+		await withStubbedJwksFetch(jwksUrl, jwks, async () => {
+			for (const token of tokens) {
+				const { state, nextCalled } = await run(token);
+				assert.equal(nextCalled, false);
+				assert.equal(state.statusCode, 401);
+			}
+		});
+	});
+});
