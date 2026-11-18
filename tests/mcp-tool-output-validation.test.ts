@@ -137,3 +137,33 @@ describe("list_secret_references output validation", () => {
 		assert.equal(data.secret_references[0]?.status, "ARCHIVED");
 	});
 });
+
+describe("get_secret_reference output validation", () => {
+	it("accepts a status other than ACTIVE", async () => {
+		upstreamBody = {
+			id: REFERENCE_ID,
+			name: "prod-vault",
+			slug: "prod-vault",
+			manager_type: "hashicorp_vault",
+			auth_config: {},
+			object: "secret-reference",
+			organisation_id: REFERENCE_ID,
+			description: "",
+			secret_path: "secret/data/prod",
+			secret_key: "key",
+			allow_all_workspaces: true,
+			tags: {},
+			created_by: "user-1",
+			status: "ARCHIVED",
+			created_at: "2026-07-14T00:00:00.000Z",
+			last_updated_at: "2026-07-14T00:00:00.000Z",
+		};
+		const result = await callTool("get_secret_reference", {
+			id: REFERENCE_ID,
+		});
+		assert.notEqual(result.isError, true, JSON.stringify(result.content));
+		assert.equal(upstreamCalls.length, 1);
+		const data = result.structuredContent?.data as Record<string, unknown>;
+		assert.equal(data.status, "ARCHIVED");
+	});
+});

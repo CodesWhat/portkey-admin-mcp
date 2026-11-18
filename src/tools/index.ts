@@ -431,7 +431,7 @@ const TOOL_SUCCESS_DATA_SCHEMAS: Partial<Record<string, z.ZodType>> = {
 			.record(z.string(), z.string())
 			.nullable()
 			.describe("String metadata tags"),
-		status: z.literal("ACTIVE").describe("Current reference status"),
+		status: z.string().describe("Current reference status"),
 		created_by: z.string().describe("Creator identifier"),
 		created_at: z.iso
 			.datetime({ offset: true })
