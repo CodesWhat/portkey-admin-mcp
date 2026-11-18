@@ -645,7 +645,7 @@ export function registerKeysTools(
 		"update_virtual_key",
 		{
 			description:
-				"Update a virtual key's name, secret, note, or limits. Rotating the key takes effect immediately, and limit changes apply to downstream prompts and configs using this slug. Returns success when Portkey accepts the update.",
+				"Update a virtual key's name, secret, note, or limits. Rotating the key takes effect immediately, and limit changes apply to downstream prompts and configs using this slug. Returns success when Portkey accepts the update. Limit updates read the current limits and write them back, and Portkey has no conditional writes, so concurrent limit updates to the same resource can overwrite each other. Serialize them.",
 			inputSchema: KEYS_TOOL_SCHEMAS.updateVirtualKey,
 		},
 		async (params) => {
@@ -795,7 +795,7 @@ export function registerKeysTools(
 		"update_api_key",
 		{
 			description:
-				"Update an API key's name, description, scopes, defaults, or limits, unlike delete_api_key which revokes it or create_api_key which issues a new one. Changes take effect immediately for downstream callers, type and sub-type stay fixed after creation, and the call returns success without rotating the secret.",
+				"Update an API key's name, description, scopes, defaults, or limits, unlike delete_api_key which revokes it or create_api_key which issues a new one. Changes take effect immediately for downstream callers, type and sub-type stay fixed after creation, and the call returns success without rotating the secret. Limit updates read the current limits and write them back, and Portkey has no conditional writes, so concurrent limit updates to the same resource can overwrite each other. Serialize them.",
 			inputSchema: KEYS_TOOL_SCHEMAS.updateApiKey,
 		},
 		async (params) => {

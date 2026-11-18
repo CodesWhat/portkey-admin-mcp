@@ -322,7 +322,7 @@ export function registerProvidersTools(
 		"update_provider",
 		{
 			description:
-				"Update a provider's metadata, limits, or expiration. reset_usage clears accumulated usage counters immediately, so use it only when you intend to reset quota tracking. Returns the updated provider id and slug.",
+				"Update a provider's metadata, limits, or expiration. reset_usage clears accumulated usage counters immediately, so use it only when you intend to reset quota tracking. Returns the updated provider id and slug. Limit updates read the current limits and write them back, and Portkey has no conditional writes, so concurrent limit updates to the same resource can overwrite each other. Serialize them.",
 			inputSchema: PROVIDERS_TOOL_SCHEMAS.updateProvider,
 		},
 		async (rawParams) => {
