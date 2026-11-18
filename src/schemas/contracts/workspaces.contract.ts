@@ -23,6 +23,14 @@ export const WorkspaceItemSchema = z
 		last_updated_at: z.string(),
 		defaults: WorkspaceDefaultsSchema.nullable().optional(),
 		is_default: z.number().optional(),
+		usage_limits: z
+			.array(z.record(z.string(), z.unknown()))
+			.nullable()
+			.optional(),
+		rate_limits: z
+			.array(z.record(z.string(), z.unknown()))
+			.nullable()
+			.optional(),
 		status: z.string().optional(),
 		object: z.literal("workspace"),
 	})
@@ -59,7 +67,16 @@ export const GetWorkspaceResponseSchema = z
 		description: z.string().nullable().optional(),
 		created_at: z.string(),
 		last_updated_at: z.string(),
+		is_default: z.number().optional(),
 		defaults: WorkspaceDefaultsSchema.nullable().optional(),
+		usage_limits: z
+			.array(z.record(z.string(), z.unknown()))
+			.nullable()
+			.optional(),
+		rate_limits: z
+			.array(z.record(z.string(), z.unknown()))
+			.nullable()
+			.optional(),
 		object: z.literal("workspace").optional(),
 		users: z.array(WorkspaceUserSchema).optional(),
 	})

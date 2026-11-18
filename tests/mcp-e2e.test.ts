@@ -12,6 +12,10 @@ import { after, before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { Client } from "@modelcontextprotocol/client";
 import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
+import {
+	startUpstreamStub,
+	type UpstreamStub,
+} from "./helpers/upstream-stub.js";
 
 // ---------------------------------------------------------------------------
 // Pre-flight: verify the build artifact exists and is not stale
@@ -312,14 +316,19 @@ const EXPECTED_TOOLS = [
 describe("MCP E2E Protocol Tests", () => {
 	let client: Client;
 	let transport: StdioClientTransport;
+	let upstream: UpstreamStub;
 
 	before(async () => {
+		// Every upstream call goes to a loopback stub, so the suite needs no
+		// outbound network and can count exactly what reached "Portkey".
+		upstream = await startUpstreamStub();
 		transport = new StdioClientTransport({
 			command: "node",
 			args: ["build/index.js"],
 			env: {
 				...process.env,
 				PORTKEY_API_KEY: "test-dummy-key-for-e2e",
+				...upstream.env,
 			} as Record<string, string>,
 			stderr: "pipe",
 		});
@@ -334,6 +343,7 @@ describe("MCP E2E Protocol Tests", () => {
 
 	after(async () => {
 		await client.close();
+		await upstream.close();
 	});
 
 	// ==================== Server Lifecycle ====================
@@ -744,48 +754,71 @@ describe("MCP E2E Protocol Tests", () => {
 	// ==================== Validation ====================
 
 	describe("validation", () => {
-		it("returns isError for validation failure (create_config with no settings)", async () => {
-			const result = await client.callTool({
-				name: "create_config",
-				arguments: { name: "test-config" },
-			});
+		function errorText(result: { content?: unknown }): string {
+			const [first] = result.content as Array<{ type: string; text?: string }>;
+			const envelope = JSON.parse(first?.text ?? "{}") as {
+				error?: { message?: string };
+			};
+			return envelope.error?.message ?? "";
+		}
+
+		async function assertRejectedLocally(
+			name: string,
+			args: Record<string, unknown>,
+			expected: RegExp,
+		): Promise<void> {
+			const hitsBefore = upstream.hits.length;
+			const result = await client.callTool({ name, arguments: args });
 			assert.equal(result.isError, true, "Should have isError: true");
-			assert.ok(Array.isArray(result.content), "content should be an array");
+			assert.match(errorText(result), expected);
+			assert.equal(
+				upstream.hits.length,
+				hitsBefore,
+				"validation failures must not reach the upstream API",
+			);
+		}
+
+		it("returns isError for validation failure (create_config with no settings)", async () => {
+			await assertRejectedLocally(
+				"create_config",
+				{ name: "test-config" },
+				/Invalid arguments for "create_config": At least one config setting/,
+			);
 		});
 
 		it("returns isError for validation failure (create_prompt missing model)", async () => {
-			const result = await client.callTool({
-				name: "create_prompt",
-				arguments: {
+			await assertRejectedLocally(
+				"create_prompt",
+				{
 					name: "test",
 					collection_id: "test-coll",
 					string: "hello {{name}}",
 					parameters: { name: "world" },
 					virtual_key: "test-vk",
 				},
-			});
-			assert.equal(result.isError, true, "Should have isError: true");
+				/Invalid arguments for "create_prompt": At least one of model, ai_model_id, or finetune_id/,
+			);
 		});
 
 		it("returns isError for validation failure (create_api_key missing workspace_id)", async () => {
-			const result = await client.callTool({
-				name: "create_api_key",
-				arguments: {
+			await assertRejectedLocally(
+				"create_api_key",
+				{
 					type: "workspace",
 					sub_type: "service",
 					name: "test-key",
 					scopes: ["logs.read"],
 				},
-			});
-			assert.equal(result.isError, true, "Should have isError: true");
+				/Invalid arguments for "create_api_key": workspace_id is required when type is/,
+			);
 		});
 
 		it("returns isError for validation failure (create_prompt_label missing org/workspace)", async () => {
-			const result = await client.callTool({
-				name: "create_prompt_label",
-				arguments: { name: "test-label" },
-			});
-			assert.equal(result.isError, true, "Should have isError: true");
+			await assertRejectedLocally(
+				"create_prompt_label",
+				{ name: "test-label" },
+				/Invalid arguments for "create_prompt_label": Either organisation_id or workspace_id is required/,
+			);
 		});
 	});
 
@@ -824,15 +857,22 @@ describe("MCP E2E Protocol Tests", () => {
 		});
 
 		it("API errors propagate as isError with message", async () => {
-			// Call list_configs with a dummy key — will fail at API level
+			const hitsBefore = upstream.hits.length;
 			const result = await client.callTool({
 				name: "list_configs",
 				arguments: {},
 			});
-			// With a dummy API key, the Portkey API will reject the request.
-			// The error should propagate as isError: true
+			// The stub upstream rejects the request with a 401, which must come
+			// back as isError: true carrying the upstream message.
 			assert.equal(result.isError, true, "API error should set isError: true");
 			assert.ok(Array.isArray(result.content), "content should be an array");
+			assert.match(
+				JSON.stringify(result.content),
+				/stub upstream rejected the request/,
+			);
+			assert.equal(upstream.hits.length - hitsBefore, 1);
+			assert.equal(upstream.hits.at(-1)?.method, "GET");
+			assert.match(upstream.hits.at(-1)?.url ?? "", /^\/v1\/configs/);
 		});
 
 		it("returns an actionable error instead of calling upstream when PORTKEY_API_KEY is unset", async () => {

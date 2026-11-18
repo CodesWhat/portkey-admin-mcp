@@ -72,6 +72,8 @@ export class PromptsService extends BaseService {
 						string: raw.string ?? "",
 						parameters: raw.parameters ?? {},
 						model: raw.model,
+						ai_model_id: raw.ai_model_id,
+						finetune_id: raw.finetune_id,
 						virtual_key: raw.virtual_key,
 						functions: raw.functions ?? undefined,
 						tools: raw.tools ?? undefined,
@@ -91,14 +93,17 @@ export class PromptsService extends BaseService {
 	async updatePrompt(
 		promptId: string,
 		data: UpdatePromptRequest,
+		options: { patch?: boolean } = {},
 	): Promise<UpdatePromptResponse> {
 		// PUT /prompts/:id accepts "string" (same as POST), NOT "prompt_template".
 		// "template_metadata" must be remapped to "prompt_metadata".
 		const { template_metadata, is_raw_template, ...rest } = data;
 		const body: Record<string, unknown> = {
 			...rest,
-			// Enable partial updates so missing version fields are backfilled from latest version
-			patch: true,
+			// Partial updates backfill missing version fields from the latest
+			// version. Callers that send a complete version turn this off so absent
+			// fields are cleared instead of inherited.
+			patch: options.patch ?? true,
 		};
 		if (template_metadata !== undefined) {
 			body.prompt_metadata = template_metadata;
@@ -407,24 +412,54 @@ export class PromptsService extends BaseService {
 		);
 
 		if (existingTarget) {
-			const updateResult = await this.updatePrompt(existingTarget.id, {
-				string: sourceVersion.string,
-				parameters: sourceVersion.parameters,
-				model: sourceVersion.model,
-				virtual_key: data.virtual_key || sourceVersion.virtual_key,
-				functions: sourceVersion.functions,
-				tools: sourceVersion.tools,
-				tool_choice: sourceVersion.tool_choice,
-				is_raw_template: sourceVersion.is_raw_template,
-				version_description: `Promoted from ${sourcePrompt.slug} v${sourceVersion.version_number}`,
-				template_metadata: {
-					...sourceVersion.template_metadata,
-					env: data.target_env,
-					promoted_from: sourcePrompt.slug,
-					promoted_from_version: sourceVersion.version_number.toString(),
-					promoted_at: new Date().toISOString(),
+			const virtualKey = data.virtual_key || sourceVersion.virtual_key;
+			if (
+				!sourceVersion.string ||
+				!(
+					sourceVersion.model ||
+					sourceVersion.ai_model_id ||
+					sourceVersion.finetune_id
+				) ||
+				!virtualKey
+			) {
+				throw new Error(
+					"Cannot promote prompt: source version needs a string, a model (model, ai_model_id or finetune_id) and a virtual_key (or a virtual_key override)",
+				);
+			}
+
+			// Replace the target's version with the full source version. A patch
+			// update would let the target keep tools and tool_choice the source
+			// doesn't have, so send patch: false and spell out every field.
+			const updateResult = await this.updatePrompt(
+				existingTarget.id,
+				{
+					string: sourceVersion.string,
+					parameters: sourceVersion.parameters ?? {},
+					...(sourceVersion.model && { model: sourceVersion.model }),
+					...(sourceVersion.ai_model_id && {
+						ai_model_id: sourceVersion.ai_model_id,
+					}),
+					...(sourceVersion.finetune_id && {
+						finetune_id: sourceVersion.finetune_id,
+					}),
+					virtual_key: virtualKey,
+					functions: sourceVersion.functions ?? [],
+					tools: sourceVersion.tools ?? [],
+					...(sourceVersion.tool_choice !== undefined && {
+						tool_choice: sourceVersion.tool_choice,
+					}),
+					is_raw_template: sourceVersion.is_raw_template ?? false,
+					version_description: `Promoted from ${sourcePrompt.slug} v${sourceVersion.version_number}`,
+					template_metadata: {
+						...sourceVersion.template_metadata,
+						env: data.target_env,
+						promoted_from: sourcePrompt.slug,
+						promoted_from_version: sourceVersion.version_number.toString(),
+						promoted_at: new Date().toISOString(),
+					},
 				},
-			});
+				{ patch: false },
+			);
 
 			return {
 				source_prompt_id: data.source_prompt_id,

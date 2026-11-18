@@ -1,7 +1,7 @@
 {
 	"identifier": "codeswhat-portkey-admin-mcp",
 	"name": "Portkey Admin MCP Server",
-	"version": "0.16.4",
+	"version": "0.16.5",
 	"description": "Portkey Admin API MCP server with current control-plane coverage, 194 tools, and Prisma AIRS interoperability guidance.",
 	"author": "CodesWhat",
 	"authorUrl": "https://github.com/CodesWhat",
@@ -861,7 +861,7 @@
 			},
 			"annotations": {
 				"readOnlyHint": false,
-				"destructiveHint": false,
+				"destructiveHint": true,
 				"idempotentHint": false,
 				"openWorldHint": true
 			}
@@ -1476,7 +1476,7 @@
 			},
 			"annotations": {
 				"readOnlyHint": false,
-				"destructiveHint": false,
+				"destructiveHint": true,
 				"idempotentHint": false,
 				"openWorldHint": true
 			}
@@ -1637,7 +1637,7 @@
 			},
 			"annotations": {
 				"readOnlyHint": false,
-				"destructiveHint": false,
+				"destructiveHint": true,
 				"idempotentHint": false,
 				"openWorldHint": true
 			}
@@ -1867,7 +1867,7 @@
 			},
 			"annotations": {
 				"readOnlyHint": false,
-				"destructiveHint": false,
+				"destructiveHint": true,
 				"idempotentHint": false,
 				"openWorldHint": false
 			}
@@ -2273,7 +2273,7 @@
 			},
 			"annotations": {
 				"readOnlyHint": false,
-				"destructiveHint": false,
+				"destructiveHint": true,
 				"idempotentHint": false,
 				"openWorldHint": true
 			}
@@ -2295,7 +2295,7 @@
 			},
 			"annotations": {
 				"readOnlyHint": false,
-				"destructiveHint": false,
+				"destructiveHint": true,
 				"idempotentHint": false,
 				"openWorldHint": true
 			}
@@ -2484,7 +2484,7 @@
 		},
 		{
 			"name": "update_virtual_key",
-			"description": "Update a virtual key's name, secret, note, or limits. Rotating the key takes effect immediately, and limit changes apply to downstream prompts and configs using this slug. Returns success when Portkey accepts the update.",
+			"description": "Update a virtual key's name, secret, note, or limits. Rotating the key takes effect immediately, and limit changes apply to downstream prompts and configs using this slug. Returns success when Portkey accepts the update. Limit updates read the current limits and write them back, and Portkey has no conditional writes, so concurrent limit updates to the same resource can overwrite each other. Serialize them.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
@@ -2588,7 +2588,7 @@
 			},
 			"annotations": {
 				"readOnlyHint": false,
-				"destructiveHint": false,
+				"destructiveHint": true,
 				"idempotentHint": false,
 				"openWorldHint": true
 			}
@@ -2850,7 +2850,7 @@
 		},
 		{
 			"name": "update_api_key",
-			"description": "Update an API key's name, description, scopes, defaults, or limits, unlike delete_api_key which revokes it or create_api_key which issues a new one. Changes take effect immediately for downstream callers, type and sub-type stay fixed after creation, and the call returns success without rotating the secret.",
+			"description": "Update an API key's name, description, scopes, defaults, or limits, unlike delete_api_key which revokes it or create_api_key which issues a new one. Changes take effect immediately for downstream callers, type and sub-type stay fixed after creation, and the call returns success without rotating the secret. Limit updates read the current limits and write them back, and Portkey has no conditional writes, so concurrent limit updates to the same resource can overwrite each other. Serialize them.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
@@ -2925,9 +2925,8 @@
 						]
 					},
 					"reset_usage": {
-						"description": "Set to a nonnegative acknowledgement value to reset usage",
-						"type": "number",
-						"minimum": 0
+						"description": "Set to true to reset current usage; an exhausted key returns to active",
+						"type": "boolean"
 					},
 					"default_config_id": {
 						"description": "New default configuration ID",
@@ -3018,7 +3017,7 @@
 			},
 			"annotations": {
 				"readOnlyHint": false,
-				"destructiveHint": false,
+				"destructiveHint": true,
 				"idempotentHint": false,
 				"openWorldHint": true
 			}
@@ -3186,7 +3185,7 @@
 			},
 			"annotations": {
 				"readOnlyHint": false,
-				"destructiveHint": false,
+				"destructiveHint": true,
 				"idempotentHint": false,
 				"openWorldHint": true
 			}
@@ -3644,7 +3643,7 @@
 			},
 			"annotations": {
 				"readOnlyHint": false,
-				"destructiveHint": false,
+				"destructiveHint": true,
 				"idempotentHint": false,
 				"openWorldHint": true
 			}
@@ -3797,7 +3796,7 @@
 		},
 		{
 			"name": "run_prompt_completion",
-			"description": "Execute a prompt against the configured model and return the completion. This makes a billable model call, so use render_prompt first when you want to check the template and validate_completion_metadata when billing fields are uncertain.",
+			"description": "Execute a prompt against the configured model and return the completion text, plus any tool_calls or function_call the model requested (returned as data, never executed). This makes a billable model call, so use render_prompt first when you want to check the template and validate_completion_metadata when billing fields are uncertain.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
@@ -4226,7 +4225,7 @@
 			},
 			"annotations": {
 				"readOnlyHint": false,
-				"destructiveHint": false,
+				"destructiveHint": true,
 				"idempotentHint": false,
 				"openWorldHint": true
 			}
@@ -4607,7 +4606,7 @@
 		},
 		{
 			"name": "get_token_analytics",
-			"description": "Get token-usage time-series data with summary.total_tokens, summary.prompt_tokens, summary.completion_tokens, and per-bucket total/prompt/completion counts. Use this for consumption trends; use get_cost_analytics when you need spend instead of token volume. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
+			"description": "Get token-usage time-series data with summary.total and summary.avg (average tokens per request), and per-bucket total and avg. Portkey doesn't split prompt and completion tokens in this graph. Use this for consumption trends; use get_cost_analytics when you need spend instead of token volume. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
@@ -5542,7 +5541,7 @@
 		},
 		{
 			"name": "get_cache_hit_rate",
-			"description": "Get cache-effectiveness time-series data with summary.hit_rate, summary.total_hits, summary.total_misses, and per-bucket hits/misses/rate. Use this to measure cache effectiveness; use get_cache_hit_latency for speed rather than hit/miss ratio. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
+			"description": "Get cache-effectiveness time-series data with summary.hit_rate and summary.total_hits, and per-bucket simple_hits, semantic_hits, rate, and cumulative simple and semantic cache savings. Use this to measure cache effectiveness; use get_cache_hit_latency for speed rather than hit/miss ratio. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
@@ -5917,7 +5916,7 @@
 		},
 		{
 			"name": "get_users_analytics",
-			"description": "Get user-growth time-series data with summary.total_active_users, summary.total_new_users, and per-bucket active/new user counts. Use this for growth and adoption trends; use get_user_requests_analytics for per-user traffic or get_analytics_group_users for per-user cost and token detail. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
+			"description": "Get unique-user time-series data with summary.total and per-bucket total unique users. Use this for adoption trends; use get_user_requests_analytics for per-user traffic or get_analytics_group_users for per-user cost and token detail. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
@@ -6478,7 +6477,7 @@
 		},
 		{
 			"name": "get_user_requests_analytics",
-			"description": "Get per-user request-count time-series data with counts grouped by user. Use this to find heavy users and traffic concentration; use get_users_analytics for aggregate active and new user trends instead. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
+			"description": "Get per-user request-count time-series data with counts grouped by user. Use this to find heavy users and traffic concentration; use get_users_analytics for aggregate unique-user trends instead. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
@@ -7600,7 +7599,7 @@
 		},
 		{
 			"name": "get_analytics_group_users",
-			"description": "Get a paginated per-user breakdown with total_groups, group_count, and a users array containing request count, cost, and token usage. Use this for billing, audits, or top-consumer analysis; use get_users_analytics for aggregate active and new user trends. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
+			"description": "Get a paginated per-user breakdown with total_groups, group_count, and a users array containing request count, cost, and token usage. Use this for billing, audits, or top-consumer analysis; use get_users_analytics for aggregate unique-user trends. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
@@ -9077,7 +9076,7 @@
 			"annotations": {
 				"title": "Update Organisation Guardrail Defaults",
 				"readOnlyHint": false,
-				"destructiveHint": false,
+				"destructiveHint": true,
 				"idempotentHint": true,
 				"openWorldHint": true
 			}
@@ -9650,7 +9649,7 @@
 			},
 			"annotations": {
 				"readOnlyHint": false,
-				"destructiveHint": false,
+				"destructiveHint": true,
 				"idempotentHint": false,
 				"openWorldHint": true
 			}
@@ -9944,7 +9943,7 @@
 			},
 			"annotations": {
 				"readOnlyHint": false,
-				"destructiveHint": false,
+				"destructiveHint": true,
 				"idempotentHint": false,
 				"openWorldHint": true
 			}
@@ -10308,7 +10307,7 @@
 			},
 			"annotations": {
 				"readOnlyHint": false,
-				"destructiveHint": false,
+				"destructiveHint": true,
 				"idempotentHint": false,
 				"openWorldHint": true
 			}
@@ -10630,7 +10629,7 @@
 			},
 			"annotations": {
 				"readOnlyHint": false,
-				"destructiveHint": false,
+				"destructiveHint": true,
 				"idempotentHint": false,
 				"openWorldHint": true
 			}
@@ -10763,7 +10762,7 @@
 			},
 			"annotations": {
 				"readOnlyHint": false,
-				"destructiveHint": false,
+				"destructiveHint": true,
 				"idempotentHint": false,
 				"openWorldHint": true
 			}
@@ -10907,7 +10906,7 @@
 			},
 			"annotations": {
 				"readOnlyHint": false,
-				"destructiveHint": false,
+				"destructiveHint": true,
 				"idempotentHint": false,
 				"openWorldHint": true
 			}
@@ -11326,7 +11325,7 @@
 			},
 			"annotations": {
 				"readOnlyHint": false,
-				"destructiveHint": false,
+				"destructiveHint": true,
 				"idempotentHint": false,
 				"openWorldHint": true
 			}
@@ -11462,7 +11461,7 @@
 		},
 		{
 			"name": "update_provider",
-			"description": "Update a provider's metadata, limits, or expiration. reset_usage clears accumulated usage counters immediately, so use it only when you intend to reset quota tracking. Returns the updated provider id and slug.",
+			"description": "Update a provider's metadata, limits, or expiration. reset_usage clears accumulated usage counters immediately, so use it only when you intend to reset quota tracking. Returns the updated provider id and slug. Limit updates read the current limits and write them back, and Portkey has no conditional writes, so concurrent limit updates to the same resource can overwrite each other. Serialize them.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
@@ -11494,22 +11493,22 @@
 						"maximum": 100
 					},
 					"usage_limit_type": {
-						"description": "Type of usage limit: 'cost' (monetary) or 'tokens' (token count). Defaults to 'cost'.",
+						"description": "Usage limit type: 'cost' or 'tokens'. If omitted, preserves the existing type; defaults to 'cost' when no limits exist.",
 						"type": "string",
 						"enum": ["cost", "tokens"]
 					},
 					"periodic_reset": {
-						"description": "Period for resetting usage limits: 'monthly' or 'weekly'. Defaults to 'monthly'.",
+						"description": "Reset period: 'monthly' or 'weekly'. If omitted, preserves the existing cadence, including custom reset days; defaults to 'monthly' when no limits exist.",
 						"type": "string",
 						"enum": ["monthly", "weekly"]
 					},
 					"rate_limit_value": {
-						"description": "New rate limit value",
+						"description": "New rate limit value. Must be provided together with rate_limit_unit.",
 						"type": "number",
 						"exclusiveMinimum": 0
 					},
 					"rate_limit_unit": {
-						"description": "Rate limit unit: 'rpm' (requests per minute), 'rph' (requests per hour), or 'rpd' (requests per day)",
+						"description": "Rate limit unit: 'rpm' (requests per minute), 'rph' (requests per hour), or 'rpd' (requests per day). Must be provided together with rate_limit_value.",
 						"type": "string",
 						"enum": ["rpm", "rph", "rpd"]
 					},
@@ -11527,7 +11526,7 @@
 			},
 			"annotations": {
 				"readOnlyHint": false,
-				"destructiveHint": false,
+				"destructiveHint": true,
 				"idempotentHint": false,
 				"openWorldHint": true
 			}
@@ -13610,7 +13609,11 @@
 						"additionalProperties": {}
 					},
 					"workspace_id": {
-						"description": "Workspace ID — required when using organization admin API keys",
+						"description": "Workspace ID; set it to create the integration at workspace level. With an organisation admin key, give this or organisation_id.",
+						"type": "string"
+					},
+					"organisation_id": {
+						"description": "Organisation ID; required with an organisation admin API key when workspace_id is omitted",
 						"type": "string"
 					},
 					"secret_mappings": {
@@ -13845,6 +13848,11 @@
 					"id": {
 						"type": "string",
 						"description": "The MCP integration ID or slug"
+					},
+					"type": {
+						"description": "Only return capabilities of this type",
+						"type": "string",
+						"enum": ["tool", "prompt", "resource", "resource_template"]
 					}
 				},
 				"required": ["id"],
@@ -13897,7 +13905,7 @@
 			},
 			"annotations": {
 				"readOnlyHint": false,
-				"destructiveHint": false,
+				"destructiveHint": true,
 				"idempotentHint": true,
 				"openWorldHint": false
 			}
@@ -13934,7 +13942,6 @@
 						"description": "The MCP integration ID or slug"
 					},
 					"workspaces": {
-						"minItems": 1,
 						"type": "array",
 						"items": {
 							"type": "object",
@@ -13950,7 +13957,22 @@
 							},
 							"required": ["id", "enabled"]
 						},
-						"description": "Array of workspace access updates"
+						"description": "Array of workspace access updates; may be empty when only changing global_workspace_access"
+					},
+					"global_workspace_access": {
+						"description": "Organisation-wide workspace access default",
+						"type": "object",
+						"properties": {
+							"enabled": {
+								"type": "boolean",
+								"description": "Whether every workspace gets access by default"
+							}
+						},
+						"required": ["enabled"]
+					},
+					"override_existing_workspace_access": {
+						"description": "When true, global_workspace_access replaces existing per-workspace settings",
+						"type": "boolean"
 					}
 				},
 				"required": ["id", "workspaces"],
@@ -13958,7 +13980,7 @@
 			},
 			"annotations": {
 				"readOnlyHint": false,
-				"destructiveHint": false,
+				"destructiveHint": true,
 				"idempotentHint": true,
 				"openWorldHint": false
 			}
@@ -14071,6 +14093,15 @@
 					"workspace_id": {
 						"description": "Filter by workspace ID",
 						"type": "string"
+					},
+					"id": {
+						"description": "Filter by MCP server ID, or several IDs separated by commas",
+						"type": "string"
+					},
+					"search": {
+						"description": "Search MCP servers (up to 255 characters)",
+						"type": "string",
+						"maxLength": 255
 					}
 				},
 				"$schema": "https://json-schema.org/draft/2020-12/schema"
@@ -14120,6 +14151,10 @@
 					},
 					"description": {
 						"description": "Description of the MCP server",
+						"type": "string"
+					},
+					"workspace_id": {
+						"description": "Workspace ID or slug; required with an organisation admin API key",
 						"type": "string"
 					}
 				},
@@ -14196,7 +14231,7 @@
 			},
 			"annotations": {
 				"readOnlyHint": false,
-				"destructiveHint": false,
+				"destructiveHint": true,
 				"idempotentHint": false,
 				"openWorldHint": true
 			}
@@ -14264,6 +14299,11 @@
 						"type": "integer",
 						"exclusiveMinimum": 0,
 						"maximum": 100
+					},
+					"type": {
+						"description": "Only return capabilities of this type",
+						"type": "string",
+						"enum": ["tool", "prompt", "resource", "resource_template"]
 					}
 				},
 				"required": ["id"],
@@ -14316,7 +14356,7 @@
 			},
 			"annotations": {
 				"readOnlyHint": false,
-				"destructiveHint": false,
+				"destructiveHint": true,
 				"idempotentHint": false,
 				"openWorldHint": true
 			}
@@ -14342,6 +14382,10 @@
 						"type": "integer",
 						"exclusiveMinimum": 0,
 						"maximum": 100
+					},
+					"search": {
+						"description": "Search by user name or email",
+						"type": "string"
 					}
 				},
 				"required": ["id"],
@@ -14356,7 +14400,7 @@
 		},
 		{
 			"name": "update_mcp_server_user_access",
-			"description": "Grant or revoke individual user access to an MCP server. Changes take effect immediately and override the default access setting for the selected users; use list_mcp_server_user_access first if you need the current state.",
+			"description": "Grant or revoke individual user access to an MCP server, and/or set the server default (default_user_access) for users without an override. Changes take effect immediately and override the default access setting for the selected users; use list_mcp_server_user_access first if you need the current state.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
@@ -14365,6 +14409,7 @@
 						"description": "The MCP server ID or slug"
 					},
 					"users": {
+						"description": "Array of user access updates",
 						"minItems": 1,
 						"type": "array",
 						"items": {
@@ -14380,16 +14425,20 @@
 								}
 							},
 							"required": ["user_id", "enabled"]
-						},
-						"description": "Array of user access updates"
+						}
+					},
+					"default_user_access": {
+						"description": "Server default for users without an explicit override. Provide this, users, or both",
+						"type": "string",
+						"enum": ["allow", "deny"]
 					}
 				},
-				"required": ["id", "users"],
+				"required": ["id"],
 				"$schema": "https://json-schema.org/draft/2020-12/schema"
 			},
 			"annotations": {
 				"readOnlyHint": false,
-				"destructiveHint": false,
+				"destructiveHint": true,
 				"idempotentHint": false,
 				"openWorldHint": true
 			}

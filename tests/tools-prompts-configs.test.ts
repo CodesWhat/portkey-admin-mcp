@@ -429,6 +429,72 @@ describe("prompt rendering and execution tools", () => {
 		});
 	});
 
+	it("returns tool calls and legacy function calls without executing them", async () => {
+		const toolCalls = [
+			{
+				id: "call_1",
+				type: "function",
+				function: { name: "lookup", arguments: '{"id":7}' },
+			},
+		];
+		const functionCall = { name: "legacy", arguments: "{}" };
+		const cases = [
+			{
+				message: { role: "assistant", content: null, tool_calls: toolCalls },
+				expected: { response: null, tool_calls: toolCalls },
+			},
+			{
+				message: {
+					role: "assistant",
+					content: "Checking",
+					tool_calls: toolCalls,
+				},
+				expected: { response: "Checking", tool_calls: toolCalls },
+			},
+			{
+				message: {
+					role: "assistant",
+					content: null,
+					function_call: functionCall,
+				},
+				expected: { response: null, function_call: functionCall },
+			},
+			{
+				message: { role: "assistant", content: "Hi" },
+				expected: { response: "Hi" },
+			},
+		];
+		for (const { message, expected } of cases) {
+			const callback = promptCallbacks({
+				runPromptCompletion: async () => ({
+					id: "completion-tools",
+					object: "chat.completion",
+					created: 1,
+					model: "gpt-4.1",
+					choices: [{ index: 0, message, finish_reason: "tool_calls" }],
+					usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
+				}),
+			}).get("run_prompt_completion");
+			assert.ok(callback);
+			const payload = parseToolResult(
+				await callback({
+					prompt_id: "prompt-1",
+					variables: {},
+					metadata: { client_id: "client-1", app: "support", env: "prod" },
+				}),
+			);
+			assert.equal(payload.response, expected.response);
+			assert.deepEqual(
+				payload.tool_calls,
+				"tool_calls" in expected ? expected.tool_calls : undefined,
+			);
+			assert.deepEqual(
+				payload.function_call,
+				"function_call" in expected ? expected.function_call : undefined,
+			);
+		}
+	});
+
 	it("returns null response metadata when completion choices and usage are absent", async () => {
 		const callback = promptCallbacks({
 			runPromptCompletion: async () => ({

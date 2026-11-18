@@ -62,6 +62,19 @@ function capturedUrl(index: number): URL {
 	return new URL(String(capturedFetches[index]?.input));
 }
 
+/** Assert every captured call, in order, by method and pathname. */
+function assertRoutes(
+	expected: ReadonlyArray<readonly [string, string]>,
+): void {
+	assert.deepEqual(
+		capturedFetches.map((call) => [
+			call.init?.method ?? "GET",
+			new URL(String(call.input)).pathname,
+		]),
+		expected,
+	);
+}
+
 function capturedBody(index: number): unknown {
 	const body = capturedFetches[index]?.init?.body;
 	return body === undefined ? undefined : JSON.parse(String(body));
@@ -163,6 +176,25 @@ describe("AnalyticsService request routing", () => {
 		);
 		const headers = capturedFetches[0]?.init?.headers as Record<string, string>;
 		assert.equal(headers["x-portkey-api-key"], "test-key");
+		assertRoutes([
+			["GET", "/v1/analytics/graphs/cost"],
+			["GET", "/v1/analytics/graphs/requests"],
+			["GET", "/v1/analytics/graphs/tokens"],
+			["GET", "/v1/analytics/graphs/latency"],
+			["GET", "/v1/analytics/graphs/errors"],
+			["GET", "/v1/analytics/graphs/errors/rate"],
+			["GET", "/v1/analytics/graphs/cache/latency"],
+			["GET", "/v1/analytics/graphs/cache/hit-rate"],
+			["GET", "/v1/analytics/graphs/users"],
+			["GET", "/v1/analytics/graphs/errors/stacks"],
+			["GET", "/v1/analytics/graphs/errors/status-codes"],
+			["GET", "/v1/analytics/graphs/users/requests"],
+			["GET", "/v1/analytics/graphs/requests/rescued"],
+			["GET", "/v1/analytics/graphs/feedbacks"],
+			["GET", "/v1/analytics/graphs/feedbacks/ai-models"],
+			["GET", "/v1/analytics/graphs/feedbacks/scores"],
+			["GET", "/v1/analytics/graphs/feedbacks/weighted"],
+		]);
 	});
 
 	it("routes paginated groups and rejects an empty metadata key", async () => {
@@ -225,6 +257,12 @@ describe("AnalyticsService request routing", () => {
 			capturedUrl(3).searchParams.get("workspace_slug"),
 			"ws-current",
 		);
+		assertRoutes([
+			["GET", "/v1/analytics/graphs/cost"],
+			["GET", "/v1/analytics/summary/cache"],
+			["GET", "/v1/analytics/groups/provider"],
+			["GET", "/v1/analytics/graphs/requests"],
+		]);
 	});
 
 	it("sends deployment_id on graph, summary, and group routes and routes the MCP, A2A, and workspace groups", async () => {
@@ -265,6 +303,14 @@ describe("AnalyticsService request routing", () => {
 		}
 		assert.equal(capturedUrl(3).searchParams.get("current_page"), "1");
 		assert.equal(capturedUrl(5).searchParams.get("page_size"), "10");
+		assertRoutes([
+			["GET", "/v1/analytics/graphs/cost"],
+			["GET", "/v1/analytics/summary/cache"],
+			["GET", "/v1/analytics/groups/users"],
+			["GET", "/v1/analytics/groups/mcp"],
+			["GET", "/v1/analytics/groups/a2a"],
+			["GET", "/v1/analytics/groups/workspaces"],
+		]);
 	});
 
 	it("routes cache summary and provider grouped analytics with current options", async () => {
@@ -354,6 +400,13 @@ describe("DeploymentsService request routing", () => {
 		assert.equal(capturedFetches[3]?.init?.method, "PUT");
 		assert.deepEqual(capturedBody(3), { rotate_auth: true, tags: null });
 		assert.equal(capturedFetches[4]?.init?.method, "DELETE");
+		assertRoutes([
+			["GET", "/v2/deployments"],
+			["POST", "/v2/deployments"],
+			["GET", "/v2/deployments/dep%2Fone"],
+			["PUT", "/v2/deployments/dep%2Fone"],
+			["DELETE", "/v2/deployments/dep%2Fone"],
+		]);
 	});
 });
 
@@ -385,6 +438,13 @@ describe("IntegrationsService tags", () => {
 		});
 		assert.deepEqual(capturedBody(3), { tags: { env: "staging" } });
 		assert.deepEqual(capturedBody(4), { tags: null });
+		assertRoutes([
+			["GET", "/v1/integrations"],
+			["GET", "/v1/integrations"],
+			["POST", "/v1/integrations"],
+			["PUT", "/v1/integrations/integration%2Fone"],
+			["PUT", "/v1/integrations/integration%2Fone"],
+		]);
 	});
 });
 
@@ -486,6 +546,20 @@ describe("PromptsService workflows", () => {
 			metadata: { client_id: "client", app: "support", env: "test" },
 			stream: false,
 		});
+		assertRoutes([
+			["POST", "/v1/prompts"],
+			["GET", "/v1/prompts"],
+			["GET", "/v1/prompts/prompt%2Fone"],
+			["PUT", "/v1/prompts/prompt%2Fone"],
+			["DELETE", "/v1/prompts/prompt%2Fone"],
+			["DELETE", "/v1/prompts/prompt%2Ftwo"],
+			["PUT", "/v1/prompts/prompt%2Fone/makeDefault"],
+			["GET", "/v1/prompts/prompt%2Fone/versions/version%2Ftwo"],
+			["PUT", "/v1/prompts/prompt%2Fone/versions/version%2Ftwo"],
+			["GET", "/v1/prompts/prompt%2Fone/versions"],
+			["POST", "/v1/prompts/prompt%2Fone/render"],
+			["POST", "/v1/prompts/prompt%2Fone/completions"],
+		]);
 	});
 
 	it("rejects prompt completions without valid billing metadata", async () => {
@@ -702,6 +776,7 @@ describe("PromptsService workflows", () => {
 			prompt_version_id: "source-version",
 			prompt_version: 4,
 			string: "Hello",
+			model: "gpt-4o",
 			parameters: {},
 			virtual_key: "vk-source",
 			template_metadata: { app: "support", env: "dev" },
@@ -895,6 +970,7 @@ describe("deep-review service regressions", () => {
 			prompt_version_id: "source-version",
 			prompt_version: 4,
 			string: "Hello",
+			model: "gpt-4o",
 			parameters: {},
 			virtual_key: "vk-staging",
 			template_metadata: { app: "support", env: "dev" },
@@ -935,6 +1011,7 @@ describe("deep-review service regressions", () => {
 			prompt_version_id: "source-version",
 			prompt_version: 4,
 			string: "Hello",
+			model: "gpt-4o",
 			parameters: {},
 			virtual_key: "vk-staging",
 			template_metadata: { app: "support", env: "dev" },
@@ -961,6 +1038,126 @@ describe("deep-review service regressions", () => {
 			(capturedBody(2) as Record<string, unknown>).virtual_key,
 			"vk-staging",
 		);
+	});
+});
+
+describe("prompt promotion into an existing target", () => {
+	const source = {
+		id: "source-1",
+		name: "support-dev",
+		slug: "support-dev",
+		collection_id: "collection-1",
+		workspace_id: "workspace-1",
+		created_at: "2026-08-01T00:00:00Z",
+		last_updated_at: "2026-08-02T00:00:00Z",
+		prompt_version_id: "source-version",
+		prompt_version: 4,
+		string: "Hello",
+		parameters: { temperature: 0.2 },
+		model: "gpt-4o",
+		virtual_key: "vk-source",
+		template_metadata: { app: "support", env: "dev" },
+	};
+
+	async function promote(sourceOverrides: Record<string, unknown>) {
+		capturedFetches.length = 0;
+		queuedResponses.length = 0;
+		enqueue({ ...source, ...sourceOverrides });
+		enqueue({
+			object: "list",
+			total: 1,
+			data: [{ id: "target-1", name: "support-prod", slug: "support-prod" }],
+		});
+		enqueue({
+			id: "target-1",
+			slug: "support-prod",
+			prompt_version_id: "target-v2",
+		});
+		return new PromptsService("test-key", BASE_URL).promotePrompt({
+			source_prompt_id: "source-1",
+			target_collection_id: "collection-2",
+			target_env: "prod",
+		});
+	}
+
+	it("replaces the target version instead of patching it", async () => {
+		await promote({});
+		const body = capturedBody(2) as Record<string, unknown>;
+		assert.equal(body.patch, false);
+		assert.equal(body.string, "Hello");
+		assert.equal(body.model, "gpt-4o");
+		assert.equal(body.virtual_key, "vk-source");
+		assert.deepEqual(body.parameters, { temperature: 0.2 });
+	});
+
+	it("sends empty tool lists and no tool_choice when the source has none", async () => {
+		for (const overrides of [
+			{},
+			{ tools: null, functions: null, tool_choice: null },
+			{ tools: [], functions: [] },
+		]) {
+			await promote(overrides);
+			const body = capturedBody(2) as Record<string, unknown>;
+			assert.deepEqual(body.tools, []);
+			assert.deepEqual(body.functions, []);
+			assert.equal("tool_choice" in body, false);
+		}
+	});
+
+	it("keeps populated source tools and tool_choice", async () => {
+		const tools = [
+			{
+				type: "function",
+				function: { name: "lookup", parameters: { type: "object" } },
+			},
+		];
+		await promote({ tools, tool_choice: "auto" });
+		const body = capturedBody(2) as Record<string, unknown>;
+		assert.deepEqual(body.tools, tools);
+		assert.equal(body.tool_choice, "auto");
+	});
+
+	it("promotes a source that has only ai_model_id or finetune_id", async () => {
+		for (const [field, value] of [
+			["ai_model_id", "aim-1"],
+			["finetune_id", "ft-1"],
+		] as const) {
+			await promote({ model: undefined, [field]: value });
+			const body = capturedBody(2) as Record<string, unknown>;
+			assert.equal(body[field], value);
+			assert.equal("model" in body, false);
+			assert.equal(body.patch, false);
+		}
+	});
+
+	it("carries model, ai_model_id and finetune_id when all are set", async () => {
+		await promote({ ai_model_id: "aim-1", finetune_id: "ft-1" });
+		const body = capturedBody(2) as Record<string, unknown>;
+		assert.equal(body.model, "gpt-4o");
+		assert.equal(body.ai_model_id, "aim-1");
+		assert.equal(body.finetune_id, "ft-1");
+	});
+
+	it("fails before any write when the source version is incomplete", async () => {
+		for (const overrides of [
+			{ model: undefined },
+			{ string: "" },
+			{ virtual_key: undefined },
+		]) {
+			await assert.rejects(promote(overrides), /Cannot promote prompt/);
+			assert.equal(
+				capturedFetches.some((call) => call.init?.method === "PUT"),
+				false,
+			);
+		}
+	});
+
+	it("leaves ordinary partial updates in patch mode", async () => {
+		enqueue({ id: "p1", slug: "p1", prompt_version_id: "v2" });
+		await new PromptsService("test-key", BASE_URL).updatePrompt("p1", {
+			string: "Hi",
+		});
+		assert.equal((capturedBody(0) as Record<string, unknown>).patch, true);
 	});
 });
 
@@ -1031,6 +1228,18 @@ describe("UsersService request contracts", () => {
 		assert.equal(capturedUrl(6).searchParams.get("role"), "member");
 		assert.equal(capturedUrl(6).searchParams.get("status"), "pending");
 		assert.deepEqual(capturedBody(4), { first_name: "Ada" });
+		assertRoutes([
+			["GET", "/v1/admin/users"],
+			["POST", "/v1/admin/users/invites"],
+			["GET", "/v1/analytics/groups/users"],
+			["GET", "/v1/admin/users/user%2Fone"],
+			["PUT", "/v1/admin/users/user%2Fone"],
+			["DELETE", "/v1/admin/users/user%2Fone"],
+			["GET", "/v1/admin/users/invites"],
+			["GET", "/v1/admin/users/invites/invite%2Fone"],
+			["DELETE", "/v1/admin/users/invites/invite%2Fone"],
+			["POST", "/v1/admin/users/invites/invite%2Fone/resend"],
+		]);
 	});
 });
 
@@ -1133,6 +1342,20 @@ describe("LimitsService validation and routing", () => {
 		);
 		assert.equal(capturedFetches[11]?.init?.method, "PUT");
 		assert.equal(capturedBody(11), undefined);
+		assertRoutes([
+			["GET", "/v1/policies/rate-limits"],
+			["GET", "/v1/policies/rate-limits/rate%2Fone"],
+			["POST", "/v1/policies/rate-limits"],
+			["PUT", "/v1/policies/rate-limits/rate%2Fone"],
+			["DELETE", "/v1/policies/rate-limits/rate%2Fone"],
+			["GET", "/v1/policies/usage-limits"],
+			["GET", "/v1/policies/usage-limits/usage%2Fone"],
+			["POST", "/v1/policies/usage-limits"],
+			["PUT", "/v1/policies/usage-limits/usage%2Fone"],
+			["DELETE", "/v1/policies/usage-limits/usage%2Fone"],
+			["GET", "/v1/policies/usage-limits/usage%2Fone/entities"],
+			["PUT", "/v1/policies/usage-limits/usage%2Fone/entities/entity-1/reset"],
+		]);
 	});
 
 	it("rejects blank resource identifiers before issuing a request", async () => {
@@ -1201,6 +1424,13 @@ describe("Catalog service request contracts", () => {
 		});
 		assert.equal(capturedUrl(2).pathname, "/v1/collections/collection%2Fone");
 		assert.deepEqual(capturedBody(3), { description: "Production" });
+		assertRoutes([
+			["GET", "/v1/collections"],
+			["POST", "/v1/collections"],
+			["GET", "/v1/collections/collection%2Fone"],
+			["PUT", "/v1/collections/collection%2Fone"],
+			["DELETE", "/v1/collections/collection%2Fone"],
+		]);
 	});
 
 	it("unwraps partial lists and remaps update descriptions", async () => {
@@ -1232,6 +1462,15 @@ describe("Catalog service request contracts", () => {
 			string: "Hi",
 			version_description: "Version two",
 		});
+		assertRoutes([
+			["POST", "/v1/prompts/partials"],
+			["GET", "/v1/prompts/partials"],
+			["GET", "/v1/prompts/partials/partial%2Fone"],
+			["PUT", "/v1/prompts/partials/partial%2Fone"],
+			["DELETE", "/v1/prompts/partials/partial%2Fone"],
+			["GET", "/v1/prompts/partials/partial%2Fone/versions"],
+			["PUT", "/v1/prompts/partials/partial%2Fone/makeDefault"],
+		]);
 	});
 
 	it("handles provider workspace scoping and deletion responses", async () => {
@@ -1259,7 +1498,47 @@ describe("Catalog service request contracts", () => {
 			capturedUrl(3).searchParams.get("workspace_id"),
 			"workspace/one",
 		);
+		assertRoutes([
+			["GET", "/v1/providers"],
+			["POST", "/v1/providers"],
+			["GET", "/v1/providers/provider%2Fone"],
+			["PUT", "/v1/providers/provider%2Fone"],
+			["DELETE", "/v1/providers/provider%2Fone"],
+			["DELETE", "/v1/providers/provider%2Fone"],
+		]);
 	});
+});
+
+describe("ProvidersService workspace query", () => {
+	const cases: Array<[string, string | undefined, string | null]> = [
+		["omitted", undefined, null],
+		["empty", "", null],
+		["space", "work space", "work space"],
+		["reserved characters", "a&b=c/d?e#f", "a&b=c/d?e#f"],
+	];
+
+	for (const [label, workspaceId, expected] of cases) {
+		it(`sends workspace_id on update and delete (${label})`, async () => {
+			const service = new ProvidersService("test-key", BASE_URL);
+			await service.updateProvider("provider/one", { note: "x" }, workspaceId);
+			enqueue({ deleted: true });
+			await service.deleteProvider("provider/one", workspaceId);
+
+			for (const [index, method] of [
+				[0, "PUT"],
+				[1, "DELETE"],
+			] as const) {
+				const url = capturedUrl(index);
+				assert.equal(capturedFetches[index]?.init?.method, method);
+				assert.equal(url.pathname, "/v1/providers/provider%2Fone");
+				assert.equal(url.searchParams.get("workspace_id"), expected);
+				assert.deepEqual(
+					[...url.searchParams.keys()].length,
+					expected === null ? 0 : 1,
+				);
+			}
+		});
+	}
 });
 
 describe("KeysService request contracts", () => {
@@ -1312,7 +1591,7 @@ describe("KeysService request contracts", () => {
 		await service.getApiKey("api/key");
 		await service.updateApiKey("api/key", {
 			name: "Renamed",
-			reset_usage: 0,
+			reset_usage: true,
 			rate_limits: [{ type: "requests", unit: "rpw", value: 500 }],
 			rotation_policy: null,
 		});
@@ -1355,10 +1634,23 @@ describe("KeysService request contracts", () => {
 		});
 		assert.deepEqual(capturedBody(8), {
 			name: "Renamed",
-			reset_usage: 0,
+			reset_usage: true,
 			rate_limits: [{ type: "requests", unit: "rpw", value: 500 }],
 			rotation_policy: null,
 		});
+		assertRoutes([
+			["GET", "/v1/virtual-keys"],
+			["POST", "/v1/virtual-keys"],
+			["GET", "/v1/virtual-keys/virtual%2Fkey"],
+			["PUT", "/v1/virtual-keys/virtual%2Fkey"],
+			["DELETE", "/v1/virtual-keys/virtual%2Fkey"],
+			["POST", "/v1/api-keys/workspace/service"],
+			["GET", "/v1/api-keys"],
+			["GET", "/v1/api-keys/api%2Fkey"],
+			["PUT", "/v1/api-keys/api%2Fkey"],
+			["POST", "/v1/api-keys/api%2Fkey/rotate"],
+			["DELETE", "/v1/api-keys/api%2Fkey"],
+		]);
 	});
 });
 
@@ -1568,6 +1860,15 @@ describe("Configuration and platform service contracts", () => {
 		]);
 		assert.equal(capturedUrl(1).pathname, "/v1/configs/config%2Fone");
 		assert.equal(capturedUrl(6).pathname, "/v1/configs/config%2Fone/versions");
+		assertRoutes([
+			["GET", "/v1/configs"],
+			["GET", "/v1/configs/config%2Fone"],
+			["POST", "/v1/configs"],
+			["PUT", "/v1/configs/config%2Fone"],
+			["DELETE", "/v1/configs/config%2Fone"],
+			["DELETE", "/v1/configs/config%2Ftwo"],
+			["GET", "/v1/configs/config%2Fone/versions"],
+		]);
 	});
 
 	it("routes organisation defaults, exclusions, and guardrail CRUD", async () => {
@@ -1641,6 +1942,20 @@ describe("Configuration and platform service contracts", () => {
 			},
 		});
 		assert.deepEqual(capturedBody(10), { run_on: ["output"] });
+		assertRoutes([
+			["GET", "/v2/admin/organisation/defaults"],
+			["PUT", "/v2/admin/organisation/defaults"],
+			["GET", "/v1/workspace-exclusions/input-guardrails"],
+			["PUT", "/v1/workspace-exclusions/output-guardrails"],
+			["GET", "/v1/guardrails"],
+			["GET", "/v1/guardrails/guardrail%2Fone"],
+			["POST", "/v1/guardrails"],
+			["PUT", "/v1/guardrails/guardrail%2Fone"],
+			["GET", "/v1/guardrails/guardrail%2Fone/mcp-servers"],
+			["PUT", "/v1/guardrails/guardrail%2Fone/mcp-servers"],
+			["PUT", "/v1/guardrails/guardrail%2Fone/mcp-servers/server%2Ftwo"],
+			["DELETE", "/v1/guardrails/guardrail%2Fone"],
+		]);
 	});
 
 	it("routes labels and maps a no-content deletion", async () => {
@@ -1652,6 +1967,13 @@ describe("Configuration and platform service contracts", () => {
 		enqueue(undefined, 204);
 		assert.deepEqual(await service.deleteLabel("label/one"), {});
 		assert.equal(capturedUrl(2).pathname, "/v1/labels/label%2Fone");
+		assertRoutes([
+			["POST", "/v1/labels"],
+			["GET", "/v1/labels"],
+			["GET", "/v1/labels/label%2Fone"],
+			["PUT", "/v1/labels/label%2Fone"],
+			["DELETE", "/v1/labels/label%2Fone"],
+		]);
 	});
 });
 
@@ -1709,6 +2031,18 @@ describe("Integration service contracts", () => {
 			{ success: true },
 		);
 		assert.equal(capturedUrl(7).searchParams.get("slugs"), "model/one");
+		assertRoutes([
+			["GET", "/v1/integrations"],
+			["POST", "/v1/integrations"],
+			["GET", "/v1/integrations/integration%2Fone"],
+			["PUT", "/v1/integrations/integration%2Fone"],
+			["DELETE", "/v1/integrations/integration%2Fone"],
+			["GET", "/v1/integrations/integration%2Fone/models"],
+			["PUT", "/v1/integrations/integration%2Fone/models"],
+			["DELETE", "/v1/integrations/integration%2Fone/models"],
+			["GET", "/v1/integrations/integration%2Fone/workspaces"],
+			["PUT", "/v1/integrations/integration%2Fone/workspaces"],
+		]);
 	});
 
 	it("passes integration model deletion as an encoded query parameter", async () => {
@@ -1768,6 +2102,18 @@ describe("MCP administration service contracts", () => {
 		assert.equal(capturedUrl(0).searchParams.get("organisation_id"), "org-1");
 		assert.equal(capturedUrl(0).searchParams.get("type"), "all");
 		assert.equal(capturedUrl(0).searchParams.get("search"), "github");
+		assertRoutes([
+			["GET", "/v1/mcp-integrations"],
+			["POST", "/v1/mcp-integrations"],
+			["GET", "/v1/mcp-integrations/integration%2Fone"],
+			["PUT", "/v1/mcp-integrations/integration%2Fone"],
+			["DELETE", "/v1/mcp-integrations/integration%2Fone"],
+			["GET", "/v1/mcp-integrations/integration%2Fone/metadata"],
+			["GET", "/v1/mcp-integrations/integration%2Fone/capabilities"],
+			["PUT", "/v1/mcp-integrations/integration%2Fone/capabilities"],
+			["GET", "/v1/mcp-integrations/integration%2Fone/workspaces"],
+			["PUT", "/v1/mcp-integrations/integration%2Fone/workspaces"],
+		]);
 	});
 
 	it("routes MCP server lifecycle, connections, capabilities, and access", async () => {
@@ -1821,6 +2167,20 @@ describe("MCP administration service contracts", () => {
 			"/v1/mcp-servers/server%2Fone/connections",
 		);
 		assert.equal(capturedUrl(8).searchParams.get("current_page"), "2");
+		assertRoutes([
+			["GET", "/v1/mcp-servers/server%2Fone/connections"],
+			["DELETE", "/v1/mcp-servers/server%2Fone/connections"],
+			["GET", "/v1/mcp-servers"],
+			["POST", "/v1/mcp-servers"],
+			["GET", "/v1/mcp-servers/server%2Fone"],
+			["PUT", "/v1/mcp-servers/server%2Fone"],
+			["DELETE", "/v1/mcp-servers/server%2Fone"],
+			["POST", "/v1/mcp-servers/server%2Fone/test"],
+			["GET", "/v1/mcp-servers/server%2Fone/capabilities"],
+			["PUT", "/v1/mcp-servers/server%2Fone/capabilities"],
+			["GET", "/v1/mcp-servers/server%2Fone/user-access"],
+			["PUT", "/v1/mcp-servers/server%2Fone/user-access"],
+		]);
 	});
 });
 
@@ -1841,6 +2201,18 @@ describe("Observability and workspace service contracts", () => {
 		await service.updateLogExport("export/one", { name: "August" } as never);
 		assert.equal(capturedUrl(0).pathname, "/v1/logs/log%2Fone");
 		assert.equal(capturedUrl(9).pathname, "/v1/logs/exports/export%2Fone");
+		assertRoutes([
+			["GET", "/v1/logs/log%2Fone"],
+			["GET", "/v1/logs/exports/field-restrictions"],
+			["POST", "/v1/logs"],
+			["POST", "/v1/logs/exports"],
+			["GET", "/v1/logs/exports"],
+			["GET", "/v1/logs/exports/export%2Fone"],
+			["POST", "/v1/logs/exports/export%2Fone/start"],
+			["POST", "/v1/logs/exports/export%2Fone/cancel"],
+			["GET", "/v1/logs/exports/export%2Fone/download"],
+			["PUT", "/v1/logs/exports/export%2Fone"],
+		]);
 	});
 
 	it("routes SCIM, workspace, and membership lifecycles", async () => {
@@ -1923,6 +2295,22 @@ describe("Observability and workspace service contracts", () => {
 			],
 			rate_limits: [{ type: "requests", unit: "rpm", value: 50 }],
 		});
+		assertRoutes([
+			["GET", "/v1/scim/workspaces"],
+			["POST", "/v1/scim/workspaces"],
+			["DELETE", "/v1/scim/workspaces/mapping%2Fone"],
+			["GET", "/v2/scim/groups"],
+			["GET", "/v1/admin/workspaces"],
+			["GET", "/v1/admin/workspaces/workspace%2Fone"],
+			["POST", "/v1/admin/workspaces"],
+			["PUT", "/v1/admin/workspaces/workspace%2Fone"],
+			["DELETE", "/v1/admin/workspaces/workspace%2Fone"],
+			["POST", "/v1/admin/workspaces/workspace%2Fone/users"],
+			["GET", "/v1/admin/workspaces/workspace%2Fone/users"],
+			["GET", "/v1/admin/workspaces/workspace%2Fone/users/user%2Fone"],
+			["PUT", "/v1/admin/workspaces/workspace%2Fone/users/user%2Fone"],
+			["DELETE", "/v1/admin/workspaces/workspace%2Fone/users/user%2Fone"],
+		]);
 	});
 
 	it("routes secret references and trace feedback", async () => {
@@ -1945,5 +2333,14 @@ describe("Observability and workspace service contracts", () => {
 		await tracing.updateFeedback("feedback/one", { value: -1 });
 		assert.equal(capturedUrl(2).pathname, "/v1/secret-references/secret%2Fone");
 		assert.equal(capturedUrl(6).pathname, "/v1/feedback/feedback%2Fone");
+		assertRoutes([
+			["POST", "/v1/secret-references"],
+			["GET", "/v1/secret-references"],
+			["GET", "/v1/secret-references/secret%2Fone"],
+			["PUT", "/v1/secret-references/secret%2Fone"],
+			["DELETE", "/v1/secret-references/secret%2Fone"],
+			["POST", "/v1/feedback"],
+			["PUT", "/v1/feedback/feedback%2Fone"],
+		]);
 	});
 });

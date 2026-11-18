@@ -106,7 +106,13 @@ const MCP_INTEGRATIONS_TOOL_SCHEMAS = {
 			.string()
 			.optional()
 			.describe(
-				"Workspace ID — required when using organization admin API keys",
+				"Workspace ID; set it to create the integration at workspace level. With an organisation admin key, give this or organisation_id.",
+			),
+		organisation_id: z
+			.string()
+			.optional()
+			.describe(
+				"Organisation ID; required with an organisation admin API key when workspace_id is omitted",
 			),
 		secret_mappings: mcpSecretMappingsSchema
 			.optional()
@@ -164,6 +170,10 @@ const MCP_INTEGRATIONS_TOOL_SCHEMAS = {
 	},
 	listMcpIntegrationCapabilities: {
 		id: z.string().describe("The MCP integration ID or slug"),
+		type: z
+			.enum(["tool", "prompt", "resource", "resource_template"])
+			.optional()
+			.describe("Only return capabilities of this type"),
 	},
 	updateMcpIntegrationCapabilities: {
 		id: z.string().describe("The MCP integration ID or slug"),
@@ -192,8 +202,23 @@ const MCP_INTEGRATIONS_TOOL_SCHEMAS = {
 					enabled: z.boolean().describe("Whether workspace has access"),
 				}),
 			)
-			.min(1)
-			.describe("Array of workspace access updates"),
+			.describe(
+				"Array of workspace access updates; may be empty when only changing global_workspace_access",
+			),
+		global_workspace_access: z
+			.object({
+				enabled: z
+					.boolean()
+					.describe("Whether every workspace gets access by default"),
+			})
+			.optional()
+			.describe("Organisation-wide workspace access default"),
+		override_existing_workspace_access: z
+			.boolean()
+			.optional()
+			.describe(
+				"When true, global_workspace_access replaces existing per-workspace settings",
+			),
 	},
 } as const;
 
@@ -485,7 +510,12 @@ export function registerMcpIntegrationsTools(
 		},
 		async (params) => {
 			const result =
-				await service.mcpIntegrations.listMcpIntegrationCapabilities(params.id);
+				await service.mcpIntegrations.listMcpIntegrationCapabilities(
+					params.id,
+					{
+						type: params.type,
+					},
+				);
 			return jsonResult({
 				total: result.total,
 				capabilities: result.data,
@@ -502,7 +532,6 @@ export function registerMcpIntegrationsTools(
 				MCP_INTEGRATIONS_TOOL_SCHEMAS.updateMcpIntegrationCapabilities,
 			annotations: {
 				readOnlyHint: false,
-				destructiveHint: false,
 				idempotentHint: true,
 				openWorldHint: false,
 			},
@@ -548,7 +577,6 @@ export function registerMcpIntegrationsTools(
 			inputSchema: MCP_INTEGRATIONS_TOOL_SCHEMAS.updateMcpIntegrationWorkspaces,
 			annotations: {
 				readOnlyHint: false,
-				destructiveHint: false,
 				idempotentHint: true,
 				openWorldHint: false,
 			},
@@ -556,6 +584,15 @@ export function registerMcpIntegrationsTools(
 		async (params) => {
 			await service.mcpIntegrations.updateMcpIntegrationWorkspaces(params.id, {
 				workspaces: params.workspaces,
+				...(params.global_workspace_access !== undefined
+					? { global_workspace_access: params.global_workspace_access }
+					: {}),
+				...(params.override_existing_workspace_access !== undefined
+					? {
+							override_existing_workspace_access:
+								params.override_existing_workspace_access,
+						}
+					: {}),
 			});
 			return jsonResult({
 				message: `Successfully updated workspace access for MCP integration "${params.id}"`,

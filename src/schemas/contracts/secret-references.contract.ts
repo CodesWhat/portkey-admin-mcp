@@ -12,8 +12,8 @@ export const SecretReferenceListItemSchema = z.object({
 	slug: z.string(),
 	manager_type: SecretManagerTypeSchema,
 	status: z.literal("ACTIVE"),
-	created_at: z.iso.datetime(),
-	last_updated_at: z.iso.datetime(),
+	created_at: z.iso.datetime({ offset: true }),
+	last_updated_at: z.iso.datetime({ offset: true }),
 	object: z.literal("secret-reference"),
 });
 

@@ -309,7 +309,6 @@ export function registerConfigsTools(
 			inputSchema: CONFIGS_TOOL_SCHEMAS.updateConfig,
 			annotations: {
 				readOnlyHint: false,
-				destructiveHint: false,
 				idempotentHint: false,
 				openWorldHint: false,
 			},

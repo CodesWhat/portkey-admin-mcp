@@ -1,6 +1,11 @@
 import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
-import { buildRateLimitsRpm, buildUsageLimits } from "../lib/limits.js";
+import {
+	buildRateLimitsRpm,
+	buildUsageLimits,
+	buildUsageLimitsUpdate,
+	mergeUsageLimitsUpdate,
+} from "../lib/limits.js";
 import { CurrentPageSchema, PageSizeSchema } from "../lib/schemas.js";
 import type { PortkeyService } from "../services/index.js";
 import type {
@@ -313,11 +318,12 @@ const KEYS_TOOL_SCHEMAS = {
 			.nullable()
 			.optional()
 			.describe("Replacement request or token rate limits, or null to clear"),
-		reset_usage: z.coerce
-			.number()
-			.nonnegative()
+		reset_usage: z
+			.boolean()
 			.optional()
-			.describe("Set to a nonnegative acknowledgement value to reset usage"),
+			.describe(
+				"Set to true to reset current usage; an exhausted key returns to active",
+			),
 		default_config_id: z
 			.string()
 			.optional()
@@ -400,10 +406,11 @@ function formatKeyUsageLimits(
 	limits: VirtualKeyUsageLimits | ApiKeyUsageLimits | null,
 ): Pick<
 	VirtualKeyUsageLimits | ApiKeyUsageLimits,
-	"credit_limit" | "alert_threshold" | "periodic_reset"
+	"type" | "credit_limit" | "alert_threshold" | "periodic_reset"
 > | null {
 	return limits
 		? {
+				type: limits.type,
 				credit_limit: limits.credit_limit,
 				alert_threshold: limits.alert_threshold,
 				periodic_reset: limits.periodic_reset,
@@ -638,18 +645,23 @@ export function registerKeysTools(
 		"update_virtual_key",
 		{
 			description:
-				"Update a virtual key's name, secret, note, or limits. Rotating the key takes effect immediately, and limit changes apply to downstream prompts and configs using this slug. Returns success when Portkey accepts the update.",
+				"Update a virtual key's name, secret, note, or limits. Rotating the key takes effect immediately, and limit changes apply to downstream prompts and configs using this slug. Returns success when Portkey accepts the update. Limit updates read the current limits and write them back, and Portkey has no conditional writes, so concurrent limit updates to the same resource can overwrite each other. Serialize them.",
 			inputSchema: KEYS_TOOL_SCHEMAS.updateVirtualKey,
 		},
 		async (params) => {
+			const usageLimits = await mergeUsageLimitsUpdate(
+				buildUsageLimitsUpdate({
+					credit_limit: params.credit_limit,
+					alert_threshold: params.alert_threshold,
+				}),
+				async () =>
+					(await service.keys.getVirtualKey(params.slug)).usage_limits,
+			);
 			const result = await service.keys.updateVirtualKey(params.slug, {
 				name: params.name,
 				key: params.key,
 				note: params.note,
-				usage_limits: buildUsageLimits({
-					credit_limit: params.credit_limit,
-					alert_threshold: params.alert_threshold,
-				}),
+				usage_limits: usageLimits,
 				rate_limits: buildRateLimitsRpm(params.rate_limit_rpm),
 				deploymentConfig: params.deployment_configurations?.map(
 					(configuration) => ({
@@ -783,18 +795,22 @@ export function registerKeysTools(
 		"update_api_key",
 		{
 			description:
-				"Update an API key's name, description, scopes, defaults, or limits, unlike delete_api_key which revokes it or create_api_key which issues a new one. Changes take effect immediately for downstream callers, type and sub-type stay fixed after creation, and the call returns success without rotating the secret.",
+				"Update an API key's name, description, scopes, defaults, or limits, unlike delete_api_key which revokes it or create_api_key which issues a new one. Changes take effect immediately for downstream callers, type and sub-type stay fixed after creation, and the call returns success without rotating the secret. Limit updates read the current limits and write them back, and Portkey has no conditional writes, so concurrent limit updates to the same resource can overwrite each other. Serialize them.",
 			inputSchema: KEYS_TOOL_SCHEMAS.updateApiKey,
 		},
 		async (params) => {
+			const usageLimits = await mergeUsageLimitsUpdate(
+				buildUsageLimitsUpdate({
+					credit_limit: params.credit_limit,
+					alert_threshold: params.alert_threshold,
+				}),
+				async () => (await service.keys.getApiKey(params.id)).usage_limits,
+			);
 			const result = await service.keys.updateApiKey(params.id, {
 				name: params.name,
 				description: params.description,
 				scopes: params.scopes,
-				usage_limits: buildUsageLimits({
-					credit_limit: params.credit_limit,
-					alert_threshold: params.alert_threshold,
-				}),
+				usage_limits: usageLimits,
 				rate_limits:
 					params.rate_limits === undefined
 						? buildRateLimitsRpm(params.rate_limit_rpm)

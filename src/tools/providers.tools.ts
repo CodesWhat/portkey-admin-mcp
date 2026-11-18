@@ -1,6 +1,11 @@
 import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
-import { buildRateLimits, buildUsageLimits } from "../lib/limits.js";
+import {
+	buildRateLimits,
+	buildUsageLimits,
+	buildUsageLimitsUpdate,
+	mergeUsageLimitsUpdate,
+} from "../lib/limits.js";
 import { CurrentPageSchema, PageSizeSchema } from "../lib/schemas.js";
 import type { PortkeyService } from "../services/index.js";
 import { jsonResult } from "./utils.js";
@@ -115,24 +120,26 @@ const PROVIDERS_TOOL_SCHEMAS = {
 			.enum(["cost", "tokens"])
 			.optional()
 			.describe(
-				"Type of usage limit: 'cost' (monetary) or 'tokens' (token count). Defaults to 'cost'.",
+				"Usage limit type: 'cost' or 'tokens'. If omitted, preserves the existing type; defaults to 'cost' when no limits exist.",
 			),
 		periodic_reset: z
 			.enum(["monthly", "weekly"])
 			.optional()
 			.describe(
-				"Period for resetting usage limits: 'monthly' or 'weekly'. Defaults to 'monthly'.",
+				"Reset period: 'monthly' or 'weekly'. If omitted, preserves the existing cadence, including custom reset days; defaults to 'monthly' when no limits exist.",
 			),
 		rate_limit_value: z.coerce
 			.number()
 			.positive()
 			.optional()
-			.describe("New rate limit value"),
+			.describe(
+				"New rate limit value. Must be provided together with rate_limit_unit.",
+			),
 		rate_limit_unit: z
 			.enum(["rpm", "rph", "rpd"])
 			.optional()
 			.describe(
-				"Rate limit unit: 'rpm' (requests per minute), 'rph' (requests per hour), or 'rpd' (requests per day)",
+				"Rate limit unit: 'rpm' (requests per minute), 'rph' (requests per hour), or 'rpd' (requests per day). Must be provided together with rate_limit_value.",
 			),
 		expires_at: z
 			.string()
@@ -151,6 +158,33 @@ const PROVIDERS_TOOL_SCHEMAS = {
 			.describe("Workspace ID - required when using organization admin keys"),
 	},
 } as const;
+
+const RATE_LIMIT_PAIR_MESSAGE =
+	"rate_limit_value and rate_limit_unit must be provided together";
+
+function hasCompleteRateLimitPair(value: {
+	rate_limit_value?: number;
+	rate_limit_unit?: string;
+}): boolean {
+	return (
+		(value.rate_limit_value === undefined) ===
+		(value.rate_limit_unit === undefined)
+	);
+}
+
+const createProviderSchema = z
+	.object(PROVIDERS_TOOL_SCHEMAS.createProvider)
+	.refine(hasCompleteRateLimitPair, {
+		path: ["rate_limit_unit"],
+		message: RATE_LIMIT_PAIR_MESSAGE,
+	});
+
+const updateProviderSchema = z
+	.object(PROVIDERS_TOOL_SCHEMAS.updateProvider)
+	.refine(hasCompleteRateLimitPair, {
+		path: ["rate_limit_unit"],
+		message: RATE_LIMIT_PAIR_MESSAGE,
+	});
 
 export function registerProvidersTools(
 	server: McpServer,
@@ -181,6 +215,7 @@ export function registerProvidersTools(
 					note: provider.note,
 					usage_limits: provider.usage_limits
 						? {
+								type: provider.usage_limits.type,
 								credit_limit: provider.usage_limits.credit_limit,
 								alert_threshold: provider.usage_limits.alert_threshold,
 								periodic_reset: provider.usage_limits.periodic_reset,
@@ -208,7 +243,8 @@ export function registerProvidersTools(
 				"Create a workspace provider backed by an org integration. The provider inherits the integration key, but its limits and expiration are enforced independently for that workspace. Returns the new provider id and slug.",
 			inputSchema: PROVIDERS_TOOL_SCHEMAS.createProvider,
 		},
-		async (params) => {
+		async (rawParams) => {
+			const params = createProviderSchema.parse(rawParams);
 			const result = await service.providers.createProvider({
 				name: params.name,
 				integration_id: params.integration_id,
@@ -262,6 +298,7 @@ export function registerProvidersTools(
 				note: provider.note,
 				usage_limits: provider.usage_limits
 					? {
+							type: provider.usage_limits.type,
 							credit_limit: provider.usage_limits.credit_limit,
 							alert_threshold: provider.usage_limits.alert_threshold,
 							periodic_reset: provider.usage_limits.periodic_reset,
@@ -285,21 +322,32 @@ export function registerProvidersTools(
 		"update_provider",
 		{
 			description:
-				"Update a provider's metadata, limits, or expiration. reset_usage clears accumulated usage counters immediately, so use it only when you intend to reset quota tracking. Returns the updated provider id and slug.",
+				"Update a provider's metadata, limits, or expiration. reset_usage clears accumulated usage counters immediately, so use it only when you intend to reset quota tracking. Returns the updated provider id and slug. Limit updates read the current limits and write them back, and Portkey has no conditional writes, so concurrent limit updates to the same resource can overwrite each other. Serialize them.",
 			inputSchema: PROVIDERS_TOOL_SCHEMAS.updateProvider,
 		},
-		async (params) => {
+		async (rawParams) => {
+			const params = updateProviderSchema.parse(rawParams);
+			const usageLimits = await mergeUsageLimitsUpdate(
+				buildUsageLimitsUpdate({
+					credit_limit: params.credit_limit,
+					alert_threshold: params.alert_threshold,
+					type: params.usage_limit_type,
+					periodic_reset: params.periodic_reset,
+				}),
+				async () =>
+					(
+						await service.providers.getProvider(
+							params.slug,
+							params.workspace_id,
+						)
+					).usage_limits,
+			);
 			const result = await service.providers.updateProvider(
 				params.slug,
 				{
 					name: params.name,
 					note: params.note,
-					usage_limits: buildUsageLimits({
-						credit_limit: params.credit_limit,
-						alert_threshold: params.alert_threshold,
-						type: params.usage_limit_type,
-						periodic_reset: params.periodic_reset,
-					}),
+					usage_limits: usageLimits,
 					rate_limits:
 						params.rate_limit_value !== undefined &&
 						params.rate_limit_unit !== undefined

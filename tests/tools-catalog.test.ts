@@ -850,7 +850,7 @@ describe("providers tools — create_provider payload assembly", () => {
 		]);
 	});
 
-	it("omits rate_limits when only one of value/unit is provided", async () => {
+	it("rejects a half rate-limit pair before calling the service", async () => {
 		const createCalls: unknown[] = [];
 		const callbacks = registerToolCallbacks((server) => {
 			registerProvidersTools(
@@ -869,15 +869,149 @@ describe("providers tools — create_provider payload assembly", () => {
 		const cb = callbacks.get("create_provider");
 		assert.ok(cb, "create_provider should be registered");
 
-		// Provide rate_limit_value but not rate_limit_unit — should omit rate_limits
-		await cb({
-			name: "No Rate Limit",
-			integration_id: "openai",
-			rate_limit_value: 60,
-		});
+		await assert.rejects(
+			async () =>
+				cb({ name: "Half", integration_id: "openai", rate_limit_value: 60 }),
+			/rate_limit_value and rate_limit_unit must be provided together/,
+		);
+		await assert.rejects(async () =>
+			cb({ name: "Half", integration_id: "openai", rate_limit_unit: "rpm" }),
+		);
+		assert.equal(createCalls.length, 0);
+	});
+});
 
-		const payload = createCalls[0] as { rate_limits?: unknown };
-		assert.equal(payload.rate_limits, undefined);
+describe("providers tools — update_provider limit inputs", () => {
+	let readCount = 0;
+	const existing = {
+		type: "tokens",
+		credit_limit: 1000,
+		alert_threshold: 900,
+		periodic_reset: "weekly",
+	};
+
+	function setup() {
+		const updateCalls: unknown[] = [];
+		const callbacks = registerToolCallbacks((server) => {
+			registerProvidersTools(
+				server as never,
+				{
+					providers: {
+						getProvider: async () => {
+							readCount += 1;
+							return { usage_limits: existing };
+						},
+						updateProvider: async (slug: string, payload: unknown) => {
+							updateCalls.push({ slug, payload });
+							return { id: "prov_1", slug };
+						},
+					},
+				} as never,
+			);
+		});
+		const cb = callbacks.get("update_provider");
+		assert.ok(cb, "update_provider should be registered");
+		return { cb, updateCalls };
+	}
+
+	it("forwards modifier-only updates merged onto the existing limits", async () => {
+		readCount = 0;
+		const { cb, updateCalls } = setup();
+		await cb({ slug: "my-openai", periodic_reset: "monthly" });
+		await cb({ slug: "my-openai", usage_limit_type: "cost" });
+		await cb({ slug: "my-openai", alert_threshold: 50 });
+		assert.equal(readCount, 3);
+		assert.deepEqual(
+			updateCalls.map((call) =>
+				JSON.parse(
+					JSON.stringify(
+						(call as { payload: { usage_limits: unknown } }).payload
+							.usage_limits,
+					),
+				),
+			),
+			[
+				{ ...existing, periodic_reset: "monthly" },
+				{ ...existing, type: "cost" },
+				{ ...existing, alert_threshold: 50 },
+			],
+		);
+	});
+
+	it("keeps periodic_reset_days and drops it for an explicit periodic_reset", async () => {
+		const days = {
+			type: "cost",
+			credit_limit: 10,
+			periodic_reset: null,
+			periodic_reset_days: 30,
+		};
+		const calls: unknown[] = [];
+		const callbacks = registerToolCallbacks((server) => {
+			registerProvidersTools(
+				server as never,
+				{
+					providers: {
+						getProvider: async () => ({ usage_limits: days }),
+						updateProvider: async (_slug: string, payload: unknown) => {
+							calls.push(payload);
+							return { id: "prov_1" };
+						},
+					},
+				} as never,
+			);
+		});
+		const cb = callbacks.get("update_provider");
+		assert.ok(cb);
+		await cb({ slug: "my-openai", alert_threshold: 5 });
+		await cb({ slug: "my-openai", periodic_reset: "weekly" });
+		const sent = calls.map((c) => JSON.parse(JSON.stringify(c)).usage_limits);
+		assert.deepEqual(sent, [
+			{
+				type: "cost",
+				credit_limit: 10,
+				alert_threshold: 5,
+				periodic_reset_days: 30,
+			},
+			{ type: "cost", credit_limit: 10, periodic_reset: "weekly" },
+		]);
+	});
+
+	it("does no read and sends no usage_limits on unrelated updates", async () => {
+		readCount = 0;
+		const { cb, updateCalls } = setup();
+		await cb({ slug: "my-openai", name: "Renamed" });
+		assert.equal(readCount, 0);
+		assert.equal(
+			(updateCalls[0] as { payload: { usage_limits?: unknown } }).payload
+				.usage_limits,
+			undefined,
+		);
+	});
+
+	it("rejects a half rate-limit pair before calling the service", async () => {
+		const { cb, updateCalls } = setup();
+		await assert.rejects(
+			async () => cb({ slug: "my-openai", rate_limit_value: 60 }),
+			/must be provided together/,
+		);
+		await assert.rejects(async () =>
+			cb({ slug: "my-openai", rate_limit_unit: "rph" }),
+		);
+		assert.equal(updateCalls.length, 0);
+	});
+
+	it("forwards a complete rate-limit pair", async () => {
+		const { cb, updateCalls } = setup();
+		await cb({
+			slug: "my-openai",
+			rate_limit_value: 30,
+			rate_limit_unit: "rph",
+		});
+		assert.deepEqual(
+			(updateCalls[0] as { payload: { rate_limits: unknown } }).payload
+				.rate_limits,
+			[{ type: "requests", unit: "rph", value: 30 }],
+		);
 	});
 });
 
@@ -935,6 +1069,7 @@ describe("providers tools — curated get_provider response", () => {
 		assert.equal(payload.slug, "my-openai");
 		assert.equal(payload.object, undefined);
 		assert.deepEqual(payload.usage_limits, {
+			type: "cost",
 			credit_limit: 100,
 			alert_threshold: 80,
 			periodic_reset: "monthly",

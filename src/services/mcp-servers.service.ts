@@ -24,6 +24,8 @@ export interface ListMcpServersParams {
 	current_page?: number;
 	page_size?: number;
 	workspace_id?: string;
+	id?: string;
+	search?: string;
 	tags?: Record<string, string>;
 }
 
@@ -32,6 +34,7 @@ export interface CreateMcpServerRequest {
 	mcp_integration_id: string;
 	slug?: string;
 	description?: string;
+	workspace_id?: string;
 	tags?: Record<string, string> | null;
 }
 
@@ -99,10 +102,11 @@ export interface ListMcpServerUserAccessResponse {
 }
 
 export interface UpdateMcpServerUserAccessRequest {
-	user_access: Array<{
+	user_access?: Array<{
 		user_id: string;
 		enabled: boolean;
 	}>;
+	default_user_access?: "allow" | "deny";
 }
 
 // Sub-resource: Active connections
@@ -173,6 +177,8 @@ export class McpServersService extends BaseService {
 			current_page: params?.current_page,
 			page_size: params?.page_size,
 			workspace_id: params?.workspace_id,
+			id: params?.id,
+			search: params?.search,
 			tags:
 				params?.tags === undefined ? undefined : JSON.stringify(params.tags),
 		});
@@ -210,13 +216,18 @@ export class McpServersService extends BaseService {
 
 	async listMcpServerCapabilities(
 		id: string,
-		params?: { current_page?: number; page_size?: number },
+		params?: {
+			current_page?: number;
+			page_size?: number;
+			type?: McpServerCapability["type"];
+		},
 	): Promise<ListMcpServerCapabilitiesResponse> {
 		return this.get<ListMcpServerCapabilitiesResponse>(
 			`/mcp-servers/${this.encodePathSegment(id)}/capabilities`,
 			{
 				current_page: params?.current_page,
 				page_size: params?.page_size,
+				type: params?.type,
 			},
 		);
 	}
@@ -234,13 +245,14 @@ export class McpServersService extends BaseService {
 
 	async listMcpServerUserAccess(
 		id: string,
-		params?: { current_page?: number; page_size?: number },
+		params?: { current_page?: number; page_size?: number; search?: string },
 	): Promise<ListMcpServerUserAccessResponse> {
 		return this.get<ListMcpServerUserAccessResponse>(
 			`/mcp-servers/${this.encodePathSegment(id)}/user-access`,
 			{
 				current_page: params?.current_page,
 				page_size: params?.page_size,
+				search: params?.search,
 			},
 		);
 	}

@@ -84,7 +84,14 @@ export function Frame({
             with or endorsed by Portkey or Palo Alto Networks.
           </span>
           <a href="https://codeswhat.com" className="pill">
-            <img src="/assets/codeswhat-52.webp" alt="" width="26" height="26" />A CodesWhat project
+            <img
+              src="/assets/codeswhat-52.webp"
+              alt=""
+              width="26"
+              height="26"
+              loading="lazy"
+              decoding="async"
+            />A CodesWhat project
           </a>
         </div>
       </footer>

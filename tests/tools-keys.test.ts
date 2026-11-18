@@ -108,6 +108,7 @@ describe("list_virtual_keys", () => {
 				status: "active",
 				note: "primary",
 				usage_limits: {
+					type: "cost",
 					credit_limit: 100,
 					alert_threshold: 80,
 					periodic_reset: "monthly",
@@ -385,6 +386,7 @@ describe("update_virtual_key", () => {
 				server as never,
 				{
 					keys: {
+						getVirtualKey: async () => ({ usage_limits: null }),
 						updateVirtualKey: async (slug: string, payload: unknown) => {
 							capturedSlug = slug;
 							capturedPayload = payload;
@@ -436,6 +438,40 @@ describe("update_virtual_key", () => {
 			success?: boolean;
 		};
 		assert.equal(payload.success, true);
+	});
+
+	it("keeps an existing periodic_reset_days on an alert-only update", async () => {
+		let capturedPayload: { usage_limits?: unknown } = {};
+		const callbacks = registerToolCallbacks((server) => {
+			registerKeysTools(
+				server as never,
+				{
+					keys: {
+						getVirtualKey: async () => ({
+							usage_limits: {
+								type: "cost",
+								credit_limit: 100,
+								periodic_reset: null,
+								periodic_reset_days: 30,
+							},
+						}),
+						updateVirtualKey: async (_slug: string, payload: unknown) => {
+							capturedPayload = payload as { usage_limits?: unknown };
+							return { success: true };
+						},
+					},
+				} as never,
+			);
+		});
+		const cb = callbacks.get("update_virtual_key");
+		assert.ok(cb);
+		await cb({ slug: "openai-prod", alert_threshold: 50 });
+		assert.deepEqual(capturedPayload.usage_limits, {
+			type: "cost",
+			credit_limit: 100,
+			alert_threshold: 50,
+			periodic_reset_days: 30,
+		});
 	});
 });
 
@@ -980,6 +1016,7 @@ describe("update_api_key", () => {
 				server as never,
 				{
 					keys: {
+						getApiKey: async () => ({ usage_limits: null }),
 						updateApiKey: async (id: string, payload: unknown) => {
 							capturedId = id;
 							capturedPayload = payload;
@@ -1056,6 +1093,35 @@ describe("update_api_key", () => {
 		assert.equal(payload.defaults, undefined);
 	});
 
+	it("forwards reset_usage as a boolean", async () => {
+		let capturedPayload: unknown;
+		const callbacks = registerToolCallbacks((server) => {
+			registerKeysTools(
+				server as never,
+				{
+					keys: {
+						updateApiKey: async (_id: string, payload: unknown) => {
+							capturedPayload = payload;
+							return { success: true };
+						},
+					},
+				} as never,
+			);
+		});
+
+		const cb = callbacks.get("update_api_key");
+		assert.ok(cb);
+		await cb({
+			id: "550e8400-e29b-41d4-a716-446655440000",
+			reset_usage: true,
+		});
+
+		assert.equal(
+			(capturedPayload as { reset_usage?: unknown }).reset_usage,
+			true,
+		);
+	});
+
 	it("preserves an explicit null rate-limit clear over the legacy RPM input", async () => {
 		let capturedPayload: unknown;
 		const callbacks = registerToolCallbacks((server) => {
@@ -1083,6 +1149,166 @@ describe("update_api_key", () => {
 		assert.equal(
 			(capturedPayload as { rate_limits?: unknown }).rate_limits,
 			null,
+		);
+	});
+});
+
+describe("key limit updates preserve existing budgets", () => {
+	const existing = {
+		type: "tokens",
+		credit_limit: 5000,
+		alert_threshold: 4000,
+		periodic_reset: "weekly",
+	};
+
+	function setup() {
+		const reads: string[] = [];
+		const writes: unknown[] = [];
+		const callbacks = registerToolCallbacks((server) => {
+			registerKeysTools(
+				server as never,
+				{
+					keys: {
+						getVirtualKey: async (slug: string) => {
+							reads.push(`virtual:${slug}`);
+							return { usage_limits: existing };
+						},
+						updateVirtualKey: async (_slug: string, payload: unknown) => {
+							writes.push(payload);
+							return { success: true };
+						},
+						getApiKey: async (id: string) => {
+							reads.push(`api:${id}`);
+							return { usage_limits: existing };
+						},
+						updateApiKey: async (_id: string, payload: unknown) => {
+							writes.push(payload);
+							return { success: true };
+						},
+					},
+				} as never,
+			);
+		});
+		return { callbacks, reads, writes };
+	}
+
+	const usageLimitsOf = (payload: unknown) =>
+		(payload as { usage_limits?: unknown }).usage_limits;
+
+	it("merges an alert-only virtual key update onto the existing limits", async () => {
+		const { callbacks, reads, writes } = setup();
+		await callbacks.get("update_virtual_key")?.({
+			slug: "vk",
+			alert_threshold: 80,
+		});
+		assert.deepEqual(reads, ["virtual:vk"]);
+		assert.deepEqual(usageLimitsOf(writes[0]), {
+			...existing,
+			alert_threshold: 80,
+		});
+	});
+
+	it("merges a credit-only API key update onto the existing limits", async () => {
+		const { callbacks, reads, writes } = setup();
+		await callbacks.get("update_api_key")?.({
+			id: "key-1",
+			credit_limit: 9000,
+		});
+		assert.deepEqual(reads, ["api:key-1"]);
+		assert.deepEqual(usageLimitsOf(writes[0]), {
+			...existing,
+			credit_limit: 9000,
+		});
+	});
+
+	it("does no read and sends no usage_limits on unrelated updates", async () => {
+		const { callbacks, reads, writes } = setup();
+		await callbacks.get("update_virtual_key")?.({ slug: "vk", name: "New" });
+		await callbacks.get("update_api_key")?.({ id: "key-1", name: "New" });
+		assert.deepEqual(reads, []);
+		assert.equal(usageLimitsOf(writes[0]), undefined);
+		assert.equal(usageLimitsOf(writes[1]), undefined);
+	});
+});
+
+describe("usage limit type in key output", () => {
+	const tokensLimit = {
+		type: "tokens" as const,
+		credit_limit: 5000,
+		alert_threshold: 4000,
+		periodic_reset: "weekly" as const,
+	};
+
+	async function call(
+		tool: string,
+		keys: Record<string, unknown>,
+		args: Record<string, unknown>,
+	) {
+		const callbacks = registerToolCallbacks((server) => {
+			registerKeysTools(server as never, { keys } as never);
+		});
+		const result = (await callbacks.get(tool)?.(args)) as {
+			content: Array<{ text: string }>;
+		};
+		return JSON.parse(result.content[0]?.text ?? "{}") as Record<
+			string,
+			unknown
+		>;
+	}
+
+	it("includes type for get_virtual_key", async () => {
+		const payload = await call(
+			"get_virtual_key",
+			{
+				getVirtualKey: async () => ({
+					name: "vk",
+					slug: "vk",
+					status: "active",
+					note: null,
+					usage_limits: tokensLimit,
+					rate_limits: null,
+					reset_usage: null,
+					created_at: "2026-01-01T00:00:00.000Z",
+					model_config: {},
+				}),
+			},
+			{ slug: "vk" },
+		);
+		assert.deepEqual(payload.usage_limits, tokensLimit);
+	});
+
+	it("includes type for get_api_key and list_api_keys", async () => {
+		const apiKey = {
+			id: "key_1",
+			name: "k",
+			type: "workspace-user",
+			status: "active",
+			organisation_id: "org_1",
+			scopes: [],
+			usage_limits: tokensLimit,
+			rate_limits: null,
+			defaults: null,
+			alert_emails: [],
+			expires_at: null,
+			reset_usage: null,
+			created_at: "2026-01-01T00:00:00.000Z",
+			last_updated_at: "2026-01-02T00:00:00.000Z",
+			creation_mode: "api",
+		};
+		const detail = await call(
+			"get_api_key",
+			{ getApiKey: async () => apiKey },
+			{ id: "key_1" },
+		);
+		assert.deepEqual(detail.usage_limits, tokensLimit);
+		const list = await call(
+			"list_api_keys",
+			{ listApiKeys: async () => ({ total: 1, data: [apiKey] }) },
+			{},
+		);
+		assert.deepEqual(
+			(list.api_keys as Array<Record<string, unknown>>)[0]?.usage_limits,
+			tokensLimit,
 		);
 	});
 });

@@ -84,14 +84,12 @@ export interface RequestAnalyticsResponse {
 export interface TokenDataPoint {
 	timestamp: string;
 	total: number;
-	prompt: number;
-	completion: number;
+	avg: number;
 }
 
 export interface TokenSummary {
 	total: number;
-	prompt: number;
-	completion: number;
+	avg: number;
 }
 
 export interface TokenAnalyticsResponse {
@@ -174,15 +172,16 @@ export interface CacheHitLatencyResponse {
 // Cache Hit Rate
 export interface CacheHitRateDataPoint {
 	timestamp: string;
+	simple_hits: number;
+	semantic_hits: number;
 	rate: number;
-	hits: number;
-	misses: number;
+	cumulative_simple_cache_savings: number;
+	cumulative_semantic_cache_savings: number;
 }
 
 export interface CacheHitRateSummary {
+	total: number;
 	rate: number;
-	total_hits: number;
-	total_misses: number;
 }
 
 export interface CacheHitRateResponse {
@@ -194,13 +193,11 @@ export interface CacheHitRateResponse {
 // ==================== Users Analytics Types ====================
 export interface UsersDataPoint {
 	timestamp: string;
-	active_users: number;
-	new_users: number;
+	total: number;
 }
 
 export interface UsersSummary {
-	total_active_users: number;
-	total_new_users: number;
+	total: number;
 }
 
 export interface UsersAnalyticsResponse {
@@ -277,12 +274,9 @@ export class AnalyticsService extends BaseService {
 	 * Helper method to build query params from analytics parameters
 	 */
 	private buildAnalyticsParams(
-		params:
-			| BaseAnalyticsParams
-			| PaginatedAnalyticsParams
-			| ProviderGroupAnalyticsParams,
-	): Record<string, string | number | undefined> {
-		const baseParams: Record<string, string | number | undefined> = {
+		params: ProviderGroupAnalyticsParams,
+	): Record<string, string | number | boolean | undefined> {
+		return {
 			time_of_generation_min: params.time_of_generation_min,
 			time_of_generation_max: params.time_of_generation_max,
 			total_units_min: params.total_units_min,
@@ -299,10 +293,7 @@ export class AnalyticsService extends BaseService {
 			virtual_keys: params.virtual_keys,
 			configs: params.configs,
 			workspace_slug: params.workspace_slug,
-			include_all_workspaces:
-				params.include_all_workspaces === undefined
-					? undefined
-					: String(params.include_all_workspaces),
+			include_all_workspaces: params.include_all_workspaces,
 			exclude_workspace_slugs: params.exclude_workspace_slugs,
 			api_key_ids: params.api_key_ids,
 			metadata: params.metadata,
@@ -311,23 +302,13 @@ export class AnalyticsService extends BaseService {
 			trace_id: params.trace_id,
 			span_id: params.span_id,
 			prompt_slug: params.prompt_slug,
+			current_page: params.current_page,
+			page_size: params.page_size,
+			order_by: params.order_by,
+			order_by_type: params.order_by_type,
+			columns: params.columns,
+			include_total: params.include_total,
 		};
-
-		// Add pagination params if present
-		if ("current_page" in params) {
-			baseParams.current_page = params.current_page;
-		}
-		if ("page_size" in params) {
-			baseParams.page_size = params.page_size;
-		}
-		if ("order_by" in params) baseParams.order_by = params.order_by;
-		if ("order_by_type" in params)
-			baseParams.order_by_type = params.order_by_type;
-		if ("columns" in params) baseParams.columns = params.columns;
-		if ("include_total" in params)
-			baseParams.include_total = params.include_total;
-
-		return baseParams;
 	}
 
 	// ==================== Cost Analytics ====================

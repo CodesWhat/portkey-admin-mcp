@@ -341,7 +341,7 @@ const GENERIC_GRAPH_ANALYTICS_TOOLS: ReadonlyArray<{
 	{
 		name: "get_user_requests_analytics",
 		description:
-			"Get per-user request-count time-series data with counts grouped by user. Use this to find heavy users and traffic concentration; use get_users_analytics for aggregate active and new user trends instead.",
+			"Get per-user request-count time-series data with counts grouped by user. Use this to find heavy users and traffic concentration; use get_users_analytics for aggregate unique-user trends instead.",
 		method: (analytics, params) => analytics.getUserRequestsAnalytics(params),
 	},
 	{
@@ -415,87 +415,41 @@ function normalizeMetadataFilter(value: unknown): string | undefined {
 	return undefined;
 }
 
+/**
+ * Friendly alias, legacy Portkey key, and how to normalize the value. The alias
+ * wins over the legacy key; either one is stripped or overwritten in the output.
+ */
+const ANALYTICS_PARAM_ALIASES: ReadonlyArray<
+	readonly [
+		alias: string,
+		legacy: string,
+		normalize: (value: unknown) => string | undefined,
+	]
+> = [
+	["status_codes", "status_code", normalizeCommaSeparatedParam],
+	["virtual_key_slugs", "virtual_keys", normalizeCommaSeparatedParam],
+	["config_slugs", "configs", normalizeCommaSeparatedParam],
+	["api_key_ids", "api_key_ids", normalizeCommaSeparatedParam],
+	["metadata_filter", "metadata", normalizeMetadataFilter],
+	["provider_models", "ai_org_model", normalizeCommaSeparatedParam],
+	["deployment_ids", "deployment_id", normalizeCommaSeparatedParam],
+	["trace_ids", "trace_id", normalizeCommaSeparatedParam],
+	["span_ids", "span_id", normalizeCommaSeparatedParam],
+];
+
 function normalizeAnalyticsParams<T extends Record<string, unknown>>(
 	params: T,
 ): Record<string, unknown> & BaseAnalyticsParams {
-	const {
-		status_codes,
-		virtual_key_slugs,
-		config_slugs,
-		api_key_ids,
-		trace_ids,
-		span_ids,
-		provider_models,
-		deployment_ids,
-		metadata_filter,
-		...legacyParams
-	} = params;
-
-	const normalizedParams: Record<string, unknown> = {
-		...(legacyParams as Partial<BaseAnalyticsParams>),
-	};
-
-	const statusCode =
-		normalizeCommaSeparatedParam(status_codes) ??
-		normalizeCommaSeparatedParam(legacyParams.status_code);
-	if (statusCode !== undefined) {
-		normalizedParams.status_code = statusCode;
+	const normalizedParams: Record<string, unknown> = { ...params };
+	for (const [alias] of ANALYTICS_PARAM_ALIASES) {
+		delete normalizedParams[alias];
 	}
 
-	const virtualKeys =
-		normalizeCommaSeparatedParam(virtual_key_slugs) ??
-		normalizeCommaSeparatedParam(legacyParams.virtual_keys);
-	if (virtualKeys !== undefined) {
-		normalizedParams.virtual_keys = virtualKeys;
-	}
-
-	const configs =
-		normalizeCommaSeparatedParam(config_slugs) ??
-		normalizeCommaSeparatedParam(legacyParams.configs);
-	if (configs !== undefined) {
-		normalizedParams.configs = configs;
-	}
-
-	const apiKeyIds =
-		normalizeCommaSeparatedParam(api_key_ids) ??
-		normalizeCommaSeparatedParam(legacyParams.api_key_ids);
-	if (apiKeyIds !== undefined) {
-		normalizedParams.api_key_ids = apiKeyIds;
-	}
-
-	const metadata =
-		normalizeMetadataFilter(metadata_filter) ??
-		normalizeMetadataFilter(legacyParams.metadata);
-	if (metadata !== undefined) {
-		normalizedParams.metadata = metadata;
-	}
-
-	const providerModels =
-		normalizeCommaSeparatedParam(provider_models) ??
-		normalizeCommaSeparatedParam(legacyParams.ai_org_model);
-	if (providerModels !== undefined) {
-		normalizedParams.ai_org_model = providerModels;
-	}
-
-	const deploymentId =
-		normalizeCommaSeparatedParam(deployment_ids) ??
-		normalizeCommaSeparatedParam(legacyParams.deployment_id);
-	if (deploymentId !== undefined) {
-		normalizedParams.deployment_id = deploymentId;
-	}
-
-	const traceId =
-		normalizeCommaSeparatedParam(trace_ids) ??
-		normalizeCommaSeparatedParam(legacyParams.trace_id);
-	if (traceId !== undefined) {
-		normalizedParams.trace_id = traceId;
-	}
-
-	const spanId =
-		normalizeCommaSeparatedParam(span_ids) ??
-		normalizeCommaSeparatedParam(legacyParams.span_id);
-	if (spanId !== undefined) {
-		normalizedParams.span_id = spanId;
+	for (const [alias, legacy, normalize] of ANALYTICS_PARAM_ALIASES) {
+		const value = normalize(params[alias]) ?? normalize(params[legacy]);
+		if (value !== undefined) {
+			normalizedParams[legacy] = value;
+		}
 	}
 
 	return normalizedParams as Record<string, unknown> & BaseAnalyticsParams;
@@ -571,7 +525,7 @@ export function registerAnalyticsTools(
 		"get_token_analytics",
 		{
 			description:
-				"Get token-usage time-series data with summary.total_tokens, summary.prompt_tokens, summary.completion_tokens, and per-bucket total/prompt/completion counts. Use this for consumption trends; use get_cost_analytics when you need spend instead of token volume.",
+				"Get token-usage time-series data with summary.total and summary.avg (average tokens per request), and per-bucket total and avg. Portkey doesn't split prompt and completion tokens in this graph. Use this for consumption trends; use get_cost_analytics when you need spend instead of token volume.",
 			inputSchema: baseAnalyticsSchema,
 		},
 		async (params) => {
@@ -581,15 +535,13 @@ export function registerAnalyticsTools(
 			const dataPoints = analytics.data_points.map((point) => ({
 				timestamp: point.timestamp,
 				total: point.total,
-				prompt: point.prompt,
-				completion: point.completion,
+				avg: point.avg,
 			}));
 			return jsonResult(
 				formatGraphAnalytics(
 					{
-						total_tokens: analytics.summary.total,
-						prompt_tokens: analytics.summary.prompt,
-						completion_tokens: analytics.summary.completion,
+						total: analytics.summary.total,
+						avg: analytics.summary.avg,
 					},
 					dataPoints,
 				),
@@ -715,7 +667,7 @@ export function registerAnalyticsTools(
 		"get_cache_hit_rate",
 		{
 			description:
-				"Get cache-effectiveness time-series data with summary.hit_rate, summary.total_hits, summary.total_misses, and per-bucket hits/misses/rate. Use this to measure cache effectiveness; use get_cache_hit_latency for speed rather than hit/miss ratio.",
+				"Get cache-effectiveness time-series data with summary.hit_rate and summary.total_hits, and per-bucket simple_hits, semantic_hits, rate, and cumulative simple and semantic cache savings. Use this to measure cache effectiveness; use get_cache_hit_latency for speed rather than hit/miss ratio.",
 			inputSchema: baseAnalyticsSchema,
 		},
 		async (params) => {
@@ -724,16 +676,18 @@ export function registerAnalyticsTools(
 			);
 			const dataPoints = analytics.data_points.map((point) => ({
 				timestamp: point.timestamp,
+				simple_hits: point.simple_hits,
+				semantic_hits: point.semantic_hits,
 				rate: point.rate,
-				hits: point.hits,
-				misses: point.misses,
+				cumulative_simple_cache_savings: point.cumulative_simple_cache_savings,
+				cumulative_semantic_cache_savings:
+					point.cumulative_semantic_cache_savings,
 			}));
 			return jsonResult(
 				formatGraphAnalytics(
 					{
 						hit_rate: analytics.summary.rate,
-						total_hits: analytics.summary.total_hits,
-						total_misses: analytics.summary.total_misses,
+						total_hits: analytics.summary.total,
 					},
 					dataPoints,
 				),
@@ -763,7 +717,7 @@ export function registerAnalyticsTools(
 		"get_users_analytics",
 		{
 			description:
-				"Get user-growth time-series data with summary.total_active_users, summary.total_new_users, and per-bucket active/new user counts. Use this for growth and adoption trends; use get_user_requests_analytics for per-user traffic or get_analytics_group_users for per-user cost and token detail.",
+				"Get unique-user time-series data with summary.total and per-bucket total unique users. Use this for adoption trends; use get_user_requests_analytics for per-user traffic or get_analytics_group_users for per-user cost and token detail.",
 			inputSchema: baseAnalyticsSchema,
 		},
 		async (params) => {
@@ -772,14 +726,12 @@ export function registerAnalyticsTools(
 			);
 			const dataPoints = analytics.data_points.map((point) => ({
 				timestamp: point.timestamp,
-				active_users: point.active_users,
-				new_users: point.new_users,
+				total: point.total,
 			}));
 			return jsonResult(
 				formatGraphAnalytics(
 					{
-						total_active_users: analytics.summary.total_active_users,
-						total_new_users: analytics.summary.total_new_users,
+						total: analytics.summary.total,
 					},
 					dataPoints,
 				),
@@ -809,7 +761,7 @@ export function registerAnalyticsTools(
 		"get_analytics_group_users",
 		{
 			description:
-				"Get a paginated per-user breakdown with total_groups, group_count, and a users array containing request count, cost, and token usage. Use this for billing, audits, or top-consumer analysis; use get_users_analytics for aggregate active and new user trends.",
+				"Get a paginated per-user breakdown with total_groups, group_count, and a users array containing request count, cost, and token usage. Use this for billing, audits, or top-consumer analysis; use get_users_analytics for aggregate unique-user trends.",
 			inputSchema: paginatedAnalyticsSchema,
 		},
 		async (params) => {

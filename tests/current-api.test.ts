@@ -1354,6 +1354,20 @@ describe("current Portkey integration schemas and model pricing", () => {
 		assert.equal(
 			safeParseToolInput(keyDefinitions.get("update_api_key"), {
 				id: "550e8400-e29b-41d4-a716-446655440000",
+				reset_usage: true,
+			}).success,
+			true,
+		);
+		assert.equal(
+			safeParseToolInput(keyDefinitions.get("update_api_key"), {
+				id: "550e8400-e29b-41d4-a716-446655440000",
+				reset_usage: 0,
+			}).success,
+			false,
+		);
+		assert.equal(
+			safeParseToolInput(keyDefinitions.get("update_api_key"), {
+				id: "550e8400-e29b-41d4-a716-446655440000",
 				expires_at: "tomorrow",
 			}).success,
 			false,
@@ -1390,6 +1404,18 @@ describe("current Portkey integration schemas and model pricing", () => {
 			safeParseToolInput(mcpDefinitions.get("list_mcp_integrations"), {
 				page_size: 1000,
 			}).success,
+			true,
+		);
+		assert.equal(
+			safeParseToolInput(
+				mcpDefinitions.get("update_mcp_integration_workspaces"),
+				{
+					id: "integration-1",
+					workspaces: [],
+					global_workspace_access: { enabled: true },
+					override_existing_workspace_access: false,
+				},
+			).success,
 			true,
 		);
 	});
@@ -1496,10 +1522,6 @@ describe("new tool quality contract", () => {
 			[
 				"get_organisation_defaults",
 				{ readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-			],
-			[
-				"update_organisation_defaults",
-				{ readOnlyHint: false, destructiveHint: false, idempotentHint: true },
 			],
 			[
 				"list_input_guardrail_workspace_exclusions",

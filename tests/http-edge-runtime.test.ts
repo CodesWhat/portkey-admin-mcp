@@ -349,7 +349,7 @@ describe("HTTP runtime edge behavior", { concurrency: false }, () => {
 						portkey: { status: string; error: string };
 					};
 					assert.equal(body.portkey.status, "error");
-					assert.match(body.portkey.error, /Health check failed/);
+					assert.equal(body.portkey.error, "Upstream readiness check failed");
 				},
 			);
 		} finally {

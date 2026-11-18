@@ -349,6 +349,36 @@ describe("HTTP server integration", () => {
 		);
 	});
 
+	it("exits non-zero at startup when PORTKEY_TOOL_DOMAINS names an unknown domain", async () => {
+		const child = spawn(process.execPath, [TSX_CLI_PATH, "src/server.ts"], {
+			cwd: process.cwd(),
+			env: {
+				...process.env,
+				PORT: String(await getFreePort()),
+				MCP_HOST: "127.0.0.1",
+				PORTKEY_API_KEY: "test-dummy-key",
+				MCP_AUTH_MODE: "bearer",
+				MCP_AUTH_TOKEN: AUTH_TOKEN,
+				RATE_LIMIT_ENABLED: "false",
+				PORTKEY_TOOL_DOMAINS: "bogus",
+			},
+			stdio: ["ignore", "pipe", "pipe"],
+		});
+		spawnedServers.add(child);
+		let output = "";
+		for (const stream of [child.stdout, child.stderr]) {
+			stream?.setEncoding("utf8");
+			stream?.on("data", (chunk: string) => {
+				output += chunk;
+			});
+		}
+
+		const [code] = (await once(child, "exit")) as [number | null];
+		spawnedServers.delete(child);
+		assert.notEqual(code, 0, output);
+		assert.match(output, /Unknown tool domains in PORTKEY_TOOL_DOMAINS: bogus/);
+	});
+
 	it("reports why Portkey readiness cannot run without an API key", async () => {
 		await withHttpServer(
 			{
@@ -364,6 +394,45 @@ describe("HTTP server integration", () => {
 				assert.equal(typeof body.timestamp, "string");
 			},
 		);
+	});
+
+	it("does not leak upstream error text from the unauthenticated readiness probe", async () => {
+		const marker = "upstream-marker-7f3a9c";
+		const upstreamPort = await getFreePort();
+		const upstream = createHttpServer((_request, response) => {
+			response.writeHead(401, { "content-type": "application/json" });
+			response.end(JSON.stringify({ error: { message: marker } }));
+		});
+		await new Promise<void>((resolveListen) => {
+			upstream.listen(upstreamPort, "127.0.0.1", resolveListen);
+		});
+
+		try {
+			await withHttpServer(
+				{
+					MCP_READY_CHECK_MODE: "portkey",
+					PORTKEY_BASE_URL: `http://127.0.0.1:${upstreamPort}`,
+					PORTKEY_ALLOW_PRIVATE_BASE_URL: "true",
+					PORTKEY_ALLOW_INSECURE_HTTP: "true",
+				},
+				async ({ baseUrl }) => {
+					const response = await fetch(`${baseUrl}/ready`);
+					assert.equal(response.status, 503);
+					const text = await response.text();
+					assert.equal(text.includes(marker), false);
+					const body = JSON.parse(text) as Record<string, unknown>;
+					assert.equal(body.status, "not_ready");
+					assert.deepEqual(body.portkey, {
+						status: "error",
+						error: "Upstream readiness check failed",
+					});
+				},
+			);
+		} finally {
+			await new Promise<void>((resolveClose, reject) => {
+				upstream.close((error) => (error ? reject(error) : resolveClose()));
+			});
+		}
 	});
 
 	it("includes a successful Portkey API check in readiness", async () => {

@@ -1047,6 +1047,10 @@ button {
   letter-spacing: 0.06em;
 }
 
+.theme-icon::before {
+  content: attr(data-icon);
+}
+
 .theme-switch:hover {
   background: var(--soft);
 }
@@ -1400,8 +1404,12 @@ button {
 .footer nav {
   display: grid;
   align-content: start;
-  gap: 6px;
+  gap: 0;
   font-size: 12px;
+}
+
+.footer nav a {
+  padding-block: 4px;
 }
 
 .footer h2 {

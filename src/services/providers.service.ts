@@ -10,7 +10,7 @@ export interface ProviderRateLimit {
 export interface ProviderUsageLimits {
 	type: "cost" | "tokens";
 	credit_limit: number;
-	periodic_reset: "monthly" | "weekly";
+	periodic_reset: "monthly" | "weekly" | string | null;
 	alert_threshold: number;
 }
 
@@ -94,20 +94,21 @@ export class ProvidersService extends BaseService {
 		data: UpdateProviderRequest,
 		workspaceId?: string,
 	): Promise<UpdateProviderResponse> {
-		const path = workspaceId
-			? `/providers/${this.encodePathSegment(slug)}?workspace_id=${encodeURIComponent(workspaceId)}`
-			: `/providers/${this.encodePathSegment(slug)}`;
-		return this.put<UpdateProviderResponse>(path, data);
+		return this.put<UpdateProviderResponse>(
+			`/providers/${this.encodePathSegment(slug)}`,
+			data,
+			{ workspace_id: workspaceId || undefined },
+		);
 	}
 
 	async deleteProvider(
 		slug: string,
 		workspaceId?: string,
 	): Promise<Record<string, never>> {
-		const path = workspaceId
-			? `/providers/${this.encodePathSegment(slug)}?workspace_id=${encodeURIComponent(workspaceId)}`
-			: `/providers/${this.encodePathSegment(slug)}`;
-		const result = await this.delete<Record<string, never>>(path);
+		const result = await this.delete<Record<string, never>>(
+			`/providers/${this.encodePathSegment(slug)}`,
+			{ workspace_id: workspaceId || undefined },
+		);
 		return isNoContent(result) ? {} : result;
 	}
 }

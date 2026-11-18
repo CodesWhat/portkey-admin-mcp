@@ -30,8 +30,13 @@ import {
 	mcpAuthMiddleware,
 } from "./auth.js";
 import { getServerConfig, type ServerConfig } from "./config.js";
+import { assertByteLimitsConfigured } from "./fetch.js";
 import { Logger } from "./logger.js";
-import { createMcpServer, resolveToolDomains } from "./mcp-server.js";
+import {
+	createMcpServer,
+	parseConfiguredToolDomains,
+	resolveToolDomains,
+} from "./mcp-server.js";
 import { isMcpRequestPath } from "./request-path.js";
 import {
 	closeRateLimitStore,
@@ -301,13 +306,20 @@ function createReadyHandler(deps: ReadyHandlerDeps): express.RequestHandler {
 					});
 					return;
 				} catch (error) {
+					// /ready is unauthenticated, so the upstream error text stays in the
+					// server log instead of the response.
+					Logger.error("Portkey readiness check failed", {
+						metadata: {
+							error: error instanceof Error ? error.message : "Unknown error",
+						},
+					});
 					res.status(503).json({
 						status: "not_ready",
 						activeRequests,
 						sessionMode: "stateless",
 						portkey: {
 							status: "error",
-							error: error instanceof Error ? error.message : "Unknown error",
+							error: "Upstream readiness check failed",
 						},
 						timestamp: new Date().toISOString(),
 					});
@@ -530,6 +542,11 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 	const config = getServerConfig();
 	const authConfig = getHttpAuthConfig();
 	assertSafeHttpAuthConfig(authConfig);
+	// Fail at startup on a bad PORTKEY_TOOL_DOMAINS. createMcpServer only reads
+	// it per request, so an invalid value would otherwise pass /ready while every
+	// /mcp request returned 500.
+	parseConfiguredToolDomains();
+	assertByteLimitsConfigured();
 	const readyCheckMode = getReadyCheckMode();
 	const requestBodyLimit = process.env.MCP_MAX_REQUEST_SIZE?.trim() || "1mb";
 	const allowedOrigins = getAllowedOrigins();

@@ -12,6 +12,8 @@ pre-push:
       run: npm run quality
     - name: typecheck
       run: npm run typecheck
+    - name: typecheck-tests
+      run: npm run typecheck:tests
     - name: knip
       run: npm run knip
     - name: test
