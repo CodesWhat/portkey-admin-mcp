@@ -26,6 +26,7 @@ release until that reference and the release notes say so.
 
 ### Fixed
 
+- `get_workspace` and `list_workspaces` now return `is_default`, `usage_limits` and `rate_limits`. Portkey sends the default flag at the top level with `defaults` set to null, so the flag was always missing, and the limits accepted on create and update were never shown back.
 - `get_token_analytics`, `get_users_analytics` and `get_cache_hit_rate` read fields that Portkey's spec doesn't return and dropped the ones it does. Token results now carry `total` and `avg` (the graph has no prompt/completion split), user results carry the unique-user `total`, and cache hit-rate results carry `simple_hits`, `semantic_hits`, `rate` and both cumulative savings fields per bucket, with `summary.total_hits` and `summary.hit_rate`.
 - `update_virtual_key`, `update_api_key` and `update_provider` no longer overwrite an existing budget. Changing only the alert threshold used to send `type: cost` and a monthly reset, which turned a weekly token budget into a monthly cost one. These updates now read the current limits first and change only the fields you pass, and an update that touches no limit field sends no `usage_limits` and does no extra read.
 - `create_provider` and `update_provider` no longer drop limit inputs. `usage_limit_type` and `periodic_reset` on their own used to be discarded while the call reported success, and a lone `rate_limit_value` or `rate_limit_unit` was silently ignored. Updates now forward only the usage fields you pass, and a half rate-limit pair is rejected.
