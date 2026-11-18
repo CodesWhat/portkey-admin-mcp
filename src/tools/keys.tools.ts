@@ -313,11 +313,12 @@ const KEYS_TOOL_SCHEMAS = {
 			.nullable()
 			.optional()
 			.describe("Replacement request or token rate limits, or null to clear"),
-		reset_usage: z.coerce
-			.number()
-			.nonnegative()
+		reset_usage: z
+			.boolean()
 			.optional()
-			.describe("Set to a nonnegative acknowledgement value to reset usage"),
+			.describe(
+				"Set to true to reset current usage; an exhausted key returns to active",
+			),
 		default_config_id: z
 			.string()
 			.optional()

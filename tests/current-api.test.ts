@@ -1354,6 +1354,20 @@ describe("current Portkey integration schemas and model pricing", () => {
 		assert.equal(
 			safeParseToolInput(keyDefinitions.get("update_api_key"), {
 				id: "550e8400-e29b-41d4-a716-446655440000",
+				reset_usage: true,
+			}).success,
+			true,
+		);
+		assert.equal(
+			safeParseToolInput(keyDefinitions.get("update_api_key"), {
+				id: "550e8400-e29b-41d4-a716-446655440000",
+				reset_usage: 0,
+			}).success,
+			false,
+		);
+		assert.equal(
+			safeParseToolInput(keyDefinitions.get("update_api_key"), {
+				id: "550e8400-e29b-41d4-a716-446655440000",
 				expires_at: "tomorrow",
 			}).success,
 			false,

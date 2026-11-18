@@ -165,7 +165,7 @@ export interface UpdateApiKeyRequest {
 	description?: string;
 	rate_limits?: ApiKeyRateLimit[] | null;
 	usage_limits?: Partial<ApiKeyUsageLimits>;
-	reset_usage?: number;
+	reset_usage?: boolean;
 	scopes?: string[];
 	defaults?: ApiKeyDefaults;
 	alert_emails?: string[];

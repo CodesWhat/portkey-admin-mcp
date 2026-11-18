@@ -2925,9 +2925,8 @@
 						]
 					},
 					"reset_usage": {
-						"description": "Set to a nonnegative acknowledgement value to reset usage",
-						"type": "number",
-						"minimum": 0
+						"description": "Set to true to reset current usage; an exhausted key returns to active",
+						"type": "boolean"
 					},
 					"default_config_id": {
 						"description": "New default configuration ID",

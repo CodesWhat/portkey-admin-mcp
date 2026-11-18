@@ -1312,7 +1312,7 @@ describe("KeysService request contracts", () => {
 		await service.getApiKey("api/key");
 		await service.updateApiKey("api/key", {
 			name: "Renamed",
-			reset_usage: 0,
+			reset_usage: true,
 			rate_limits: [{ type: "requests", unit: "rpw", value: 500 }],
 			rotation_policy: null,
 		});
@@ -1355,7 +1355,7 @@ describe("KeysService request contracts", () => {
 		});
 		assert.deepEqual(capturedBody(8), {
 			name: "Renamed",
-			reset_usage: 0,
+			reset_usage: true,
 			rate_limits: [{ type: "requests", unit: "rpw", value: 500 }],
 			rotation_policy: null,
 		});
