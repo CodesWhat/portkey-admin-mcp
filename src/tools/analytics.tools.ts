@@ -415,87 +415,41 @@ function normalizeMetadataFilter(value: unknown): string | undefined {
 	return undefined;
 }
 
+/**
+ * Friendly alias, legacy Portkey key, and how to normalize the value. The alias
+ * wins over the legacy key; either one is stripped or overwritten in the output.
+ */
+const ANALYTICS_PARAM_ALIASES: ReadonlyArray<
+	readonly [
+		alias: string,
+		legacy: string,
+		normalize: (value: unknown) => string | undefined,
+	]
+> = [
+	["status_codes", "status_code", normalizeCommaSeparatedParam],
+	["virtual_key_slugs", "virtual_keys", normalizeCommaSeparatedParam],
+	["config_slugs", "configs", normalizeCommaSeparatedParam],
+	["api_key_ids", "api_key_ids", normalizeCommaSeparatedParam],
+	["metadata_filter", "metadata", normalizeMetadataFilter],
+	["provider_models", "ai_org_model", normalizeCommaSeparatedParam],
+	["deployment_ids", "deployment_id", normalizeCommaSeparatedParam],
+	["trace_ids", "trace_id", normalizeCommaSeparatedParam],
+	["span_ids", "span_id", normalizeCommaSeparatedParam],
+];
+
 function normalizeAnalyticsParams<T extends Record<string, unknown>>(
 	params: T,
 ): Record<string, unknown> & BaseAnalyticsParams {
-	const {
-		status_codes,
-		virtual_key_slugs,
-		config_slugs,
-		api_key_ids,
-		trace_ids,
-		span_ids,
-		provider_models,
-		deployment_ids,
-		metadata_filter,
-		...legacyParams
-	} = params;
-
-	const normalizedParams: Record<string, unknown> = {
-		...(legacyParams as Partial<BaseAnalyticsParams>),
-	};
-
-	const statusCode =
-		normalizeCommaSeparatedParam(status_codes) ??
-		normalizeCommaSeparatedParam(legacyParams.status_code);
-	if (statusCode !== undefined) {
-		normalizedParams.status_code = statusCode;
+	const normalizedParams: Record<string, unknown> = { ...params };
+	for (const [alias] of ANALYTICS_PARAM_ALIASES) {
+		delete normalizedParams[alias];
 	}
 
-	const virtualKeys =
-		normalizeCommaSeparatedParam(virtual_key_slugs) ??
-		normalizeCommaSeparatedParam(legacyParams.virtual_keys);
-	if (virtualKeys !== undefined) {
-		normalizedParams.virtual_keys = virtualKeys;
-	}
-
-	const configs =
-		normalizeCommaSeparatedParam(config_slugs) ??
-		normalizeCommaSeparatedParam(legacyParams.configs);
-	if (configs !== undefined) {
-		normalizedParams.configs = configs;
-	}
-
-	const apiKeyIds =
-		normalizeCommaSeparatedParam(api_key_ids) ??
-		normalizeCommaSeparatedParam(legacyParams.api_key_ids);
-	if (apiKeyIds !== undefined) {
-		normalizedParams.api_key_ids = apiKeyIds;
-	}
-
-	const metadata =
-		normalizeMetadataFilter(metadata_filter) ??
-		normalizeMetadataFilter(legacyParams.metadata);
-	if (metadata !== undefined) {
-		normalizedParams.metadata = metadata;
-	}
-
-	const providerModels =
-		normalizeCommaSeparatedParam(provider_models) ??
-		normalizeCommaSeparatedParam(legacyParams.ai_org_model);
-	if (providerModels !== undefined) {
-		normalizedParams.ai_org_model = providerModels;
-	}
-
-	const deploymentId =
-		normalizeCommaSeparatedParam(deployment_ids) ??
-		normalizeCommaSeparatedParam(legacyParams.deployment_id);
-	if (deploymentId !== undefined) {
-		normalizedParams.deployment_id = deploymentId;
-	}
-
-	const traceId =
-		normalizeCommaSeparatedParam(trace_ids) ??
-		normalizeCommaSeparatedParam(legacyParams.trace_id);
-	if (traceId !== undefined) {
-		normalizedParams.trace_id = traceId;
-	}
-
-	const spanId =
-		normalizeCommaSeparatedParam(span_ids) ??
-		normalizeCommaSeparatedParam(legacyParams.span_id);
-	if (spanId !== undefined) {
-		normalizedParams.span_id = spanId;
+	for (const [alias, legacy, normalize] of ANALYTICS_PARAM_ALIASES) {
+		const value = normalize(params[alias]) ?? normalize(params[legacy]);
+		if (value !== undefined) {
+			normalizedParams[legacy] = value;
+		}
 	}
 
 	return normalizedParams as Record<string, unknown> & BaseAnalyticsParams;
