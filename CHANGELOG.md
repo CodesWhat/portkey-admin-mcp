@@ -26,6 +26,7 @@ release until that reference and the release notes say so.
 
 ### Fixed
 
+- Updating a key's or provider's alert threshold or credit limit no longer drops a custom reset cadence. `periodic_reset_days` is now carried over and sent without `periodic_reset`, and an explicit `periodic_reset` replaces inherited days. `get_secret_reference` no longer fails on a status other than `ACTIVE`.
 - The HTTP server now validates `PORTKEY_TOOL_DOMAINS` at startup and exits on an unknown domain. It used to start, report `/ready` healthy and then answer every `/mcp` request with a 500.
 - `rotate_api_key` returned an output-validation error after the rotation had already run upstream, which dropped the one-time new key. This happened when Portkey sent `key_transition_expires_at` with an offset such as `+00:00`, or left it out. The schema now accepts both. `list_secret_references` and `get_secret_reference` accept offset timestamps too, and the list no longer fails on a status other than `ACTIVE`.
 - Virtual key, API key and provider results include `usage_limits.type`, so a tokens budget no longer looks like a cost one.

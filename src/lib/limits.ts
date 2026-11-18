@@ -23,14 +23,16 @@ export interface UsageLimits {
 }
 
 /**
- * Usage limits as they come back from the API. A resource can carry a reset
- * cadence beyond monthly and weekly, or none at all.
+ * Usage limits as they come back from the API. A resource can carry a custom
+ * cadence as periodic_reset_days (with periodic_reset null), or none at all.
+ * Older responses may also carry non-enum periodic_reset strings.
  */
 export type ExistingUsageLimits = Omit<
 	Partial<UsageLimits>,
 	"periodic_reset"
 > & {
 	periodic_reset?: string | null;
+	periodic_reset_days?: number | null;
 };
 
 export interface RateLimitRpm {
@@ -131,10 +133,23 @@ export async function mergeUsageLimitsUpdate(
 			"credit_limit",
 			"alert_threshold",
 			"periodic_reset",
+			"periodic_reset_days",
 		] as const) {
 			if (existing[key] !== undefined) {
 				Object.assign(base, { [key]: existing[key] });
 			}
+		}
+		// next_usage_reset_at is server-computed from the cadence, so it is
+		// never carried over. periodic_reset and periodic_reset_days are
+		// mutually exclusive: a supplied periodic_reset replaces inherited
+		// days, and inherited days mean periodic_reset is omitted, not null.
+		if (supplied.periodic_reset !== undefined) {
+			delete base.periodic_reset_days;
+		} else if (
+			base.periodic_reset_days !== undefined &&
+			base.periodic_reset_days !== null
+		) {
+			delete base.periodic_reset;
 		}
 	}
 	return { ...base, ...supplied };

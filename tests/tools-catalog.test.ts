@@ -938,6 +938,44 @@ describe("providers tools — update_provider limit inputs", () => {
 		);
 	});
 
+	it("keeps periodic_reset_days and drops it for an explicit periodic_reset", async () => {
+		const days = {
+			type: "cost",
+			credit_limit: 10,
+			periodic_reset: null,
+			periodic_reset_days: 30,
+		};
+		const calls: unknown[] = [];
+		const callbacks = registerToolCallbacks((server) => {
+			registerProvidersTools(
+				server as never,
+				{
+					providers: {
+						getProvider: async () => ({ usage_limits: days }),
+						updateProvider: async (_slug: string, payload: unknown) => {
+							calls.push(payload);
+							return { id: "prov_1" };
+						},
+					},
+				} as never,
+			);
+		});
+		const cb = callbacks.get("update_provider");
+		assert.ok(cb);
+		await cb({ slug: "my-openai", alert_threshold: 5 });
+		await cb({ slug: "my-openai", periodic_reset: "weekly" });
+		const sent = calls.map((c) => JSON.parse(JSON.stringify(c)).usage_limits);
+		assert.deepEqual(sent, [
+			{
+				type: "cost",
+				credit_limit: 10,
+				alert_threshold: 5,
+				periodic_reset_days: 30,
+			},
+			{ type: "cost", credit_limit: 10, periodic_reset: "weekly" },
+		]);
+	});
+
 	it("does no read and sends no usage_limits on unrelated updates", async () => {
 		readCount = 0;
 		const { cb, updateCalls } = setup();

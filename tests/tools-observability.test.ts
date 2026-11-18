@@ -230,6 +230,35 @@ describe("mergeUsageLimitsUpdate", () => {
 		);
 	});
 
+	it("keeps periodic_reset_days and sends no periodic_reset", async () => {
+		assert.deepEqual(
+			await mergeUsageLimitsUpdate({ alert_threshold: 10 }, async () => ({
+				type: "cost",
+				credit_limit: 100,
+				periodic_reset: null,
+				periodic_reset_days: 30,
+				next_usage_reset_at: "2026-12-01T00:00:00Z",
+			})),
+			{
+				type: "cost",
+				credit_limit: 100,
+				alert_threshold: 10,
+				periodic_reset_days: 30,
+			},
+		);
+	});
+
+	it("drops inherited periodic_reset_days when periodic_reset is supplied", async () => {
+		assert.deepEqual(
+			await mergeUsageLimitsUpdate({ periodic_reset: "weekly" }, async () => ({
+				type: "cost",
+				periodic_reset: null,
+				periodic_reset_days: 30,
+			})),
+			{ type: "cost", periodic_reset: "weekly" },
+		);
+	});
+
 	it("falls back to the create defaults when there are no existing limits", async () => {
 		assert.deepEqual(
 			await mergeUsageLimitsUpdate({ alert_threshold: 80 }, async () => null),

@@ -439,6 +439,40 @@ describe("update_virtual_key", () => {
 		};
 		assert.equal(payload.success, true);
 	});
+
+	it("keeps an existing periodic_reset_days on an alert-only update", async () => {
+		let capturedPayload: { usage_limits?: unknown } = {};
+		const callbacks = registerToolCallbacks((server) => {
+			registerKeysTools(
+				server as never,
+				{
+					keys: {
+						getVirtualKey: async () => ({
+							usage_limits: {
+								type: "cost",
+								credit_limit: 100,
+								periodic_reset: null,
+								periodic_reset_days: 30,
+							},
+						}),
+						updateVirtualKey: async (_slug: string, payload: unknown) => {
+							capturedPayload = payload as { usage_limits?: unknown };
+							return { success: true };
+						},
+					},
+				} as never,
+			);
+		});
+		const cb = callbacks.get("update_virtual_key");
+		assert.ok(cb);
+		await cb({ slug: "openai-prod", alert_threshold: 50 });
+		assert.deepEqual(capturedPayload.usage_limits, {
+			type: "cost",
+			credit_limit: 100,
+			alert_threshold: 50,
+			periodic_reset_days: 30,
+		});
+	});
 });
 
 // ---------------------------------------------------------------------------
