@@ -94,7 +94,8 @@ open and awaiting maintainer review as of 2026-11-14, with the 0.16.4 source pin
 release pin; refresh that pin, the PR release description, and discovery evidence
 after publication. It is not listed until Docker merges it and the catalog is live.
 
-[Smithery](https://smithery.ai/) is deferred. Its current
-publishing paths expect a public Streamable HTTP endpoint or an MCPB bundle for a
-local server. This project intentionally supports npm-based stdio and self-hosted
-HTTP, and does not publish either Smithery artifact today.
+[Smithery](https://smithery.ai/) shut down its API, CLI, SDKs and accounts on
+2026-10-31 and is now a directory only
+([source](https://www.smithery.ai/future)), so there is nothing to publish to
+there. This project intentionally supports npm-based stdio and self-hosted HTTP,
+and does not publish a Smithery artifact.

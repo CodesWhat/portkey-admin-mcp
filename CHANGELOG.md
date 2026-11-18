@@ -22,6 +22,10 @@ release until that reference and the release notes say so.
 
 - `update_api_key` sent `reset_usage` as a number, but the Portkey API takes a boolean. It now accepts `true`/`false`, as `update_provider` does.
 
+### Documentation
+
+- The README no longer says `tools/list` is paginated. The server returns all 194 tools in one response (about 500 KB of JSON). The VS Code section notes the 128-tool cap per chat request and points to `PORTKEY_TOOL_DOMAINS`. ENDPOINTS.md says the deployment ping route isn't exposed instead of calling it deprecated, since the spec doesn't deprecate it. The distribution notes say Smithery shut down its API, CLI, SDKs and accounts on 2026-10-31 and is directory-only now.
+
 ### Changed
 
 - `update_*` and `archive_*` tools now report `destructiveHint: true` unless a tool sets its own, since they overwrite or retire existing state and MCP treats `false` as additive-only. This includes `update_config`, `update_organisation_defaults` and the MCP integration capability and workspace updates, which had overridden it to `false`.
