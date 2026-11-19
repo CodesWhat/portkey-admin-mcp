@@ -1,10 +1,9 @@
 # Distribution and directory inventory
 
-> Last release verification: 2026-11-18. GitHub, npm provenance, the MCP
-> Registry, and the Vercel production deploy were checked for 0.16.5. The
-> LobeHub manual publish, the Glama re-index, and the Docker submission pin
-> remain pending or unverified. Other downstream observations retain their
-> original dates.
+> Last release verification: 2026-11-19. GitHub, npm provenance, the MCP
+> Registry, LobeHub, Glama and the Vercel production deploy were checked for
+> 0.16.5. The Docker submission pin remains pending. Other downstream
+> observations retain their original dates.
 
 The generated catalog in this repository is the source of truth for tool names,
 counts, and descriptions. Public directory pages can lag a release or retain a
@@ -47,7 +46,7 @@ runtime catalog before release.
 - Docker submission [#5026](https://github.com/docker/mcp-registry/pull/5026):
   the pin has not been refreshed to the 0.16.5 release commit. Pending and
   unverified; maintainer review and catalog publication also remain pending.
-- Glama: the re-index for 0.16.5 is pending and unverified.
+- Glama: Repository > Sync Server picked up commit `09f9d05`. The test build passed, and Auto-Release published 0.16.5 on 2026-11-19.
 
 ### 0.16.4 publication checks, 2026-11-14
 
