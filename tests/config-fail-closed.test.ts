@@ -6,6 +6,7 @@
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import { resetHttpAuthStateForTest } from "../src/lib/auth.js";
+import { resetSecurityStateForTest } from "../src/lib/security.js";
 
 const ORIGINAL_ENV = { ...process.env };
 
@@ -25,21 +26,19 @@ beforeEach(() => {
 	for (const key of SECURITY_KEYS) delete process.env[key];
 });
 
-afterEach(() => {
+afterEach(async () => {
 	process.env = { ...ORIGINAL_ENV };
 	resetHttpAuthStateForTest();
+	await resetSecurityStateForTest();
 });
 
-let importCounter = 0;
-
 /**
- * security.ts resolves its rate-limit config once at module load, so every
- * case imports a fresh copy through a unique query string.
+ * security.ts resolves its rate-limit config at module load. The test reset
+ * hook re-runs the same resolution against the current env and throws before
+ * mutating state when the config is invalid, so no fresh module copy is needed.
  */
-function loadSecurityModule(): Promise<unknown> {
-	importCounter += 1;
-	const specifier: string = `../src/lib/security.js?fail-closed=${importCounter}`;
-	return import(specifier);
+function loadSecurityModule(): Promise<void> {
+	return resetSecurityStateForTest();
 }
 
 describe("rate-limit store configuration", () => {
