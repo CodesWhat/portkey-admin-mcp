@@ -21,25 +21,35 @@ const SECURITY_KEYS = [
 	"MCP_AUTH_TOKEN",
 ];
 
-beforeEach(() => {
+function clearSecurityEnv(): void {
 	for (const key of SECURITY_KEYS) delete process.env[key];
+}
+
+// security.ts resolves its config when it evaluates, so it is loaded only
+// after the ambient security env is cleared; a static import would run first.
+clearSecurityEnv();
+const { resetSecurityStateForTest } = await import("../src/lib/security.js");
+
+beforeEach(() => {
+	clearSecurityEnv();
 });
 
-afterEach(() => {
-	process.env = { ...ORIGINAL_ENV };
+afterEach(async () => {
+	// Reset against a clean env before restoring the ambient one, so neither a
+	// case's invalid values nor the caller's environment can make cleanup throw.
+	clearSecurityEnv();
+	await resetSecurityStateForTest();
 	resetHttpAuthStateForTest();
+	process.env = { ...ORIGINAL_ENV };
 });
-
-let importCounter = 0;
 
 /**
- * security.ts resolves its rate-limit config once at module load, so every
- * case imports a fresh copy through a unique query string.
+ * security.ts resolves its rate-limit config at module load. The test reset
+ * hook re-runs the same resolution against the current env and throws before
+ * mutating state when the config is invalid, so no fresh module copy is needed.
  */
-function loadSecurityModule(): Promise<unknown> {
-	importCounter += 1;
-	const specifier: string = `../src/lib/security.js?fail-closed=${importCounter}`;
-	return import(specifier);
+function loadSecurityModule(): Promise<void> {
+	return resetSecurityStateForTest();
 }
 
 describe("rate-limit store configuration", () => {
