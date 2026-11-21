@@ -1,6 +1,6 @@
 # Portkey Admin MCP roadmap
 
-> Last reviewed: 2026-11-18
+> Last reviewed: 2026-11-21
 > Status: active compatibility maintenance
 > Current catalog: 194 tools across 22 domains, including 56 Enterprise-gated tools
 
@@ -40,6 +40,17 @@ The complete generated tool catalog and route matrix lives in
 [ENDPOINTS.md](./ENDPOINTS.md). `npm run verify:readme-tools` checks the source,
 README, endpoint catalog, domain counts, and Enterprise-gated inventory together.
 
+## Next release (0.16.6)
+
+- Merged non-major dependency updates (#207) and stabilized the fail-closed
+  security tests' module loading for coverage (#226) on `dev/0.16`.
+- Prompt promotion into a new target now preserves `ai_model_id` and
+  `finetune_id` and rejects a source with no model selection before creating
+  the target. The fix and five regression cases are in #227, awaiting review
+  and merge into `dev/0.16`.
+- 0.16.5 remains the published release. Prepare and promote 0.16.6 after the
+  fix passes the review and release gates.
+
 ## Completed 2026-11-18 (0.16.5)
 
 - Published 0.16.5: tag `v0.16.5` at `09f9d05e3bf409497709355fda49c259b86b0327`
@@ -48,7 +59,8 @@ README, endpoint catalog, domain counts, and Enterprise-gated inventory together
   44414517043 succeeded and the Vercel Production deploy succeeded.
 - LobeHub was updated to 0.16.5 (market API: 194 tools).
 - Glama synced to `09f9d05` and Auto-Release published 0.16.5 on 2026-11-19.
-- Pending: the Docker catalog pin for #5026. See `docs/DISTRIBUTION.md`.
+- Docker catalog #5026 now pins the 0.16.5 release commit; upstream review
+  and catalog publication remain pending. See `docs/DISTRIBUTION.md`.
 
 ## Completed 2026-11-14 (0.16.4)
 
@@ -317,23 +329,22 @@ stable and public, or the stated live-verification prerequisite is met:
 
 - Docker MCP Catalog: submitted as
   [docker/mcp-registry #5026](https://github.com/docker/mcp-registry/pull/5026),
-  refreshed to the 0.16.4 release commit on 2026-11-14. The maintenance tree
-  passed 194-tool container discovery; upstream maintainer review is pending.
-  The 0.16.5 pin refresh is pending and unverified.
+  refreshed to the 0.16.5 release commit `09f9d05e` (verified 2026-11-21).
+  Upstream maintainer review and catalog publication remain pending. The PR
+  description still names 0.16.4; catalog validation has not been rerun for
+  the new pin.
 - Awesome MCP Servers: [#13074](https://github.com/punkpeye/awesome-mcp-servers/pull/13074)
   merged on 2026-09-13.
-- Glama: the 0.16.5 re-index is pending and unverified. The exact 0.16.4 indexed commit, build, inventory, and score breakdown
-  remain unverified as of 2026-11-14. The browser host is unavailable; the
-  claimed listing needs a logged-in sync/build session (see `docs/RELEASE.md`).
-  The last verified sync/build was 0.14.0 on 2026-10-16 with 194 tools.
-  Generated descriptions and quality-score evaluation can lag the inventory.
+- Glama: synced to `09f9d05` and Auto-Release published 0.16.5 on
+  2026-11-19. Generated descriptions and quality-score evaluation can lag
+  the inventory. See the dated publication record in `docs/DISTRIBUTION.md`.
 - Recheck PulseMCP after listing changes reopen. Its legacy record still uses the
   pre-organization namespace and is not currently editable.
 - Claim or refresh the stale mcp.so record when its owner workflow is available.
   Treat FindMCP and Enterprise DNA as downstream mirrors unless they publish a
   supported correction path.
-- Defer Smithery until this project intentionally ships an MCPB bundle or a
-  hosted Streamable HTTP endpoint.
+- Smithery is directory-only; there is no API, CLI or account publication
+  workflow. See `docs/DISTRIBUTION.md`.
 
 ## Fixture evidence boundary
 
