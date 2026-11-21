@@ -6,7 +6,6 @@
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import { resetHttpAuthStateForTest } from "../src/lib/auth.js";
-import { resetSecurityStateForTest } from "../src/lib/security.js";
 
 const ORIGINAL_ENV = { ...process.env };
 
@@ -22,14 +21,26 @@ const SECURITY_KEYS = [
 	"MCP_AUTH_TOKEN",
 ];
 
-beforeEach(() => {
+function clearSecurityEnv(): void {
 	for (const key of SECURITY_KEYS) delete process.env[key];
+}
+
+// security.ts resolves its config when it evaluates, so it is loaded only
+// after the ambient security env is cleared; a static import would run first.
+clearSecurityEnv();
+const { resetSecurityStateForTest } = await import("../src/lib/security.js");
+
+beforeEach(() => {
+	clearSecurityEnv();
 });
 
 afterEach(async () => {
-	process.env = { ...ORIGINAL_ENV };
-	resetHttpAuthStateForTest();
+	// Reset against a clean env before restoring the ambient one, so neither a
+	// case's invalid values nor the caller's environment can make cleanup throw.
+	clearSecurityEnv();
 	await resetSecurityStateForTest();
+	resetHttpAuthStateForTest();
+	process.env = { ...ORIGINAL_ENV };
 });
 
 /**
