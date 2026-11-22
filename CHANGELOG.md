@@ -11,6 +11,10 @@ release until that reference and the release notes say so.
 
 ## [Unreleased]
 
+### Fixed
+
+- `promote_prompt` carries `ai_model_id` and `finetune_id` when it creates a new target prompt, and fails before creating anything when the source version has no model selection.
+
 ## [0.16.5] - 2026-11-18
 
 ### Added
@@ -240,7 +244,6 @@ increases from 184 to 194 tools across 22 domains; MCP clients should refresh
   dependencies, and Biome/Qlty alignment. Move Renovate to `dev/0.14` with a
   consistent dependency manifest and lockfile.
 - Keep the existing MCP v2 migration schedule and its earlier triggers.
-
 
 ## [0.13.0] - 2026-10-02
 

@@ -2,7 +2,8 @@
 
 > Last release verification: 2026-11-19. GitHub, npm provenance, the MCP
 > Registry, LobeHub, Glama and the Vercel production deploy were checked for
-> 0.16.5. The Docker submission pin remains pending. Other downstream
+> 0.16.5. The Docker submission pin was verified at 0.16.5 on 2026-11-21.
+> Upstream catalog review and publication remain pending. Other downstream
 > observations retain their original dates.
 
 The generated catalog in this repository is the source of truth for tool names,
@@ -17,7 +18,7 @@ legacy repository owner, so they should not be used to validate the runtime.
 | [npm](https://www.npmjs.com/package/portkey-admin-mcp)                                                                    | Canonical package distribution                                                                                | Automated from a protected release tag using `package.json`                                                                                                                                                                                       |
 | [Official MCP Registry](https://registry.modelcontextprotocol.io/v0/servers?search=io.github.CodesWhat/portkey-admin-mcp) | Canonical MCP metadata under `io.github.CodesWhat/portkey-admin-mcp`                                          | Automated after npm publication using `server.json`                                                                                                                                                                                               |
 | [LobeHub](https://lobehub.com/mcp/codeswhat-portkey-admin-mcp)                                                            | Claimed marketplace listing                                                                                   | Run `npm run update:lobehub` after release; `lhm.plugin.json` is owner-declared metadata                                                                                                                                                          |
-| [Glama](https://glama.ai/mcp/servers/CodesWhat/portkey-admin-mcp)                                                         | Claimed directory and quality listing; the 2026-10-16 post-release build serves package 0.14.0 with 194 tools | Indexes GitHub; after each release, use **Repository > Sync Server**, then **Dockerfile > Build & Release**, and verify the version and tool count it shows. The generated description and FAQ text are Glama's and refresh on their own schedule |
+| [Glama](https://glama.ai/mcp/servers/CodesWhat/portkey-admin-mcp)                                                         | Claimed directory and quality listing; Auto-Release published 0.16.5 on 2026-11-19 | Indexes GitHub; after each release, use **Repository > Sync Server**, then **Dockerfile > Build & Release**, and verify the version and tool count it shows. The generated description and FAQ text are Glama's and refresh on their own schedule |
 | [Awesome MCP Servers](https://github.com/punkpeye/awesome-mcp-servers/pull/13074)                                         | Community list entry; the CodesWhat correction (PR #13074) merged on 2026-09-13                               | Update the entry through a new PR when the repository owner, Glama badge, or released catalog count changes                                                                                                                                       |
 
 The canonical description for owner-controlled records is:
@@ -44,8 +45,10 @@ runtime catalog before release.
   0.16.4 until this manual refresh ships.
 - LobeHub: `npm run update:lobehub` updated `codeswhat-portkey-admin-mcp` from 0.16.4 to 0.16.5. The market API reports version 0.16.5 with 194 tools, updated 2026-11-18T22:58:29Z.
 - Docker submission [#5026](https://github.com/docker/mcp-registry/pull/5026):
-  the pin has not been refreshed to the 0.16.5 release commit. Pending and
-  unverified; maintainer review and catalog publication also remain pending.
+  `source.commit` pins `09f9d05e3bf409497709355fda49c259b86b0327`
+  (verified 2026-11-21 at submission head `19ba8a24`). The description still
+  names 0.16.4 and its earlier test evidence; validation has not been rerun
+  for the new pin. Maintainer review and catalog publication remain pending.
 - Glama: Repository > Sync Server picked up commit `09f9d05`. The test build passed, and Auto-Release published 0.16.5 on 2026-11-19.
 
 ### 0.16.4 publication checks, 2026-11-14
@@ -108,7 +111,8 @@ The [Docker MCP Catalog](https://hub.docker.com/mcp) is curated, has a documente
 pull-request submission path, and matches the repository's existing non-root
 Docker image and stdio support. The submission is
 [docker/mcp-registry#5026](https://github.com/docker/mcp-registry/pull/5026),
-open and awaiting maintainer review as of 2026-11-14, with the 0.16.4 source pin (the 0.16.5 pin refresh is pending). Its `source.commit` is the
+open and awaiting maintainer review as of 2026-11-21, with the 0.16.5 source pin.
+Its PR description and discovery evidence still describe 0.16.4. Its `source.commit` is the
 release pin; refresh that pin, the PR release description, and discovery evidence
 after publication. It is not listed until Docker merges it and the catalog is live.
 

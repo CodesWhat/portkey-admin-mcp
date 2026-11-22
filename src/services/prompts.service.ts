@@ -30,6 +30,9 @@ import type {
 // Re-export types for consumers
 export type * from "./prompts.types.js";
 
+const PROMOTE_INCOMPLETE_SOURCE_MESSAGE =
+	"Cannot promote prompt: source version needs a string, a model (model, ai_model_id or finetune_id) and a virtual_key (or a virtual_key override)";
+
 export class PromptsService extends BaseService {
 	async createPrompt(data: CreatePromptRequest): Promise<CreatePromptResponse> {
 		const { is_raw_template, ...rest } = data;
@@ -422,9 +425,7 @@ export class PromptsService extends BaseService {
 				) ||
 				!virtualKey
 			) {
-				throw new Error(
-					"Cannot promote prompt: source version needs a string, a model (model, ai_model_id or finetune_id) and a virtual_key (or a virtual_key override)",
-				);
+				throw new Error(PROMOTE_INCOMPLETE_SOURCE_MESSAGE);
 			}
 
 			// Replace the target's version with the full source version. A patch
@@ -478,13 +479,29 @@ export class PromptsService extends BaseService {
 			);
 		}
 
+		if (
+			!(
+				sourceVersion.model ||
+				sourceVersion.ai_model_id ||
+				sourceVersion.finetune_id
+			)
+		) {
+			throw new Error(PROMOTE_INCOMPLETE_SOURCE_MESSAGE);
+		}
+
 		const createResult = await this.createPrompt({
 			name: targetName,
 			collection_id: data.target_collection_id,
 			string: sourceVersion.string,
 			parameters: sourceVersion.parameters,
 			virtual_key: virtualKey,
-			model: sourceVersion.model,
+			...(sourceVersion.model && { model: sourceVersion.model }),
+			...(sourceVersion.ai_model_id && {
+				ai_model_id: sourceVersion.ai_model_id,
+			}),
+			...(sourceVersion.finetune_id && {
+				finetune_id: sourceVersion.finetune_id,
+			}),
 			functions: sourceVersion.functions,
 			tools: sourceVersion.tools,
 			tool_choice: sourceVersion.tool_choice,
