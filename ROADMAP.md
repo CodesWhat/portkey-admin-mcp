@@ -46,10 +46,10 @@ README, endpoint catalog, domain counts, and Enterprise-gated inventory together
   security tests' module loading for coverage (#226) on `dev/0.16`.
 - Prompt promotion into a new target now preserves `ai_model_id` and
   `finetune_id` and rejects a source with no model selection before creating
-  the target. The fix and five regression cases are in #227, awaiting review
-  and merge into `dev/0.16`.
+  the target. The fix and five regression cases merged in #227 into
+  `dev/0.16` after review and passing checks.
 - 0.16.5 remains the published release. Prepare and promote 0.16.6 after the
-  fix passes the review and release gates.
+  remaining release gates pass.
 
 ## Completed 2026-11-18 (0.16.5)
 
