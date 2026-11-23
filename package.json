@@ -91,7 +91,7 @@
 		"url": "https://github.com/CodesWhat/portkey-admin-mcp/issues"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "2.6.7",
+		"@biomejs/biome": "2.6.8",
 		"@types/cors": "2.8.19",
 		"@types/express": "5.0.6",
 		"@types/node": "24.19.2",

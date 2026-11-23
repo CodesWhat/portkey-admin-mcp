@@ -40,7 +40,7 @@ name = "actionlint"
 
 [[plugin]]
 name = "biome"
-version = "2.6.7"
+version = "2.6.8"
 
 [[plugin]]
 name = "hadolint"
