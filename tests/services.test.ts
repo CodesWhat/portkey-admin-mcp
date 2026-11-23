@@ -833,6 +833,89 @@ describe("PromptsService workflows", () => {
 	});
 });
 
+describe("prompt promotion into a new target", () => {
+	const source = {
+		id: "source-1",
+		name: "support-dev",
+		slug: "support-dev",
+		collection_id: "collection-1",
+		workspace_id: "workspace-1",
+		created_at: "2026-08-01T00:00:00Z",
+		last_updated_at: "2026-08-02T00:00:00Z",
+		prompt_version_id: "source-version",
+		prompt_version: 4,
+		string: "Hello",
+		parameters: {},
+		virtual_key: "vk-source",
+		template_metadata: { app: "support", env: "dev" },
+	};
+
+	async function promote(sourceOverrides: Record<string, unknown>) {
+		capturedFetches.length = 0;
+		queuedResponses.length = 0;
+		enqueue({ ...source, ...sourceOverrides });
+		enqueue({ object: "list", total: 0, data: [] });
+		enqueue({ id: "target-2", slug: "support-prod", version_id: "target-v1" });
+		return new PromptsService("test-key", BASE_URL).promotePrompt({
+			source_prompt_id: "source-1",
+			target_collection_id: "collection-2",
+			target_env: "prod",
+		});
+	}
+
+	function postedBody() {
+		const index = capturedFetches.findIndex(
+			(call) => call.init?.method === "POST",
+		);
+		return capturedBody(index) as Record<string, unknown>;
+	}
+
+	it("carries only ai_model_id when that is the only model selection", async () => {
+		const result = await promote({ ai_model_id: "aim-1" });
+		assert.equal(result.action, "created");
+		const body = postedBody();
+		assert.equal(body.ai_model_id, "aim-1");
+		assert.equal("model" in body, false);
+		assert.equal("finetune_id" in body, false);
+	});
+
+	it("carries only finetune_id when that is the only model selection", async () => {
+		await promote({ finetune_id: "ft-1" });
+		const body = postedBody();
+		assert.equal(body.finetune_id, "ft-1");
+		assert.equal("model" in body, false);
+		assert.equal("ai_model_id" in body, false);
+	});
+
+	it("carries model, ai_model_id and finetune_id when all are set", async () => {
+		await promote({
+			model: "gpt-4o",
+			ai_model_id: "aim-1",
+			finetune_id: "ft-1",
+		});
+		const body = postedBody();
+		assert.equal(body.model, "gpt-4o");
+		assert.equal(body.ai_model_id, "aim-1");
+		assert.equal(body.finetune_id, "ft-1");
+	});
+
+	it("still carries a plain model", async () => {
+		await promote({ model: "gpt-4o" });
+		const body = postedBody();
+		assert.equal(body.model, "gpt-4o");
+		assert.equal("ai_model_id" in body, false);
+		assert.equal("finetune_id" in body, false);
+	});
+
+	it("rejects before any POST when the source has no model selection", async () => {
+		await assert.rejects(promote({}), /Cannot promote prompt/);
+		assert.equal(
+			capturedFetches.some((call) => call.init?.method === "POST"),
+			false,
+		);
+	});
+});
+
 describe("deep-review service regressions", () => {
 	it("translates one workspace member into the current users-array contract", async () => {
 		enqueue({});
