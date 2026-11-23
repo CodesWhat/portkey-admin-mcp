@@ -1,6 +1,6 @@
 # Portkey Admin MCP roadmap
 
-> Last reviewed: 2026-11-21
+> Last reviewed: 2026-11-23
 > Status: active compatibility maintenance
 > Current catalog: 194 tools across 22 domains, including 56 Enterprise-gated tools
 
@@ -50,6 +50,19 @@ README, endpoint catalog, domain counts, and Enterprise-gated inventory together
   `dev/0.16` after review and passing checks.
 - 0.16.5 remains the published release. Prepare and promote 0.16.6 after the
   remaining release gates pass.
+
+## Completed 2026-11-23 (0.16.6)
+
+- Published 0.16.6: tag `v0.16.6` at `f27306a08e2cce1c2dcae90184e62018222bad60`
+  (`main`, promotion #231), GitHub Release marked Latest, npm with SLSA
+  provenance and dist-tag `latest`, and the MCP Registry entry at 0.16.6.
+  Release workflow 45266358015 succeeded.
+- LobeHub was updated to 0.16.6.
+- Glama synced to `f27306a`, test build `01a20a47-1dc0-77f5-b212-b043e1224733`
+  passed, and Auto-Release published 0.16.6 on 2026-11-23.
+- Docker catalog #5026 now pins `f27306a0` (fork commit `82c37097`); a local
+  image build of v0.16.6 listed 194 tools. Upstream review and catalog
+  publication remain pending. See `docs/DISTRIBUTION.md`.
 
 ## Completed 2026-11-18 (0.16.5)
 
@@ -329,14 +342,13 @@ stable and public, or the stated live-verification prerequisite is met:
 
 - Docker MCP Catalog: submitted as
   [docker/mcp-registry #5026](https://github.com/docker/mcp-registry/pull/5026),
-  refreshed to the 0.16.5 release commit `09f9d05e` (verified 2026-11-21).
-  Upstream maintainer review and catalog publication remain pending. The PR
-  description still names 0.16.4; catalog validation has not been rerun for
-  the new pin.
+  refreshed to the 0.16.6 release commit `f27306a0` (fork commit `82c37097`,
+  2026-11-23). Upstream maintainer review and catalog publication remain
+  pending. A local image build of v0.16.6 listed 194 tools.
 - Awesome MCP Servers: [#13074](https://github.com/punkpeye/awesome-mcp-servers/pull/13074)
   merged on 2026-09-13.
-- Glama: synced to `09f9d05` and Auto-Release published 0.16.5 on
-  2026-11-19. Generated descriptions and quality-score evaluation can lag
+- Glama: synced to `f27306a` and Auto-Release published 0.16.6 on
+  2026-11-23. Generated descriptions and quality-score evaluation can lag
   the inventory. See the dated publication record in `docs/DISTRIBUTION.md`.
 - Recheck PulseMCP after listing changes reopen. Its legacy record still uses the
   pre-organization namespace and is not currently editable.
