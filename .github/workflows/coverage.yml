@@ -25,6 +25,29 @@ on:
       - main
       - "codex/**"
   pull_request:
+    # Skips docs, website and planning-only PRs. Safe because Coverage isn't a
+    # required check and ci.yml's `checks` job still enforces the coverage floors
+    # on every PR. The list is what `npm run test:coverage:qlty` reads: source,
+    # tests, dependencies, tsconfig and codecov config, the scripts and repo files
+    # the tests import or read, and this workflow.
+    paths:
+      - "src/**"
+      - "api/**"
+      - "tests/**"
+      - "scripts/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.json"
+      - "tsconfig.tests.json"
+      - "codecov.yml"
+      - "renovate.json"
+      - "server.json"
+      - "Dockerfile"
+      - ".qlty/qlty.toml"
+      - ".github/workflows/ci.yml"
+      - ".github/workflows/release.yml"
+      - ".github/workflows/auto-tag.yml"
+      - ".github/workflows/coverage.yml"
 
 permissions:
   contents: read
