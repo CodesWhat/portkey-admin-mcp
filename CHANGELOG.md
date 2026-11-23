@@ -11,6 +11,14 @@ release until that reference and the release notes say so.
 
 ## [Unreleased]
 
+## [0.16.6] - 2026-11-23
+
+Fixes `promote_prompt` when it creates a new target prompt and refreshes runtime dependencies.
+
+### Changed
+
+- Runtime dependency patches in the lockfile: `express-rate-limit` 8.7.5 and `jose` 6.2.18. The website moves to fumadocs-core 16.19.5, fumadocs-mdx 15.6.4, next 16.4.6 and posthog-js 1.453.0.
+
 ### Fixed
 
 - `promote_prompt` carries `ai_model_id` and `finetune_id` when it creates a new target prompt, and fails before creating anything when the source version has no model selection.
@@ -1100,7 +1108,8 @@ First stable release. Graduates from beta with 151 tools covering ~98% of the Po
 - Vercel deployment support
 - Contract tests, E2E tests, security tests
 
-[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.5...HEAD
+[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.6...HEAD
+[0.16.6]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.5...v0.16.6
 [0.16.5]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.4...v0.16.5
 [0.16.4]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.3...v0.16.4
 [0.16.3]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.2...v0.16.3

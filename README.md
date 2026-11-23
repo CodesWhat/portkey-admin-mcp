@@ -6,6 +6,8 @@
 
 **The [Portkey](https://portkey.ai/) Admin API as an MCP server — 194 tools across prompts, configs, keys, analytics, governance, deployments, and more.**
 
+Website: [portkey.codeswhat.com](https://portkey.codeswhat.com/). Docs: [portkey.codeswhat.com/docs](https://portkey.codeswhat.com/docs/).
+
 </div>
 
 <p align="center">
