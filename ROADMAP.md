@@ -58,8 +58,11 @@ README, endpoint catalog, domain counts, and Enterprise-gated inventory together
   provenance and dist-tag `latest`, and the MCP Registry entry at 0.16.6.
   Release workflow 45266358015 succeeded.
 - LobeHub was updated to 0.16.6.
-- Pending or unverified: the Glama re-index for 0.16.6. Docker catalog #5026
-  is unchanged. See `docs/DISTRIBUTION.md`.
+- Glama synced to `f27306a`, test build `01a20a47-1dc0-77f5-b212-b043e1224733`
+  passed, and Auto-Release published 0.16.6 on 2026-11-23.
+- Docker catalog #5026 now pins `f27306a0` (fork commit `82c37097`); a local
+  image build of v0.16.6 listed 194 tools. Upstream review and catalog
+  publication remain pending. See `docs/DISTRIBUTION.md`.
 
 ## Completed 2026-11-18 (0.16.5)
 
@@ -339,15 +342,13 @@ stable and public, or the stated live-verification prerequisite is met:
 
 - Docker MCP Catalog: submitted as
   [docker/mcp-registry #5026](https://github.com/docker/mcp-registry/pull/5026),
-  refreshed to the 0.16.5 release commit `09f9d05e` (verified 2026-11-21).
-  Upstream maintainer review and catalog publication remain pending. The PR
-  description still names 0.16.4; catalog validation has not been rerun for
-  the new pin.
+  refreshed to the 0.16.6 release commit `f27306a0` (fork commit `82c37097`,
+  2026-11-23). Upstream maintainer review and catalog publication remain
+  pending. A local image build of v0.16.6 listed 194 tools.
 - Awesome MCP Servers: [#13074](https://github.com/punkpeye/awesome-mcp-servers/pull/13074)
   merged on 2026-09-13.
-- Glama: the 0.16.6 re-index is pending and unverified. The last verified
-  sync was `09f9d05`, where Auto-Release published 0.16.5 on
-  2026-11-19. Generated descriptions and quality-score evaluation can lag
+- Glama: synced to `f27306a` and Auto-Release published 0.16.6 on
+  2026-11-23. Generated descriptions and quality-score evaluation can lag
   the inventory. See the dated publication record in `docs/DISTRIBUTION.md`.
 - Recheck PulseMCP after listing changes reopen. Its legacy record still uses the
   pre-organization namespace and is not currently editable.
