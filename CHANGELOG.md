@@ -19,6 +19,7 @@ release until that reference and the release notes say so.
 ### Changed
 
 - `get_log` now types the log object from the Portkey spec (`request`, `response`, `metrics`, the debug request and response snapshots and the rest) while still passing every field through, including ones the spec doesn't list. Tests pin the full field set.
+- README and COMPATIBILITY now say how stdio picks the protocol era: a first message carrying the `2026-07-28` `_meta` envelope gets the new revision, while a bare `initialize` (or `server/discover` without the envelope) is served as a legacy connection. A raw stdio test pins it.
 
 ### Fixed
 
