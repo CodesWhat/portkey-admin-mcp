@@ -210,13 +210,25 @@ export interface UsersAnalyticsResponse {
 
 export interface GenericGraphAnalyticsResponse {
 	object: "analytics-graph";
-	data_points: Record<string, unknown>[];
-	summary: Record<string, unknown>;
+	data_points: Array<
+		{
+			/** feedbacks/ai-models rows */
+			ai_model?: string;
+			total?: number;
+			avg_weighted_feedback?: number;
+		} & Record<string, unknown>
+	>;
+	summary: {
+		/** errors/status-codes: distinct error codes across all data points */
+		unique_error_codes?: number;
+		total_errors?: number;
+	} & Record<string, unknown>;
 }
 
 export interface GroupAnalyticsResponse {
 	object: "analytics-group";
-	data: Record<string, unknown>[];
+	/** metadata groups carry metadata_value, requests, cost, avg_tokens, avg_weighted_feedback */
+	data: Array<{ metadata_value?: string } & Record<string, unknown>>;
 	total: number;
 }
 

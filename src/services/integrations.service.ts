@@ -294,12 +294,24 @@ export interface UpdateIntegrationWorkspacesRequest {
 	default_provider_slug?: string;
 }
 
+/** A node in a pricing calculation tree: an operation over operands, or a value reference. */
+export interface ModelCalculateOperation {
+	operation?: "sum" | "multiply";
+	operands?: Array<ModelCalculateOperation | { value: string }>;
+}
+
 /** Public pricing catalog payload; calculation trees vary by model. */
 export interface ModelPricingConfig {
 	pay_as_you_go?: Record<string, unknown>;
-	calculate?: Record<string, unknown>;
+	calculate?: {
+		request?: ModelCalculateOperation;
+		response?: ModelCalculateOperation;
+	} & Record<string, unknown>;
 	currency?: "USD";
-	finetune_config?: Record<string, unknown>;
+	finetune_config?: {
+		pay_per_token?: Record<string, unknown>;
+		pay_per_hour?: Record<string, unknown>;
+	} & Record<string, unknown>;
 	[key: string]: unknown;
 }
 
