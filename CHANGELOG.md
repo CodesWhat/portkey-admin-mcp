@@ -16,6 +16,11 @@ release until that reference and the release notes say so.
 - `create_log_export` and `update_log_export` now take every filter the Portkey spec allows on a log export (token ranges, status code, metadata, trace ID, config, virtual keys, prompt slug, paging and more), and only send the ones you set. `update_log_export` also accepts `time_of_generation_min`. `total_units_min` and `total_units_max` now require whole numbers, matching the API spec.
 - `ping_deployment` runs the live two-way connectivity check on a registered Gateway deployment (`GET /deployments/{id}/ping`) and returns the overall, outbound and inbound results. The catalog is now 195 tools across 22 domains.
 
+### Changed
+
+- `get_log` now types the log object from the Portkey spec (`request`, `response`, `metrics`, the debug request and response snapshots and the rest) while still passing every field through, including ones the spec doesn't list. Tests pin the full field set.
+- README and COMPATIBILITY now say how stdio picks the protocol era: a first message carrying the `2026-07-28` `_meta` envelope gets the new revision, while a bare `initialize` (or `server/discover` without the envelope) is served as a legacy connection. A raw stdio test pins it.
+
 ### Fixed
 
 - `resend_user_invite` now returns the `invite_link` Portkey sends back, same as `invite_user`, and `get_user_invite` and `list_user_invites` include `accepted_at` and `invited_by` when the API provides them. Reads still never return the invite link.
