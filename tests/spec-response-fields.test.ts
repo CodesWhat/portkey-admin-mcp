@@ -64,6 +64,7 @@ describe("spec response fields survive tool output", () => {
 			cost: 1,
 			avg_tokens: 10,
 			avg_weighted_feedback: 1,
+			requests_with_feedback: 3,
 		};
 		const callbacks = callbacksFor(registerAnalyticsTools, "analytics", {
 			getAnalyticsGroupMetadata: async () => ({ total: 1, data: [row] }),

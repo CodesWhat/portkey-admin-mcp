@@ -227,8 +227,15 @@ export interface GenericGraphAnalyticsResponse {
 
 export interface GroupAnalyticsResponse {
 	object: "analytics-group";
-	/** metadata groups carry metadata_value, requests, cost, avg_tokens, avg_weighted_feedback */
-	data: Array<{ metadata_value?: string } & Record<string, unknown>>;
+	/** metadata groups carry metadata_value, requests, cost, avg_tokens, avg_weighted_feedback, requests_with_feedback, last_seen */
+	data: Array<
+		{
+			metadata_value?: string;
+			avg_weighted_feedback?: number;
+			requests_with_feedback?: number;
+			last_seen?: string;
+		} & Record<string, unknown>
+	>;
 	total: number;
 }
 
