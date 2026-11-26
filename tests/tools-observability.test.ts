@@ -26,7 +26,10 @@ import { BaseService } from "../src/services/base.service.js";
 import { registerAuditTools } from "../src/tools/audit.tools.js";
 import { registerGuardrailsTools } from "../src/tools/guardrails.tools.js";
 import { registerLimitsTools } from "../src/tools/limits.tools.js";
-import { registerLoggingTools } from "../src/tools/logging.tools.js";
+import {
+	LOGGING_TOOL_SCHEMAS,
+	registerLoggingTools,
+} from "../src/tools/logging.tools.js";
 import { registerTracingTools } from "../src/tools/tracing.tools.js";
 import { registerToolCallbacks } from "./helpers/tool-registry.js";
 
@@ -939,14 +942,100 @@ describe("create_log_export payload assembly", () => {
 			filters: {
 				time_of_generation_min: "2026-01-01",
 				time_of_generation_max: "2026-01-31",
-				cost_min: undefined,
-				cost_max: undefined,
-				total_units_min: undefined,
-				total_units_max: undefined,
-				ai_model: undefined,
 			},
 			requested_data: ["id", "trace_id", "created_at"],
 		});
+	});
+
+	it("forwards every spec filter and omits unset ones", async () => {
+		let receivedPayload: unknown;
+		const callbacks = registerToolCallbacks((server) => {
+			registerLoggingTools(
+				server as never,
+				{
+					logging: {
+						createLogExport: async (payload: unknown) => {
+							receivedPayload = payload;
+							return { id: "exp_1", total: 0, object: "export" };
+						},
+					},
+				} as never,
+			);
+		});
+		const callback = callbacks.get("create_log_export");
+		assert.ok(callback);
+
+		const filters = {
+			total_units_min: 1,
+			total_units_max: 2,
+			cost_min: 0.1,
+			cost_max: 0.2,
+			ai_model: "gpt-4o",
+			prompt_token_min: 3,
+			prompt_token_max: 4,
+			completion_token_min: 5,
+			completion_token_max: 6,
+			status_code: "200",
+			metadata: { env: "prod" },
+			ai_org_model: "openai__gpt-4o",
+			weighted_feedback_min: -1,
+			weighted_feedback_max: 1,
+			virtual_keys: "vk-1",
+			trace_id: "trace-1",
+			configs: "cfg-1",
+			workspace_slug: "ws-slug",
+			prompt_slug: "p-slug",
+			page_size: 100,
+			current_page: 2,
+		};
+		await callback({
+			time_min: "2026-01-01",
+			time_max: "2026-01-31",
+			requested_fields: ["id"],
+			...filters,
+		});
+
+		assert.deepEqual(receivedPayload, {
+			workspace_id: undefined,
+			description: undefined,
+			filters: {
+				time_of_generation_min: "2026-01-01",
+				time_of_generation_max: "2026-01-31",
+				...filters,
+			},
+			requested_data: ["id"],
+		});
+	});
+
+	it("accepts every spec filter in the create and update schemas", () => {
+		const keys = [
+			"total_units_min",
+			"total_units_max",
+			"cost_min",
+			"cost_max",
+			"ai_model",
+			"prompt_token_min",
+			"prompt_token_max",
+			"completion_token_min",
+			"completion_token_max",
+			"status_code",
+			"metadata",
+			"ai_org_model",
+			"weighted_feedback_min",
+			"weighted_feedback_max",
+			"virtual_keys",
+			"trace_id",
+			"configs",
+			"workspace_slug",
+			"prompt_slug",
+			"page_size",
+			"current_page",
+		];
+		for (const key of keys) {
+			assert.ok(key in LOGGING_TOOL_SCHEMAS.createLogExport, `create ${key}`);
+			assert.ok(key in LOGGING_TOOL_SCHEMAS.updateLogExport, `update ${key}`);
+		}
+		assert.ok("time_of_generation_min" in LOGGING_TOOL_SCHEMAS.updateLogExport);
 	});
 
 	it("returns id, total, and object in the success response", async () => {

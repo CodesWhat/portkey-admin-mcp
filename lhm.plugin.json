@@ -11104,6 +11104,18 @@
 						"type": "string",
 						"description": "Maximum time filter in date format (e.g., '2024-01-31' or ISO 8601)"
 					},
+					"total_units_min": {
+						"description": "Minimum total units (tokens) filter",
+						"type": "integer",
+						"minimum": -9007199254740991,
+						"maximum": 9007199254740991
+					},
+					"total_units_max": {
+						"description": "Maximum total units (tokens) filter",
+						"type": "integer",
+						"minimum": -9007199254740991,
+						"maximum": 9007199254740991
+					},
 					"cost_min": {
 						"description": "Minimum cost filter",
 						"type": "number"
@@ -11112,20 +11124,95 @@
 						"description": "Maximum cost filter",
 						"type": "number"
 					},
-					"total_units_min": {
-						"description": "Minimum total units (tokens) filter",
-						"type": "number"
-					},
-					"total_units_max": {
-						"description": "Maximum total units (tokens) filter",
-						"type": "number"
-					},
 					"ai_model": {
-						"description": "Filter by specific AI model names",
-						"type": "array",
-						"items": {
+						"description": "Filter by AI model name",
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "array",
+								"items": {
+									"type": "string"
+								}
+							}
+						]
+					},
+					"prompt_token_min": {
+						"description": "Minimum prompt token count",
+						"type": "integer",
+						"minimum": -9007199254740991,
+						"maximum": 9007199254740991
+					},
+					"prompt_token_max": {
+						"description": "Maximum prompt token count",
+						"type": "integer",
+						"minimum": -9007199254740991,
+						"maximum": 9007199254740991
+					},
+					"completion_token_min": {
+						"description": "Minimum completion token count",
+						"type": "integer",
+						"minimum": -9007199254740991,
+						"maximum": 9007199254740991
+					},
+					"completion_token_max": {
+						"description": "Maximum completion token count",
+						"type": "integer",
+						"minimum": -9007199254740991,
+						"maximum": 9007199254740991
+					},
+					"status_code": {
+						"description": "Filter by response status code (string)",
+						"type": "string"
+					},
+					"metadata": {
+						"description": "Filter by metadata key-value pairs",
+						"type": "object",
+						"propertyNames": {
 							"type": "string"
-						}
+						},
+						"additionalProperties": {}
+					},
+					"ai_org_model": {
+						"description": "Filter by provider and model, e.g. 'openai__gpt-3.5-turbo, anthropic__claude-2.1'",
+						"type": "string"
+					},
+					"weighted_feedback_min": {
+						"description": "Minimum weighted feedback score",
+						"type": "number"
+					},
+					"weighted_feedback_max": {
+						"description": "Maximum weighted feedback score",
+						"type": "number"
+					},
+					"virtual_keys": {
+						"description": "Filter by virtual key(s)",
+						"type": "string"
+					},
+					"trace_id": {
+						"description": "Filter by trace ID",
+						"type": "string"
+					},
+					"configs": {
+						"description": "Filter by config(s)",
+						"type": "string"
+					},
+					"workspace_slug": {
+						"description": "Filter by workspace slug",
+						"type": "string"
+					},
+					"prompt_slug": {
+						"description": "Filter by prompt slug",
+						"type": "string"
+					},
+					"page_size": {
+						"description": "Page size for the export (max: 50000, default: 50000)",
+						"type": "number"
+					},
+					"current_page": {
+						"description": "Page of results to export (starts at 0)",
+						"type": "number"
 					},
 					"requested_fields": {
 						"type": "array",
@@ -11286,9 +11373,123 @@
 						"description": "Workspace ID for the export",
 						"type": "string"
 					},
+					"time_of_generation_min": {
+						"description": "Minimum time filter in date format (e.g., '2024-07-01' or ISO 8601)",
+						"type": "string"
+					},
 					"time_of_generation_max": {
 						"description": "Maximum time filter in date format (e.g., '2024-07-25' or ISO 8601)",
 						"type": "string"
+					},
+					"total_units_min": {
+						"description": "Minimum total units (tokens) filter",
+						"type": "integer",
+						"minimum": -9007199254740991,
+						"maximum": 9007199254740991
+					},
+					"total_units_max": {
+						"description": "Maximum total units (tokens) filter",
+						"type": "integer",
+						"minimum": -9007199254740991,
+						"maximum": 9007199254740991
+					},
+					"cost_min": {
+						"description": "Minimum cost filter",
+						"type": "number"
+					},
+					"cost_max": {
+						"description": "Maximum cost filter",
+						"type": "number"
+					},
+					"ai_model": {
+						"description": "Filter by AI model name",
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "array",
+								"items": {
+									"type": "string"
+								}
+							}
+						]
+					},
+					"prompt_token_min": {
+						"description": "Minimum prompt token count",
+						"type": "integer",
+						"minimum": -9007199254740991,
+						"maximum": 9007199254740991
+					},
+					"prompt_token_max": {
+						"description": "Maximum prompt token count",
+						"type": "integer",
+						"minimum": -9007199254740991,
+						"maximum": 9007199254740991
+					},
+					"completion_token_min": {
+						"description": "Minimum completion token count",
+						"type": "integer",
+						"minimum": -9007199254740991,
+						"maximum": 9007199254740991
+					},
+					"completion_token_max": {
+						"description": "Maximum completion token count",
+						"type": "integer",
+						"minimum": -9007199254740991,
+						"maximum": 9007199254740991
+					},
+					"status_code": {
+						"description": "Filter by response status code (string)",
+						"type": "string"
+					},
+					"metadata": {
+						"description": "Filter by metadata key-value pairs",
+						"type": "object",
+						"propertyNames": {
+							"type": "string"
+						},
+						"additionalProperties": {}
+					},
+					"ai_org_model": {
+						"description": "Filter by provider and model, e.g. 'openai__gpt-3.5-turbo, anthropic__claude-2.1'",
+						"type": "string"
+					},
+					"weighted_feedback_min": {
+						"description": "Minimum weighted feedback score",
+						"type": "number"
+					},
+					"weighted_feedback_max": {
+						"description": "Maximum weighted feedback score",
+						"type": "number"
+					},
+					"virtual_keys": {
+						"description": "Filter by virtual key(s)",
+						"type": "string"
+					},
+					"trace_id": {
+						"description": "Filter by trace ID",
+						"type": "string"
+					},
+					"configs": {
+						"description": "Filter by config(s)",
+						"type": "string"
+					},
+					"workspace_slug": {
+						"description": "Filter by workspace slug",
+						"type": "string"
+					},
+					"prompt_slug": {
+						"description": "Filter by prompt slug",
+						"type": "string"
+					},
+					"page_size": {
+						"description": "Page size for the export (max: 50000, default: 50000)",
+						"type": "number"
+					},
+					"current_page": {
+						"description": "Page of results to export (starts at 0)",
+						"type": "number"
 					},
 					"requested_fields": {
 						"description": "Fields to include in export: id, trace_id, created_at, request, response, is_success, ai_org, ai_model, req_units, res_units, total_units, request_url, cost, cost_currency, response_time, response_status_code, mode, config, prompt_slug, metadata",

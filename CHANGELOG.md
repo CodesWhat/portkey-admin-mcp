@@ -11,6 +11,10 @@ release until that reference and the release notes say so.
 
 ## [Unreleased]
 
+### Added
+
+- `create_log_export` and `update_log_export` now take every filter the Portkey spec allows on a log export (token ranges, status code, metadata, trace ID, config, virtual keys, prompt slug, paging and more), and only send the ones you set. `update_log_export` also accepts `time_of_generation_min`. `total_units_min` and `total_units_max` now require whole numbers, matching the API spec.
+
 ### Fixed
 
 - Request deadline tests no longer race a real server against wall-clock margins, so they stay stable when the machine is loaded.
