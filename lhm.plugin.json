@@ -2317,7 +2317,7 @@
 			},
 			"annotations": {
 				"title": "Ping Deployment",
-				"readOnlyHint": false,
+				"readOnlyHint": true,
 				"destructiveHint": false,
 				"idempotentHint": true,
 				"openWorldHint": true
