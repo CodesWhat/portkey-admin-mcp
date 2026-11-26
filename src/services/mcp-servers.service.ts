@@ -170,6 +170,11 @@ export interface TestMcpServerResponse {
 
 // ===== Service =====
 
+/** Tools take a zero-based current_page; these endpoints want a 1-based page. */
+function toApiPage(currentPage?: number): number | undefined {
+	return currentPage === undefined ? undefined : currentPage + 1;
+}
+
 export class McpServersService extends BaseService {
 	async listMcpServerConnections(
 		id: string,
@@ -247,7 +252,7 @@ export class McpServersService extends BaseService {
 		return this.get<ListMcpServerCapabilitiesResponse>(
 			`/mcp-servers/${this.encodePathSegment(id)}/capabilities`,
 			{
-				current_page: params?.current_page,
+				page: toApiPage(params?.current_page),
 				page_size: params?.page_size,
 				type: params?.type,
 			},
@@ -272,7 +277,7 @@ export class McpServersService extends BaseService {
 		return this.get<ListMcpServerUserAccessResponse>(
 			`/mcp-servers/${this.encodePathSegment(id)}/user-access`,
 			{
-				current_page: params?.current_page,
+				page: toApiPage(params?.current_page),
 				page_size: params?.page_size,
 				search: params?.search,
 			},

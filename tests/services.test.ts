@@ -2286,7 +2286,7 @@ describe("MCP administration service contracts", () => {
 			capturedUrl(0).pathname,
 			"/v1/mcp-servers/server%2Fone/connections",
 		);
-		assert.equal(capturedUrl(8).searchParams.get("current_page"), "2");
+		assert.equal(capturedUrl(8).searchParams.get("page"), "3");
 		assertRoutes([
 			["GET", "/v1/mcp-servers/server%2Fone/connections"],
 			["DELETE", "/v1/mcp-servers/server%2Fone/connections"],
@@ -2462,5 +2462,36 @@ describe("Observability and workspace service contracts", () => {
 			["POST", "/v1/feedback"],
 			["PUT", "/v1/feedback/feedback%2Fone"],
 		]);
+	});
+});
+
+describe("MCP sub-resource paging", () => {
+	it("maps zero-based current_page to the spec's 1-based page", async () => {
+		const servers = new McpServersService("test-key", BASE_URL);
+		const integrations = new McpIntegrationsService("test-key", BASE_URL);
+		await servers.listMcpServerUserAccess("s1", {
+			current_page: 0,
+			page_size: 500,
+			search: "ann",
+		});
+		await servers.listMcpServerUserAccess("s1", { current_page: 1 });
+		await servers.listMcpServerCapabilities("s1", {
+			current_page: 2,
+			page_size: 25,
+			type: "tool",
+		});
+		await integrations.listMcpIntegrationCapabilities("i1", {
+			current_page: 0,
+			page_size: 50,
+			type: "prompt",
+		});
+		await integrations.listMcpIntegrationCapabilities("i1");
+
+		const q = (i: number) => Object.fromEntries(capturedUrl(i).searchParams);
+		assert.deepEqual(q(0), { page: "1", page_size: "500", search: "ann" });
+		assert.deepEqual(q(1), { page: "2" });
+		assert.deepEqual(q(2), { page: "3", page_size: "25", type: "tool" });
+		assert.deepEqual(q(3), { page: "1", page_size: "50", type: "prompt" });
+		assert.deepEqual(q(4), {});
 	});
 });

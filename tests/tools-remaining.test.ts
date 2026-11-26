@@ -1369,7 +1369,7 @@ describe("MCP access fields from the current spec", () => {
 				},
 				listMcpIntegrationCapabilities: async (id: string, params: unknown) => {
 					calls.push(["capabilities", id, params]);
-					return { total: 0, data: [] };
+					return { total: 0, has_more: true, data: [] };
 				},
 			},
 		);
@@ -1379,10 +1379,13 @@ describe("MCP access fields from the current spec", () => {
 			global_workspace_access: { enabled: true },
 			override_existing_workspace_access: true,
 		});
-		await callbacks.get("list_mcp_integration_capabilities")?.({
+		const capsResult = (await callbacks.get(
+			"list_mcp_integration_capabilities",
+		)?.({
 			id: "integration-1",
 			type: "prompt",
-		});
+		})) as { content: [{ text: string }] };
+		assert.equal(JSON.parse(capsResult.content[0].text).has_more, true);
 		assert.deepEqual(calls, [
 			[
 				"integration-1",
@@ -1392,7 +1395,11 @@ describe("MCP access fields from the current spec", () => {
 					override_existing_workspace_access: true,
 				},
 			],
-			["capabilities", "integration-1", { type: "prompt" }],
+			[
+				"capabilities",
+				"integration-1",
+				{ current_page: undefined, page_size: undefined, type: "prompt" },
+			],
 		]);
 	});
 });
