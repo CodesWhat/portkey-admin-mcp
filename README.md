@@ -81,7 +81,9 @@ Website: [portkey.codeswhat.com](https://portkey.codeswhat.com/). Docs: [portkey
 You need a **Portkey API key** with appropriate scopes. Get one from your [Portkey dashboard](https://app.portkey.ai/) under API Keys.
 
 Version 0.15.0 uses MCP SDK v2 and serves protocol revision `2026-07-28` and
-older clients on the same endpoint. It retires HTTP sessions and replay;
+older clients on the same endpoint. Over stdio, a first message carrying the
+`2026-07-28` `_meta` envelope gets the new revision; a bare `initialize` gets
+`2025-11-25`. It retires HTTP sessions and replay;
 obsolete settings warn and are ignored. See
 [compatibility and deprecations](./COMPATIBILITY.md) before upgrading from 0.14.x.
 
@@ -187,7 +189,7 @@ Then use this config:
 | **Prompt Partials**    | 7     | Reusable prompt fragments with versioning                                                                                             |
 | **Prompt Labels**      | 5     | Organize prompt versions (production, staging, dev)                                                                                   |
 | **Configs**            | 6     | Gateway routing, caching, retry, loadbalancing                                                                                        |
-| **Deployments**        | 6     | Register, inspect, update, archive, and ping self-hosted Gateways                                                               |
+| **Deployments**        | 6     | Register, inspect, update, archive, and ping self-hosted Gateways                                                                     |
 | **API Keys**           | 6     | Create, rotate, and manage scoped API keys                                                                                            |
 | **Secret References**  | 5     | Manage AWS, Azure, and HashiCorp external-secret references                                                                           |
 | **Virtual Keys**       | 5     | Manage provider access keys                                                                                                           |

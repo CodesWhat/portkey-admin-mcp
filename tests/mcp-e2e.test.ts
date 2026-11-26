@@ -7,6 +7,7 @@
  */
 
 import assert from "node:assert/strict";
+import { spawn } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { after, before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
@@ -92,6 +93,88 @@ describe("modern stdio protocol", () => {
 		} finally {
 			await client.close();
 		}
+	});
+});
+
+describe("raw stdio era selection", () => {
+	// The stdio entry pins the era from the first message on the connection:
+	// a valid 2026-07-28 _meta envelope opens a modern connection, anything
+	// else is served as legacy. One process per probe, since the pin sticks.
+	const modernMeta = {
+		"io.modelcontextprotocol/protocolVersion": "2026-07-28",
+		"io.modelcontextprotocol/clientInfo": { name: "raw-stdio", version: "1" },
+		"io.modelcontextprotocol/clientCapabilities": {},
+	};
+
+	function firstReply(request: object): Promise<Record<string, unknown>> {
+		return new Promise((resolve, reject) => {
+			const child = spawn("node", [BUILD_INDEX], {
+				env: { ...process.env, PORTKEY_API_KEY: "x" },
+				stdio: ["pipe", "pipe", "ignore"],
+			});
+			let buffer = "";
+			const timer = setTimeout(() => {
+				child.kill();
+				reject(new Error("no stdio reply within 10s"));
+			}, 10_000);
+			child.stdout.on("data", (chunk: Buffer) => {
+				buffer += chunk.toString("utf-8");
+				const newline = buffer.indexOf("\n");
+				if (newline === -1) return;
+				clearTimeout(timer);
+				child.kill();
+				resolve(JSON.parse(buffer.slice(0, newline)));
+			});
+			child.on("error", reject);
+			child.stdin.write(`${JSON.stringify(request)}\n`);
+		});
+	}
+
+	it("answers a bare initialize for 2026-07-28 with the legacy 2025-11-25 revision", async () => {
+		const reply = await firstReply({
+			jsonrpc: "2.0",
+			id: 1,
+			method: "initialize",
+			params: {
+				protocolVersion: "2026-07-28",
+				capabilities: {},
+				clientInfo: { name: "raw-stdio", version: "1" },
+			},
+		});
+		const result = reply.result as { protocolVersion: string };
+		assert.equal(result.protocolVersion, "2025-11-25");
+	});
+
+	it("rejects server/discover with -32601 when it has no modern envelope", async () => {
+		const reply = await firstReply({
+			jsonrpc: "2.0",
+			id: 1,
+			method: "server/discover",
+			params: {},
+		});
+		assert.equal((reply.error as { code: number }).code, -32601);
+	});
+
+	it("serves server/discover as the first message when it carries the modern envelope", async () => {
+		const reply = await firstReply({
+			jsonrpc: "2.0",
+			id: 1,
+			method: "server/discover",
+			params: { _meta: modernMeta },
+		});
+		const result = reply.result as { supportedVersions: string[] };
+		assert.deepEqual(result.supportedVersions, ["2026-07-28"]);
+	});
+
+	it("serves tools/list on the envelope alone, with no initialize", async () => {
+		const reply = await firstReply({
+			jsonrpc: "2.0",
+			id: 1,
+			method: "tools/list",
+			params: { _meta: modernMeta },
+		});
+		const result = reply.result as { tools: unknown[] };
+		assert.equal(result.tools.length, 195);
 	});
 });
 
