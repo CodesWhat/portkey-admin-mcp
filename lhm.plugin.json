@@ -628,7 +628,7 @@
 		},
 		{
 			"name": "list_all_users",
-			"description": "List accepted org users with id, name, email, role, and timestamps. Use this to find a user_id before get_user, update_user, delete_user, or add_workspace_member; use list_user_invites for pending invitations. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
+			"description": "List accepted org users with id, name, email, role, workspace_ids, and timestamps. Use this to find a user_id before get_user, update_user, delete_user, or add_workspace_member; use list_user_invites for pending invitations. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
@@ -813,7 +813,7 @@
 		},
 		{
 			"name": "get_user",
-			"description": "Get one accepted user by id and return their profile, role, and timestamps. Use list_all_users to find the id if you only have a name or email, and get_user_invite for pending invitations. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
+			"description": "Get one accepted user by id and return their profile, role, workspace_ids, and timestamps. Use list_all_users to find the id if you only have a name or email, and get_user_invite for pending invitations. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {

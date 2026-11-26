@@ -10,6 +10,7 @@ export interface PortkeyUser {
 	email: string;
 	created_at: string;
 	last_updated_at: string;
+	workspace_ids?: string[];
 }
 
 export interface PortkeyUsersResponse {

@@ -154,6 +154,7 @@ function formatUser(user: PortkeyUser): {
 	role: string;
 	created_at: string;
 	last_updated_at: string;
+	workspace_ids?: string[];
 } {
 	return {
 		id: user.id,
@@ -162,6 +163,9 @@ function formatUser(user: PortkeyUser): {
 		role: user.role,
 		created_at: user.created_at,
 		last_updated_at: user.last_updated_at,
+		...(user.workspace_ids !== undefined && {
+			workspace_ids: user.workspace_ids,
+		}),
 	};
 }
 
@@ -210,7 +214,7 @@ export function registerUsersTools(
 		"list_all_users",
 		{
 			description:
-				"List accepted org users with id, name, email, role, and timestamps. Use this to find a user_id before get_user, update_user, delete_user, or add_workspace_member; use list_user_invites for pending invitations.",
+				"List accepted org users with id, name, email, role, workspace_ids, and timestamps. Use this to find a user_id before get_user, update_user, delete_user, or add_workspace_member; use list_user_invites for pending invitations.",
 			inputSchema: USERS_TOOL_SCHEMAS.listAllUsers,
 		},
 		async (params) => {
@@ -267,7 +271,7 @@ export function registerUsersTools(
 		"get_user",
 		{
 			description:
-				"Get one accepted user by id and return their profile, role, and timestamps. Use list_all_users to find the id if you only have a name or email, and get_user_invite for pending invitations.",
+				"Get one accepted user by id and return their profile, role, workspace_ids, and timestamps. Use list_all_users to find the id if you only have a name or email, and get_user_invite for pending invitations.",
 			inputSchema: USERS_TOOL_SCHEMAS.getUser,
 		},
 		async (params) => {
