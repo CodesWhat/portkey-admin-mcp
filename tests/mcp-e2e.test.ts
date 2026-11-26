@@ -179,6 +179,7 @@ describe("raw stdio era selection", () => {
 			});
 			const received: StdioReply[] = [];
 			let buffer = "";
+			let discoverySent = false;
 			const timer = setTimeout(() => {
 				child.kill();
 				reject(new Error("no stdio replies within 10s"));
@@ -191,7 +192,8 @@ describe("raw stdio era selection", () => {
 					buffer = buffer.slice(newline + 1);
 					newline = buffer.indexOf("\n");
 				}
-				if (received.length === 1) {
+				if (received.length === 1 && !discoverySent) {
+					discoverySent = true;
 					child.stdin.write(
 						`${JSON.stringify({
 							jsonrpc: "2.0",
