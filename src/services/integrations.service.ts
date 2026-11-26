@@ -2,6 +2,14 @@ import { BaseService } from "./base.service.js";
 import type { SecretMapping } from "./shared.types.js";
 
 // Integration Types
+export interface IntegrationAzureDeploymentConfig {
+	alias?: string;
+	azure_api_version: string;
+	azure_deployment_name: string;
+	is_default?: boolean;
+	azure_model_slug: string;
+}
+
 export interface IntegrationConfigurations {
 	// OpenAI / Azure OpenAI specific
 	api_version?: string;
@@ -18,6 +26,53 @@ export interface IntegrationConfigurations {
 	vertex_service_account_json?: string;
 	// Custom base URL
 	custom_host?: string;
+	custom_headers?: Record<string, string>;
+	target_field?: string;
+	secret_reference_id?: string;
+	secret_key?: string;
+	value_format?: string;
+	// Shared auth mode selectors
+	provider_auth_type?: string;
+	wif_identity_source?: string;
+	is_key_required?: boolean;
+	// OAuth client credentials / workload identity federation (OpenAI, Anthropic)
+	oauth_token_endpoint?: string;
+	oauth_client_id?: string;
+	oauth_client_secret?: string;
+	oauth_scope?: string;
+	oauth_audience?: string;
+	// OpenAI
+	openai_organization?: string;
+	openai_project?: string;
+	openai_identity_provider_id?: string;
+	openai_service_account_id?: string;
+	// Anthropic
+	anthropic_inspect_stream_for_overloaded_error?: boolean;
+	anthropic_federation_rule_id?: string;
+	anthropic_organization_id?: string;
+	anthropic_service_account_id?: string;
+	anthropic_workspace_id?: string;
+	// Azure OpenAI / Azure AI Foundry
+	azure_auth_mode?: string;
+	azure_resource_name?: string;
+	azure_deployment_config?: IntegrationAzureDeploymentConfig[];
+	azure_foundry_url?: string;
+	azure_api_version?: string;
+	azure_deployment_name?: string;
+	azure_entra_tenant_id?: string;
+	azure_entra_client_id?: string;
+	azure_entra_client_secret?: string;
+	azure_managed_client_id?: string;
+	// AWS Bedrock auth mode and role
+	aws_auth_type?: string;
+	aws_role_arn?: string;
+	aws_external_id?: string;
+	// Vertex auth mode
+	vertex_auth_type?: string;
+	// Workers AI, Hugging Face, Snowflake Cortex
+	workers_ai_account_id?: string;
+	huggingface_base_url?: string;
+	snowflake_account?: string;
 	// Generic key-value for provider-specific configs
 	[key: string]: unknown;
 }

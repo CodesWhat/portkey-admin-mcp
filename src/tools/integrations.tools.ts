@@ -469,6 +469,49 @@ const updateIntegrationWorkspacesSchema = z
 		}
 	});
 
+const SENSITIVE_CONFIG_FIELD =
+	/(?:secret|password|credential|private_key|api_key|access_key_id|session_token|service_account_json)/i;
+const REDACTED = "[REDACTED]";
+
+/**
+ * Masks credential-like values in an integration's provider configuration
+ * before they reach the MCP transcript. Recurses into nested objects and
+ * arrays; custom_headers values are always masked since they commonly carry
+ * auth headers.
+ */
+function redactConfigValue(value: unknown): unknown {
+	if (Array.isArray(value)) return value.map(redactConfigValue);
+	if (value && typeof value === "object") {
+		return redactIntegrationConfigurations(value as Record<string, unknown>);
+	}
+	return value;
+}
+
+function redactIntegrationConfigurations<T extends Record<string, unknown>>(
+	configurations: T | undefined,
+): T | undefined {
+	if (!configurations) return configurations;
+	return Object.fromEntries(
+		Object.entries(configurations).map(([key, value]) => {
+			if (key === "custom_headers" && value && typeof value === "object") {
+				return [
+					key,
+					Object.fromEntries(
+						Object.keys(value as Record<string, unknown>).map((name) => [
+							name,
+							REDACTED,
+						]),
+					),
+				];
+			}
+			if (key !== "secret_reference_id" && SENSITIVE_CONFIG_FIELD.test(key)) {
+				return [key, REDACTED];
+			}
+			return [key, redactConfigValue(value)];
+		}),
+	) as T;
+}
+
 function buildIntegrationConfigurations(params: {
 	api_version?: string;
 	resource_name?: string;
@@ -632,7 +675,9 @@ export function registerIntegrationsTools(
 				description: integration.description,
 				organisation_id: integration.organisation_id,
 				masked_key: integration.masked_key,
-				configurations: integration.configurations,
+				configurations: redactIntegrationConfigurations(
+					integration.configurations,
+				),
 				global_workspace_access_settings:
 					integration.global_workspace_access_settings,
 				allow_all_models: integration.allow_all_models,
