@@ -374,6 +374,8 @@ describe("DeploymentsService request routing", () => {
 		});
 		enqueue({});
 		await service.archiveDeployment("dep/one");
+		enqueue({ object: "deployment", status: "healthy" });
+		await service.pingDeployment("dep/one");
 
 		const listUrl = capturedUrl(0);
 		assert.equal(listUrl.pathname, "/v2/deployments");
@@ -406,6 +408,7 @@ describe("DeploymentsService request routing", () => {
 			["GET", "/v2/deployments/dep%2Fone"],
 			["PUT", "/v2/deployments/dep%2Fone"],
 			["DELETE", "/v2/deployments/dep%2Fone"],
+			["GET", "/v2/deployments/dep%2Fone/ping"],
 		]);
 	});
 });

@@ -365,6 +365,11 @@ describe("Gateway deployments", () => {
 						getDeployment: async () => ({ id: "dep-1" }),
 						updateDeployment: async () => ({ client_auth: "rotated-secret" }),
 						archiveDeployment: async () => ({}),
+						pingDeployment: async (id: string) => ({
+							object: "deployment",
+							status: "partial",
+							id,
+						}),
 					},
 				} as never,
 			);
@@ -378,8 +383,13 @@ describe("Gateway deployments", () => {
 				"get_deployment",
 				"update_deployment",
 				"archive_deployment",
+				"ping_deployment",
 			],
 		);
+		const ping = (await callbacks.get("ping_deployment")?.({
+			id: "dep-1",
+		})) as { content: Array<{ text: string }> };
+		assert.equal(JSON.parse(ping.content[0]?.text ?? "{}").status, "partial");
 		const result = (await callbacks.get("register_deployment")?.({
 			name: "Edge",
 			gateway_base_url: "https://edge.example.com",
@@ -460,6 +470,15 @@ describe("Gateway deployments", () => {
 		assert.equal(getRequest.path, "/deployments/dep%2Fone");
 		assert.equal(archiveRequest.method, "DELETE");
 		assert.equal(archiveRequest.path, "/deployments/dep%2Fone");
+		const pingRequest = await captureServiceRequest(() =>
+			new DeploymentsService("test-dummy-key").pingDeployment("dep/one"),
+		);
+		assert.equal(pingRequest.method, "GET");
+		assert.equal(pingRequest.path, "/deployments/dep%2Fone/ping");
+		await assert.rejects(
+			new DeploymentsService("test-dummy-key").pingDeployment(" "),
+			/Deployment ID is required/,
+		);
 	});
 });
 

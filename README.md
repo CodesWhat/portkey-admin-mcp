@@ -4,7 +4,7 @@
 
 <h1>Portkey Admin MCP Server</h1>
 
-**The [Portkey](https://portkey.ai/) Admin API as an MCP server — 194 tools across prompts, configs, keys, analytics, governance, deployments, and more.**
+**The [Portkey](https://portkey.ai/) Admin API as an MCP server — 195 tools across prompts, configs, keys, analytics, governance, deployments, and more.**
 
 Website: [portkey.codeswhat.com](https://portkey.codeswhat.com/). Docs: [portkey.codeswhat.com/docs](https://portkey.codeswhat.com/docs/).
 
@@ -128,7 +128,7 @@ VS Code's `.vscode/mcp.json` uses a top-level `servers` key and needs a `type`:
 }
 ```
 
-VS Code caps a single chat request at 128 enabled tools, and this server exposes 194.
+VS Code caps a single chat request at 128 enabled tools, and this server exposes 195.
 Set `PORTKEY_TOOL_DOMAINS` in the server's `env` (for example `"PORTKEY_TOOL_DOMAINS": "prompts,analytics"`) to narrow the set below that limit.
 
 ### Run directly
@@ -147,7 +147,7 @@ npx -y portkey-admin-mcp
 
 Scoping domains is also the biggest lever on context cost, not just access. `tools/list`
 returns every tool in a single response with no `nextCursor`, and the complete
-194-tool catalog is roughly 500 KB of JSON. Narrowing to the domains a client
+195-tool catalog is roughly 500 KB of JSON. Narrowing to the domains a client
 actually needs cuts that roughly proportionally.
 
 <details>
@@ -160,6 +160,7 @@ npm install && npm run build
 ```
 
 Then use this config:
+
 ```json
 {
 	"mcpServers": {
@@ -206,7 +207,7 @@ Then use this config:
 | **Users & Workspaces** | 24    | User management, invites, workspace members, SCIM group mappings                                                                      |
 | **Audit**              | 1     | Audit log access                                                                                                                      |
 
-**194 tools total across 22 tool domains.** See [ENDPOINTS.md](./ENDPOINTS.md) for the full list with descriptions.
+**195 tools total across 22 tool domains.** See [ENDPOINTS.md](./ENDPOINTS.md) for the full list with descriptions.
 
 Portkey's newer product language increasingly presents provider credentials as
 Providers, while the current Admin API still exposes both `/virtual-keys` and
@@ -231,7 +232,7 @@ The following tools require an **organisation-level scope that is only available
 | Area                        | Tools                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Required scope                                                                |
 | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
 | Analytics (25)              | `get_cost_analytics`, `get_request_analytics`, `get_token_analytics`, `get_latency_analytics`, `get_error_analytics`, `get_error_rate_analytics`, `get_cache_hit_latency`, `get_cache_hit_rate`, `get_cache_summary`, `get_users_analytics`, `get_error_stacks_analytics`, `get_error_status_codes_analytics`, `get_user_requests_analytics`, `get_rescued_requests_analytics`, `get_feedback_analytics`, `get_feedback_models_analytics`, `get_feedback_scores_analytics`, `get_feedback_weighted_analytics`, `get_analytics_group_users`, `get_analytics_group_models`, `get_analytics_group_metadata`, `get_analytics_group_providers`, `get_analytics_group_mcp`, `get_analytics_group_a2a`, `get_analytics_group_workspaces` | org-level `analytics.view`                                                    |
-| Deployments (5)             | `list_deployments`, `register_deployment`, `get_deployment`, `update_deployment`, `archive_deployment`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Enterprise deployment administration                                          |
+| Deployments (6)             | `list_deployments`, `register_deployment`, `get_deployment`, `update_deployment`, `archive_deployment`, `ping_deployment`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Enterprise deployment administration                                          |
 | Audit                       | `list_audit_logs`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `audit_logs.list`                                                             |
 | Org-level integrations      | `get_integration`, `list_integration_models`, `list_integration_workspaces`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | `organisation_integrations.read`                                              |
 | Org-level users             | `list_all_users`, `get_user`, `get_user_stats`, `list_user_invites`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | `organisation_users.list` / `organisation_users.read`                         |
@@ -273,6 +274,7 @@ node build/server.js
 ```
 
 Or via npx (the `portkey-admin-mcp` package includes the HTTP binary):
+
 ```bash
 PORTKEY_API_KEY=your_key MCP_AUTH_MODE=bearer MCP_AUTH_TOKEN=your_secret \
   npx -y -p portkey-admin-mcp portkey-admin-mcp-http
@@ -341,6 +343,7 @@ Production containers must choose their rate-limit topology explicitly: set
 Vercel support is kept as a reference proof of concept — we do not run a hosted deployment. See [docs/VERCEL_DEPLOYMENT.md](./docs/VERCEL_DEPLOYMENT.md) if you want to self-deploy.
 
 Key points:
+
 - Uses stateless request handling and a shared atomic Redis rate limiter (SDK v2); GET replay is retired
 - Requires Clerk or bearer auth
 - Leave `MCP_TLS_*` unset (Vercel terminates HTTPS)

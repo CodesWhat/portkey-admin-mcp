@@ -3468,6 +3468,13 @@ describe("Tool annotations", () => {
 			idempotentHint: false,
 			openWorldHint: true,
 		});
+		assert.deepEqual(getAnnotations("ping_deployment"), {
+			title: "Ping Deployment",
+			readOnlyHint: true,
+			destructiveHint: false,
+			idempotentHint: true,
+			openWorldHint: true,
+		});
 		assert.deepEqual(getAnnotations("test_mcp_server"), {
 			readOnlyHint: false,
 			destructiveHint: false,

@@ -279,12 +279,12 @@ describe("LobeHub manifest generator", () => {
 		assert.equal(result.code, 0, result.stderr || result.stdout);
 		assert.match(
 			result.stdout,
-			/Wrote 194 tools, 1 prompts, and 1 resources\/templates/,
+			/Wrote 195 tools, 1 prompts, and 1 resources\/templates/,
 		);
 		const generated = JSON.parse(
 			await readFile(fixture.manifestPath, "utf8"),
 		) as Manifest;
-		assert.equal(generated.tools.length, 194);
+		assert.equal(generated.tools.length, 195);
 		assert.deepEqual(generated.tools, actual.tools);
 		assert.deepEqual(generated.prompts, actual.prompts);
 		assert.deepEqual(generated.resources, actual.resources);
@@ -298,7 +298,7 @@ describe("LobeHub manifest generator", () => {
 		assert.equal(generated.version, "9.8.7");
 		assert.equal(
 			generated.description,
-			"Portkey Admin API MCP server with current control-plane coverage, 194 tools, and Prisma AIRS interoperability guidance.",
+			"Portkey Admin API MCP server with current control-plane coverage, 195 tools, and Prisma AIRS interoperability guidance.",
 		);
 		assert.equal(generated.author, "Fixture Owner");
 		assert.equal(generated.homepage, "https://example.com/fixture");
@@ -334,7 +334,7 @@ describe("LobeHub manifest generator", () => {
 		assert.equal(result.code, 1);
 		assert.match(
 			result.stderr,
-			/Server returned 194 tools but the manifest has 195; refusing to write/,
+			/Server returned 195 tools but the manifest has 196; refusing to write/,
 		);
 		assert.equal(
 			await readFile(fixture.manifestPath, "utf8"),

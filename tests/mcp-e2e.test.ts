@@ -86,7 +86,7 @@ describe("modern stdio protocol", () => {
 			await client.connect(transport);
 			assert.equal(client.getProtocolEra(), "modern");
 			assert.equal(client.getServerVersion()?.name, "portkey-admin-mcp");
-			assert.equal((await client.listTools()).tools.length, 194);
+			assert.equal((await client.listTools()).tools.length, 195);
 			assert.ok((await client.listResources()).resources.length > 0);
 			assert.ok((await client.listPrompts()).prompts.length > 0);
 		} finally {
@@ -95,7 +95,7 @@ describe("modern stdio protocol", () => {
 	});
 });
 
-// All 194 expected tool names across 22 domains
+// All 195 expected tool names across 22 domains
 const EXPECTED_TOOLS = [
 	"create_access_policy",
 	"list_access_policies",
@@ -140,12 +140,13 @@ const EXPECTED_TOOLS = [
 	"update_config",
 	"delete_config",
 	"list_config_versions",
-	// deployments (5)
+	// deployments (6)
 	"list_deployments",
 	"register_deployment",
 	"get_deployment",
 	"update_deployment",
 	"archive_deployment",
+	"ping_deployment",
 	// keys and secret references (16)
 	"list_virtual_keys",
 	"create_virtual_key",

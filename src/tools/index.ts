@@ -162,6 +162,7 @@ const ENTERPRISE_GATED_TOOL_NAMES = new Set([
 	"get_deployment",
 	"update_deployment",
 	"archive_deployment",
+	"ping_deployment",
 	"list_audit_logs",
 	"get_integration",
 	"list_integration_models",

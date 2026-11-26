@@ -2,7 +2,7 @@
 	"identifier": "codeswhat-portkey-admin-mcp",
 	"name": "Portkey Admin MCP Server",
 	"version": "0.16.6",
-	"description": "Portkey Admin API MCP server with current control-plane coverage, 194 tools, and Prisma AIRS interoperability guidance.",
+	"description": "Portkey Admin API MCP server with current control-plane coverage, 195 tools, and Prisma AIRS interoperability guidance.",
 	"author": "CodesWhat",
 	"authorUrl": "https://github.com/CodesWhat",
 	"category": "development",
@@ -2297,6 +2297,29 @@
 				"readOnlyHint": false,
 				"destructiveHint": true,
 				"idempotentHint": false,
+				"openWorldHint": true
+			}
+		},
+		{
+			"name": "ping_deployment",
+			"description": "Enterprise-gated. Run a two-way connectivity check on a registered Gateway deployment: the control plane calls the Gateway health endpoint, then waits up to 10 seconds for the Gateway to call back with a one-time code. Returns overall status (healthy, partial, or unhealthy) plus separate outbound and inbound results with the reported Gateway version. Fails with 400 when the deployment has no gateway_base_url. Use list_deployments to resolve an ID; this is a live check, not a read of cached connection_status. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
+			"inputSchema": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string",
+						"minLength": 1,
+						"description": "Deployment UUID to ping"
+					}
+				},
+				"required": ["id"],
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
+			},
+			"annotations": {
+				"title": "Ping Deployment",
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": true,
 				"openWorldHint": true
 			}
 		},
