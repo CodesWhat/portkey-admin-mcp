@@ -11231,11 +11231,15 @@
 					},
 					"page_size": {
 						"description": "Page size for the export (max: 50000, default: 50000)",
-						"type": "number"
+						"type": "integer",
+						"minimum": -9007199254740991,
+						"maximum": 9007199254740991
 					},
 					"current_page": {
 						"description": "Page of results to export (starts at 0)",
-						"type": "number"
+						"type": "integer",
+						"minimum": -9007199254740991,
+						"maximum": 9007199254740991
 					},
 					"requested_fields": {
 						"type": "array",
@@ -11508,11 +11512,15 @@
 					},
 					"page_size": {
 						"description": "Page size for the export (max: 50000, default: 50000)",
-						"type": "number"
+						"type": "integer",
+						"minimum": -9007199254740991,
+						"maximum": 9007199254740991
 					},
 					"current_page": {
 						"description": "Page of results to export (starts at 0)",
-						"type": "number"
+						"type": "integer",
+						"minimum": -9007199254740991,
+						"maximum": 9007199254740991
 					},
 					"requested_fields": {
 						"description": "Fields to include in export: id, trace_id, created_at, request, response, is_success, ai_org, ai_model, req_units, res_units, total_units, request_url, cost, cost_currency, response_time, response_status_code, mode, config, prompt_slug, metadata",

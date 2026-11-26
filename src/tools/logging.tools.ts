@@ -124,10 +124,12 @@ const logExportFilterShape = {
 	prompt_slug: z.string().optional().describe("Filter by prompt slug"),
 	page_size: z.coerce
 		.number()
+		.int()
 		.optional()
 		.describe("Page size for the export (max: 50000, default: 50000)"),
 	current_page: z.coerce
 		.number()
+		.int()
 		.optional()
 		.describe("Page of results to export (starts at 0)"),
 } as const;
