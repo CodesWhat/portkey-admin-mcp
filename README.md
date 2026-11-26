@@ -187,7 +187,7 @@ Then use this config:
 | **Prompt Partials**    | 7     | Reusable prompt fragments with versioning                                                                                             |
 | **Prompt Labels**      | 5     | Organize prompt versions (production, staging, dev)                                                                                   |
 | **Configs**            | 6     | Gateway routing, caching, retry, loadbalancing                                                                                        |
-| **Deployments**        | 5     | Register, inspect, update, and archive self-hosted Gateways                                                                           |
+| **Deployments**        | 6     | Register, inspect, update, archive, and ping self-hosted Gateways                                                               |
 | **API Keys**           | 6     | Create, rotate, and manage scoped API keys                                                                                            |
 | **Secret References**  | 5     | Manage AWS, Azure, and HashiCorp external-secret references                                                                           |
 | **Virtual Keys**       | 5     | Manage provider access keys                                                                                                           |
@@ -225,7 +225,7 @@ If a tool returns a `403` with Portkey error `AB03`, it means missing scopes —
 <details>
 <summary><strong>Enterprise-gated tools and other scope requirements</strong></summary>
 
-### Enterprise-gated tools (56)
+### Enterprise-gated tools (57)
 
 The following tools require an **organisation-level scope that is only available on Portkey Enterprise plans**. They return `403 You do not have enough permissions to execute this request` on workspace plans. Their descriptions include an `Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.` suffix so MCP clients know upfront.
 
