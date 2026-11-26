@@ -1284,8 +1284,10 @@ describe("UsersService request contracts", () => {
 		assert.deepEqual(await service.deleteUserInvite("invite/one"), {
 			success: true,
 		});
+		enqueue({ inviteLink: "https://app.portkey.ai/invite/resent" });
 		assert.deepEqual(await service.resendUserInvite("invite/one"), {
 			success: true,
+			invite_link: "https://app.portkey.ai/invite/resent",
 		});
 
 		assert.deepEqual(

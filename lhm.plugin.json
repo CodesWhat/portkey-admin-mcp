@@ -975,7 +975,7 @@
 		},
 		{
 			"name": "resend_user_invite",
-			"description": "Resend the email for a pending invite that has not been accepted, unlike invite_user which creates a new invite. This sends a fresh email without modifying the invite record, expiry, or role; use get_user_invite first if you are unsure whether the invite still exists and list_user_invites to discover invite_ids.",
+			"description": "Resend the email for a pending invite that has not been accepted, unlike invite_user which creates a new invite. This sends a fresh email without modifying the invite record, expiry, or role, and returns the invite_link when Portkey provides one. The link is a credential and is exposed to this MCP transcript, so treat it like invite_user's; use get_user_invite first if you are unsure whether the invite still exists and list_user_invites to discover invite_ids.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {

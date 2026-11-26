@@ -18,6 +18,7 @@ release until that reference and the release notes say so.
 
 ### Fixed
 
+- `resend_user_invite` now returns the `invite_link` Portkey sends back, same as `invite_user`, and `get_user_invite` and `list_user_invites` include `accepted_at` and `invited_by` when the API provides them. Reads still never return the invite link.
 - Request deadline tests no longer race a real server against wall-clock margins, so they stay stable when the machine is loaded.
 
 ## [0.16.6] - 2026-11-23

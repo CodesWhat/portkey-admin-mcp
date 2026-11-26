@@ -172,6 +172,8 @@ function formatUserInvite(invite: UserInvite): {
 	status: string;
 	created_at: string;
 	expires_at: string;
+	accepted_at?: string;
+	invited_by?: string;
 } {
 	return {
 		id: invite.id,
@@ -180,6 +182,10 @@ function formatUserInvite(invite: UserInvite): {
 		status: invite.status,
 		created_at: invite.created_at,
 		expires_at: invite.expires_at,
+		...(invite.accepted_at !== undefined && {
+			accepted_at: invite.accepted_at,
+		}),
+		...(invite.invited_by !== undefined && { invited_by: invite.invited_by }),
 	};
 }
 
@@ -364,14 +370,17 @@ export function registerUsersTools(
 		"resend_user_invite",
 		{
 			description:
-				"Resend the email for a pending invite that has not been accepted, unlike invite_user which creates a new invite. This sends a fresh email without modifying the invite record, expiry, or role; use get_user_invite first if you are unsure whether the invite still exists and list_user_invites to discover invite_ids.",
+				"Resend the email for a pending invite that has not been accepted, unlike invite_user which creates a new invite. This sends a fresh email without modifying the invite record, expiry, or role, and returns the invite_link when Portkey provides one. The link is a credential and is exposed to this MCP transcript, so treat it like invite_user's; use get_user_invite first if you are unsure whether the invite still exists and list_user_invites to discover invite_ids.",
 			inputSchema: USERS_TOOL_SCHEMAS.resendUserInvite,
 		},
 		async (params) => {
-			await service.users.resendUserInvite(params.invite_id);
+			const result = await service.users.resendUserInvite(params.invite_id);
 			return jsonResult({
 				message: `Successfully resent invite ${params.invite_id}`,
 				success: true,
+				...(result.invite_link !== undefined && {
+					invite_link: result.invite_link,
+				}),
 			});
 		},
 	);

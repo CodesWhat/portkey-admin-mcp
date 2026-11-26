@@ -51,6 +51,13 @@ export interface UserInvite {
 	status: string;
 	created_at: string;
 	expires_at: string;
+	accepted_at?: string;
+	invited_by?: string;
+}
+
+export interface ResendUserInviteResponse {
+	success: boolean;
+	invite_link?: string;
 }
 
 export interface UserInvitesResponse {
@@ -211,10 +218,13 @@ export class UsersService extends BaseService {
 		return { success: true };
 	}
 
-	async resendUserInvite(inviteId: string): Promise<{ success: boolean }> {
-		await this.post(
+	async resendUserInvite(inviteId: string): Promise<ResendUserInviteResponse> {
+		const response = await this.post<{ inviteLink?: string } | undefined>(
 			`/admin/users/invites/${this.encodePathSegment(inviteId)}/resend`,
 		);
-		return { success: true };
+		const inviteLink = response?.inviteLink;
+		return typeof inviteLink === "string" && inviteLink.length > 0
+			? { success: true, invite_link: inviteLink }
+			: { success: true };
 	}
 }
