@@ -19,6 +19,7 @@ export interface McpIntegration {
 	configurations?: Record<string, unknown>;
 	global_workspace_access?: unknown;
 	secret_mappings?: SecretMapping[];
+	workspaces_count?: number | null;
 	created_at: string;
 	last_updated_at: string | null;
 	object: "mcp-integration";
@@ -81,6 +82,10 @@ export interface McpIntegrationCapability {
 	type: "tool" | "prompt" | "resource" | "resource_template";
 	enabled: boolean;
 	description?: string | null;
+	input_schema?: Record<string, unknown> | null;
+	output_schema?: Record<string, unknown> | null;
+	uri_template?: string | null;
+	mime_type?: string | null;
 	created_at?: string;
 	last_updated_at?: string | null;
 }

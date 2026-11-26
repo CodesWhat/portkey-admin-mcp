@@ -2521,3 +2521,175 @@ describe("workspace projection of is_default and limits", () => {
 		}
 	});
 });
+
+// ---------------------------------------------------------------------------
+// MCP response fields that used to be dropped by the curated projections
+// ---------------------------------------------------------------------------
+
+describe("MCP response fields survive the tool output", () => {
+	const parse = (result: unknown) =>
+		JSON.parse(
+			(result as { content: Array<{ text: string }> }).content[0]?.text || "{}",
+		) as Record<string, unknown>;
+
+	it("list_mcp_servers keeps the integration slug and url", async () => {
+		const callbacks = registerToolCallbacks((server) => {
+			registerMcpServersTools(
+				server as never,
+				{
+					mcpServers: {
+						listMcpServers: async () => ({
+							object: "list" as const,
+							total: 1,
+							data: [
+								{
+									id: "srv-1",
+									name: "S",
+									slug: "s",
+									mcp_integration_id: "int-1",
+									mcp_integration_slug: "int-slug",
+									mcp_integration_url: "https://mcp.example.com",
+									status: "active" as const,
+									created_at: "2026-01-01T00:00:00.000Z",
+									object: "mcp-server" as const,
+								},
+							],
+						}),
+					},
+				} as never,
+			);
+		});
+		const payload = parse(await callbacks.get("list_mcp_servers")?.({}));
+		const first = (payload.servers as Array<Record<string, unknown>>)[0];
+		assert.equal(first?.mcp_integration_slug, "int-slug");
+		assert.equal(first?.mcp_integration_url, "https://mcp.example.com");
+	});
+
+	it("get_mcp_server keeps integration details and drops configuration values", async () => {
+		const callbacks = registerToolCallbacks((server) => {
+			registerMcpServersTools(
+				server as never,
+				{
+					mcpServers: {
+						getMcpServer: async () => ({
+							id: "srv-1",
+							name: "S",
+							slug: "s",
+							mcp_integration_id: "int-1",
+							mcp_integration_details: {
+								id: "int-1",
+								slug: "int-slug",
+								status: "active",
+								url: "https://mcp.example.com",
+								transport: "http",
+								auth_type: "headers",
+								configurations: { api_key: "super-secret" },
+							},
+							status: "active" as const,
+							created_at: "2026-01-01T00:00:00.000Z",
+							object: "mcp-server" as const,
+						}),
+					},
+				} as never,
+			);
+		});
+		const result = await callbacks.get("get_mcp_server")?.({ id: "srv-1" });
+		const payload = parse(result);
+		assert.deepEqual(payload.mcp_integration_details, {
+			id: "int-1",
+			slug: "int-slug",
+			status: "active",
+			url: "https://mcp.example.com",
+			transport: "http",
+			auth_type: "headers",
+			configuration_keys: ["api_key"],
+		});
+		assert.ok(!JSON.stringify(payload).includes("super-secret"));
+	});
+
+	it("list_mcp_integrations keeps workspaces_count", async () => {
+		const callbacks = registerToolCallbacks((server) => {
+			registerMcpIntegrationsTools(
+				server as never,
+				{
+					mcpIntegrations: {
+						listMcpIntegrations: async () => ({
+							object: "list" as const,
+							total: 1,
+							has_more: false,
+							data: [
+								{
+									id: "int-1",
+									name: "I",
+									slug: "i",
+									owner_id: "o",
+									status: "active" as const,
+									url: "https://mcp.example.com",
+									auth_type: "none",
+									transport: "http",
+									workspaces_count: 3,
+									created_at: "2026-01-01T00:00:00.000Z",
+									last_updated_at: null,
+									object: "mcp-integration" as const,
+								},
+							],
+						}),
+					},
+				} as never,
+			);
+		});
+		const payload = parse(await callbacks.get("list_mcp_integrations")?.({}));
+		const first = (payload.integrations as Array<Record<string, unknown>>)[0];
+		assert.equal(first?.workspaces_count, 3);
+	});
+
+	it("capability lists keep schema, mime and template fields", async () => {
+		const capability = {
+			name: "search",
+			type: "tool" as const,
+			enabled: true,
+			integration_enabled: false,
+			input_schema: { type: "object" },
+			output_schema: { type: "string" },
+			uri_template: "file:///{path}",
+			mime_type: "text/plain",
+		};
+		const list = {
+			object: "list" as const,
+			counts: {
+				tools: { total: 1, enabled: 1 },
+				prompts: { total: 0, enabled: 0 },
+				resources: { total: 0, enabled: 0 },
+				resource_templates: { total: 0, enabled: 0 },
+			},
+			total: 1,
+			has_more: false,
+			data: [capability],
+		};
+		const callbacks = registerToolCallbacks((server) => {
+			registerMcpServersTools(
+				server as never,
+				{
+					mcpServers: { listMcpServerCapabilities: async () => list },
+				} as never,
+			);
+			registerMcpIntegrationsTools(
+				server as never,
+				{
+					mcpIntegrations: { listMcpIntegrationCapabilities: async () => list },
+				} as never,
+			);
+		});
+		for (const name of [
+			"list_mcp_server_capabilities",
+			"list_mcp_integration_capabilities",
+		]) {
+			const payload = parse(await callbacks.get(name)?.({ id: "x" }));
+			const cap = (payload.capabilities as Array<Record<string, unknown>>)[0];
+			assert.deepEqual(cap?.input_schema, { type: "object" });
+			assert.deepEqual(cap?.output_schema, { type: "string" });
+			assert.equal(cap?.uri_template, "file:///{path}");
+			assert.equal(cap?.mime_type, "text/plain");
+		}
+	});
+});

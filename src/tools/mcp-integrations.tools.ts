@@ -289,6 +289,7 @@ function formatMcpIntegration(integration: McpIntegration): {
 		secret_key?: string | null;
 		value_format?: "json" | "string" | null;
 	}>;
+	workspaces_count?: number | null;
 	created_at: string;
 	last_updated_at: string | null;
 } {
@@ -311,6 +312,7 @@ function formatMcpIntegration(integration: McpIntegration): {
 			: undefined,
 		custom_header_names: getCustomHeaderNames(integration.configurations),
 		secret_mappings: integration.secret_mappings,
+		workspaces_count: integration.workspaces_count,
 		created_at: integration.created_at,
 		last_updated_at: integration.last_updated_at,
 	};
