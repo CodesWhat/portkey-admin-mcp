@@ -1,8 +1,8 @@
 {
 	"identifier": "codeswhat-portkey-admin-mcp",
 	"name": "Portkey Admin MCP Server",
-	"version": "0.16.6",
-	"description": "Portkey Admin API MCP server with current control-plane coverage, 194 tools, and Prisma AIRS interoperability guidance.",
+	"version": "0.16.7",
+	"description": "Portkey Admin API MCP server with current control-plane coverage, 195 tools, and Prisma AIRS interoperability guidance.",
 	"author": "CodesWhat",
 	"authorUrl": "https://github.com/CodesWhat",
 	"category": "development",
@@ -628,7 +628,7 @@
 		},
 		{
 			"name": "list_all_users",
-			"description": "List accepted org users with id, name, email, role, and timestamps. Use this to find a user_id before get_user, update_user, delete_user, or add_workspace_member; use list_user_invites for pending invitations. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
+			"description": "List accepted org users with id, name, email, role, workspace_ids, and timestamps. Use this to find a user_id before get_user, update_user, delete_user, or add_workspace_member; use list_user_invites for pending invitations. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
@@ -813,7 +813,7 @@
 		},
 		{
 			"name": "get_user",
-			"description": "Get one accepted user by id and return their profile, role, and timestamps. Use list_all_users to find the id if you only have a name or email, and get_user_invite for pending invitations. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
+			"description": "Get one accepted user by id and return their profile, role, workspace_ids, and timestamps. Use list_all_users to find the id if you only have a name or email, and get_user_invite for pending invitations. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
@@ -975,7 +975,7 @@
 		},
 		{
 			"name": "resend_user_invite",
-			"description": "Resend the email for a pending invite that has not been accepted, unlike invite_user which creates a new invite. This sends a fresh email without modifying the invite record, expiry, or role; use get_user_invite first if you are unsure whether the invite still exists and list_user_invites to discover invite_ids.",
+			"description": "Resend the email for a pending invite that has not been accepted, unlike invite_user which creates a new invite. This sends a fresh email without modifying the invite record, expiry, or role, and returns the invite_link when Portkey provides one. The link is a credential and is exposed to this MCP transcript, so treat it like invite_user's; use get_user_invite first if you are unsure whether the invite still exists and list_user_invites to discover invite_ids.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
@@ -1795,7 +1795,7 @@
 		},
 		{
 			"name": "update_config",
-			"description": "Update a config by slug; every call creates a new config version rather than overwriting, so earlier versions stay recoverable via list_config_versions. Only provided fields change: name, status, and all routing/cache/retry settings (auto_caching, cache_mode, cache_max_age, retry_attempts, retry_on_status_codes, strategy_mode, targets) are editable, while the slug stays fixed. Changes apply immediately to every API key and prompt referencing the config. Returns the update acknowledgement and new version_id.",
+			"description": "Update a config by slug; every call creates a new config version rather than overwriting, so earlier versions stay recoverable via list_config_versions. Only provided fields change: name, status, and all routing/cache/retry settings (auto_caching, cache_mode, cache_max_age, retry_attempts, retry_on_status_codes, strategy_mode, targets) are editable, while the slug stays fixed. Changes apply immediately to every API key and prompt referencing the config. Setting fields read the current config and write the merged result back (cache and retry merge field by field, strategy and targets replace whole), and Portkey has no conditional writes, so concurrent updates to the same config can overwrite each other. Serialize them. Returns the update acknowledgement and new version_id.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
@@ -2297,6 +2297,29 @@
 				"readOnlyHint": false,
 				"destructiveHint": true,
 				"idempotentHint": false,
+				"openWorldHint": true
+			}
+		},
+		{
+			"name": "ping_deployment",
+			"description": "Enterprise-gated. Run a two-way connectivity check on a registered Gateway deployment: the control plane calls the Gateway health endpoint, then waits up to 10 seconds for the Gateway to call back with a one-time code. Returns overall status (healthy, partial, or unhealthy) plus separate outbound and inbound results with the reported Gateway version. Fails with 400 when the deployment has no gateway_base_url. Use list_deployments to resolve an ID; this is a live check, not a read of cached connection_status. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
+			"inputSchema": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string",
+						"minLength": 1,
+						"description": "Deployment UUID to ping"
+					}
+				},
+				"required": ["id"],
+				"$schema": "https://json-schema.org/draft/2020-12/schema"
+			},
+			"annotations": {
+				"title": "Ping Deployment",
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
 				"openWorldHint": true
 			}
 		},
@@ -11104,6 +11127,18 @@
 						"type": "string",
 						"description": "Maximum time filter in date format (e.g., '2024-01-31' or ISO 8601)"
 					},
+					"total_units_min": {
+						"description": "Minimum total units (tokens) filter",
+						"type": "integer",
+						"minimum": -9007199254740991,
+						"maximum": 9007199254740991
+					},
+					"total_units_max": {
+						"description": "Maximum total units (tokens) filter",
+						"type": "integer",
+						"minimum": -9007199254740991,
+						"maximum": 9007199254740991
+					},
 					"cost_min": {
 						"description": "Minimum cost filter",
 						"type": "number"
@@ -11112,20 +11147,99 @@
 						"description": "Maximum cost filter",
 						"type": "number"
 					},
-					"total_units_min": {
-						"description": "Minimum total units (tokens) filter",
-						"type": "number"
-					},
-					"total_units_max": {
-						"description": "Maximum total units (tokens) filter",
-						"type": "number"
-					},
 					"ai_model": {
-						"description": "Filter by specific AI model names",
-						"type": "array",
-						"items": {
+						"description": "Filter by AI model name",
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "array",
+								"items": {
+									"type": "string"
+								}
+							}
+						]
+					},
+					"prompt_token_min": {
+						"description": "Minimum prompt token count",
+						"type": "integer",
+						"minimum": -9007199254740991,
+						"maximum": 9007199254740991
+					},
+					"prompt_token_max": {
+						"description": "Maximum prompt token count",
+						"type": "integer",
+						"minimum": -9007199254740991,
+						"maximum": 9007199254740991
+					},
+					"completion_token_min": {
+						"description": "Minimum completion token count",
+						"type": "integer",
+						"minimum": -9007199254740991,
+						"maximum": 9007199254740991
+					},
+					"completion_token_max": {
+						"description": "Maximum completion token count",
+						"type": "integer",
+						"minimum": -9007199254740991,
+						"maximum": 9007199254740991
+					},
+					"status_code": {
+						"description": "Filter by response status code (string)",
+						"type": "string"
+					},
+					"metadata": {
+						"description": "Filter by metadata key-value pairs",
+						"type": "object",
+						"propertyNames": {
 							"type": "string"
-						}
+						},
+						"additionalProperties": {}
+					},
+					"ai_org_model": {
+						"description": "Filter by provider and model, e.g. 'openai__gpt-3.5-turbo, anthropic__claude-2.1'",
+						"type": "string"
+					},
+					"weighted_feedback_min": {
+						"description": "Minimum weighted feedback score",
+						"type": "number"
+					},
+					"weighted_feedback_max": {
+						"description": "Maximum weighted feedback score",
+						"type": "number"
+					},
+					"virtual_keys": {
+						"description": "Filter by virtual key(s)",
+						"type": "string"
+					},
+					"trace_id": {
+						"description": "Filter by trace ID",
+						"type": "string"
+					},
+					"configs": {
+						"description": "Filter by config(s)",
+						"type": "string"
+					},
+					"workspace_slug": {
+						"description": "Filter by workspace slug",
+						"type": "string"
+					},
+					"prompt_slug": {
+						"description": "Filter by prompt slug",
+						"type": "string"
+					},
+					"page_size": {
+						"description": "Page size for the export (max: 50000, default: 50000)",
+						"type": "integer",
+						"minimum": -9007199254740991,
+						"maximum": 9007199254740991
+					},
+					"current_page": {
+						"description": "Page of results to export (starts at 0)",
+						"type": "integer",
+						"minimum": -9007199254740991,
+						"maximum": 9007199254740991
 					},
 					"requested_fields": {
 						"type": "array",
@@ -11274,7 +11388,7 @@
 		},
 		{
 			"name": "update_log_export",
-			"description": "Update an existing log export configuration before or between export runs. Only workspace_id, time_of_generation_max, and requested_fields can change after creation, so use get_log_export to review the current job and start_log_export after the definition is ready. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
+			"description": "Update an existing log export configuration before or between export runs. You can change workspace_id, requested_fields and any of the filters create_log_export accepts. Use get_log_export to review the current job and start_log_export after the definition is ready. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
@@ -11286,9 +11400,127 @@
 						"description": "Workspace ID for the export",
 						"type": "string"
 					},
+					"time_of_generation_min": {
+						"description": "Minimum time filter in date format (e.g., '2024-07-01' or ISO 8601)",
+						"type": "string"
+					},
 					"time_of_generation_max": {
 						"description": "Maximum time filter in date format (e.g., '2024-07-25' or ISO 8601)",
 						"type": "string"
+					},
+					"total_units_min": {
+						"description": "Minimum total units (tokens) filter",
+						"type": "integer",
+						"minimum": -9007199254740991,
+						"maximum": 9007199254740991
+					},
+					"total_units_max": {
+						"description": "Maximum total units (tokens) filter",
+						"type": "integer",
+						"minimum": -9007199254740991,
+						"maximum": 9007199254740991
+					},
+					"cost_min": {
+						"description": "Minimum cost filter",
+						"type": "number"
+					},
+					"cost_max": {
+						"description": "Maximum cost filter",
+						"type": "number"
+					},
+					"ai_model": {
+						"description": "Filter by AI model name",
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "array",
+								"items": {
+									"type": "string"
+								}
+							}
+						]
+					},
+					"prompt_token_min": {
+						"description": "Minimum prompt token count",
+						"type": "integer",
+						"minimum": -9007199254740991,
+						"maximum": 9007199254740991
+					},
+					"prompt_token_max": {
+						"description": "Maximum prompt token count",
+						"type": "integer",
+						"minimum": -9007199254740991,
+						"maximum": 9007199254740991
+					},
+					"completion_token_min": {
+						"description": "Minimum completion token count",
+						"type": "integer",
+						"minimum": -9007199254740991,
+						"maximum": 9007199254740991
+					},
+					"completion_token_max": {
+						"description": "Maximum completion token count",
+						"type": "integer",
+						"minimum": -9007199254740991,
+						"maximum": 9007199254740991
+					},
+					"status_code": {
+						"description": "Filter by response status code (string)",
+						"type": "string"
+					},
+					"metadata": {
+						"description": "Filter by metadata key-value pairs",
+						"type": "object",
+						"propertyNames": {
+							"type": "string"
+						},
+						"additionalProperties": {}
+					},
+					"ai_org_model": {
+						"description": "Filter by provider and model, e.g. 'openai__gpt-3.5-turbo, anthropic__claude-2.1'",
+						"type": "string"
+					},
+					"weighted_feedback_min": {
+						"description": "Minimum weighted feedback score",
+						"type": "number"
+					},
+					"weighted_feedback_max": {
+						"description": "Maximum weighted feedback score",
+						"type": "number"
+					},
+					"virtual_keys": {
+						"description": "Filter by virtual key(s)",
+						"type": "string"
+					},
+					"trace_id": {
+						"description": "Filter by trace ID",
+						"type": "string"
+					},
+					"configs": {
+						"description": "Filter by config(s)",
+						"type": "string"
+					},
+					"workspace_slug": {
+						"description": "Filter by workspace slug",
+						"type": "string"
+					},
+					"prompt_slug": {
+						"description": "Filter by prompt slug",
+						"type": "string"
+					},
+					"page_size": {
+						"description": "Page size for the export (max: 50000, default: 50000)",
+						"type": "integer",
+						"minimum": -9007199254740991,
+						"maximum": 9007199254740991
+					},
+					"current_page": {
+						"description": "Page of results to export (starts at 0)",
+						"type": "integer",
+						"minimum": -9007199254740991,
+						"maximum": 9007199254740991
 					},
 					"requested_fields": {
 						"description": "Fields to include in export: id, trace_id, created_at, request, response, is_success, ai_org, ai_model, req_units, res_units, total_units, request_url, cost, cost_currency, response_time, response_status_code, mode, config, prompt_slug, metadata",
@@ -13841,13 +14073,25 @@
 		},
 		{
 			"name": "list_mcp_integration_capabilities",
-			"description": "List capabilities exposed by the external MCP server for an integration. Returns total plus enabled-state entries so you can decide what to toggle; use before update_mcp_integration_capabilities when you need to compare the current surface.",
+			"description": "List capabilities exposed by the external MCP server for an integration. Returns total, has_more and enabled-state entries so you can decide what to toggle. Pages are zero-based (current_page 0 is the first), up to 500 per page, so keep paging while has_more is true; use before update_mcp_integration_capabilities when you need to compare the current surface.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
 					"id": {
 						"type": "string",
 						"description": "The MCP integration ID or slug"
+					},
+					"current_page": {
+						"description": "Zero-based page number; the first page is 0",
+						"type": "integer",
+						"minimum": 0,
+						"maximum": 9007199254740991
+					},
+					"page_size": {
+						"description": "Number of results per page, from 1 through 500; defaults to 100",
+						"type": "integer",
+						"exclusiveMinimum": 0,
+						"maximum": 500
 					},
 					"type": {
 						"description": "Only return capabilities of this type",
@@ -14295,10 +14539,10 @@
 						"maximum": 9007199254740991
 					},
 					"page_size": {
-						"description": "Number of results per page (max 100)",
+						"description": "Number of results per page, from 1 through 500; defaults to 100",
 						"type": "integer",
 						"exclusiveMinimum": 0,
-						"maximum": 100
+						"maximum": 500
 					},
 					"type": {
 						"description": "Only return capabilities of this type",
@@ -14378,10 +14622,10 @@
 						"maximum": 9007199254740991
 					},
 					"page_size": {
-						"description": "Number of results per page (max 100)",
+						"description": "Number of results per page, from 1 through 500; defaults to 100",
 						"type": "integer",
 						"exclusiveMinimum": 0,
-						"maximum": 100
+						"maximum": 500
 					},
 					"search": {
 						"description": "Search by user name or email",

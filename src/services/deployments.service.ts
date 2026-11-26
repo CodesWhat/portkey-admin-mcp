@@ -96,6 +96,22 @@ export interface UpdateDeploymentRequest {
 	};
 }
 
+export interface DeploymentPingResponse {
+	status: "healthy" | "partial" | "unhealthy";
+	gateway_base_url?: string;
+	outbound?: {
+		status: "healthy" | "unhealthy" | "unreachable";
+		status_code?: number;
+		version?: string;
+		error?: string;
+	};
+	inbound?: {
+		status: "healthy" | "failed";
+		error?: string;
+	};
+	object: "deployment";
+}
+
 export class DeploymentsService extends BaseService {
 	async listDeployments(
 		params?: ListDeploymentsParams,
@@ -141,5 +157,12 @@ export class DeploymentsService extends BaseService {
 			`/deployments/${this.encodePathSegment(id)}`,
 		);
 		return isNoContent(result) ? {} : result;
+	}
+
+	async pingDeployment(id: string): Promise<DeploymentPingResponse> {
+		if (!id.trim()) throw new Error("Deployment ID is required");
+		return this.getV2<DeploymentPingResponse>(
+			`/deployments/${this.encodePathSegment(id)}/ping`,
+		);
 	}
 }

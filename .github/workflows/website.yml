@@ -98,8 +98,40 @@ jobs:
       - name: Check export
         run: npm run check:export
 
+      # Bound apt downloads so a stalled mirror fetch fails and retries
+      # instead of hanging the job.
+      - name: Bound apt downloads
+        run: |
+          sudo tee /etc/apt/apt.conf.d/80-ci-timeouts >/dev/null <<'EOF'
+          Acquire::http::Timeout "30";
+          Acquire::https::Timeout "30";
+          Acquire::Retries "3";
+          EOF
+
+      - name: Resolve Playwright version
+        id: playwright
+        run: echo "version=$(node -p "require('playwright-core/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}-chromium-webkit
+
       - name: Install Playwright browsers
-        run: npx playwright-core install --with-deps chromium webkit
+        timeout-minutes: 12
+        run: |
+          set -euo pipefail
+          for attempt in 1 2; do
+            if timeout 300 npx playwright-core install --with-deps chromium webkit; then
+              exit 0
+            fi
+            echo "::warning::Playwright install attempt ${attempt} failed"
+            if [ "${attempt}" -lt 2 ]; then
+              sleep 10
+            fi
+          done
+          exit 1
 
       - name: Check browser
         run: npm run check:browser

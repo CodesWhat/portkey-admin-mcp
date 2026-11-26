@@ -11,6 +11,33 @@ release until that reference and the release notes say so.
 
 ## [Unreleased]
 
+## [0.16.7] - 2026-11-26
+
+Fixes `update_config` wiping settings it wasn't asked to change, config writes that errored after succeeding, and MCP sub-resource paging. Adds `ping_deployment` and every log-export filter, and keeps response fields several tools were dropping.
+
+### Added
+
+- `create_log_export` and `update_log_export` now take every filter the Portkey spec allows on a log export (token ranges, status code, metadata, trace ID, config, virtual keys, prompt slug, paging and more), and only send the ones you set. `update_log_export` also accepts `time_of_generation_min`. `total_units_min` and `total_units_max` now require whole numbers, matching the API spec.
+- `ping_deployment` runs the live two-way connectivity check on a registered Gateway deployment (`GET /deployments/{id}/ping`) and returns the overall, outbound and inbound results. The catalog is now 195 tools across 22 domains.
+
+### Changed
+
+- `get_log` now types the log object from the Portkey spec (`request`, `response`, `metrics`, the debug request and response snapshots and the rest) while still passing every field through, including ones the spec doesn't list. Tests pin the full field set.
+- README and COMPATIBILITY now say how stdio picks the protocol era: a first message carrying the `2026-07-28` `_meta` envelope gets the new revision, while a bare `initialize` (or `server/discover` without the envelope) is served as a legacy connection. A raw stdio test pins it.
+
+### Fixed
+
+- `get_config` now accepts a `config` that comes back as an object or null instead of a JSON string, rather than failing to parse it.
+- `create_config` and `update_config` no longer throw after a successful write. The parsing accepts both the spec's `data` envelope and a bare response, and returns a note if Portkey leaves out the id or version_id. `update_config` also stopped wiping settings it wasn't asked to change: Portkey's PUT replaces the whole config, so it now reads the current config and merges your changes in (cache and retry field by field, strategy and targets replaced whole) before writing.
+- `list_mcp_server_user_access`, `list_mcp_server_capabilities` and `list_mcp_integration_capabilities` now page correctly. They were sending `current_page` where the API wants a 1-based `page`, so every page after the first repeated page one. `current_page` stays zero-based and is mapped for you, `page_size` goes up to 500, and `list_mcp_integration_capabilities` takes `current_page` and `page_size` and returns `has_more`.
+- `resend_user_invite` now returns the `invite_link` Portkey sends back, same as `invite_user`, and `get_user_invite` and `list_user_invites` include `accepted_at` and `invited_by` when the API provides them. Reads still never return the invite link.
+- `list_all_users` and `get_user` now return each user's `workspace_ids`, which the API sends but the tools were dropping.
+- `get_integration` now types the provider configuration fields the spec defines (OAuth and workload identity fields, Anthropic and OpenAI service account and federation IDs, Azure deployment config and Foundry URL, and more), and masks credential-like values such as `oauth_client_secret`, `azure_entra_client_secret` and `custom_headers` values as `[REDACTED]` instead of passing them through.
+- `list_mcp_servers` and `get_mcp_server` now return `mcp_integration_slug`, `mcp_integration_url` and `mcp_integration_details` (configuration key names only, never values), and `list_mcp_integrations` returns `workspaces_count`. The capability types also cover `input_schema`, `output_schema`, `uri_template`, `mime_type` and `integration_enabled`, which already came through untouched.
+- Prompt tools no longer drop response fields. `get_prompt` and `get_prompt_version` return `prompt_version_label_id`, `run_prompt_completion` returns `system_fingerprint` plus `completion_tokens_details` and `prompt_tokens_details` in `usage`, and `render_prompt` passes every rendered parameter (`thinking`, `response_format`, `max_completion_tokens`, `seed` and the rest) through in `hyperparameters`.
+- The response types for the error status-code and feedback AI-model graphs, the metadata group breakdown and `get_model_pricing` now name `unique_error_codes`, `avg_weighted_feedback`, `metadata_value`, `requests_with_feedback`, and the pricing `operands`, `pay_per_hour` and `pay_per_token` fields. The tools already passed them through, and tests now pin that.
+- Request deadline tests no longer race a real server against wall-clock margins, so they stay stable when the machine is loaded.
+
 ## [0.16.6] - 2026-11-23
 
 Fixes `promote_prompt` when it creates a new target prompt and refreshes runtime dependencies.
@@ -1108,7 +1135,8 @@ First stable release. Graduates from beta with 151 tools covering ~98% of the Po
 - Vercel deployment support
 - Contract tests, E2E tests, security tests
 
-[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.6...HEAD
+[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.7...HEAD
+[0.16.7]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.6...v0.16.7
 [0.16.6]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.5...v0.16.6
 [0.16.5]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.4...v0.16.5
 [0.16.4]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.3...v0.16.4

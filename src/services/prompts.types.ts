@@ -115,6 +115,7 @@ export interface PromptVersion {
 	tool_choice?: ToolChoice;
 	template_metadata?: PromptTemplateMetadata;
 	is_raw_template?: boolean;
+	prompt_version_label_id?: string | null;
 	created_at: string;
 }
 
@@ -136,6 +137,7 @@ export interface RawGetPromptResponse {
 	prompt_version?: number;
 	prompt_version_description?: string;
 	prompt_version_status?: string;
+	prompt_version_label_id?: string | null;
 	parameters?: Record<string, unknown>;
 	functions?: PromptFunctionDefinition[] | null;
 	tools?: PromptToolDefinition[] | null;
@@ -252,6 +254,8 @@ export interface PromptCompletionUsage {
 	prompt_tokens: number;
 	completion_tokens: number;
 	total_tokens: number;
+	completion_tokens_details?: Record<string, unknown>;
+	prompt_tokens_details?: Record<string, unknown>;
 }
 
 export interface PromptCompletionResponse {
@@ -261,6 +265,7 @@ export interface PromptCompletionResponse {
 	model: string;
 	choices: PromptCompletionChoice[];
 	usage: PromptCompletionUsage;
+	system_fingerprint?: string | null;
 }
 
 // ===== Migrate Prompt =====

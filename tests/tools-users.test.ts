@@ -222,6 +222,8 @@ describe("get_user_invite", () => {
 								created_at: "2026-01-01T00:00:00.000Z",
 								expires_at: "2026-01-08T00:00:00.000Z",
 								invite_link: "must-not-leak",
+								accepted_at: "2026-01-02T00:00:00.000Z",
+								invited_by: "user_9",
 							};
 						},
 					},
@@ -249,7 +251,37 @@ describe("get_user_invite", () => {
 			status: "pending",
 			created_at: "2026-01-01T00:00:00.000Z",
 			expires_at: "2026-01-08T00:00:00.000Z",
+			accepted_at: "2026-01-02T00:00:00.000Z",
+			invited_by: "user_9",
 		});
+	});
+
+	it("omits accepted_at and invited_by when the API leaves them out", async () => {
+		const callbacks = registerToolCallbacks((server) => {
+			registerUsersTools(
+				server as never,
+				{
+					users: {
+						getUserInvite: async () => ({
+							id: "invite_2",
+							email: "p@example.com",
+							role: "member",
+							status: "pending",
+							created_at: "2026-01-01T00:00:00.000Z",
+							expires_at: "2026-01-08T00:00:00.000Z",
+						}),
+					},
+				} as never,
+			);
+		});
+		const cb = callbacks.get("get_user_invite");
+		assert.ok(cb);
+		const result = (await cb({ invite_id: "invite_2" })) as {
+			content: Array<{ text: string }>;
+		};
+		const payload = JSON.parse(result.content[0]?.text ?? "{}");
+		assert.equal("accepted_at" in payload, false);
+		assert.equal("invited_by" in payload, false);
 	});
 });
 
@@ -310,7 +342,10 @@ describe("resend_user_invite", () => {
 						resendUserInvite: async (inviteId: string) => {
 							callCount += 1;
 							capturedInviteId = inviteId;
-							return { success: true };
+							return {
+								success: true,
+								invite_link: "https://app.portkey.ai/invite/resent",
+							};
 						},
 					},
 				} as never,
@@ -329,8 +364,54 @@ describe("resend_user_invite", () => {
 		const payload = JSON.parse(result.content[0]?.text ?? "{}") as {
 			message?: string;
 			success?: boolean;
+			invite_link?: string;
 		};
 		assert.equal(payload.success, true);
+		assert.equal(payload.invite_link, "https://app.portkey.ai/invite/resent");
 		assert.match(payload.message ?? "", /invite_1/);
+	});
+});
+
+describe("user workspace_ids", () => {
+	const user = {
+		object: "user",
+		id: "user_1",
+		first_name: "Ada",
+		last_name: "Lovelace",
+		role: "member",
+		email: "ada@example.com",
+		created_at: "2024-01-25 11:35:07",
+		last_updated_at: "2024-01-25 11:35:07",
+		workspace_ids: ["ws-shared-123"],
+	};
+
+	it("keeps workspace_ids in list_all_users and get_user results", async () => {
+		const callbacks = registerToolCallbacks((server) => {
+			registerUsersTools(
+				server as never,
+				{
+					users: {
+						listUsers: async () => ({ total: 1, data: [user] }),
+						getUser: async () => user,
+					},
+				} as never,
+			);
+		});
+
+		const list = (await callbacks.get("list_all_users")?.({})) as {
+			content: Array<{ text: string }>;
+		};
+		const listed = JSON.parse(list.content[0]?.text ?? "{}") as {
+			users: Array<{ workspace_ids?: string[] }>;
+		};
+		assert.deepEqual(listed.users[0]?.workspace_ids, ["ws-shared-123"]);
+
+		const single = (await callbacks.get("get_user")?.({
+			user_id: "user_1",
+		})) as { content: Array<{ text: string }> };
+		const got = JSON.parse(single.content[0]?.text ?? "{}") as {
+			workspace_ids?: string[];
+		};
+		assert.deepEqual(got.workspace_ids, ["ws-shared-123"]);
 	});
 });

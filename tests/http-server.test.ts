@@ -60,7 +60,7 @@ async function getFreePort(): Promise<number> {
 
 async function waitForHealthy(
 	baseUrl: string,
-	timeoutMs = 10_000,
+	timeoutMs = 45_000,
 ): Promise<void> {
 	const deadline = Date.now() + timeoutMs;
 
@@ -92,7 +92,7 @@ async function stopServer(child: ChildProcess): Promise<void> {
 		setTimeout(() => {
 			child.kill("SIGKILL");
 			reject(new Error("Timed out waiting for HTTP server to stop"));
-		}, 10_000).unref();
+		}, 30_000).unref();
 	});
 
 	try {

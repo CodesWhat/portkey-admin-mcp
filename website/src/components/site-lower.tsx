@@ -12,7 +12,7 @@ export function LowerSections() {
           <div className="section-body">
             <ul className="srows">
               <li>
-                <b>Writes are real.</b> The server does whatever your key allows. 96 of the 194
+                <b>Writes are real.</b> The server does whatever your key allows. 96 of the 195
                 tools write, and 38 carry a destructive hint, so a client that honours it can ask
                 first.
               </li>
@@ -218,7 +218,7 @@ export function LowerSections() {
                 </summary>
                 <div className="a">
                   <p>
-                    Only for the 56 Enterprise-gated tools: organisation-level analytics,
+                    Only for the 57 Enterprise-gated tools: organisation-level analytics,
                     deployments, audit logs, organisation guardrails, log exports and SCIM.
                     Everything else works on a workspace key. The tool list above marks them.
                   </p>

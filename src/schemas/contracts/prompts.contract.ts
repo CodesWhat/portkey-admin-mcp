@@ -128,6 +128,7 @@ export const RawGetPromptResponseSchema = z.object({
 	prompt_version: z.number().nullish(),
 	prompt_version_description: z.string().nullish(),
 	prompt_version_status: z.string().nullish(),
+	prompt_version_label_id: z.string().nullish(),
 	// Template — string, object, or null depending on API version
 	string: z.unknown().optional(),
 	parameters: z.record(z.string(), z.unknown()).nullish(),

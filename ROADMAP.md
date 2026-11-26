@@ -2,7 +2,7 @@
 
 > Last reviewed: 2026-11-23
 > Status: active compatibility maintenance
-> Current catalog: 194 tools across 22 domains, including 56 Enterprise-gated tools
+> Current catalog: 195 tools across 22 domains, including 56 Enterprise-gated tools
 
 Portkey continues to publish control-plane additions after its acquisition by
 Palo Alto Networks. This project follows the stable public Portkey OpenAPI and

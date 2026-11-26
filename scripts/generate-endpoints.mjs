@@ -114,7 +114,7 @@ const DOMAINS = [
 	{
 		name: "deployments",
 		routes: [
-			"GET/POST `/deployments`; GET/PUT/DELETE `/deployments/{id}`. DELETE archives; `/deployments/{id}/ping` is not exposed (no tool yet).",
+			"GET/POST `/deployments`; GET/PUT/DELETE `/deployments/{id}`; GET `/deployments/{id}/ping`. DELETE archives.",
 			"Undocumented upstream: these tools call the `/v2` base (the `/v1` base with its suffix swapped to `/v2`), while the public OpenAPI lists `/deployments` under `/v1`.",
 		],
 	},
@@ -333,7 +333,7 @@ ${sections.join("\n\n")}
 - Deployment registration or authentication rotation may return one-time secrets.
   Tool results warn that those values appear in the MCP transcript and must be
   stored immediately. Deployment tag maps remain flat strings and list filters
-  serialize them as JSON. The deployment ping operation (\`GET /deployments/{id}/ping\`) is not exposed; there is no tool for it yet.
+  serialize them as JSON. \`ping_deployment\` runs the live two-way connectivity check (\`GET /deployments/{id}/ping\`).
 - Guardrails target either LLM or MCP-tool traffic. MCP-server bulk replacement
   removes omitted mappings, while the single-server upsert leaves other mappings
   unchanged.

@@ -46,8 +46,101 @@ export interface GetLogParams {
 	type?: "hooks";
 }
 
-/** A log payload varies by provider, mode, and requested path format. */
-export type LogDetail = Record<string, unknown>;
+/** Request or response snapshot (`RequestResponseObject` in the Portkey spec). */
+export interface LogRequestResponseObject {
+	body?: Record<string, unknown>;
+	headers?: Record<string, string>;
+	url?: string;
+	method?: string;
+}
+
+/** `LogObject.request` in the Portkey spec. */
+export interface LogDetailRequest {
+	url?: string;
+	method?: "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "OPTIONS" | "HEAD";
+	headers?: Record<string, string>;
+	body?: Record<string, unknown>;
+	portkeyHeaders?: Record<string, string>;
+}
+
+/** `LogObject.response` in the Portkey spec. */
+export interface LogDetailResponse {
+	status?: number;
+	headers?: Record<string, string>;
+	body?: Record<string, unknown>;
+	responseTime?: number;
+	lastUsedOptionJsonPath?: string;
+}
+
+/** `AnalyticsMetrics` in the Portkey spec, as embedded in a log. */
+export interface LogMetrics {
+	id?: string;
+	organisation_id?: string;
+	organisation_name?: string;
+	prompt_id?: string;
+	prompt_version_id?: string;
+	config_id?: string;
+	created_at?: string;
+	is_success?: boolean;
+	ai_org?: string;
+	ai_model?: string;
+	req_units?: number;
+	res_units?: number;
+	total_units?: number;
+	cost?: number;
+	cost_currency?: string;
+	request_url?: string;
+	request_method?: string;
+	response_status_code?: number;
+	response_time?: number;
+	is_proxy_call?: boolean;
+	cache_status?: string | null;
+	cache_type?: string | null;
+	stream_mode?: number | null;
+	retry_success_count?: number;
+	trace_id?: string;
+	span_id?: string;
+	span_name?: string;
+	parent_span_id?: string;
+	mode?: string;
+	virtual_key?: string;
+	source?: string;
+	runtime?: string;
+	runtime_version?: string;
+	sdk_version?: string;
+	config?: string;
+	internal_trace_id?: string;
+	last_used_option_index?: number;
+	config_version_id?: string;
+	prompt_slug?: string;
+	workspace_slug?: string | null;
+	log_store_file_path_format?: string;
+	"metadata.key"?: Array<string | null>;
+	"metadata.value"?: Array<string | null>;
+	api_key_id?: string;
+	request_parsing_time?: number;
+	pre_processing_time?: number;
+	cache_processing_time?: number;
+	response_parsing_time?: number;
+	gateway_processing_time?: number;
+	upstream_response_time?: number;
+}
+
+/**
+ * `LogObject` in the Portkey spec. The payload varies by provider, mode and
+ * path format, so unknown fields still pass through untouched.
+ */
+export interface LogDetail extends Record<string, unknown> {
+	_id?: string | null;
+	request?: LogDetailRequest;
+	response?: LogDetailResponse;
+	organisation_id?: string | null;
+	created_at?: string | null;
+	metrics?: LogMetrics;
+	finalUntransformedRequest?: LogRequestResponseObject;
+	originalResponse?: LogRequestResponseObject;
+	transformedRequest?: LogRequestResponseObject;
+}
 
 /** Query for fields an organisation prevents a workspace from exporting. */
 export interface GetLogExportFieldRestrictionsParams {
@@ -90,12 +183,27 @@ export type LogExportStatus =
 export interface LogExportFilters {
 	time_of_generation_min?: string;
 	time_of_generation_max?: string;
-	cost_min?: number;
-	cost_max?: number;
 	total_units_min?: number;
 	total_units_max?: number;
-	ai_model?: string[];
+	cost_min?: number;
+	cost_max?: number;
+	ai_model?: string | string[];
+	prompt_token_min?: number;
+	prompt_token_max?: number;
+	completion_token_min?: number;
+	completion_token_max?: number;
+	status_code?: string;
 	metadata?: Record<string, unknown>;
+	ai_org_model?: string;
+	weighted_feedback_min?: number;
+	weighted_feedback_max?: number;
+	virtual_keys?: string;
+	trace_id?: string;
+	configs?: string;
+	workspace_slug?: string;
+	prompt_slug?: string;
+	page_size?: number;
+	current_page?: number;
 }
 
 export interface CreateLogExportRequest {
@@ -135,9 +243,7 @@ export interface ListLogExportsParams {
 	workspace_id: string;
 }
 
-export interface UpdateLogExportFilters {
-	time_of_generation_max?: string;
-}
+export type UpdateLogExportFilters = LogExportFilters;
 
 export interface UpdateLogExportRequest {
 	filters?: UpdateLogExportFilters;

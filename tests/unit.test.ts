@@ -1953,6 +1953,7 @@ describe("Config tool payload assembly", () => {
 						createCalls.push(payload);
 						return { id: "cfg_123", version_id: "ver_123" };
 					},
+					getConfig: async () => ({ config: {} }),
 					updateConfig: async (_slug: string, payload: unknown) => {
 						updateCalls.push(payload);
 						return {
@@ -2022,8 +2023,6 @@ describe("Config tool payload assembly", () => {
 						attempts: 0,
 						on_status_codes: [429],
 					},
-					strategy: undefined,
-					targets: undefined,
 				},
 			},
 		]);
@@ -2305,8 +2304,8 @@ describe("Tool callback error handling", () => {
 
 		assert.match(
 			descriptionFor("update_log_export"),
-			/only/i,
-			"update_log_export should be explicit about the limited fields that can change",
+			/filters create_log_export accepts/i,
+			"update_log_export should be explicit about which fields can change",
 		);
 		assert.match(
 			descriptionFor("update_log_export"),
@@ -3466,6 +3465,13 @@ describe("Tool annotations", () => {
 			readOnlyHint: false,
 			destructiveHint: false,
 			idempotentHint: false,
+			openWorldHint: true,
+		});
+		assert.deepEqual(getAnnotations("ping_deployment"), {
+			title: "Ping Deployment",
+			readOnlyHint: true,
+			destructiveHint: false,
+			idempotentHint: true,
 			openWorldHint: true,
 		});
 		assert.deepEqual(getAnnotations("test_mcp_server"), {

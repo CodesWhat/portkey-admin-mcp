@@ -375,6 +375,84 @@ describe("prompt rendering and execution tools", () => {
 		});
 	});
 
+	it("passes newer render parameters through to hyperparameters", async () => {
+		const callback = promptCallbacks({
+			renderPrompt: async () => ({
+				success: true,
+				data: {
+					messages: [{ role: "user", content: "Hi" }],
+					model: "gpt-5",
+					max_completion_tokens: 500,
+					parallel_tool_calls: false,
+					seed: 7,
+					logprobs: true,
+					top_logprobs: 3,
+					thinking: { type: "enabled", budget_tokens: 1024 },
+					response_format: { type: "json_schema", json_schema: { name: "x" } },
+					stream_options: { include_usage: true },
+				},
+			}),
+		}).get("render_prompt");
+		assert.ok(callback, "expected render_prompt to be registered");
+
+		const payload = parseToolResult(
+			await callback({ prompt_id: "prompt-1", variables: {} }),
+		);
+		assert.deepEqual(payload.hyperparameters, {
+			max_completion_tokens: 500,
+			parallel_tool_calls: false,
+			seed: 7,
+			logprobs: true,
+			top_logprobs: 3,
+			thinking: { type: "enabled", budget_tokens: 1024 },
+			response_format: { type: "json_schema", json_schema: { name: "x" } },
+			stream_options: { include_usage: true },
+		});
+	});
+
+	it("returns usage details and system_fingerprint from a completion", async () => {
+		const callback = promptCallbacks({
+			runPromptCompletion: async () => ({
+				id: "completion-1",
+				object: "chat.completion",
+				created: 1,
+				model: "gpt-5",
+				system_fingerprint: "fp_123",
+				choices: [
+					{
+						index: 0,
+						message: { role: "assistant", content: "Hi" },
+						finish_reason: "stop",
+					},
+				],
+				usage: {
+					prompt_tokens: 10,
+					completion_tokens: 2,
+					total_tokens: 12,
+					completion_tokens_details: { reasoning_tokens: 1 },
+					prompt_tokens_details: { cached_tokens: 4 },
+				},
+			}),
+		}).get("run_prompt_completion");
+		assert.ok(callback, "expected run_prompt_completion to be registered");
+
+		const payload = parseToolResult(
+			await callback({
+				prompt_id: "prompt-1",
+				variables: {},
+				metadata: { client_id: "c", app: "a", env: "prod" },
+			}),
+		);
+		assert.equal(payload.system_fingerprint, "fp_123");
+		assert.deepEqual(payload.usage, {
+			prompt_tokens: 10,
+			completion_tokens: 2,
+			total_tokens: 12,
+			completion_tokens_details: { reasoning_tokens: 1 },
+			prompt_tokens_details: { cached_tokens: 4 },
+		});
+	});
+
 	it("returns the first completion choice and token usage", async () => {
 		let received: unknown;
 		const callback = promptCallbacks({
@@ -867,6 +945,118 @@ describe("configuration mutation tools", () => {
 		assert.equal(payload.version_id, "version-2");
 	});
 
+	it("reads the current config then writes the merged config on update", async () => {
+		const calls: unknown[] = [];
+		const callback = configCallbacks({
+			getConfig: async (slug: string) => {
+				calls.push({ get: slug });
+				return {
+					config: {
+						cache: { mode: "simple", max_age: 600 },
+						retry: { attempts: 3, on_status_codes: [429, 503] },
+						strategy: { mode: "fallback" },
+						targets: [{ provider: "openai" }],
+					},
+				};
+			},
+			updateConfig: async (slug: string, payload: unknown) => {
+				calls.push({ put: slug, payload });
+				return { success: true, version_id: "version-3" };
+			},
+		}).get("update_config");
+		assert.ok(callback, "expected update_config to be registered");
+
+		await callback({ slug: "production", retry_attempts: 2 });
+		await callback({ slug: "production", cache_mode: "semantic" });
+		await callback({
+			slug: "production",
+			name: "Renamed",
+			strategy_mode: "loadbalance",
+			targets: [{ virtual_key: "vk-1" }],
+		});
+
+		assert.deepEqual(calls, [
+			{ get: "production" },
+			{
+				put: "production",
+				payload: {
+					config: {
+						cache: { mode: "simple", max_age: 600 },
+						retry: { attempts: 2, on_status_codes: [429, 503] },
+						strategy: { mode: "fallback" },
+						targets: [{ provider: "openai" }],
+					},
+				},
+			},
+			{ get: "production" },
+			{
+				put: "production",
+				payload: {
+					config: {
+						cache: { mode: "semantic", max_age: 600 },
+						retry: { attempts: 3, on_status_codes: [429, 503] },
+						strategy: { mode: "fallback" },
+						targets: [{ provider: "openai" }],
+					},
+				},
+			},
+			{ get: "production" },
+			{
+				put: "production",
+				payload: {
+					name: "Renamed",
+					config: {
+						cache: { mode: "simple", max_age: 600 },
+						retry: { attempts: 3, on_status_codes: [429, 503] },
+						strategy: { mode: "loadbalance" },
+						targets: [{ virtual_key: "vk-1" }],
+					},
+				},
+			},
+		]);
+	});
+
+	it("does not read or send config for a name-only or status-only update", async () => {
+		let getCalled = false;
+		const puts: unknown[] = [];
+		const callback = configCallbacks({
+			getConfig: async () => {
+				getCalled = true;
+				return { config: {} };
+			},
+			updateConfig: async (_slug: string, payload: unknown) => {
+				puts.push(payload);
+				return { success: true, version_id: "v" };
+			},
+		}).get("update_config");
+		assert.ok(callback, "expected update_config to be registered");
+
+		await callback({ slug: "production", name: "Only name" });
+		await callback({ slug: "production", status: "inactive" });
+		assert.equal(getCalled, false);
+		assert.deepEqual(puts, [{ name: "Only name" }, { status: "inactive" }]);
+	});
+
+	it("fails the update without writing when the config read fails", async () => {
+		let putCalled = false;
+		const callback = configCallbacks({
+			getConfig: async () => {
+				throw new Error("read failed");
+			},
+			updateConfig: async () => {
+				putCalled = true;
+				return { success: true };
+			},
+		}).get("update_config");
+		assert.ok(callback, "expected update_config to be registered");
+
+		await assert.rejects(
+			() => callback({ slug: "production", retry_attempts: 2 }),
+			/read failed/,
+		);
+		assert.equal(putCalled, false);
+	});
+
 	it("deletes a configuration and preserves the service success flag", async () => {
 		const deleted: string[] = [];
 		const callback = configCallbacks({
@@ -908,5 +1098,59 @@ describe("configuration mutation tools", () => {
 				updated_by: "user-1",
 			},
 		]);
+	});
+});
+
+describe("prompt version label ids", () => {
+	it("surfaces prompt_version_label_id from get_prompt and get_prompt_version", async () => {
+		const callbacks = promptCallbacks({
+			getPrompt: async () => ({
+				id: "prompt-1",
+				name: "P",
+				slug: "p",
+				collection_id: "c",
+				created_at: "2026-01-01T00:00:00.000Z",
+				last_updated_at: "2026-01-02T00:00:00.000Z",
+				current_version: {
+					id: "v1",
+					version_number: 1,
+					string: "Hi",
+					parameters: {},
+					prompt_version_label_id: "label-1",
+					created_at: "2026-01-01T00:00:00.000Z",
+				},
+				object: "prompt",
+			}),
+			listPromptVersions: async () => [],
+			getPromptVersion: async () => ({
+				id: "prompt-1",
+				name: "P",
+				slug: "p",
+				collection_id: "c",
+				created_at: "2026-01-01T00:00:00.000Z",
+				last_updated_at: "2026-01-02T00:00:00.000Z",
+				prompt_version_id: "v1",
+				prompt_version_label_id: "label-1",
+				string: "Hi",
+				object: "prompt",
+			}),
+		});
+		const getPrompt = callbacks.get("get_prompt");
+		const getVersion = callbacks.get("get_prompt_version");
+		assert.ok(getPrompt && getVersion, "expected both tools to be registered");
+
+		const prompt = parseToolResult(await getPrompt({ prompt_id: "prompt-1" }));
+		assert.equal(
+			(prompt.current_version as Record<string, unknown>)
+				.prompt_version_label_id,
+			"label-1",
+		);
+		const version = parseToolResult(
+			await getVersion({ prompt_id: "prompt-1", version_id: "v1" }),
+		);
+		assert.equal(
+			(version.version as Record<string, unknown>).prompt_version_label_id,
+			"label-1",
+		);
 	});
 });

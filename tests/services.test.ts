@@ -374,6 +374,8 @@ describe("DeploymentsService request routing", () => {
 		});
 		enqueue({});
 		await service.archiveDeployment("dep/one");
+		enqueue({ object: "deployment", status: "healthy" });
+		await service.pingDeployment("dep/one");
 
 		const listUrl = capturedUrl(0);
 		assert.equal(listUrl.pathname, "/v2/deployments");
@@ -406,6 +408,7 @@ describe("DeploymentsService request routing", () => {
 			["GET", "/v2/deployments/dep%2Fone"],
 			["PUT", "/v2/deployments/dep%2Fone"],
 			["DELETE", "/v2/deployments/dep%2Fone"],
+			["GET", "/v2/deployments/dep%2Fone/ping"],
 		]);
 	});
 });
@@ -467,6 +470,7 @@ describe("PromptsService workflows", () => {
 			model: "openai/gpt-5",
 			virtual_key: "vk-1",
 			template_metadata: { app: "support", env: "dev" },
+			prompt_version_label_id: "label-1",
 		};
 
 		enqueue({ id: "prompt-1", slug: "support-dev", version_id: "version-1" });
@@ -486,6 +490,7 @@ describe("PromptsService workflows", () => {
 		enqueue(rawPrompt);
 		const prompt = await service.getPrompt("prompt/one");
 		assert.equal(prompt.current_version?.version_number, 3);
+		assert.equal(prompt.current_version?.prompt_version_label_id, "label-1");
 		enqueue({
 			id: "prompt-1",
 			slug: "support-dev",
@@ -1281,8 +1286,10 @@ describe("UsersService request contracts", () => {
 		assert.deepEqual(await service.deleteUserInvite("invite/one"), {
 			success: true,
 		});
+		enqueue({ inviteLink: "https://app.portkey.ai/invite/resent" });
 		assert.deepEqual(await service.resendUserInvite("invite/one"), {
 			success: true,
+			invite_link: "https://app.portkey.ai/invite/resent",
 		});
 
 		assert.deepEqual(
@@ -1954,6 +1961,50 @@ describe("Configuration and platform service contracts", () => {
 		]);
 	});
 
+	it("accepts an object or null config in get responses", async () => {
+		const service = new ConfigsService("test-key", BASE_URL);
+		enqueue({
+			id: "config-1",
+			slug: "config-one",
+			config: { strategy: { mode: "loadbalance" } },
+		});
+		assert.deepEqual((await service.getConfig("config/one")).config, {
+			strategy: { mode: "loadbalance" },
+		});
+		enqueue({ id: "config-1", slug: "config-one", config: null });
+		assert.deepEqual((await service.getConfig("config/one")).config, {});
+	});
+
+	it("accepts bare and incomplete config write responses", async () => {
+		const service = new ConfigsService("test-key", BASE_URL);
+		// Bare (non-enveloped) responses are accepted too.
+		enqueue({ id: "config-3", version_id: "version-9" });
+		assert.deepEqual(
+			await service.createConfig({ name: "Config three", config: {} } as never),
+			{ id: "config-3", version_id: "version-9" },
+		);
+		enqueue({ success: true, version_id: "version-10" });
+		assert.deepEqual(
+			await service.updateConfig("config/one", { name: "Again" } as never),
+			{ success: true, version_id: "version-10" },
+		);
+		// Missing ids return what's there plus a note instead of throwing.
+		enqueue({ success: true });
+		const created = await service.createConfig({
+			name: "Config four",
+			config: {},
+		} as never);
+		assert.equal(created.id, undefined);
+		assert.match(created.note ?? "", /did not include/);
+		enqueue({ success: true });
+		const updated = await service.updateConfig("config/one", {
+			name: "Again",
+		} as never);
+		assert.equal(updated.success, true);
+		assert.equal(updated.version_id, undefined);
+		assert.match(updated.note ?? "", /did not include/);
+	});
+
 	it("routes organisation defaults, exclusions, and guardrail CRUD", async () => {
 		const service = new GuardrailsService("test-key", BASE_URL);
 		await service.getOrganisationDefaults();
@@ -2249,7 +2300,7 @@ describe("MCP administration service contracts", () => {
 			capturedUrl(0).pathname,
 			"/v1/mcp-servers/server%2Fone/connections",
 		);
-		assert.equal(capturedUrl(8).searchParams.get("current_page"), "2");
+		assert.equal(capturedUrl(8).searchParams.get("page"), "3");
 		assertRoutes([
 			["GET", "/v1/mcp-servers/server%2Fone/connections"],
 			["DELETE", "/v1/mcp-servers/server%2Fone/connections"],
@@ -2268,6 +2319,31 @@ describe("MCP administration service contracts", () => {
 });
 
 describe("Observability and workspace service contracts", () => {
+	it("getLog returns the full log object with query params", async () => {
+		const log = {
+			_id: "log-1",
+			request: { url: "https://x.test", method: "POST", portkeyHeaders: {} },
+			response: { status: 200, responseTime: 5, lastUsedOptionJsonPath: "$" },
+			organisation_id: "org-1",
+			created_at: "2024-01-15T10:30:00.000Z",
+			metrics: { cost: 0.5, "metadata.key": ["a"] },
+			transformedRequest: { body: { a: 1 } },
+			extra: true,
+		};
+		enqueue(log);
+		const service = new LoggingService("test-key", BASE_URL);
+		const result = await service.getLog("log-1", {
+			path_format: "v2",
+			created_at: "2024-01-15T10:30:00.000Z",
+			type: "hooks",
+		});
+		assert.deepEqual(result, log);
+		const url = capturedUrl(0);
+		assert.equal(url.pathname, "/v1/logs/log-1");
+		assert.equal(url.searchParams.get("path_format"), "v2");
+		assert.equal(url.searchParams.get("type"), "hooks");
+	});
+
 	it("routes log ingestion and export lifecycle operations", async () => {
 		const service = new LoggingService("test-key", BASE_URL);
 		await service.getLog("log/one", { path_format: "v2" });
@@ -2425,5 +2501,36 @@ describe("Observability and workspace service contracts", () => {
 			["POST", "/v1/feedback"],
 			["PUT", "/v1/feedback/feedback%2Fone"],
 		]);
+	});
+});
+
+describe("MCP sub-resource paging", () => {
+	it("maps zero-based current_page to the spec's 1-based page", async () => {
+		const servers = new McpServersService("test-key", BASE_URL);
+		const integrations = new McpIntegrationsService("test-key", BASE_URL);
+		await servers.listMcpServerUserAccess("s1", {
+			current_page: 0,
+			page_size: 500,
+			search: "ann",
+		});
+		await servers.listMcpServerUserAccess("s1", { current_page: 1 });
+		await servers.listMcpServerCapabilities("s1", {
+			current_page: 2,
+			page_size: 25,
+			type: "tool",
+		});
+		await integrations.listMcpIntegrationCapabilities("i1", {
+			current_page: 0,
+			page_size: 50,
+			type: "prompt",
+		});
+		await integrations.listMcpIntegrationCapabilities("i1");
+
+		const q = (i: number) => Object.fromEntries(capturedUrl(i).searchParams);
+		assert.deepEqual(q(0), { page: "1", page_size: "500", search: "ann" });
+		assert.deepEqual(q(1), { page: "2" });
+		assert.deepEqual(q(2), { page: "3", page_size: "25", type: "tool" });
+		assert.deepEqual(q(3), { page: "1", page_size: "50", type: "prompt" });
+		assert.deepEqual(q(4), {});
 	});
 });

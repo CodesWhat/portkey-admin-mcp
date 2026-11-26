@@ -7,6 +7,7 @@
  */
 
 import assert from "node:assert/strict";
+import { spawn } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { after, before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
@@ -86,7 +87,7 @@ describe("modern stdio protocol", () => {
 			await client.connect(transport);
 			assert.equal(client.getProtocolEra(), "modern");
 			assert.equal(client.getServerVersion()?.name, "portkey-admin-mcp");
-			assert.equal((await client.listTools()).tools.length, 194);
+			assert.equal((await client.listTools()).tools.length, 195);
 			assert.ok((await client.listResources()).resources.length > 0);
 			assert.ok((await client.listPrompts()).prompts.length > 0);
 		} finally {
@@ -95,7 +96,149 @@ describe("modern stdio protocol", () => {
 	});
 });
 
-// All 194 expected tool names across 22 domains
+describe("raw stdio era selection", () => {
+	// The stdio entry pins the era from the first message on the connection:
+	// a valid 2026-07-28 _meta envelope opens a modern connection, anything
+	// else is served as legacy. One process per probe, since the pin sticks.
+	const modernMeta = {
+		"io.modelcontextprotocol/protocolVersion": "2026-07-28",
+		"io.modelcontextprotocol/clientInfo": { name: "raw-stdio", version: "1" },
+		"io.modelcontextprotocol/clientCapabilities": {},
+	};
+
+	type StdioReply = {
+		result: { protocolVersion: string };
+		error: { code: number };
+	};
+
+	function firstReply(request: object): Promise<Record<string, unknown>> {
+		return new Promise((resolve, reject) => {
+			const child = spawn("node", [BUILD_INDEX], {
+				env: { ...process.env, PORTKEY_API_KEY: "x" },
+				stdio: ["pipe", "pipe", "ignore"],
+			});
+			let buffer = "";
+			const timer = setTimeout(() => {
+				child.kill();
+				reject(new Error("no stdio reply within 10s"));
+			}, 10_000);
+			child.stdout.on("data", (chunk: Buffer) => {
+				buffer += chunk.toString("utf-8");
+				const newline = buffer.indexOf("\n");
+				if (newline === -1) return;
+				clearTimeout(timer);
+				child.kill();
+				resolve(JSON.parse(buffer.slice(0, newline)));
+			});
+			child.on("error", reject);
+			child.stdin.write(`${JSON.stringify(request)}\n`);
+		});
+	}
+
+	it("answers a bare initialize for 2026-07-28 with the legacy 2025-11-25 revision", async () => {
+		const reply = await firstReply({
+			jsonrpc: "2.0",
+			id: 1,
+			method: "initialize",
+			params: {
+				protocolVersion: "2026-07-28",
+				capabilities: {},
+				clientInfo: { name: "raw-stdio", version: "1" },
+			},
+		});
+		const result = reply.result as { protocolVersion: string };
+		assert.equal(result.protocolVersion, "2025-11-25");
+	});
+
+	it("rejects server/discover with -32601 when it has no modern envelope", async () => {
+		const reply = await firstReply({
+			jsonrpc: "2.0",
+			id: 1,
+			method: "server/discover",
+			params: {},
+		});
+		assert.equal((reply.error as { code: number }).code, -32601);
+	});
+
+	it("serves server/discover as the first message when it carries the modern envelope", async () => {
+		const reply = await firstReply({
+			jsonrpc: "2.0",
+			id: 1,
+			method: "server/discover",
+			params: { _meta: modernMeta },
+		});
+		const result = reply.result as { supportedVersions: string[] };
+		assert.deepEqual(result.supportedVersions, ["2026-07-28"]);
+	});
+
+	it("keeps the era pinned for the whole connection after a bare initialize", async () => {
+		const replies = await new Promise<StdioReply[]>((resolve, reject) => {
+			const child = spawn("node", [BUILD_INDEX], {
+				env: { ...process.env, PORTKEY_API_KEY: "x" },
+				stdio: ["pipe", "pipe", "ignore"],
+			});
+			const received: StdioReply[] = [];
+			let buffer = "";
+			let discoverySent = false;
+			const timer = setTimeout(() => {
+				child.kill();
+				reject(new Error("no stdio replies within 10s"));
+			}, 10_000);
+			child.stdout.on("data", (chunk: Buffer) => {
+				buffer += chunk.toString("utf-8");
+				let newline = buffer.indexOf("\n");
+				while (newline !== -1) {
+					received.push(JSON.parse(buffer.slice(0, newline)));
+					buffer = buffer.slice(newline + 1);
+					newline = buffer.indexOf("\n");
+				}
+				if (received.length === 1 && !discoverySent) {
+					discoverySent = true;
+					child.stdin.write(
+						`${JSON.stringify({
+							jsonrpc: "2.0",
+							id: 2,
+							method: "server/discover",
+							params: { _meta: modernMeta },
+						})}\n`,
+					);
+				} else if (received.length >= 2) {
+					clearTimeout(timer);
+					child.kill();
+					resolve(received);
+				}
+			});
+			child.on("error", reject);
+			child.stdin.write(
+				`${JSON.stringify({
+					jsonrpc: "2.0",
+					id: 1,
+					method: "initialize",
+					params: {
+						protocolVersion: "2026-07-28",
+						capabilities: {},
+						clientInfo: { name: "raw-stdio", version: "1" },
+					},
+				})}\n`,
+			);
+		});
+		assert.equal(replies[0].result.protocolVersion, "2025-11-25");
+		assert.equal(replies[1].error.code, -32601);
+	});
+
+	it("serves tools/list on the envelope alone, with no initialize", async () => {
+		const reply = await firstReply({
+			jsonrpc: "2.0",
+			id: 1,
+			method: "tools/list",
+			params: { _meta: modernMeta },
+		});
+		const result = reply.result as { tools: unknown[] };
+		assert.equal(result.tools.length, 195);
+	});
+});
+
+// All 195 expected tool names across 22 domains
 const EXPECTED_TOOLS = [
 	"create_access_policy",
 	"list_access_policies",
@@ -140,12 +283,13 @@ const EXPECTED_TOOLS = [
 	"update_config",
 	"delete_config",
 	"list_config_versions",
-	// deployments (5)
+	// deployments (6)
 	"list_deployments",
 	"register_deployment",
 	"get_deployment",
 	"update_deployment",
 	"archive_deployment",
+	"ping_deployment",
 	// keys and secret references (16)
 	"list_virtual_keys",
 	"create_virtual_key",

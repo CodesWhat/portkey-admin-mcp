@@ -127,7 +127,7 @@ test("serves modern and legacy discovery on the same authenticated HTTP endpoint
 		});
 		const modernTools = await readRpc(toolsResponse);
 		assert.equal(toolsResponse.status, 200);
-		assert.equal(modernTools.result?.tools?.length, 194);
+		assert.equal(modernTools.result?.tools?.length, 195);
 		assert.ok((modernTools.result?.ttlMs ?? 0) > 0);
 		assert.equal(modernTools.result?.cacheScope, "private");
 		const legacyResponse = await fetch(url, {
