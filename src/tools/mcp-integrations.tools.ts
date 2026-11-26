@@ -170,6 +170,10 @@ const MCP_INTEGRATIONS_TOOL_SCHEMAS = {
 	},
 	listMcpIntegrationCapabilities: {
 		id: z.string().describe("The MCP integration ID or slug"),
+		current_page: CurrentPageSchema,
+		page_size: pageSizeSchema(500).describe(
+			"Number of results per page, from 1 through 500; defaults to 100",
+		),
 		type: z
 			.enum(["tool", "prompt", "resource", "resource_template"])
 			.optional()
@@ -507,7 +511,7 @@ export function registerMcpIntegrationsTools(
 		"list_mcp_integration_capabilities",
 		{
 			description:
-				"List capabilities exposed by the external MCP server for an integration. Returns total plus enabled-state entries so you can decide what to toggle; use before update_mcp_integration_capabilities when you need to compare the current surface.",
+				"List capabilities exposed by the external MCP server for an integration. Returns total, has_more and enabled-state entries so you can decide what to toggle. Pages are zero-based (current_page 0 is the first), up to 500 per page, so keep paging while has_more is true; use before update_mcp_integration_capabilities when you need to compare the current surface.",
 			inputSchema: MCP_INTEGRATIONS_TOOL_SCHEMAS.listMcpIntegrationCapabilities,
 		},
 		async (params) => {
@@ -515,11 +519,14 @@ export function registerMcpIntegrationsTools(
 				await service.mcpIntegrations.listMcpIntegrationCapabilities(
 					params.id,
 					{
+						current_page: params.current_page,
+						page_size: params.page_size,
 						type: params.type,
 					},
 				);
 			return jsonResult({
 				total: result.total,
+				has_more: result.has_more,
 				capabilities: result.data,
 			});
 		},

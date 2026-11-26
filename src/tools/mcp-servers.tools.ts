@@ -81,7 +81,9 @@ const MCP_SERVERS_TOOL_SCHEMAS = {
 	listMcpServerCapabilities: {
 		id: z.string().describe("The MCP server ID or slug"),
 		current_page: CurrentPageSchema,
-		page_size: PageSizeSchema.describe("Number of results per page (max 100)"),
+		page_size: pageSizeSchema(500).describe(
+			"Number of results per page, from 1 through 500; defaults to 100",
+		),
 		type: z
 			.enum(["tool", "prompt", "resource", "resource_template"])
 			.optional()
@@ -105,7 +107,9 @@ const MCP_SERVERS_TOOL_SCHEMAS = {
 	listMcpServerUserAccess: {
 		id: z.string().describe("The MCP server ID or slug"),
 		current_page: CurrentPageSchema,
-		page_size: PageSizeSchema.describe("Number of results per page (max 100)"),
+		page_size: pageSizeSchema(500).describe(
+			"Number of results per page, from 1 through 500; defaults to 100",
+		),
 		search: z.string().optional().describe("Search by user name or email"),
 	},
 	updateMcpServerUserAccess: {

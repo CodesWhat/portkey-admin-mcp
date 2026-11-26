@@ -205,11 +205,23 @@ export class McpIntegrationsService extends BaseService {
 
 	async listMcpIntegrationCapabilities(
 		id: string,
-		params?: { type?: McpIntegrationCapability["type"] },
+		params?: {
+			current_page?: number;
+			page_size?: number;
+			type?: McpIntegrationCapability["type"];
+		},
 	): Promise<ListMcpIntegrationCapabilitiesResponse> {
 		return this.get<ListMcpIntegrationCapabilitiesResponse>(
 			`/mcp-integrations/${this.encodePathSegment(id)}/capabilities`,
-			{ type: params?.type },
+			{
+				// Zero-based tool input; the endpoint takes a 1-based page.
+				page:
+					params?.current_page === undefined
+						? undefined
+						: params.current_page + 1,
+				page_size: params?.page_size,
+				type: params?.type,
+			},
 		);
 	}
 

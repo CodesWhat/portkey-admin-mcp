@@ -73,7 +73,7 @@ interface RawGetConfigResponse {
 	updated_by: string;
 	created_at: string;
 	last_updated_at: string;
-	config: string;
+	config: string | ConfigDetails | null;
 	format: string;
 	type: string;
 	version_id: string;
@@ -88,16 +88,19 @@ export interface CreateConfigRequest {
 }
 
 export interface CreateConfigApiResponse {
-	success: boolean;
-	data: {
-		id: string;
-		version_id: string;
+	success?: boolean;
+	data?: {
+		id?: string;
+		version_id?: string;
 	};
+	id?: string;
+	version_id?: string;
 }
 
 export interface CreateConfigResponse {
-	id: string;
-	version_id: string;
+	id?: string;
+	version_id?: string;
+	note?: string;
 }
 
 export interface UpdateConfigRequest {
@@ -130,12 +133,22 @@ interface RawConfigVersionsResponse
 
 export interface UpdateConfigResponse {
 	success: boolean;
-	version_id: string;
+	version_id?: string;
+	note?: string;
 }
 
 export interface ListConfigsParams {
 	page_size?: number;
 	current_page?: number;
+}
+
+function parseConfigValue(
+	value: string | ConfigDetails | null | undefined,
+): ConfigDetails {
+	if (typeof value === "string") {
+		return JSON.parse(value || "{}") as ConfigDetails;
+	}
+	return value ?? ({} as ConfigDetails);
 }
 
 export class ConfigsService extends BaseService {
@@ -144,7 +157,7 @@ export class ConfigsService extends BaseService {
 	): GetConfigResponse {
 		return {
 			...response,
-			config: JSON.parse(response.config || "{}") as ConfigDetails,
+			config: parseConfigValue(response.config),
 		};
 	}
 
@@ -164,19 +177,41 @@ export class ConfigsService extends BaseService {
 
 	// Phase 1: Config CRUD
 	async createConfig(data: CreateConfigRequest): Promise<CreateConfigResponse> {
-		const response = await this.post<CreateConfigApiResponse>("/configs", data);
-		return response.data;
+		const response = await this.post<CreateConfigApiResponse | undefined>(
+			"/configs",
+			data,
+		);
+		const id = response?.data?.id ?? response?.id;
+		const versionId = response?.data?.version_id ?? response?.version_id;
+		return {
+			id,
+			version_id: versionId,
+			...(id === undefined || versionId === undefined
+				? {
+						note: "The config was created, but Portkey's response did not include both id and version_id. Use list_configs to look it up.",
+					}
+				: {}),
+		};
 	}
 
 	async updateConfig(
 		slug: string,
 		data: UpdateConfigRequest,
 	): Promise<UpdateConfigResponse> {
-		const response = await this.put<CreateConfigApiResponse>(
+		const response = await this.put<CreateConfigApiResponse | undefined>(
 			`/configs/${this.encodePathSegment(slug)}`,
 			data,
 		);
-		return { success: response.success, version_id: response.data.version_id };
+		const versionId = response?.data?.version_id ?? response?.version_id;
+		return {
+			success: response?.success ?? true,
+			version_id: versionId,
+			...(versionId === undefined
+				? {
+						note: "The config was updated, but Portkey's response did not include a version_id. Use list_config_versions to find it.",
+					}
+				: {}),
+		};
 	}
 
 	async deleteConfig(slug: string): Promise<{ success: boolean }> {

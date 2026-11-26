@@ -1795,7 +1795,7 @@
 		},
 		{
 			"name": "update_config",
-			"description": "Update a config by slug; every call creates a new config version rather than overwriting, so earlier versions stay recoverable via list_config_versions. Only provided fields change: name, status, and all routing/cache/retry settings (auto_caching, cache_mode, cache_max_age, retry_attempts, retry_on_status_codes, strategy_mode, targets) are editable, while the slug stays fixed. Changes apply immediately to every API key and prompt referencing the config. Returns the update acknowledgement and new version_id.",
+			"description": "Update a config by slug; every call creates a new config version rather than overwriting, so earlier versions stay recoverable via list_config_versions. Only provided fields change: name, status, and all routing/cache/retry settings (auto_caching, cache_mode, cache_max_age, retry_attempts, retry_on_status_codes, strategy_mode, targets) are editable, while the slug stays fixed. Changes apply immediately to every API key and prompt referencing the config. Setting fields read the current config and write the merged result back (cache and retry merge field by field, strategy and targets replace whole), and Portkey has no conditional writes, so concurrent updates to the same config can overwrite each other. Serialize them. Returns the update acknowledgement and new version_id.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
@@ -14073,13 +14073,25 @@
 		},
 		{
 			"name": "list_mcp_integration_capabilities",
-			"description": "List capabilities exposed by the external MCP server for an integration. Returns total plus enabled-state entries so you can decide what to toggle; use before update_mcp_integration_capabilities when you need to compare the current surface.",
+			"description": "List capabilities exposed by the external MCP server for an integration. Returns total, has_more and enabled-state entries so you can decide what to toggle. Pages are zero-based (current_page 0 is the first), up to 500 per page, so keep paging while has_more is true; use before update_mcp_integration_capabilities when you need to compare the current surface.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
 					"id": {
 						"type": "string",
 						"description": "The MCP integration ID or slug"
+					},
+					"current_page": {
+						"description": "Zero-based page number; the first page is 0",
+						"type": "integer",
+						"minimum": 0,
+						"maximum": 9007199254740991
+					},
+					"page_size": {
+						"description": "Number of results per page, from 1 through 500; defaults to 100",
+						"type": "integer",
+						"exclusiveMinimum": 0,
+						"maximum": 500
 					},
 					"type": {
 						"description": "Only return capabilities of this type",
@@ -14527,10 +14539,10 @@
 						"maximum": 9007199254740991
 					},
 					"page_size": {
-						"description": "Number of results per page (max 100)",
+						"description": "Number of results per page, from 1 through 500; defaults to 100",
 						"type": "integer",
 						"exclusiveMinimum": 0,
-						"maximum": 100
+						"maximum": 500
 					},
 					"type": {
 						"description": "Only return capabilities of this type",
@@ -14610,10 +14622,10 @@
 						"maximum": 9007199254740991
 					},
 					"page_size": {
-						"description": "Number of results per page (max 100)",
+						"description": "Number of results per page, from 1 through 500; defaults to 100",
 						"type": "integer",
 						"exclusiveMinimum": 0,
-						"maximum": 100
+						"maximum": 500
 					},
 					"search": {
 						"description": "Search by user name or email",

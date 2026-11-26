@@ -1953,6 +1953,7 @@ describe("Config tool payload assembly", () => {
 						createCalls.push(payload);
 						return { id: "cfg_123", version_id: "ver_123" };
 					},
+					getConfig: async () => ({ config: {} }),
 					updateConfig: async (_slug: string, payload: unknown) => {
 						updateCalls.push(payload);
 						return {
@@ -2022,8 +2023,6 @@ describe("Config tool payload assembly", () => {
 						attempts: 0,
 						on_status_codes: [429],
 					},
-					strategy: undefined,
-					targets: undefined,
 				},
 			},
 		]);
