@@ -1,6 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { CurrentPageSchema, PageSizeSchema } from "../lib/schemas.js";
+import type { ConfigDetails } from "../services/configs.service.js";
 import type { PortkeyService } from "../services/index.js";
 import { jsonResult } from "./utils.js";
 
@@ -176,6 +177,29 @@ function buildConfigPayload(params: ConfigPayloadParams) {
 	};
 }
 
+type ConfigPayload = ReturnType<typeof buildConfigPayload>;
+
+// PUT /configs/{slug} replaces the whole config, so merge the provided
+// settings into the current one. cache and retry merge field by field;
+// strategy and targets replace as whole values.
+function mergeConfigDetails(
+	current: ConfigDetails,
+	patch: ConfigPayload,
+): ConfigDetails {
+	const merged: ConfigDetails = { ...current };
+	if (patch.auto_caching !== undefined)
+		merged.auto_caching = patch.auto_caching;
+	if (patch.cache !== undefined) {
+		merged.cache = { ...current.cache, ...patch.cache };
+	}
+	if (patch.retry !== undefined) {
+		merged.retry = { ...current.retry, ...patch.retry };
+	}
+	if (patch.strategy !== undefined) merged.strategy = patch.strategy;
+	if (patch.targets !== undefined) merged.targets = patch.targets;
+	return merged;
+}
+
 function hasConfigSettings(
 	config: ReturnType<typeof buildConfigPayload>,
 ): boolean {
@@ -296,6 +320,7 @@ export function registerConfigsTools(
 				message: `Successfully created configuration "${validated.name}"`,
 				id: result.id,
 				version_id: result.version_id,
+				...(result.note ? { note: result.note } : {}),
 			});
 		},
 	);
@@ -305,7 +330,7 @@ export function registerConfigsTools(
 		"update_config",
 		{
 			description:
-				"Update a config by slug; every call creates a new config version rather than overwriting, so earlier versions stay recoverable via list_config_versions. Only provided fields change: name, status, and all routing/cache/retry settings (auto_caching, cache_mode, cache_max_age, retry_attempts, retry_on_status_codes, strategy_mode, targets) are editable, while the slug stays fixed. Changes apply immediately to every API key and prompt referencing the config. Returns the update acknowledgement and new version_id.",
+				"Update a config by slug; every call creates a new config version rather than overwriting, so earlier versions stay recoverable via list_config_versions. Only provided fields change: name, status, and all routing/cache/retry settings (auto_caching, cache_mode, cache_max_age, retry_attempts, retry_on_status_codes, strategy_mode, targets) are editable, while the slug stays fixed. Changes apply immediately to every API key and prompt referencing the config. Setting fields read the current config and write the merged result back (cache and retry merge field by field, strategy and targets replace whole), and Portkey has no conditional writes, so concurrent updates to the same config can overwrite each other. Serialize them. Returns the update acknowledgement and new version_id.",
 			inputSchema: CONFIGS_TOOL_SCHEMAS.updateConfig,
 			annotations: {
 				readOnlyHint: false,
@@ -321,7 +346,9 @@ export function registerConfigsTools(
 			if (params.name !== undefined) updateData.name = params.name;
 			if (params.status !== undefined) updateData.status = params.status;
 			if (hasConfigSettings(config)) {
-				updateData.config = config;
+				// A failed read throws here, before anything is written.
+				const current = await service.configs.getConfig(params.slug);
+				updateData.config = mergeConfigDetails(current.config ?? {}, config);
 			}
 
 			const result = await service.configs.updateConfig(
@@ -333,6 +360,7 @@ export function registerConfigsTools(
 				message: `Successfully updated configuration "${params.slug}"`,
 				success: result.success,
 				version_id: result.version_id,
+				...(result.note ? { note: result.note } : {}),
 			});
 		},
 	);

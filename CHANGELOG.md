@@ -18,6 +18,7 @@ release until that reference and the release notes say so.
 
 ### Fixed
 
+- `create_config` and `update_config` no longer throw after a successful write. The parsing accepts both the spec's `data` envelope and a bare response, and returns a note if Portkey leaves out the id or version_id. `update_config` also stopped wiping settings it wasn't asked to change: Portkey's PUT replaces the whole config, so it now reads the current config and merges your changes in (cache and retry field by field, strategy and targets replaced whole) before writing.
 - `resend_user_invite` now returns the `invite_link` Portkey sends back, same as `invite_user`, and `get_user_invite` and `list_user_invites` include `accepted_at` and `invited_by` when the API provides them. Reads still never return the invite link.
 - `list_all_users` and `get_user` now return each user's `workspace_ids`, which the API sends but the tools were dropping.
 - `get_integration` now types the provider configuration fields the spec defines (OAuth and workload identity fields, Anthropic and OpenAI service account and federation IDs, Azure deployment config and Foundry URL, and more), and masks credential-like values such as `oauth_client_secret`, `azure_entra_client_secret` and `custom_headers` values as `[REDACTED]` instead of passing them through.

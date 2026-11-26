@@ -1961,6 +1961,36 @@ describe("Configuration and platform service contracts", () => {
 		]);
 	});
 
+	it("accepts bare and incomplete config write responses", async () => {
+		const service = new ConfigsService("test-key", BASE_URL);
+		// Bare (non-enveloped) responses are accepted too.
+		enqueue({ id: "config-3", version_id: "version-9" });
+		assert.deepEqual(
+			await service.createConfig({ name: "Config three", config: {} } as never),
+			{ id: "config-3", version_id: "version-9" },
+		);
+		enqueue({ success: true, version_id: "version-10" });
+		assert.deepEqual(
+			await service.updateConfig("config/one", { name: "Again" } as never),
+			{ success: true, version_id: "version-10" },
+		);
+		// Missing ids return what's there plus a note instead of throwing.
+		enqueue({ success: true });
+		const created = await service.createConfig({
+			name: "Config four",
+			config: {},
+		} as never);
+		assert.equal(created.id, undefined);
+		assert.match(created.note ?? "", /did not include/);
+		enqueue({ success: true });
+		const updated = await service.updateConfig("config/one", {
+			name: "Again",
+		} as never);
+		assert.equal(updated.success, true);
+		assert.equal(updated.version_id, undefined);
+		assert.match(updated.note ?? "", /did not include/);
+	});
+
 	it("routes organisation defaults, exclusions, and guardrail CRUD", async () => {
 		const service = new GuardrailsService("test-key", BASE_URL);
 		await service.getOrganisationDefaults();
