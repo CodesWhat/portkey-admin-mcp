@@ -166,6 +166,61 @@ describe("raw stdio era selection", () => {
 		assert.deepEqual(result.supportedVersions, ["2026-07-28"]);
 	});
 
+	it("keeps the era pinned for the whole connection after a bare initialize", async () => {
+		const replies = await new Promise<Record<string, any>[]>(
+			(resolve, reject) => {
+				const child = spawn("node", [BUILD_INDEX], {
+					env: { ...process.env, PORTKEY_API_KEY: "x" },
+					stdio: ["pipe", "pipe", "ignore"],
+				});
+				const received: Record<string, any>[] = [];
+				let buffer = "";
+				const timer = setTimeout(() => {
+					child.kill();
+					reject(new Error("no stdio replies within 10s"));
+				}, 10_000);
+				child.stdout.on("data", (chunk: Buffer) => {
+					buffer += chunk.toString("utf-8");
+					let newline = buffer.indexOf("\n");
+					while (newline !== -1) {
+						received.push(JSON.parse(buffer.slice(0, newline)));
+						buffer = buffer.slice(newline + 1);
+						newline = buffer.indexOf("\n");
+					}
+					if (received.length === 1) {
+						child.stdin.write(
+							`${JSON.stringify({
+								jsonrpc: "2.0",
+								id: 2,
+								method: "server/discover",
+								params: { _meta: modernMeta },
+							})}\n`,
+						);
+					} else if (received.length >= 2) {
+						clearTimeout(timer);
+						child.kill();
+						resolve(received);
+					}
+				});
+				child.on("error", reject);
+				child.stdin.write(
+					`${JSON.stringify({
+						jsonrpc: "2.0",
+						id: 1,
+						method: "initialize",
+						params: {
+							protocolVersion: "2026-07-28",
+							capabilities: {},
+							clientInfo: { name: "raw-stdio", version: "1" },
+						},
+					})}\n`,
+				);
+			},
+		);
+		assert.equal(replies[0].result.protocolVersion, "2025-11-25");
+		assert.equal(replies[1].error.code, -32601);
+	});
+
 	it("serves tools/list on the envelope alone, with no initialize", async () => {
 		const reply = await firstReply({
 			jsonrpc: "2.0",
