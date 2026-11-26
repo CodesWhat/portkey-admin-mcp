@@ -11,6 +11,10 @@ release until that reference and the release notes say so.
 
 ## [Unreleased]
 
+## [0.16.7] - 2026-11-26
+
+Fixes `update_config` wiping settings it wasn't asked to change, config writes that errored after succeeding, and MCP sub-resource paging. Adds `ping_deployment` and every log-export filter, and keeps response fields several tools were dropping.
+
 ### Added
 
 - `create_log_export` and `update_log_export` now take every filter the Portkey spec allows on a log export (token ranges, status code, metadata, trace ID, config, virtual keys, prompt slug, paging and more), and only send the ones you set. `update_log_export` also accepts `time_of_generation_min`. `total_units_min` and `total_units_max` now require whole numbers, matching the API spec.
@@ -1131,7 +1135,8 @@ First stable release. Graduates from beta with 151 tools covering ~98% of the Po
 - Vercel deployment support
 - Contract tests, E2E tests, security tests
 
-[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.6...HEAD
+[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.7...HEAD
+[0.16.7]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.6...v0.16.7
 [0.16.6]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.5...v0.16.6
 [0.16.5]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.4...v0.16.5
 [0.16.4]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.3...v0.16.4
