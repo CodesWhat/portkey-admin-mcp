@@ -85,6 +85,12 @@ after(async () => {
 	restoreEnv("PORTKEY_ALLOW_INSECURE_HTTP", originalAllowInsecure);
 });
 
+function assertTimeoutError(error: unknown): boolean {
+	assert.ok(error instanceof Error, "expected an Error");
+	assert.equal(error.name, "TimeoutError");
+	return true;
+}
+
 function abortReason(signal: AbortSignal | null | undefined): unknown {
 	return signal?.reason ?? new Error("aborted");
 }
@@ -122,7 +128,10 @@ describe("BaseService request deadline", () => {
 		mockHeldBody(200, "{");
 		const service = new DeadlineTestService("test-key", baseUrl);
 
-		await assert.rejects(service.read("/held-success-body"));
+		await assert.rejects(
+			service.read("/held-success-body"),
+			assertTimeoutError,
+		);
 	});
 
 	it("keeps the deadline active while reading an error response body", async () => {
@@ -150,7 +159,7 @@ describe("BaseService request deadline", () => {
 			})) as typeof globalThis.fetch;
 		const service = new DeadlineTestService("test-key", baseUrl);
 
-		await assert.rejects(service.read("/held-headers"));
+		await assert.rejects(service.read("/held-headers"), assertTimeoutError);
 		assert.equal(sawRequest, true);
 	});
 
