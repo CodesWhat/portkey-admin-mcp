@@ -470,6 +470,7 @@ describe("PromptsService workflows", () => {
 			model: "openai/gpt-5",
 			virtual_key: "vk-1",
 			template_metadata: { app: "support", env: "dev" },
+			prompt_version_label_id: "label-1",
 		};
 
 		enqueue({ id: "prompt-1", slug: "support-dev", version_id: "version-1" });
@@ -489,6 +490,7 @@ describe("PromptsService workflows", () => {
 		enqueue(rawPrompt);
 		const prompt = await service.getPrompt("prompt/one");
 		assert.equal(prompt.current_version?.version_number, 3);
+		assert.equal(prompt.current_version?.prompt_version_label_id, "label-1");
 		enqueue({
 			id: "prompt-1",
 			slug: "support-dev",

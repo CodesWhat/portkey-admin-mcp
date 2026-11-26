@@ -377,6 +377,7 @@ function formatPromptVersion(version: RawGetPromptResponse): {
 		number: number | undefined;
 		description: string | undefined;
 		status: string | undefined;
+		prompt_version_label_id: string | null | undefined;
 		model: string | undefined;
 		virtual_key: string | undefined;
 		template: string;
@@ -402,6 +403,7 @@ function formatPromptVersion(version: RawGetPromptResponse): {
 			number: version.prompt_version,
 			description: version.prompt_version_description,
 			status: version.prompt_version_status,
+			prompt_version_label_id: version.prompt_version_label_id,
 			model: version.model,
 			virtual_key: version.virtual_key,
 			template: extractPromptTemplateString(version.string),
@@ -619,6 +621,8 @@ export function registerPromptsTools(
 							has_tools: !!prompt.current_version.tools?.length,
 							has_functions: !!prompt.current_version.functions?.length,
 							is_raw_template: prompt.current_version.is_raw_template,
+							prompt_version_label_id:
+								prompt.current_version.prompt_version_label_id,
 						}
 					: null,
 				version_count: versions.length,
@@ -797,14 +801,18 @@ export function registerPromptsTools(
 				hyperparameters: params.hyperparameters,
 			});
 
+			// The render response is the full request body Portkey would send, so
+			// pass every key other than messages/model through as a hyperparameter.
+			const { messages, model, ...hyperparameters } = result.data;
 			return jsonResult({
 				success: result.success,
-				rendered_messages: result.data.messages,
-				model: result.data.model,
+				rendered_messages: messages,
+				model,
 				hyperparameters: {
-					max_tokens: result.data.max_tokens,
-					temperature: result.data.temperature,
-					top_p: result.data.top_p,
+					max_tokens: hyperparameters.max_tokens,
+					temperature: hyperparameters.temperature,
+					top_p: hyperparameters.top_p,
+					...hyperparameters,
 				},
 			});
 		},
@@ -847,8 +855,22 @@ export function registerPromptsTools(
 							prompt_tokens: result.usage.prompt_tokens,
 							completion_tokens: result.usage.completion_tokens,
 							total_tokens: result.usage.total_tokens,
+							...(result.usage.completion_tokens_details !== undefined
+								? {
+										completion_tokens_details:
+											result.usage.completion_tokens_details,
+									}
+								: {}),
+							...(result.usage.prompt_tokens_details !== undefined
+								? {
+										prompt_tokens_details: result.usage.prompt_tokens_details,
+									}
+								: {}),
 						}
 					: null,
+				...(result.system_fingerprint !== undefined
+					? { system_fingerprint: result.system_fingerprint }
+					: {}),
 			});
 		},
 	);

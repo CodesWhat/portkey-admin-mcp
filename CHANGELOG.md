@@ -22,6 +22,7 @@ release until that reference and the release notes say so.
 - `list_all_users` and `get_user` now return each user's `workspace_ids`, which the API sends but the tools were dropping.
 - `get_integration` now types the provider configuration fields the spec defines (OAuth and workload identity fields, Anthropic and OpenAI service account and federation IDs, Azure deployment config and Foundry URL, and more), and masks credential-like values such as `oauth_client_secret`, `azure_entra_client_secret` and `custom_headers` values as `[REDACTED]` instead of passing them through.
 - `list_mcp_servers` and `get_mcp_server` now return `mcp_integration_slug`, `mcp_integration_url` and `mcp_integration_details` (configuration key names only, never values), and `list_mcp_integrations` returns `workspaces_count`. The capability types also cover `input_schema`, `output_schema`, `uri_template`, `mime_type` and `integration_enabled`, which already came through untouched.
+- Prompt tools no longer drop response fields. `get_prompt` and `get_prompt_version` return `prompt_version_label_id`, `run_prompt_completion` returns `system_fingerprint` plus `completion_tokens_details` and `prompt_tokens_details` in `usage`, and `render_prompt` passes every rendered parameter (`thinking`, `response_format`, `max_completion_tokens`, `seed` and the rest) through in `hyperparameters`.
 - Request deadline tests no longer race a real server against wall-clock margins, so they stay stable when the machine is loaded.
 
 ## [0.16.6] - 2026-11-23

@@ -86,6 +86,7 @@ export class PromptsService extends BaseService {
 							raw.is_raw_template === undefined
 								? undefined
 								: Boolean(raw.is_raw_template),
+						prompt_version_label_id: raw.prompt_version_label_id,
 						created_at: raw.created_at,
 					}
 				: undefined,
