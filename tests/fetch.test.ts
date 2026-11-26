@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
-import { createServer, type Server, type ServerResponse } from "node:http";
-import { after, before, describe, it } from "node:test";
+import { createServer, type Server } from "node:http";
+import { after, afterEach, before, describe, it } from "node:test";
 import { FetchError } from "../src/lib/fetch.js";
 import {
 	BaseService,
@@ -8,12 +8,13 @@ import {
 	type NoContent,
 } from "../src/services/base.service.js";
 
-// The deadline has to cover response headers even on a loaded machine (the
-// pre-push hook runs suites in parallel), while the delayed body must always
-// land well after it. 50 ms raced the headers there; keep a wide gap.
-const REQUEST_DEADLINE_MS = 250;
+// The deadline tests mock fetch instead of racing a real server against a
+// wall-clock margin. The mocked response resolves in a microtask, so it always
+// beats the deadline timer no matter how loaded the machine is. After that the
+// body (or the headers) stay pending until the request signal aborts, so the
+// only way these tests can settle is through the deadline under test.
+const REQUEST_DEADLINE_MS = 20;
 const ORDINARY_REQUEST_DEADLINE_MS = 5_000;
-const DELAYED_RESPONSE_MS = 2_000;
 
 class DeadlineTestService extends BaseService {
 	protected override readonly timeout: number = REQUEST_DEADLINE_MS;
@@ -35,24 +36,7 @@ let server: Server;
 let baseUrl: string;
 let originalAllowPrivate: string | undefined;
 let originalAllowInsecure: string | undefined;
-const sentResponses = new Set<string>();
-
-function sendLater(
-	response: ServerResponse,
-	status: number,
-	body: string,
-	flushHeaders: boolean,
-	responseName: string,
-): void {
-	response.writeHead(status, { "content-type": "application/json" });
-	if (flushHeaders) response.flushHeaders();
-
-	const delayedBody = setTimeout(() => {
-		sentResponses.add(responseName);
-		response.end(body);
-	}, DELAYED_RESPONSE_MS);
-	response.once("close", () => clearTimeout(delayedBody));
-}
+let realFetch: typeof globalThis.fetch;
 
 function restoreEnv(name: string, value: string | undefined): void {
 	if (value === undefined) {
@@ -63,6 +47,7 @@ function restoreEnv(name: string, value: string | undefined): void {
 }
 
 before(async () => {
+	realFetch = globalThis.fetch;
 	originalAllowPrivate = process.env.PORTKEY_ALLOW_PRIVATE_BASE_URL;
 	originalAllowInsecure = process.env.PORTKEY_ALLOW_INSECURE_HTTP;
 	process.env.PORTKEY_ALLOW_PRIVATE_BASE_URL = "true";
@@ -70,33 +55,6 @@ before(async () => {
 
 	server = createServer((request, response) => {
 		switch (request.url) {
-			case "/v1/delayed-headers":
-				sendLater(
-					response,
-					200,
-					JSON.stringify({ ok: true }),
-					false,
-					"headers",
-				);
-				break;
-			case "/v1/delayed-success-body":
-				sendLater(
-					response,
-					200,
-					JSON.stringify({ ok: true }),
-					true,
-					"success-body",
-				);
-				break;
-			case "/v1/delayed-error-body":
-				sendLater(
-					response,
-					503,
-					JSON.stringify({ error: { message: "upstream unavailable" } }),
-					true,
-					"error-body",
-				);
-				break;
 			case "/v1/no-content":
 				response.writeHead(204).end();
 				break;
@@ -118,6 +76,7 @@ before(async () => {
 });
 
 after(async () => {
+	globalThis.fetch = realFetch;
 	server.closeAllConnections();
 	await new Promise<void>((resolve, reject) => {
 		server.close((error) => (error ? reject(error) : resolve()));
@@ -126,33 +85,73 @@ after(async () => {
 	restoreEnv("PORTKEY_ALLOW_INSECURE_HTTP", originalAllowInsecure);
 });
 
+function abortReason(signal: AbortSignal | null | undefined): unknown {
+	return signal?.reason ?? new Error("aborted");
+}
+
+/** Resolves right away with headers, then holds the body open until aborted. */
+function mockHeldBody(status: number, firstChunk: string): void {
+	globalThis.fetch = (async (
+		_url: string | URL | Request,
+		init?: RequestInit,
+	) =>
+		new Response(
+			new ReadableStream<Uint8Array>({
+				start(controller) {
+					controller.enqueue(new TextEncoder().encode(firstChunk));
+					const signal = init?.signal;
+					if (signal?.aborted) {
+						controller.error(abortReason(signal));
+						return;
+					}
+					signal?.addEventListener("abort", () =>
+						controller.error(abortReason(signal)),
+					);
+				},
+			}),
+			{ status, headers: { "content-type": "application/json" } },
+		)) as typeof globalThis.fetch;
+}
+
 describe("BaseService request deadline", () => {
+	afterEach(() => {
+		globalThis.fetch = realFetch;
+	});
+
 	it("keeps the deadline active while reading a successful response body", async () => {
+		mockHeldBody(200, "{");
 		const service = new DeadlineTestService("test-key", baseUrl);
 
-		await assert.rejects(service.read("/delayed-success-body"));
-		assert.equal(sentResponses.has("success-body"), false);
+		await assert.rejects(service.read("/held-success-body"));
 	});
 
 	it("keeps the deadline active while reading an error response body", async () => {
+		mockHeldBody(503, '{"error":');
 		const service = new DeadlineTestService("test-key", baseUrl);
 
-		await assert.rejects(
-			service.read("/delayed-error-body"),
-			(error: unknown) => {
-				assert.ok(error instanceof FetchError);
-				assert.equal(error.status, 503);
-				return true;
-			},
-		);
-		assert.equal(sentResponses.has("error-body"), false);
+		await assert.rejects(service.read("/held-error-body"), (error: unknown) => {
+			assert.ok(error instanceof FetchError);
+			assert.equal(error.status, 503);
+			return true;
+		});
 	});
 
 	it("times out while waiting for response headers", async () => {
+		let sawRequest = false;
+		globalThis.fetch = ((_url: string | URL | Request, init?: RequestInit) =>
+			new Promise<Response>((_resolve, reject) => {
+				sawRequest = true;
+				const signal = init?.signal;
+				if (signal?.aborted) {
+					reject(abortReason(signal));
+					return;
+				}
+				signal?.addEventListener("abort", () => reject(abortReason(signal)));
+			})) as typeof globalThis.fetch;
 		const service = new DeadlineTestService("test-key", baseUrl);
 
-		await assert.rejects(service.read("/delayed-headers"));
-		assert.equal(sentResponses.has("headers"), false);
+		await assert.rejects(service.read("/held-headers"));
+		assert.equal(sawRequest, true);
 	});
 
 	it("preserves prompt JSON responses", async () => {

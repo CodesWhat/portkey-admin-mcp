@@ -11,6 +11,10 @@ release until that reference and the release notes say so.
 
 ## [Unreleased]
 
+### Fixed
+
+- Request deadline tests no longer race a real server against wall-clock margins, so they stay stable when the machine is loaded.
+
 ## [0.16.6] - 2026-11-23
 
 Fixes `promote_prompt` when it creates a new target prompt and refreshes runtime dependencies.

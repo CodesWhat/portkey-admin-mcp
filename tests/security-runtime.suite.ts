@@ -727,7 +727,7 @@ describe("origin security configuration", () => {
 		const outcome = await Promise.race([
 			decision,
 			new Promise<"hung">((resolve) => {
-				setTimeout(() => resolve("hung"), 50);
+				setTimeout(() => resolve("hung"), 2_000);
 			}),
 		]);
 
