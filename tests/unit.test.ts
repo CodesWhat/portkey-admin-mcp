@@ -2305,8 +2305,8 @@ describe("Tool callback error handling", () => {
 
 		assert.match(
 			descriptionFor("update_log_export"),
-			/only/i,
-			"update_log_export should be explicit about the limited fields that can change",
+			/filters create_log_export accepts/i,
+			"update_log_export should be explicit about which fields can change",
 		);
 		assert.match(
 			descriptionFor("update_log_export"),

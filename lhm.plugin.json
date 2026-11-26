@@ -11388,7 +11388,7 @@
 		},
 		{
 			"name": "update_log_export",
-			"description": "Update an existing log export configuration before or between export runs. Only workspace_id, time_of_generation_max, and requested_fields can change after creation, so use get_log_export to review the current job and start_log_export after the definition is ready. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
+			"description": "Update an existing log export configuration before or between export runs. You can change workspace_id, requested_fields and any of the filters create_log_export accepts. Use get_log_export to review the current job and start_log_export after the definition is ready. Enterprise-gated. Returns 403 on non-Enterprise Portkey plans.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
