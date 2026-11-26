@@ -2275,6 +2275,31 @@ describe("MCP administration service contracts", () => {
 });
 
 describe("Observability and workspace service contracts", () => {
+	it("getLog returns the full log object with query params", async () => {
+		const log = {
+			_id: "log-1",
+			request: { url: "https://x.test", method: "POST", portkeyHeaders: {} },
+			response: { status: 200, responseTime: 5, lastUsedOptionJsonPath: "$" },
+			organisation_id: "org-1",
+			created_at: "2024-01-15T10:30:00.000Z",
+			metrics: { cost: 0.5, "metadata.key": ["a"] },
+			transformedRequest: { body: { a: 1 } },
+			extra: true,
+		};
+		enqueue(log);
+		const service = new LoggingService("test-key", BASE_URL);
+		const result = await service.getLog("log-1", {
+			path_format: "v2",
+			created_at: "2024-01-15T10:30:00.000Z",
+			type: "hooks",
+		});
+		assert.deepEqual(result, log);
+		const url = capturedUrl(0);
+		assert.equal(url.pathname, "/v1/logs/log-1");
+		assert.equal(url.searchParams.get("path_format"), "v2");
+		assert.equal(url.searchParams.get("type"), "hooks");
+	});
+
 	it("routes log ingestion and export lifecycle operations", async () => {
 		const service = new LoggingService("test-key", BASE_URL);
 		await service.getLog("log/one", { path_format: "v2" });
