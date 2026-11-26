@@ -187,9 +187,21 @@ function formatMcpServer(server: PortkeyMcpServer): {
 	description?: string | null;
 	tags?: Record<string, string> | null;
 	mcp_integration_id: string;
+	mcp_integration_slug?: string | null;
+	mcp_integration_url?: string | null;
+	mcp_integration_details?: {
+		id: string;
+		slug: string;
+		status: string;
+		url: string;
+		transport: string;
+		auth_type: string;
+		configuration_keys?: string[];
+	} | null;
 	status: "active" | "archived";
 	created_at: string;
 } {
+	const details = server.mcp_integration_details;
 	return {
 		id: server.id,
 		name: server.name,
@@ -197,6 +209,22 @@ function formatMcpServer(server: PortkeyMcpServer): {
 		description: server.description,
 		tags: server.tags,
 		mcp_integration_id: server.mcp_integration_id,
+		mcp_integration_slug: server.mcp_integration_slug,
+		mcp_integration_url: server.mcp_integration_url,
+		// Configuration values can hold credentials, so only key names go out.
+		mcp_integration_details: details
+			? {
+					id: details.id,
+					slug: details.slug,
+					status: details.status,
+					url: details.url,
+					transport: details.transport,
+					auth_type: details.auth_type,
+					configuration_keys: details.configurations
+						? Object.keys(details.configurations)
+						: undefined,
+				}
+			: details,
 		status: server.status,
 		created_at: server.created_at,
 	};

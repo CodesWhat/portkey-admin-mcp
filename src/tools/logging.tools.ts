@@ -58,7 +58,103 @@ const getLogSchema = z.object(getLogShape).superRefine((input, context) => {
 	}
 });
 
-const LOGGING_TOOL_SCHEMAS = {
+const logExportFilterShape = {
+	total_units_min: z.coerce
+		.number()
+		.int()
+		.optional()
+		.describe("Minimum total units (tokens) filter"),
+	total_units_max: z.coerce
+		.number()
+		.int()
+		.optional()
+		.describe("Maximum total units (tokens) filter"),
+	cost_min: z.coerce.number().optional().describe("Minimum cost filter"),
+	cost_max: z.coerce.number().optional().describe("Maximum cost filter"),
+	ai_model: z
+		.union([z.string(), z.array(z.string())])
+		.optional()
+		.describe("Filter by AI model name"),
+	prompt_token_min: z.coerce
+		.number()
+		.int()
+		.optional()
+		.describe("Minimum prompt token count"),
+	prompt_token_max: z.coerce
+		.number()
+		.int()
+		.optional()
+		.describe("Maximum prompt token count"),
+	completion_token_min: z.coerce
+		.number()
+		.int()
+		.optional()
+		.describe("Minimum completion token count"),
+	completion_token_max: z.coerce
+		.number()
+		.int()
+		.optional()
+		.describe("Maximum completion token count"),
+	status_code: z
+		.string()
+		.optional()
+		.describe("Filter by response status code (string)"),
+	metadata: z
+		.record(z.string(), z.unknown())
+		.optional()
+		.describe("Filter by metadata key-value pairs"),
+	ai_org_model: z
+		.string()
+		.optional()
+		.describe(
+			"Filter by provider and model, e.g. 'openai__gpt-3.5-turbo, anthropic__claude-2.1'",
+		),
+	weighted_feedback_min: z.coerce
+		.number()
+		.optional()
+		.describe("Minimum weighted feedback score"),
+	weighted_feedback_max: z.coerce
+		.number()
+		.optional()
+		.describe("Maximum weighted feedback score"),
+	virtual_keys: z.string().optional().describe("Filter by virtual key(s)"),
+	trace_id: z.string().optional().describe("Filter by trace ID"),
+	configs: z.string().optional().describe("Filter by config(s)"),
+	workspace_slug: z.string().optional().describe("Filter by workspace slug"),
+	prompt_slug: z.string().optional().describe("Filter by prompt slug"),
+	page_size: z.coerce
+		.number()
+		.int()
+		.optional()
+		.describe("Page size for the export (max: 50000, default: 50000)"),
+	current_page: z.coerce
+		.number()
+		.int()
+		.optional()
+		.describe("Page of results to export (starts at 0)"),
+} as const;
+
+const LOG_EXPORT_FILTER_KEYS = Object.keys(logExportFilterShape);
+
+function pickLogExportFilters(
+	params: Record<string, unknown>,
+	timeKeys: Record<string, string>,
+): Record<string, unknown> {
+	const filters: Record<string, unknown> = {};
+	for (const [paramName, filterName] of Object.entries(timeKeys)) {
+		if (params[paramName] !== undefined) {
+			filters[filterName] = params[paramName];
+		}
+	}
+	for (const key of LOG_EXPORT_FILTER_KEYS) {
+		if (params[key] !== undefined) {
+			filters[key] = params[key];
+		}
+	}
+	return filters;
+}
+
+export const LOGGING_TOOL_SCHEMAS = {
 	getLogExportFieldRestrictions: {
 		workspace_id: z
 			.string()
@@ -147,20 +243,7 @@ const LOGGING_TOOL_SCHEMAS = {
 			.describe(
 				"Maximum time filter in date format (e.g., '2024-01-31' or ISO 8601)",
 			),
-		cost_min: z.coerce.number().optional().describe("Minimum cost filter"),
-		cost_max: z.coerce.number().optional().describe("Maximum cost filter"),
-		total_units_min: z.coerce
-			.number()
-			.optional()
-			.describe("Minimum total units (tokens) filter"),
-		total_units_max: z.coerce
-			.number()
-			.optional()
-			.describe("Maximum total units (tokens) filter"),
-		ai_model: z
-			.array(z.string())
-			.optional()
-			.describe("Filter by specific AI model names"),
+		...logExportFilterShape,
 		requested_fields: z
 			.array(logExportFieldSchema)
 			.describe(
@@ -189,12 +272,19 @@ const LOGGING_TOOL_SCHEMAS = {
 	updateLogExport: {
 		export_id: z.string().describe("The unique ID of the log export to update"),
 		workspace_id: z.string().optional().describe("Workspace ID for the export"),
+		time_of_generation_min: z
+			.string()
+			.optional()
+			.describe(
+				"Minimum time filter in date format (e.g., '2024-07-01' or ISO 8601)",
+			),
 		time_of_generation_max: z
 			.string()
 			.optional()
 			.describe(
 				"Maximum time filter in date format (e.g., '2024-07-25' or ISO 8601)",
 			),
+		...logExportFilterShape,
 		requested_fields: z
 			.array(logExportFieldSchema)
 			.optional()
@@ -311,15 +401,10 @@ export function registerLoggingTools(
 			const result = await service.logging.createLogExport({
 				workspace_id: params.workspace_id,
 				description: params.description,
-				filters: {
-					time_of_generation_min: params.time_min,
-					time_of_generation_max: params.time_max,
-					cost_min: params.cost_min,
-					cost_max: params.cost_max,
-					total_units_min: params.total_units_min,
-					total_units_max: params.total_units_max,
-					ai_model: params.ai_model,
-				},
+				filters: pickLogExportFilters(params, {
+					time_min: "time_of_generation_min",
+					time_max: "time_of_generation_max",
+				}),
 				requested_data: params.requested_fields,
 			});
 
@@ -450,20 +535,22 @@ export function registerLoggingTools(
 		"update_log_export",
 		{
 			description:
-				"Update an existing log export configuration before or between export runs. Only workspace_id, time_of_generation_max, and requested_fields can change after creation, so use get_log_export to review the current job and start_log_export after the definition is ready.",
+				"Update an existing log export configuration before or between export runs. You can change workspace_id, requested_fields and any of the filters create_log_export accepts. Use get_log_export to review the current job and start_log_export after the definition is ready.",
 			inputSchema: LOGGING_TOOL_SCHEMAS.updateLogExport,
 		},
 		async (params) => {
 			const updateData: {
-				filters?: { time_of_generation_max?: string };
+				filters?: Record<string, unknown>;
 				workspace_id?: string;
 				requested_data?: LogExportField[];
 			} = {};
 
-			if (params.time_of_generation_max) {
-				updateData.filters = {
-					time_of_generation_max: params.time_of_generation_max,
-				};
+			const filters = pickLogExportFilters(params, {
+				time_of_generation_min: "time_of_generation_min",
+				time_of_generation_max: "time_of_generation_max",
+			});
+			if (Object.keys(filters).length > 0) {
+				updateData.filters = filters;
 			}
 
 			if (params.workspace_id) {

@@ -374,6 +374,8 @@ describe("DeploymentsService request routing", () => {
 		});
 		enqueue({});
 		await service.archiveDeployment("dep/one");
+		enqueue({ object: "deployment", status: "healthy" });
+		await service.pingDeployment("dep/one");
 
 		const listUrl = capturedUrl(0);
 		assert.equal(listUrl.pathname, "/v2/deployments");
@@ -406,6 +408,7 @@ describe("DeploymentsService request routing", () => {
 			["GET", "/v2/deployments/dep%2Fone"],
 			["PUT", "/v2/deployments/dep%2Fone"],
 			["DELETE", "/v2/deployments/dep%2Fone"],
+			["GET", "/v2/deployments/dep%2Fone/ping"],
 		]);
 	});
 });
@@ -467,6 +470,7 @@ describe("PromptsService workflows", () => {
 			model: "openai/gpt-5",
 			virtual_key: "vk-1",
 			template_metadata: { app: "support", env: "dev" },
+			prompt_version_label_id: "label-1",
 		};
 
 		enqueue({ id: "prompt-1", slug: "support-dev", version_id: "version-1" });
@@ -486,6 +490,7 @@ describe("PromptsService workflows", () => {
 		enqueue(rawPrompt);
 		const prompt = await service.getPrompt("prompt/one");
 		assert.equal(prompt.current_version?.version_number, 3);
+		assert.equal(prompt.current_version?.prompt_version_label_id, "label-1");
 		enqueue({
 			id: "prompt-1",
 			slug: "support-dev",
@@ -1281,8 +1286,10 @@ describe("UsersService request contracts", () => {
 		assert.deepEqual(await service.deleteUserInvite("invite/one"), {
 			success: true,
 		});
+		enqueue({ inviteLink: "https://app.portkey.ai/invite/resent" });
 		assert.deepEqual(await service.resendUserInvite("invite/one"), {
 			success: true,
+			invite_link: "https://app.portkey.ai/invite/resent",
 		});
 
 		assert.deepEqual(

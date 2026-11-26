@@ -849,6 +849,13 @@ describe("log export lifecycle callbacks", () => {
 			}),
 		);
 		await callback({ export_id: "export-2" });
+		await callback({
+			export_id: "export-3",
+			time_of_generation_min: "2026-01-01",
+			trace_id: "trace-1",
+			prompt_token_min: 5,
+			metadata: { env: "prod" },
+		});
 
 		assert.equal(full.id, "export-1");
 		assert.deepEqual(calls, [
@@ -861,6 +868,17 @@ describe("log export lifecycle callbacks", () => {
 				},
 			],
 			["export-2", {}],
+			[
+				"export-3",
+				{
+					filters: {
+						time_of_generation_min: "2026-01-01",
+						prompt_token_min: 5,
+						metadata: { env: "prod" },
+						trace_id: "trace-1",
+					},
+				},
+			],
 		]);
 	});
 });

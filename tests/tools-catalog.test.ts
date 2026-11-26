@@ -1364,6 +1364,105 @@ describe("integrations tools — curated get_integration response", () => {
 	});
 });
 
+describe("integrations tools — get_integration provider configuration fields", () => {
+	it("keeps provider fields and redacts credential-like values", async () => {
+		const callbacks = registerToolCallbacks((server) => {
+			registerIntegrationsTools(
+				server as never,
+				{
+					integrations: {
+						getIntegration: async (_slug: string) => ({
+							id: "int_2",
+							name: "Anthropic OAuth",
+							slug: "anthropic-oauth",
+							ai_provider_id: "anthropic",
+							status: "active" as const,
+							description: null,
+							organisation_id: "org_1",
+							configurations: {
+								provider_auth_type: "oauthClientCredentials",
+								oauth_token_endpoint: "https://idp.example.com/token",
+								oauth_client_id: "client-1",
+								oauth_client_secret: "super-secret",
+								oauth_scope: "api",
+								oauth_audience: "aud",
+								anthropic_workspace_id: "ws_1",
+								anthropic_organization_id: "org_a",
+								anthropic_service_account_id: "sa_1",
+								anthropic_federation_rule_id: "fr_1",
+								openai_service_account_id: "oa_sa",
+								openai_identity_provider_id: "oa_idp",
+								azure_foundry_url: "https://r.services.ai.azure.com/anthropic",
+								azure_entra_client_secret: "entra-secret",
+								azure_deployment_config: [
+									{
+										azure_api_version: "2024-02-01",
+										azure_deployment_name: "gpt4",
+										azure_model_slug: "gpt-4",
+										is_default: true,
+									},
+								],
+								custom_headers: { Authorization: "Bearer abc" },
+								secret_reference_id: "sr_1",
+								aws_access_key_id: "AKIA123",
+							},
+							created_at: "2026-01-01T00:00:00.000Z",
+							last_updated_at: null,
+							object: "integration" as const,
+						}),
+					},
+				} as never,
+			);
+		});
+
+		const cb = callbacks.get("get_integration");
+		assert.ok(cb);
+		const result = (await cb({ slug: "anthropic-oauth" })) as {
+			content: Array<{ text: string }>;
+		};
+		const text = result.content[0]?.text ?? "{}";
+		const config = (
+			JSON.parse(text) as { configurations: Record<string, unknown> }
+		).configurations;
+
+		assert.equal(config.oauth_client_id, "client-1");
+		assert.equal(config.oauth_token_endpoint, "https://idp.example.com/token");
+		assert.equal(config.oauth_scope, "api");
+		assert.equal(config.oauth_audience, "aud");
+		assert.equal(config.anthropic_workspace_id, "ws_1");
+		assert.equal(config.anthropic_organization_id, "org_a");
+		assert.equal(config.anthropic_service_account_id, "sa_1");
+		assert.equal(config.anthropic_federation_rule_id, "fr_1");
+		assert.equal(config.openai_service_account_id, "oa_sa");
+		assert.equal(config.openai_identity_provider_id, "oa_idp");
+		assert.equal(
+			config.azure_foundry_url,
+			"https://r.services.ai.azure.com/anthropic",
+		);
+		assert.equal(config.secret_reference_id, "sr_1");
+		assert.deepEqual(config.azure_deployment_config, [
+			{
+				azure_api_version: "2024-02-01",
+				azure_deployment_name: "gpt4",
+				azure_model_slug: "gpt-4",
+				is_default: true,
+			},
+		]);
+		assert.equal(config.oauth_client_secret, "[REDACTED]");
+		assert.equal(config.azure_entra_client_secret, "[REDACTED]");
+		assert.equal(config.aws_access_key_id, "[REDACTED]");
+		assert.deepEqual(config.custom_headers, { Authorization: "[REDACTED]" });
+		for (const leaked of [
+			"super-secret",
+			"entra-secret",
+			"Bearer abc",
+			"AKIA123",
+		]) {
+			assert.ok(!text.includes(leaked), `${leaked} leaked`);
+		}
+	});
+});
+
 describe("integrations tools — path encoding", () => {
 	it("encodes integration slug in deleteIntegrationModel path", async () => {
 		const req = await captureServiceRequest(() =>

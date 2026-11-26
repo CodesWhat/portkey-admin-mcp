@@ -136,7 +136,7 @@ export function Home({ product }: { product: Product }) {
               and governance tools, and you choose which ones to expose.
             </p>
             <p className="facts" aria-label="At a glance">
-              194 tools · 22 domains · stdio · MIT · Node 24+
+              195 tools · 22 domains · stdio · MIT · Node 24+
             </p>
             <div className="hero-command">
               <CodeBlock
@@ -165,7 +165,7 @@ export function Home({ product }: { product: Product }) {
         <Section id="install" label="Install" title="Add it to your client.">
           <Install />
         </Section>
-        <Section id="tools" label="Tools" title="194 tools in 22 domains.">
+        <Section id="tools" label="Tools" title="195 tools in 22 domains.">
           <ToolBrowser domains={toolDomains} />
         </Section>
         <LowerSections />

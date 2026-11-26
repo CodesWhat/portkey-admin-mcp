@@ -12,7 +12,7 @@ const manifest = JSON.parse(
 const tools = toolDomains.flatMap(({ tools }) => tools);
 test("website inventory covers each published tool once", () => {
   assert.equal(toolDomains.length, 22);
-  assert.equal(tools.length, 194);
+  assert.equal(tools.length, 195);
   assert.deepEqual(
     [...new Set(tools.map((tool) => tool.name))].sort(),
     manifest.tools.map((tool) => tool.name).sort(),
@@ -33,7 +33,7 @@ test("website flags and Enterprise status match published tool metadata", () => 
     );
     assert.equal(tool.enterprise, original.description.includes("Enterprise-gated"));
   }
-  assert.equal(tools.filter((tool) => tool.enterprise).length, 56);
+  assert.equal(tools.filter((tool) => tool.enterprise).length, 57);
 });
 
 for (const [label, eol] of [
@@ -51,7 +51,7 @@ for (const [label, eol] of [
       const output = execFileSync(process.execPath, ["--input-type=module", "-e",
         `const { toolDomains } = await import(${JSON.stringify(moduleUrl)}); console.log(toolDomains.flatMap(d => d.tools).length);`
       ], { cwd: join(fixture, "website"), encoding: "utf8", timeout: 10_000 });
-      assert.equal(output.trim(), "194");
+      assert.equal(output.trim(), "195");
     } finally {
       rmSync(fixture, { recursive: true, force: true });
     }

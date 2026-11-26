@@ -241,7 +241,7 @@ async function suite(browser, engine, base) {
       (await page.locator(".tool-row").count()) === 14,
       "default view should show the prompts domain",
     );
-    await page.getByRole("button", { name: "Show all 194", exact: true }).click();
+    await page.getByRole("button", { name: "Show all 195", exact: true }).click();
     expect((await page.locator(".tool-row").count()) === 40, "first page should show 40 tools");
     await page.getByRole("button", { name: "Show 40 more", exact: true }).click();
     expect((await page.locator(".tool-row").count()) === 80, "second page should show 80 tools");
@@ -257,8 +257,8 @@ async function suite(browser, engine, base) {
       "checked Enterprise switch needs a visible active style",
     );
     expect(
-      (await page.locator("#tool-count").innerText()).startsWith("56 tools,"),
-      "expected 56 Enterprise tools",
+      (await page.locator("#tool-count").innerText()).startsWith("57 tools,"),
+      "expected 57 Enterprise tools",
     );
     await page.locator("#tool-q").fill("rotate_api_key");
     expect(
@@ -325,7 +325,7 @@ async function suite(browser, engine, base) {
   });
   await check("tools: second page lists unique tool names after the first page", {}, async (_, page) => {
     await open(page, "/");
-    await page.getByRole("button", { name: "Show all 194", exact: true }).click();
+    await page.getByRole("button", { name: "Show all 195", exact: true }).click();
     const names = () => page.locator(".tool-row .tn").allInnerTexts();
     const first = await names();
     await page.getByRole("button", { name: "Show 40 more", exact: true }).click();

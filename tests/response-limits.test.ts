@@ -131,6 +131,12 @@ describe("readBoundedText", () => {
 				new ReadableStream<Uint8Array>({
 					start(controller) {
 						controller.enqueue(new TextEncoder().encode("{"));
+						// The deadline can already have fired on a loaded machine, and
+						// a listener added after abort never runs.
+						if (init?.signal?.aborted) {
+							controller.error(init.signal.reason);
+							return;
+						}
 						init?.signal?.addEventListener("abort", () =>
 							controller.error(init.signal?.reason),
 						);

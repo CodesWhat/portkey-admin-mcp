@@ -128,6 +128,9 @@ const DEPLOYMENTS_TOOL_SCHEMAS = {
 	archiveDeployment: {
 		id: z.string().min(1).describe("Deployment UUID to archive"),
 	},
+	pingDeployment: {
+		id: z.string().min(1).describe("Deployment UUID to ping"),
+	},
 } as const;
 
 function compact<T extends Record<string, unknown>>(value: T): T {
@@ -265,5 +268,22 @@ export function registerDeploymentsTools(
 			await service.deployments.archiveDeployment(id);
 			return jsonResult({ success: true, id, status: "archived" });
 		},
+	);
+
+	server.registerTool(
+		"ping_deployment",
+		{
+			description:
+				"Enterprise-gated. Run a two-way connectivity check on a registered Gateway deployment: the control plane calls the Gateway health endpoint, then waits up to 10 seconds for the Gateway to call back with a one-time code. Returns overall status (healthy, partial, or unhealthy) plus separate outbound and inbound results with the reported Gateway version. Fails with 400 when the deployment has no gateway_base_url. Use list_deployments to resolve an ID; this is a live check, not a read of cached connection_status.",
+			inputSchema: DEPLOYMENTS_TOOL_SCHEMAS.pingDeployment,
+			annotations: {
+				title: "Ping Deployment",
+				readOnlyHint: true,
+				destructiveHint: false,
+				idempotentHint: true,
+				openWorldHint: true,
+			},
+		},
+		async ({ id }) => jsonResult(await service.deployments.pingDeployment(id)),
 	);
 }

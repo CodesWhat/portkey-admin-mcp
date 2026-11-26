@@ -90,12 +90,27 @@ export type LogExportStatus =
 export interface LogExportFilters {
 	time_of_generation_min?: string;
 	time_of_generation_max?: string;
-	cost_min?: number;
-	cost_max?: number;
 	total_units_min?: number;
 	total_units_max?: number;
-	ai_model?: string[];
+	cost_min?: number;
+	cost_max?: number;
+	ai_model?: string | string[];
+	prompt_token_min?: number;
+	prompt_token_max?: number;
+	completion_token_min?: number;
+	completion_token_max?: number;
+	status_code?: string;
 	metadata?: Record<string, unknown>;
+	ai_org_model?: string;
+	weighted_feedback_min?: number;
+	weighted_feedback_max?: number;
+	virtual_keys?: string;
+	trace_id?: string;
+	configs?: string;
+	workspace_slug?: string;
+	prompt_slug?: string;
+	page_size?: number;
+	current_page?: number;
 }
 
 export interface CreateLogExportRequest {
@@ -135,9 +150,7 @@ export interface ListLogExportsParams {
 	workspace_id: string;
 }
 
-export interface UpdateLogExportFilters {
-	time_of_generation_max?: string;
-}
+export type UpdateLogExportFilters = LogExportFilters;
 
 export interface UpdateLogExportRequest {
 	filters?: UpdateLogExportFilters;

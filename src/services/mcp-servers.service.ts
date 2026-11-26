@@ -9,9 +9,25 @@ export interface McpServer {
 	description?: string | null;
 	tags?: Record<string, string> | null;
 	mcp_integration_id: string;
+	/** List responses only. */
+	mcp_integration_slug?: string | null;
+	/** List responses only. */
+	mcp_integration_url?: string | null;
+	/** Single-server responses for system/service auth only. */
+	mcp_integration_details?: McpServerIntegrationDetails | null;
 	status: "active" | "archived";
 	created_at: string;
 	object: "mcp-server";
+}
+
+export interface McpServerIntegrationDetails {
+	id: string;
+	slug: string;
+	status: string;
+	configurations?: Record<string, unknown> | null;
+	url: string;
+	transport: string;
+	auth_type: string;
 }
 
 export interface ListMcpServersResponse {
@@ -55,6 +71,12 @@ export interface McpServerCapability {
 	type: "tool" | "prompt" | "resource" | "resource_template";
 	enabled: boolean;
 	description?: string | null;
+	/** Present for service users: integration-level enabled state. */
+	integration_enabled?: boolean | null;
+	input_schema?: Record<string, unknown> | null;
+	output_schema?: Record<string, unknown> | null;
+	uri_template?: string | null;
+	mime_type?: string | null;
 	created_at?: string;
 	last_updated_at?: string | null;
 }
