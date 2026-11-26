@@ -28,7 +28,7 @@ export const product: Product = {
   role: "PORTKEY ADMIN API × MODEL CONTEXT PROTOCOL",
   headline: ["Administer Portkey", "from your MCP client."],
   description:
-    "Bring Portkey administration into your MCP client. 194 tools across 22 domains cover prompts, configurations, analytics and governance, and you choose which ones to expose.",
+    "Bring Portkey administration into your MCP client. 195 tools across 22 domains cover prompts, configurations, analytics and governance, and you choose which ones to expose.",
   intro: "The control plane, in your workflow.",
   repo: "CodesWhat/portkey-admin-mcp",
   action: "Connect your MCP client",
