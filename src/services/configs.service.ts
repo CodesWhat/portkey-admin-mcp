@@ -73,7 +73,7 @@ interface RawGetConfigResponse {
 	updated_by: string;
 	created_at: string;
 	last_updated_at: string;
-	config: string;
+	config: string | ConfigDetails | null;
 	format: string;
 	type: string;
 	version_id: string;
@@ -142,13 +142,22 @@ export interface ListConfigsParams {
 	current_page?: number;
 }
 
+function parseConfigValue(
+	value: string | ConfigDetails | null | undefined,
+): ConfigDetails {
+	if (typeof value === "string") {
+		return JSON.parse(value || "{}") as ConfigDetails;
+	}
+	return value ?? ({} as ConfigDetails);
+}
+
 export class ConfigsService extends BaseService {
 	private parseConfigResponse(
 		response: RawGetConfigResponse,
 	): GetConfigResponse {
 		return {
 			...response,
-			config: JSON.parse(response.config || "{}") as ConfigDetails,
+			config: parseConfigValue(response.config),
 		};
 	}
 

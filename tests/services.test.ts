@@ -1961,6 +1961,20 @@ describe("Configuration and platform service contracts", () => {
 		]);
 	});
 
+	it("accepts an object or null config in get responses", async () => {
+		const service = new ConfigsService("test-key", BASE_URL);
+		enqueue({
+			id: "config-1",
+			slug: "config-one",
+			config: { strategy: { mode: "loadbalance" } },
+		});
+		assert.deepEqual((await service.getConfig("config/one")).config, {
+			strategy: { mode: "loadbalance" },
+		});
+		enqueue({ id: "config-1", slug: "config-one", config: null });
+		assert.deepEqual((await service.getConfig("config/one")).config, {});
+	});
+
 	it("accepts bare and incomplete config write responses", async () => {
 		const service = new ConfigsService("test-key", BASE_URL);
 		// Bare (non-enveloped) responses are accepted too.

@@ -23,6 +23,7 @@ release until that reference and the release notes say so.
 
 ### Fixed
 
+- `get_config` now accepts a `config` that comes back as an object or null instead of a JSON string, rather than failing to parse it.
 - `create_config` and `update_config` no longer throw after a successful write. The parsing accepts both the spec's `data` envelope and a bare response, and returns a note if Portkey leaves out the id or version_id. `update_config` also stopped wiping settings it wasn't asked to change: Portkey's PUT replaces the whole config, so it now reads the current config and merges your changes in (cache and retry field by field, strategy and targets replaced whole) before writing.
 - `list_mcp_server_user_access`, `list_mcp_server_capabilities` and `list_mcp_integration_capabilities` now page correctly. They were sending `current_page` where the API wants a 1-based `page`, so every page after the first repeated page one. `current_page` stays zero-based and is mapped for you, `page_size` goes up to 500, and `list_mcp_integration_capabilities` takes `current_page` and `page_size` and returns `has_more`.
 - `resend_user_invite` now returns the `invite_link` Portkey sends back, same as `invite_user`, and `get_user_invite` and `list_user_invites` include `accepted_at` and `invited_by` when the API provides them. Reads still never return the invite link.
