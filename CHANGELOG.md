@@ -11,6 +11,10 @@ release until that reference and the release notes say so.
 
 ## [Unreleased]
 
+### Deprecated
+
+- Clerk auth mode (`MCP_AUTH_MODE=clerk`) is deprecated and logs a warning at startup. It will be removed in 0.17.0, no earlier than 2027-01-31. Use `MCP_AUTH_MODE=bearer` instead.
+
 ## [0.16.9] - 2026-11-27
 
 Key and provider reads now show when a usage limit resets next, and the integration `configurations` description covers SageMaker.

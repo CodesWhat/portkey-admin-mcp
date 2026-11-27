@@ -28,6 +28,7 @@ import {
 	assertSafeHttpAuthConfig,
 	getHttpAuthConfig,
 	mcpAuthMiddleware,
+	warnIfDeprecatedAuthMode,
 } from "./auth.js";
 import { getServerConfig, type ServerConfig } from "./config.js";
 import { assertByteLimitsConfigured } from "./fetch.js";
@@ -542,6 +543,7 @@ export function createHttpAppRuntime(): HttpAppRuntime {
 	const config = getServerConfig();
 	const authConfig = getHttpAuthConfig();
 	assertSafeHttpAuthConfig(authConfig);
+	warnIfDeprecatedAuthMode(authConfig);
 	// Fail at startup on a bad PORTKEY_TOOL_DOMAINS. createMcpServer only reads
 	// it per request, so an invalid value would otherwise pass /ready while every
 	// /mcp request returned 500.

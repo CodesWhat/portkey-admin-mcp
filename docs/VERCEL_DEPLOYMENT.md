@@ -15,7 +15,7 @@ Use the guide from your installed release when operating 0.14.x. See
 - Transport: Streamable HTTP (`/mcp`)
 - Request handling: stateless for modern and legacy clients
 - Redis: shared rate limiting only
-- Auth: `clerk` (preferred for teams) or `bearer` (internal-only)
+- Auth: `bearer` (`clerk` still works but is deprecated: removed in 0.17.0, no earlier than 2027-01-31)
 
 Each POST is independent. GET replay, session IDs and DELETE session operations are retired in 0.15.0. After an interrupted mutation, inspect Portkey state before retrying; see the recovery guide. Forward `MCP-Protocol-Version`, `Mcp-Method` and `Mcp-Name` through any proxy. No idle change-notification streams are advertised.
 
@@ -64,7 +64,7 @@ The rate-limit URL also accepts `MCP_REDIS_URL` then `REDIS_URL` as fallbacks.
 The shared limiter applies an IP bucket before authentication and a separate
 principal-plus-IP bucket after authentication.
 
-Auth option A (recommended for teams): Clerk JWT
+Auth option A (deprecated, removed in 0.17.0, no earlier than 2027-01-31; use bearer): Clerk JWT
 
 - `MCP_AUTH_MODE=clerk`
 - `CLERK_ISSUER=https://<your-clerk-domain>`
