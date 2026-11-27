@@ -42,11 +42,32 @@ README, endpoint catalog, domain counts, and Enterprise-gated inventory together
 
 ## Next unreleased version
 
-- 0.16.9 is the published release. Work for the next version lands on
+- 0.16.10 is the published release. Work for the next version lands on
   `dev/0.16` and is recorded under the CHANGELOG's Unreleased section.
+- 0.17.0, on or after 2027-01-31: remove Clerk auth mode (deprecated in 0.16.10).
 - Carried over from 0.16.6 and already shipped: dependency updates (#207), the
   fail-closed security test module-loading fix (#226), and the prompt promotion
   fix that preserves `ai_model_id` and `finetune_id` (#227).
+
+## Completed 2026-11-27 (0.16.10)
+
+- Published 0.16.10: annotated tag `v0.16.10` at
+  `9054f62a2f65cf69be65ac75d3604a2c1bf80c10` (`main`, promotion #257, merged
+  after the reconcile PR #256 and CodeQL on the PR ref showed no high or error
+  alerts and two non-author approvals), GitHub Release marked Latest, npm with
+  SLSA provenance and dist-tag `latest`, and the MCP Registry entry at 0.16.10
+  (`isLatest`). Release workflow 46050289395 succeeded.
+- 0.16.10 deprecates Clerk auth mode (`MCP_AUTH_MODE=clerk`): it logs a startup
+  warning, and removal is planned for 0.17.0, no earlier than 2027-01-31. Use
+  bearer auth instead (#255). #254 dropped the live-tenant checks from the
+  roadmap.
+- LobeHub was updated to 0.16.10 (195 tools). The Vercel production deploy
+  serves `9054f62a`.
+- Docker catalog #5026 now pins `9054f62a` (fork commit `2616d15e`). Upstream
+  review and catalog publication remain pending.
+- Glama was intentionally not synced for 0.16.10 and stays at 0.16.9. Policy
+  (maintainer decision 2026-11-27): Glama is synced only on the last release of
+  a run, next at 0.17.0. See `docs/DISTRIBUTION.md`.
 
 ## Completed 2026-11-27 (0.16.9)
 
@@ -390,14 +411,16 @@ for the side-by-side model).
 
 - Docker MCP Catalog: submitted as
   [docker/mcp-registry #5026](https://github.com/docker/mcp-registry/pull/5026),
-  refreshed to the 0.16.9 release commit `4b1d4a66` (fork commit `57cee3fe`,
+  refreshed to the 0.16.10 release commit `9054f62a` (fork commit `2616d15e`,
   2026-11-27). Upstream maintainer review and catalog publication remain
   pending.
 - Awesome MCP Servers: [#13074](https://github.com/punkpeye/awesome-mcp-servers/pull/13074)
   merged on 2026-09-13.
-- Glama: 0.16.9 was published on 2026-11-27 after a passing build test (plus a
-  stray 1.0.13 from Build & Release's default version). Generated descriptions and quality-score evaluation can lag
-  the inventory. See the dated publication record in `docs/DISTRIBUTION.md`.
+- Glama: stays at 0.16.9 (published 2026-11-27 after a passing build test, plus
+  a stray 1.0.13 from Build & Release's default version). It is synced only on
+  the last release of a run, next at 0.17.0 (maintainer decision 2026-11-27).
+  Generated descriptions and quality-score evaluation can lag the inventory. See
+  the dated publication record in `docs/DISTRIBUTION.md`.
 - Recheck PulseMCP after listing changes reopen. Its legacy record still uses the
   pre-organization namespace and is not currently editable.
 - Claim or refresh the stale mcp.so record when its owner workflow is available.
