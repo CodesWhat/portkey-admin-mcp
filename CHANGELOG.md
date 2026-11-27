@@ -11,6 +11,10 @@ release until that reference and the release notes say so.
 
 ## [Unreleased]
 
+## [0.16.8] - 2026-11-27
+
+Adds key and provider usage-limit reset options and a `configurations` passthrough for integrations, so provider settings the flat inputs missed reach the API. `update_config` now merges `strategy` instead of dropping fields you didn't set.
+
 ### Fixed
 
 - `update_config` now merges `strategy` field by field like cache and retry. Setting `strategy_mode` alone used to drop other strategy fields such as `on_status_codes` and `conditions`. Targets are still replaced whole.
@@ -1144,7 +1148,8 @@ First stable release. Graduates from beta with 151 tools covering ~98% of the Po
 - Vercel deployment support
 - Contract tests, E2E tests, security tests
 
-[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.7...HEAD
+[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.8...HEAD
+[0.16.8]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.7...v0.16.8
 [0.16.7]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.6...v0.16.7
 [0.16.6]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.5...v0.16.6
 [0.16.5]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.4...v0.16.5
