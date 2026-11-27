@@ -17,8 +17,25 @@ and catalog scanners can detect published versions.
    order matters. `npm run verify:generated` fails when either file is stale.
 3. Run `npm run ci`, which includes `verify:generated`.
 4. Open a PR into the active development line. After required checks and review
-   pass, merge it there, then promote that line to protected `main` through a
-   separate reviewed PR. Confirm both trees match before publication.
+   pass, merge it there.
+5. Promote that line to protected `main` through a separate reviewed PR, and
+   confirm both trees match before publication.
+6. Before approving the promotion PR, check its CodeQL results. Default setup
+   only analyzes `main` and PRs into `main`, so dev pushes and PRs into dev never
+   get a CodeQL run, and an alert query on the dev ref always comes back empty.
+   Once the PR's CodeQL checks finish (swap in the PR number for `<n>`):
+
+   ```sh
+   gh api "repos/CodesWhat/portkey-admin-mcp/code-scanning/analyses?ref=refs/pull/<n>/head&per_page=1" --jq '.[0].commit_sha'
+   gh api --paginate "repos/CodesWhat/portkey-admin-mcp/code-scanning/alerts?state=open&ref=refs/pull/<n>/head&per_page=100" --jq '.[]|select(.rule.security_severity_level=="high" or .rule.security_severity_level=="critical" or .rule.severity=="error")|.number' | wc -l
+   ```
+
+   The first command must print the PR's head SHA. If it doesn't, the analysis
+   is missing or still running, so wait rather than reading an empty alert list
+   as zero. The second must print 0, because the ruleset's `code_scanning` rule
+   on `main` (errors, `high_or_higher`) blocks the merge on those alerts. Fix
+   each alert on dev, or dismiss it with a reason only after you've verified it's
+   a false positive. Never change the ruleset.
 
 The `dev/<minor>` branch is also Renovate's base branch (`baseBranchPatterns`
 in `renovate.json`). When a new minor line starts, cut the new `dev/<minor>`

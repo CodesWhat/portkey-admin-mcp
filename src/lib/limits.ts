@@ -13,13 +13,15 @@ export interface UsageLimitsParams {
 	alert_threshold?: number;
 	type?: UsageLimitType;
 	periodic_reset?: PeriodicReset;
+	periodic_reset_days?: number;
 }
 
 export interface UsageLimits {
 	type: UsageLimitType;
 	credit_limit?: number;
 	alert_threshold?: number;
-	periodic_reset: PeriodicReset;
+	periodic_reset?: PeriodicReset;
+	periodic_reset_days?: number;
 }
 
 /**
@@ -29,7 +31,7 @@ export interface UsageLimits {
  */
 export type ExistingUsageLimits = Omit<
 	Partial<UsageLimits>,
-	"periodic_reset"
+	"periodic_reset" | "periodic_reset_days"
 > & {
 	periodic_reset?: string | null;
 	periodic_reset_days?: number | null;
@@ -45,12 +47,30 @@ export interface RateLimitWithUnit<
 
 export type RateLimitRpm = RateLimitWithUnit<"rpm">;
 
+/**
+ * periodic_reset and periodic_reset_days are mutually exclusive in the API.
+ */
+export function assertResetCadenceExclusive(params: {
+	periodic_reset?: unknown;
+	periodic_reset_days?: unknown;
+}): void {
+	if (
+		params.periodic_reset !== undefined &&
+		params.periodic_reset_days !== undefined
+	) {
+		throw new Error(
+			"periodic_reset and periodic_reset_days are mutually exclusive",
+		);
+	}
+}
+
 function hasUsageLimitInput(params: UsageLimitsParams): boolean {
 	return (
 		params.credit_limit !== undefined ||
 		params.alert_threshold !== undefined ||
 		params.type !== undefined ||
-		params.periodic_reset !== undefined
+		params.periodic_reset !== undefined ||
+		params.periodic_reset_days !== undefined
 	);
 }
 
@@ -63,6 +83,9 @@ function copyDefinedUsageLimitFields(
 	}
 	if (params.periodic_reset !== undefined) {
 		limits.periodic_reset = params.periodic_reset;
+	}
+	if (params.periodic_reset_days !== undefined) {
+		limits.periodic_reset_days = params.periodic_reset_days;
 	}
 	if (params.credit_limit !== undefined) {
 		limits.credit_limit = params.credit_limit;
@@ -86,10 +109,14 @@ export function buildUsageLimits(
 	if (!hasUsageLimitInput(params)) {
 		return undefined;
 	}
-	return copyDefinedUsageLimitFields(params, {
-		type: "cost",
-		periodic_reset: PERIODIC_RESET_DEFAULT,
-	});
+	// periodic_reset and periodic_reset_days are mutually exclusive, so the
+	// monthly default only applies when the caller picked no cadence at all.
+	return copyDefinedUsageLimitFields(
+		params,
+		params.periodic_reset_days !== undefined
+			? { type: "cost" }
+			: { type: "cost", periodic_reset: PERIODIC_RESET_DEFAULT },
+	);
 }
 
 /**
@@ -122,7 +149,9 @@ export async function mergeUsageLimitsUpdate(
 	const existing = await readExisting();
 	const base: ExistingUsageLimits = existing
 		? {}
-		: { type: "cost", periodic_reset: PERIODIC_RESET_DEFAULT };
+		: supplied.periodic_reset_days !== undefined
+			? { type: "cost" }
+			: { type: "cost", periodic_reset: PERIODIC_RESET_DEFAULT };
 	if (existing) {
 		for (const key of [
 			"type",
@@ -141,6 +170,8 @@ export async function mergeUsageLimitsUpdate(
 		// days, and inherited days mean periodic_reset is omitted, not null.
 		if (supplied.periodic_reset !== undefined) {
 			delete base.periodic_reset_days;
+		} else if (supplied.periodic_reset_days !== undefined) {
+			delete base.periodic_reset;
 		} else if (
 			base.periodic_reset_days !== undefined &&
 			base.periodic_reset_days !== null

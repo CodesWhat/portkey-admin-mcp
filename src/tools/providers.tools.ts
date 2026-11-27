@@ -69,6 +69,15 @@ const PROVIDERS_TOOL_SCHEMAS = {
 			.describe(
 				"Period for resetting usage limits: 'monthly' or 'weekly'. Defaults to 'monthly'.",
 			),
+		periodic_reset_days: z.coerce
+			.number()
+			.int()
+			.min(1)
+			.max(365)
+			.optional()
+			.describe(
+				"Custom reset cadence in days, 1 through 365. Mutually exclusive with periodic_reset.",
+			),
 		rate_limit_value: z.coerce
 			.number()
 			.positive()
@@ -128,6 +137,15 @@ const PROVIDERS_TOOL_SCHEMAS = {
 			.describe(
 				"Reset period: 'monthly' or 'weekly'. If omitted, preserves the existing cadence, including custom reset days; defaults to 'monthly' when no limits exist.",
 			),
+		periodic_reset_days: z.coerce
+			.number()
+			.int()
+			.min(1)
+			.max(365)
+			.optional()
+			.describe(
+				"Custom reset cadence in days, 1 through 365. Mutually exclusive with periodic_reset.",
+			),
 		rate_limit_value: z.coerce
 			.number()
 			.positive()
@@ -177,14 +195,32 @@ const createProviderSchema = z
 	.refine(hasCompleteRateLimitPair, {
 		path: ["rate_limit_unit"],
 		message: RATE_LIMIT_PAIR_MESSAGE,
-	});
+	})
+	.refine(
+		(value) =>
+			value.periodic_reset === undefined ||
+			value.periodic_reset_days === undefined,
+		{
+			path: ["periodic_reset_days"],
+			message: "periodic_reset and periodic_reset_days are mutually exclusive",
+		},
+	);
 
 const updateProviderSchema = z
 	.object(PROVIDERS_TOOL_SCHEMAS.updateProvider)
 	.refine(hasCompleteRateLimitPair, {
 		path: ["rate_limit_unit"],
 		message: RATE_LIMIT_PAIR_MESSAGE,
-	});
+	})
+	.refine(
+		(value) =>
+			value.periodic_reset === undefined ||
+			value.periodic_reset_days === undefined,
+		{
+			path: ["periodic_reset_days"],
+			message: "periodic_reset and periodic_reset_days are mutually exclusive",
+		},
+	);
 
 export function registerProvidersTools(
 	server: McpServer,
@@ -219,6 +255,7 @@ export function registerProvidersTools(
 								credit_limit: provider.usage_limits.credit_limit,
 								alert_threshold: provider.usage_limits.alert_threshold,
 								periodic_reset: provider.usage_limits.periodic_reset,
+								periodic_reset_days: provider.usage_limits.periodic_reset_days,
 							}
 						: null,
 					rate_limits:
@@ -256,6 +293,7 @@ export function registerProvidersTools(
 					alert_threshold: params.alert_threshold,
 					type: params.usage_limit_type,
 					periodic_reset: params.periodic_reset,
+					periodic_reset_days: params.periodic_reset_days,
 				}),
 				rate_limits:
 					params.rate_limit_value !== undefined &&
@@ -302,6 +340,7 @@ export function registerProvidersTools(
 							credit_limit: provider.usage_limits.credit_limit,
 							alert_threshold: provider.usage_limits.alert_threshold,
 							periodic_reset: provider.usage_limits.periodic_reset,
+							periodic_reset_days: provider.usage_limits.periodic_reset_days,
 						}
 					: null,
 				rate_limits:
@@ -333,6 +372,7 @@ export function registerProvidersTools(
 					alert_threshold: params.alert_threshold,
 					type: params.usage_limit_type,
 					periodic_reset: params.periodic_reset,
+					periodic_reset_days: params.periodic_reset_days,
 				}),
 				async () =>
 					(

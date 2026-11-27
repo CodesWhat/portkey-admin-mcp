@@ -1,8 +1,8 @@
 # Portkey Admin MCP roadmap
 
-> Last reviewed: 2026-11-23
+> Last reviewed: 2026-11-26
 > Status: active compatibility maintenance
-> Current catalog: 195 tools across 22 domains, including 56 Enterprise-gated tools
+> Current catalog: 195 tools across 22 domains, including 57 Enterprise-gated tools
 
 Portkey continues to publish control-plane additions after its acquisition by
 Palo Alto Networks. This project follows the stable public Portkey OpenAPI and
@@ -40,16 +40,27 @@ The complete generated tool catalog and route matrix lives in
 [ENDPOINTS.md](./ENDPOINTS.md). `npm run verify:readme-tools` checks the source,
 README, endpoint catalog, domain counts, and Enterprise-gated inventory together.
 
-## Next release (0.16.6)
+## Next unreleased version
 
-- Merged non-major dependency updates (#207) and stabilized the fail-closed
-  security tests' module loading for coverage (#226) on `dev/0.16`.
-- Prompt promotion into a new target now preserves `ai_model_id` and
-  `finetune_id` and rejects a source with no model selection before creating
-  the target. The fix and five regression cases merged in #227 into
-  `dev/0.16` after review and passing checks.
-- 0.16.5 remains the published release. Prepare and promote 0.16.6 after the
-  remaining release gates pass.
+- 0.16.7 is the published release. Work for the next version lands on
+  `dev/0.16` and is recorded under the CHANGELOG's Unreleased section.
+- Carried over from 0.16.6 and already shipped: dependency updates (#207), the
+  fail-closed security test module-loading fix (#226), and the prompt promotion
+  fix that preserves `ai_model_id` and `finetune_id` (#227).
+
+## Completed 2026-11-26 (0.16.7)
+
+- Published 0.16.7: annotated tag `v0.16.7` at
+  `55d1615cb658c625a816729f02053cd3084103b9` (`main`, promotion #243), GitHub
+  Release marked Latest, npm with SLSA provenance and dist-tag `latest`, and
+  the MCP Registry entry at 0.16.7 (`isLatest`). Release workflow 45896044262
+  succeeded.
+- LobeHub was updated to 0.16.7 (195 tools). The Vercel production deploy
+  serves `55d1615c`.
+- Docker catalog #5026 now pins `55d1615c` (fork commit `8f6728ea`). Upstream
+  review and catalog publication remain pending.
+- Glama synced to `55d1615` and published 0.16.7 on 2026-11-27 after a passing build
+  test. See `docs/DISTRIBUTION.md`.
 
 ## Completed 2026-11-23 (0.16.6)
 
@@ -342,13 +353,13 @@ stable and public, or the stated live-verification prerequisite is met:
 
 - Docker MCP Catalog: submitted as
   [docker/mcp-registry #5026](https://github.com/docker/mcp-registry/pull/5026),
-  refreshed to the 0.16.6 release commit `f27306a0` (fork commit `82c37097`,
-  2026-11-23). Upstream maintainer review and catalog publication remain
-  pending. A local image build of v0.16.6 listed 194 tools.
+  refreshed to the 0.16.7 release commit `55d1615c` (fork commit `8f6728ea`,
+  2026-11-26). Upstream maintainer review and catalog publication remain
+  pending.
 - Awesome MCP Servers: [#13074](https://github.com/punkpeye/awesome-mcp-servers/pull/13074)
   merged on 2026-09-13.
-- Glama: synced to `f27306a` and Auto-Release published 0.16.6 on
-  2026-11-23. Generated descriptions and quality-score evaluation can lag
+- Glama: synced to `55d1615`, and 0.16.7 was published on 2026-11-27 after a passing
+  build test. Generated descriptions and quality-score evaluation can lag
   the inventory. See the dated publication record in `docs/DISTRIBUTION.md`.
 - Recheck PulseMCP after listing changes reopen. Its legacy record still uses the
   pre-organization namespace and is not currently editable.

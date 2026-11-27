@@ -11,6 +11,19 @@ release until that reference and the release notes say so.
 
 ## [Unreleased]
 
+## [0.16.8] - 2026-11-27
+
+Adds key and provider usage-limit reset options and a `configurations` passthrough for integrations, so provider settings the flat inputs missed reach the API. `update_config` now merges `strategy` instead of dropping fields you didn't set.
+
+### Fixed
+
+- `update_config` now merges `strategy` field by field like cache and retry. Setting `strategy_mode` alone used to drop other strategy fields such as `on_status_codes` and `conditions`. Targets are still replaced whole.
+- `create_integration` and `update_integration` now take a `configurations` object, so provider fields the flat inputs never covered (Bedrock `aws_auth_type`, Azure `azure_auth_mode` and `azure_resource_name`, Workers AI, Cortex, OpenAI and Anthropic auth, custom headers) reach the API. The flat fields still work and override matching keys.
+
+### Added
+
+- `create_virtual_key`, `update_virtual_key`, `create_api_key` and `update_api_key` now take `usage_limit_type`, `periodic_reset` and `periodic_reset_days`, and the provider tools take `periodic_reset_days`, so a key or provider can use a token budget or a custom reset cadence. `periodic_reset` and `periodic_reset_days` are mutually exclusive, and updates still merge onto the limits already on the resource. Key and provider reads now return `periodic_reset_days`.
+
 ## [0.16.7] - 2026-11-26
 
 Fixes `update_config` wiping settings it wasn't asked to change, config writes that errored after succeeding, and MCP sub-resource paging. Adds `ping_deployment` and every log-export filter, and keeps response fields several tools were dropping.
@@ -1135,7 +1148,8 @@ First stable release. Graduates from beta with 151 tools covering ~98% of the Po
 - Vercel deployment support
 - Contract tests, E2E tests, security tests
 
-[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.7...HEAD
+[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.8...HEAD
+[0.16.8]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.7...v0.16.8
 [0.16.7]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.6...v0.16.7
 [0.16.6]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.5...v0.16.6
 [0.16.5]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.4...v0.16.5

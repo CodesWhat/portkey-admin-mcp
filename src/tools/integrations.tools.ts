@@ -129,6 +129,11 @@ const integrationModelPricingSchema = z.object({
 		.describe("Pay-as-you-go rates for this integration model"),
 });
 
+const integrationConfigurationsSchema = z.record(z.string(), z.unknown());
+
+const INTEGRATION_CONFIGURATIONS_DESCRIPTION =
+	"Provider-specific configuration object, passed through as given. Use the field names for the provider's variant: OpenAI (openai_organization, openai_project, provider_auth_type, oauth_*), Anthropic (anthropic_*, provider_auth_type, oauth_*), Azure OpenAI (azure_auth_mode, azure_resource_name, azure_deployment_config, azure_entra_*), Bedrock (aws_auth_type, aws_region, aws_role_arn, aws_external_id), Vertex AI (vertex_auth_type, vertex_region, vertex_project_id, vertex_service_account_json), Azure AI (azure_foundry_url, azure_auth_mode), Workers AI (workers_ai_account_id), Hugging Face (huggingface_base_url), Cortex (snowflake_account), custom host (custom_host, custom_headers). The flat fields below override matching keys.";
+
 const INTEGRATIONS_TOOL_SCHEMAS = {
 	getModelPricing: {
 		provider: z
@@ -210,6 +215,9 @@ const INTEGRATIONS_TOOL_SCHEMAS = {
 			.optional()
 			.describe("GCP project ID (for Vertex AI)"),
 		vertex_region: z.string().optional().describe("GCP region (for Vertex AI)"),
+		configurations: integrationConfigurationsSchema
+			.optional()
+			.describe(INTEGRATION_CONFIGURATIONS_DESCRIPTION),
 		custom_host: z
 			.string()
 			.optional()
@@ -289,6 +297,9 @@ const INTEGRATIONS_TOOL_SCHEMAS = {
 			.string()
 			.optional()
 			.describe("New GCP region (for Vertex AI)"),
+		configurations: integrationConfigurationsSchema
+			.optional()
+			.describe(INTEGRATION_CONFIGURATIONS_DESCRIPTION),
 		custom_host: z
 			.string()
 			.optional()
@@ -513,6 +524,7 @@ function redactIntegrationConfigurations<T extends Record<string, unknown>>(
 }
 
 function buildIntegrationConfigurations(params: {
+	configurations?: Record<string, unknown>;
 	api_version?: string;
 	resource_name?: string;
 	deployment_name?: string;
@@ -523,7 +535,9 @@ function buildIntegrationConfigurations(params: {
 	vertex_region?: string;
 	custom_host?: string;
 }): Record<string, unknown> | undefined {
-	const configurations: Record<string, unknown> = {};
+	const configurations: Record<string, unknown> = {
+		...params.configurations,
+	};
 	if (params.api_version !== undefined)
 		configurations.api_version = params.api_version;
 	if (params.resource_name !== undefined)

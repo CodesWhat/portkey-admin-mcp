@@ -1488,3 +1488,48 @@ describe("integrations tools — path encoding", () => {
 		assert.deepEqual(req.params, { slugs: "model/three?" });
 	});
 });
+
+describe("providers tools — periodic_reset_days", () => {
+	it("sends periodic_reset_days on create without the monthly default", async () => {
+		let captured: { usage_limits?: unknown } = {};
+		const callbacks = registerToolCallbacks((server) => {
+			registerProvidersTools(
+				server as never,
+				{
+					providers: {
+						createProvider: async (payload: unknown) => {
+							captured = payload as { usage_limits?: unknown };
+							return { id: "p", slug: "s" };
+						},
+					},
+				} as never,
+			);
+		});
+		await callbacks.get("create_provider")?.({
+			name: "p",
+			integration_id: "int",
+			credit_limit: 10,
+			periodic_reset_days: 10,
+		});
+		assert.deepEqual(captured.usage_limits, {
+			type: "cost",
+			periodic_reset_days: 10,
+			credit_limit: 10,
+		});
+	});
+
+	it("rejects both cadences on update_provider", async () => {
+		const callbacks = registerToolCallbacks((server) => {
+			registerProvidersTools(server as never, { providers: {} } as never);
+		});
+		await assert.rejects(
+			async () =>
+				callbacks.get("update_provider")?.({
+					slug: "s",
+					periodic_reset: "weekly",
+					periodic_reset_days: 3,
+				}),
+			/mutually exclusive/,
+		);
+	});
+});
