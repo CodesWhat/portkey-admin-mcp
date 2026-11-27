@@ -151,6 +151,9 @@ breakdown have refreshed at:
 https://glama.ai/mcp/servers/CodesWhat/portkey-admin-mcp
 ```
 
+Glama is synced only on the last release of a run (maintainer decision
+2026-11-27), so skip this step for 0.16.10; the next sync is at 0.17.0.
+
 On the claimed listing, open **Repository > Sync Server**, confirm the indexed
 commit matches the release, then run **Dockerfile > Build & Release**. Verify
 the successful build, server version, and discovered tool inventory. Glama's
