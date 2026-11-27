@@ -462,6 +462,7 @@ function formatKeyUsageLimits(
 	| "alert_threshold"
 	| "periodic_reset"
 	| "periodic_reset_days"
+	| "next_usage_reset_at"
 > | null {
 	return limits
 		? {
@@ -470,6 +471,7 @@ function formatKeyUsageLimits(
 				alert_threshold: limits.alert_threshold,
 				periodic_reset: limits.periodic_reset,
 				periodic_reset_days: limits.periodic_reset_days,
+				next_usage_reset_at: limits.next_usage_reset_at,
 			}
 		: null;
 }

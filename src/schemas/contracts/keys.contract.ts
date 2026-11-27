@@ -36,6 +36,7 @@ const VirtualKeyUsageLimitsSchema = z.object({
 	credit_limit: z.number(),
 	periodic_reset: z.enum(["monthly", "weekly"]).nullable().optional(),
 	periodic_reset_days: z.number().int().nullable().optional(),
+	next_usage_reset_at: z.string().nullable().optional(),
 });
 
 export const VirtualKeySchema = z.object({
@@ -91,6 +92,7 @@ const ApiKeyUsageLimitsSchema = z
 		credit_limit: z.number().optional(),
 		periodic_reset: z.enum(["monthly", "weekly"]).nullable().optional(),
 		periodic_reset_days: z.number().int().nullable().optional(),
+		next_usage_reset_at: z.string().nullable().optional(),
 		alert_threshold: z.number().optional(),
 	})
 	.passthrough();
