@@ -24,7 +24,7 @@ Each POST is independent. GET replay, session IDs and DELETE session operations 
 - Portkey Admin API key with required scopes
 - Redis instance URL (for example Upstash Redis or another managed Redis service)
 - Vercel project connected to this repository
-- Optional but recommended: Clerk app for JWT auth
+- Only if you already run Clerk auth: a Clerk app for JWT auth. Clerk mode is deprecated (removed in 0.17.0, no earlier than 2027-01-31); new deployments should use bearer
 
 ## 2. Verify Repo Files
 
