@@ -14,6 +14,7 @@ release until that reference and the release notes say so.
 ### Fixed
 
 - `update_config` now merges `strategy` field by field like cache and retry. Setting `strategy_mode` alone used to drop other strategy fields such as `on_status_codes` and `conditions`. Targets are still replaced whole.
+- `create_integration` and `update_integration` now take a `configurations` object, so provider fields the flat inputs never covered (Bedrock `aws_auth_type`, Azure `azure_auth_mode` and `azure_resource_name`, Workers AI, Cortex, OpenAI and Anthropic auth, custom headers) reach the API. The flat fields still work and override matching keys.
 
 ### Added
 
