@@ -132,7 +132,7 @@ const integrationModelPricingSchema = z.object({
 const integrationConfigurationsSchema = z.record(z.string(), z.unknown());
 
 const INTEGRATION_CONFIGURATIONS_DESCRIPTION =
-	"Provider-specific configuration object, passed through as given. Use the field names for the provider's variant: OpenAI (openai_organization, openai_project, provider_auth_type, oauth_*), Anthropic (anthropic_*, provider_auth_type, oauth_*), Azure OpenAI (azure_auth_mode, azure_resource_name, azure_deployment_config, azure_entra_*), Bedrock (aws_auth_type, aws_region, aws_role_arn, aws_external_id), Vertex AI (vertex_auth_type, vertex_region, vertex_project_id, vertex_service_account_json), Azure AI (azure_foundry_url, azure_auth_mode), Workers AI (workers_ai_account_id), Hugging Face (huggingface_base_url), Cortex (snowflake_account), custom host (custom_host, custom_headers). The flat fields below override matching keys.";
+	"Provider-specific configuration object, passed through as given. Use the field names for the provider's variant: OpenAI (openai_organization, openai_project, provider_auth_type, oauth_*), Anthropic (anthropic_*, provider_auth_type, oauth_*), Azure OpenAI (azure_auth_mode, azure_resource_name, azure_deployment_config, azure_entra_*), Bedrock (aws_auth_type, aws_region, aws_role_arn, aws_external_id), SageMaker (the Bedrock aws_* fields plus amzn_sagemaker_*), Vertex AI (vertex_auth_type, vertex_region, vertex_project_id, vertex_service_account_json), Azure AI (azure_foundry_url, azure_auth_mode), Workers AI (workers_ai_account_id), Hugging Face (huggingface_base_url), Cortex (snowflake_account), custom host (custom_host, custom_headers). The flat fields below override matching keys.";
 
 const INTEGRATIONS_TOOL_SCHEMAS = {
 	getModelPricing: {
