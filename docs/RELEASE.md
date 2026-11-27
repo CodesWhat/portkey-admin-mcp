@@ -17,8 +17,20 @@ and catalog scanners can detect published versions.
    order matters. `npm run verify:generated` fails when either file is stale.
 3. Run `npm run ci`, which includes `verify:generated`.
 4. Open a PR into the active development line. After required checks and review
-   pass, merge it there, then promote that line to protected `main` through a
-   separate reviewed PR. Confirm both trees match before publication.
+   pass, merge it there.
+5. Before opening the promotion PR, check dev for open high-severity CodeQL
+   alerts (swap in the active minor for `<minor>`):
+
+   ```sh
+   gh api "repos/CodesWhat/portkey-admin-mcp/code-scanning/alerts?state=open&ref=refs/heads/dev/<minor>" --jq '[.[]|select(.rule.security_severity_level=="high" or .rule.security_severity_level=="critical" or .rule.severity=="error")]|length'
+   ```
+
+   It must print 0. The ruleset's `code_scanning` rule on `main` (errors,
+   `high_or_higher`) blocks the promotion on alerts that PRs into dev don't
+   block on. Fix each alert, or dismiss it with a reason only after you've
+   verified it's a false positive. Never change the ruleset.
+6. Promote that line to protected `main` through a separate reviewed PR.
+   Confirm both trees match before publication.
 
 The `dev/<minor>` branch is also Renovate's base branch (`baseBranchPatterns`
 in `renovate.json`). When a new minor line starts, cut the new `dev/<minor>`
