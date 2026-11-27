@@ -42,11 +42,31 @@ README, endpoint catalog, domain counts, and Enterprise-gated inventory together
 
 ## Next unreleased version
 
-- 0.16.8 is the published release. Work for the next version lands on
+- 0.16.9 is the published release. Work for the next version lands on
   `dev/0.16` and is recorded under the CHANGELOG's Unreleased section.
 - Carried over from 0.16.6 and already shipped: dependency updates (#207), the
   fail-closed security test module-loading fix (#226), and the prompt promotion
   fix that preserves `ai_model_id` and `finetune_id` (#227).
+
+## Completed 2026-11-27 (0.16.9)
+
+- Published 0.16.9: annotated tag `v0.16.9` at
+  `4b1d4a66223587818c298a45b4f053c16fccc102` (`main`, promotion #251, merged
+  after the reconcile PR #252 and CodeQL on the PR ref showed no high or error
+  alerts and two non-author approvals), GitHub Release marked Latest, npm with
+  SLSA provenance and dist-tag `latest`, and the MCP Registry entry at 0.16.9
+  (`isLatest`). Release workflow 46039828125 succeeded.
+- 0.16.9 adds `next_usage_reset_at` to key and provider reads, SageMaker in the
+  integration `configurations` description, and a fetch-level `configurations`
+  test (#249, release prep #250).
+- LobeHub was updated to 0.16.9 (195 tools). The Vercel production deploy
+  serves `4b1d4a66`.
+- Docker catalog #5026 now pins `4b1d4a66` (fork commit `57cee3fe`). Upstream
+  review and catalog publication remain pending.
+- Glama synced to `4b1d4a6` on 2026-11-27 at 12:31, Build & Release ran build
+  test `01a21e10-c6ac-7b4b-98f4-8ecf1646ce8d`, and Glama now lists 0.16.9. A
+  stray 1.0.13 also appeared from the default version on Build & Release, the
+  same quirk as 1.0.12. See `docs/DISTRIBUTION.md`.
 
 ## Completed 2026-11-27 (0.16.8)
 
@@ -131,12 +151,12 @@ are unchanged from the September baseline. Egress calls use the hosted `/v2`
 base: `/v1` returns the inference gateway fallback, while `/v2` reaches the
 organisation permission check. The configured credential can list access
 policies but cannot read the egress allowlist; access-policy create/read/replace/version-conflict/delete behavior was verified
-with a disposable disabled policy. Egress read and mutation contracts remain
-documentation-derived pending an appropriately scoped tenant.
+with a disposable disabled policy. Egress read and mutation contracts stay
+documentation-derived. No scoped tenant is planned, so they won't be live-verified.
 
 Prisma AIRS now publishes management contracts. The interoperability guide
-records the authentication, route, domain, and verification differences. Native
-adapter work waits for a credentialed tenant to verify those contracts; a base
+records the authentication, route, domain, and verification differences. A native
+adapter isn't planned, since there's no tenant to verify those contracts against; a base
 URL substitution remains unsupported.
 No maintainer Prisma AIRS tenant is available, and acquiring paid access is
 outside this project's maintenance plan. Palo Alto Networks advertises a
@@ -358,28 +378,25 @@ stable and public, or the stated live-verification prerequisite is met:
 - MCP integration test/named authorization parameters, guardrail `ids`, and
   workspace `name_format=plain`, which are absent from the current public OpenAPI.
 - Disputed limit-policy extensions such as `tpm|tph|tpd`, requests-based usage
-  policies, custom reset cadence on creation, and fields absent from the published
-  schemas.
-- Hosted control-plane route availability for credentials that lack the required
-  organisation or feature scopes. The smoke runner treats only explicit HTTP 401
-  and 403 permission denials as skips; unexpected HTTP 400 route failures remain
-  real failures.
-- A native Prisma AIRS adapter. The management specification is now public;
-  verify its authentication, separate management bases, and supported domains
-  against a credentialed tenant before implementation. Keep it distinct from
-  Portkey mode, as described in `docs/PRISMA_AIRS_INTEROPERABILITY.md`.
+  policies, and fields absent from the published schemas. Custom reset cadence
+  (`periodic_reset_days`) shipped in 0.16.8.
+
+Live-tenant verification is out of scope: the project has no Portkey or Prisma
+AIRS tenant and won't get one. That rules out credentialed route-availability
+checks and a native Prisma AIRS adapter (see `docs/PRISMA_AIRS_INTEROPERABILITY.md`
+for the side-by-side model).
 
 ## Distribution follow-up
 
 - Docker MCP Catalog: submitted as
   [docker/mcp-registry #5026](https://github.com/docker/mcp-registry/pull/5026),
-  refreshed to the 0.16.8 release commit `622f8370` (fork commit `e800b9f0`,
+  refreshed to the 0.16.9 release commit `4b1d4a66` (fork commit `57cee3fe`,
   2026-11-27). Upstream maintainer review and catalog publication remain
   pending.
 - Awesome MCP Servers: [#13074](https://github.com/punkpeye/awesome-mcp-servers/pull/13074)
   merged on 2026-09-13.
-- Glama: synced to `622f837`, and 0.16.8 was published on 2026-11-27 after a
-  passing build test. Generated descriptions and quality-score evaluation can lag
+- Glama: 0.16.9 was published on 2026-11-27 after a passing build test (plus a
+  stray 1.0.13 from Build & Release's default version). Generated descriptions and quality-score evaluation can lag
   the inventory. See the dated publication record in `docs/DISTRIBUTION.md`.
 - Recheck PulseMCP after listing changes reopen. Its legacy record still uses the
   pre-organization namespace and is not currently editable.

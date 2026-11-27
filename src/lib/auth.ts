@@ -172,6 +172,18 @@ export function assertSafeHttpAuthConfig(
 	);
 }
 
+export const CLERK_DEPRECATION_MESSAGE =
+	"MCP_AUTH_MODE=clerk is deprecated and will be removed in 0.17.0 (no earlier than 2027-01-31). Switch to MCP_AUTH_MODE=bearer.";
+
+/** Logs the Clerk deprecation warning once per call; call it at app startup, not per request. */
+export function warnIfDeprecatedAuthMode(
+	config: HttpAuthConfig = getHttpAuthConfig(),
+): void {
+	if (config.mode === "clerk") {
+		Logger.warn(CLERK_DEPRECATION_MESSAGE);
+	}
+}
+
 function extractBearerToken(req: Request): string | null {
 	const authHeader = req.headers.authorization;
 	if (!authHeader) {

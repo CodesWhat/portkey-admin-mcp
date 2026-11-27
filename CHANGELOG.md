@@ -11,6 +11,14 @@ release until that reference and the release notes say so.
 
 ## [Unreleased]
 
+## [0.16.10] - 2026-11-27
+
+Deprecates Clerk auth mode. It still works but logs a warning at startup, and it'll be removed in 0.17.0, no earlier than 2027-01-31. Switch to `MCP_AUTH_MODE=bearer`.
+
+### Deprecated
+
+- Clerk auth mode (`MCP_AUTH_MODE=clerk`) is deprecated and logs a warning at startup. It will be removed in 0.17.0, no earlier than 2027-01-31. Use `MCP_AUTH_MODE=bearer` instead.
+
 ## [0.16.9] - 2026-11-27
 
 Key and provider reads now show when a usage limit resets next, and the integration `configurations` description covers SageMaker.
@@ -1160,7 +1168,8 @@ First stable release. Graduates from beta with 151 tools covering ~98% of the Po
 - Vercel deployment support
 - Contract tests, E2E tests, security tests
 
-[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.9...HEAD
+[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.10...HEAD
+[0.16.10]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.9...v0.16.10
 [0.16.9]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.8...v0.16.9
 [0.16.8]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.7...v0.16.8
 [0.16.7]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.6...v0.16.7
