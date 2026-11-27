@@ -21,6 +21,7 @@ export interface VirtualKeyUsageLimits {
 	credit_limit: number;
 	periodic_reset: "monthly" | "weekly" | string | null;
 	periodic_reset_days?: number | null;
+	next_usage_reset_at?: string | null;
 }
 
 export interface VirtualKey {
@@ -90,6 +91,7 @@ export interface ApiKeyUsageLimits {
 	credit_limit: number;
 	periodic_reset: "monthly" | "weekly" | string | null;
 	periodic_reset_days?: number | null;
+	next_usage_reset_at?: string | null;
 	alert_threshold: number;
 }
 

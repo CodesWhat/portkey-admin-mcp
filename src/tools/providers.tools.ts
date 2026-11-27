@@ -256,6 +256,7 @@ export function registerProvidersTools(
 								alert_threshold: provider.usage_limits.alert_threshold,
 								periodic_reset: provider.usage_limits.periodic_reset,
 								periodic_reset_days: provider.usage_limits.periodic_reset_days,
+								next_usage_reset_at: provider.usage_limits.next_usage_reset_at,
 							}
 						: null,
 					rate_limits:
@@ -341,6 +342,7 @@ export function registerProvidersTools(
 							alert_threshold: provider.usage_limits.alert_threshold,
 							periodic_reset: provider.usage_limits.periodic_reset,
 							periodic_reset_days: provider.usage_limits.periodic_reset_days,
+							next_usage_reset_at: provider.usage_limits.next_usage_reset_at,
 						}
 					: null,
 				rate_limits:
