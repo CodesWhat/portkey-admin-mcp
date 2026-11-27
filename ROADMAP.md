@@ -11,30 +11,30 @@ track and is not treated as a compatible `PORTKEY_BASE_URL`.
 
 ## Current coverage
 
-| Domain            | Tools | Current scope                                                                                                     |
-| ----------------- | ----: | ----------------------------------------------------------------------------------------------------------------- |
-| Users             |    10 | Accepted users, invitations, stats, lifecycle                                                                     |
-| Workspaces        |    14 | Workspace lifecycle, members, SCIM mappings/groups                                                                |
-| Configs           |     6 | Gateway configuration lifecycle and versions                                                                      |
-| Deployments       |     5 | Self-hosted Gateway registration, tags, reads, updates, archival                                                  |
-| Keys              |    11 | Virtual Keys and API keys, rotation, current limits/defaults                                                      |
-| Collections       |     5 | Prompt collections, including nested collections                                                                  |
-| Prompts           |    14 | Lifecycle, versions, render, completion, migration, promotion                                                     |
-| Analytics         |    25 | Graphs, cache summary, and grouped user/model/provider/metadata/MCP/A2A/workspace views, filterable by deployment |
-| Guardrails        |    14 | LLM and MCP-tool policies, server mappings, organisation defaults, workspace exclusions                           |
-| Access Policies   |     5 | Versioned allow/deny policies for users, groups, agents, MCP tools, and provider models                           |
-| Egress Allowlist  |     5 | Organisation trust for custom outbound hosts                                                                      |
-| Limits            |    12 | Rate/usage policies, tracked entities, counter reset                                                              |
-| Audit             |     1 | Audit-log reads                                                                                                   |
-| Labels            |     5 | Prompt version labels                                                                                             |
-| Partials          |     7 | Prompt partial lifecycle and versions                                                                             |
-| Tracing           |     2 | Feedback creation and updates                                                                                     |
-| Logging           |    10 | Logs, export jobs, downloads, field restrictions                                                                  |
-| Providers         |     5 | Workspace provider configurations                                                                                 |
-| Secret References |     5 | External-secret reference lifecycle                                                                               |
-| Integrations      |    11 | Provider integrations, tags, models, workspace access, public pricing                                             |
-| MCP Integrations  |    10 | External MCP integration lifecycle and access                                                                     |
-| MCP Servers       |    12 | Registry, tests, capabilities, access, live connections                                                           |
+| Domain            | Tools | Current scope                                                                                                                                                             |
+| ----------------- | ----: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Users             |    10 | Accepted users, invitations, stats, lifecycle                                                                                                                             |
+| Workspaces        |    14 | Workspace lifecycle, members, SCIM mappings/groups                                                                                                                        |
+| Configs           |     6 | Gateway configuration lifecycle and versions                                                                                                                              |
+| Deployments       |     5 | Self-hosted Gateway registration, tags, reads, updates, archival                                                                                                          |
+| Keys              |    11 | Virtual Keys and API keys, rotation, current limits/defaults; keys and providers take `usage_limit_type` plus `periodic_reset` or `periodic_reset_days` for reset cadence |
+| Collections       |     5 | Prompt collections, including nested collections                                                                                                                          |
+| Prompts           |    14 | Lifecycle, versions, render, completion, migration, promotion                                                                                                             |
+| Analytics         |    25 | Graphs, cache summary, and grouped user/model/provider/metadata/MCP/A2A/workspace views, filterable by deployment                                                         |
+| Guardrails        |    14 | LLM and MCP-tool policies, server mappings, organisation defaults, workspace exclusions                                                                                   |
+| Access Policies   |     5 | Versioned allow/deny policies for users, groups, agents, MCP tools, and provider models                                                                                   |
+| Egress Allowlist  |     5 | Organisation trust for custom outbound hosts                                                                                                                              |
+| Limits            |    12 | Rate/usage policies, tracked entities, counter reset                                                                                                                      |
+| Audit             |     1 | Audit-log reads                                                                                                                                                           |
+| Labels            |     5 | Prompt version labels                                                                                                                                                     |
+| Partials          |     7 | Prompt partial lifecycle and versions                                                                                                                                     |
+| Tracing           |     2 | Feedback creation and updates                                                                                                                                             |
+| Logging           |    10 | Logs, export jobs, downloads, field restrictions                                                                                                                          |
+| Providers         |     5 | Workspace provider configurations                                                                                                                                         |
+| Secret References |     5 | External-secret reference lifecycle                                                                                                                                       |
+| Integrations      |    11 | Provider integrations, tags, models, workspace access, public pricing, `configurations` passthrough                                                                       |
+| MCP Integrations  |    10 | External MCP integration lifecycle and access                                                                                                                             |
+| MCP Servers       |    12 | Registry, tests, capabilities, access, live connections                                                                                                                   |
 
 The complete generated tool catalog and route matrix lives in
 [ENDPOINTS.md](./ENDPOINTS.md). `npm run verify:readme-tools` checks the source,
@@ -64,8 +64,9 @@ README, endpoint catalog, domain counts, and Enterprise-gated inventory together
   serves `622f8370`.
 - Docker catalog #5026 now pins `622f8370` (fork commit `e800b9f0`). Upstream
   review and catalog publication remain pending.
-- Glama has not synced 0.16.8 yet. The sync and release are pending. See
-  `docs/DISTRIBUTION.md`.
+- Glama synced to `622f837` on 2026-11-27 at 11:28, the build test
+  `01a21dd6-6e45-73f2-a30d-d2b29133e5f4` succeeded, and Auto-Release published
+  0.16.8 at 11:29. See `docs/DISTRIBUTION.md`.
 
 ## Completed 2026-11-26 (0.16.7)
 
@@ -377,8 +378,8 @@ stable and public, or the stated live-verification prerequisite is met:
   pending.
 - Awesome MCP Servers: [#13074](https://github.com/punkpeye/awesome-mcp-servers/pull/13074)
   merged on 2026-09-13.
-- Glama: 0.16.7 was the last publish (synced to `55d1615`, 2026-11-27). The
-  0.16.8 sync is pending. Generated descriptions and quality-score evaluation can lag
+- Glama: synced to `622f837`, and 0.16.8 was published on 2026-11-27 after a
+  passing build test. Generated descriptions and quality-score evaluation can lag
   the inventory. See the dated publication record in `docs/DISTRIBUTION.md`.
 - Recheck PulseMCP after listing changes reopen. Its legacy record still uses the
   pre-organization namespace and is not currently editable.

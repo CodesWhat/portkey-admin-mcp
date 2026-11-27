@@ -2,10 +2,9 @@
 
 > Last release verification: 2026-11-27. GitHub, npm provenance, the MCP
 > Registry, LobeHub, and the Vercel production deploy were checked for 0.16.8.
-> The Docker submission pin was bumped to the 0.16.8 release commit. Glama has
-> not synced 0.16.8 yet (0.16.7 was its last publish). Upstream catalog review
-> and publication remain pending. Other downstream observations retain their
-> original dates.
+> The Docker submission pin was bumped to the 0.16.8 release commit. Glama
+> synced and published 0.16.8. Upstream catalog review and publication remain
+> pending. Other downstream observations retain their original dates.
 
 The generated catalog in this repository is the source of truth for tool names,
 counts, and descriptions. Public directory pages can lag a release or retain a
@@ -13,14 +12,14 @@ legacy repository owner, so they should not be used to validate the runtime.
 
 ## Maintained distribution records
 
-| Surface                                                                                                                   | Current relationship                                                                                        | Update path                                                                                                                                                                                                                                       |
-| ------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [GitHub](https://github.com/CodesWhat/portkey-admin-mcp)                                                                  | Canonical source, project description, homepage, and discovery topics                                       | Keep the repository description aligned with package metadata; point the homepage at the npm package                                                                                                                                              |
-| [npm](https://www.npmjs.com/package/portkey-admin-mcp)                                                                    | Canonical package distribution                                                                              | Automated from a protected release tag using `package.json`                                                                                                                                                                                       |
-| [Official MCP Registry](https://registry.modelcontextprotocol.io/v0/servers?search=io.github.CodesWhat/portkey-admin-mcp) | Canonical MCP metadata under `io.github.CodesWhat/portkey-admin-mcp`                                        | Automated after npm publication using `server.json`                                                                                                                                                                                               |
-| [LobeHub](https://lobehub.com/mcp/codeswhat-portkey-admin-mcp)                                                            | Claimed marketplace listing                                                                                 | Run `npm run update:lobehub` after release; `lhm.plugin.json` is owner-declared metadata                                                                                                                                                          |
-| [Glama](https://glama.ai/mcp/servers/CodesWhat/portkey-admin-mcp)                                                         | Claimed directory and quality listing; last published 0.16.7 on 2026-11-27 (`55d1615`); 0.16.8 sync pending | Indexes GitHub; after each release, use **Repository > Sync Server**, then **Dockerfile > Build & Release**, and verify the version and tool count it shows. The generated description and FAQ text are Glama's and refresh on their own schedule |
-| [Awesome MCP Servers](https://github.com/punkpeye/awesome-mcp-servers/pull/13074)                                         | Community list entry; the CodesWhat correction (PR #13074) merged on 2026-09-13                             | Update the entry through a new PR when the repository owner, Glama badge, or released catalog count changes                                                                                                                                       |
+| Surface                                                                                                                   | Current relationship                                                                          | Update path                                                                                                                                                                                                                                       |
+| ------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [GitHub](https://github.com/CodesWhat/portkey-admin-mcp)                                                                  | Canonical source, project description, homepage, and discovery topics                         | Keep the repository description aligned with package metadata; point the homepage at the npm package                                                                                                                                              |
+| [npm](https://www.npmjs.com/package/portkey-admin-mcp)                                                                    | Canonical package distribution                                                                | Automated from a protected release tag using `package.json`                                                                                                                                                                                       |
+| [Official MCP Registry](https://registry.modelcontextprotocol.io/v0/servers?search=io.github.CodesWhat/portkey-admin-mcp) | Canonical MCP metadata under `io.github.CodesWhat/portkey-admin-mcp`                          | Automated after npm publication using `server.json`                                                                                                                                                                                               |
+| [LobeHub](https://lobehub.com/mcp/codeswhat-portkey-admin-mcp)                                                            | Claimed marketplace listing                                                                   | Run `npm run update:lobehub` after release; `lhm.plugin.json` is owner-declared metadata                                                                                                                                                          |
+| [Glama](https://glama.ai/mcp/servers/CodesWhat/portkey-admin-mcp)                                                         | Claimed directory and quality listing; synced to `622f837` and published 0.16.8 on 2026-11-27 | Indexes GitHub; after each release, use **Repository > Sync Server**, then **Dockerfile > Build & Release**, and verify the version and tool count it shows. The generated description and FAQ text are Glama's and refresh on their own schedule |
+| [Awesome MCP Servers](https://github.com/punkpeye/awesome-mcp-servers/pull/13074)                                         | Community list entry; the CodesWhat correction (PR #13074) merged on 2026-09-13               | Update the entry through a new PR when the repository owner, Glama badge, or released catalog count changes                                                                                                                                       |
 
 The canonical description for owner-controlled records is:
 
@@ -50,8 +49,9 @@ runtime catalog before release.
 - Docker submission [#5026](https://github.com/docker/mcp-registry/pull/5026):
   `source.commit` was bumped to `622f8370` (fork commit `e800b9f0`). The PR is
   still waiting on a maintainer, and catalog publication remains pending.
-- Glama: not yet synced for 0.16.8. The last Glama publish was 0.16.7. The
-  Repository > Sync Server and Dockerfile > Build & Release steps are pending.
+- Glama: Repository > Sync Server picked up `622f837` at 11:28, build test
+  `01a21dd6-6e45-73f2-a30d-d2b29133e5f4` succeeded, and Auto-Release published
+  0.16.8 at 11:29 on 2026-11-27.
 
 ### 0.16.7 publication checks, 2026-11-26
 
