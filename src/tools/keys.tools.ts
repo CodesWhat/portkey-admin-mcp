@@ -1,6 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import {
+	assertResetCadenceExclusive,
 	buildRateLimitsRpm,
 	buildUsageLimits,
 	buildUsageLimitsUpdate,
@@ -98,6 +99,30 @@ const rotationPolicySchema = z
 	})
 	.describe("Automatic API-key rotation policy, or null to remove it");
 
+const usageLimitCadenceFields = {
+	usage_limit_type: z
+		.enum(["cost", "tokens"])
+		.optional()
+		.describe(
+			"Whether the limit measures cost or tokens. On create it defaults to cost; on update an omitted value keeps the existing type.",
+		),
+	periodic_reset: z
+		.enum(["monthly", "weekly"])
+		.optional()
+		.describe(
+			"Built-in reset cadence. Mutually exclusive with periodic_reset_days. On create it defaults to monthly unless periodic_reset_days is set.",
+		),
+	periodic_reset_days: z.coerce
+		.number()
+		.int()
+		.min(1)
+		.max(365)
+		.optional()
+		.describe(
+			"Custom reset cadence in days, 1 through 365. Mutually exclusive with periodic_reset.",
+		),
+};
+
 const KEYS_TOOL_SCHEMAS = {
 	listVirtualKeys: {
 		current_page: CurrentPageSchema,
@@ -161,6 +186,7 @@ const KEYS_TOOL_SCHEMAS = {
 			.describe(
 				"Percentage of credit_limit at which to send alert emails (0-100)",
 			),
+		...usageLimitCadenceFields,
 		rate_limit_rpm: z.coerce
 			.number()
 			.positive()
@@ -188,6 +214,7 @@ const KEYS_TOOL_SCHEMAS = {
 			.max(100)
 			.optional()
 			.describe("New alert threshold percentage (0-100)"),
+		...usageLimitCadenceFields,
 		rate_limit_rpm: z.coerce
 			.number()
 			.positive()
@@ -246,6 +273,7 @@ const KEYS_TOOL_SCHEMAS = {
 			.max(100)
 			.optional()
 			.describe("Alert threshold percentage (0-100)"),
+		...usageLimitCadenceFields,
 		rate_limit_rpm: z.coerce
 			.number()
 			.positive()
@@ -308,6 +336,7 @@ const KEYS_TOOL_SCHEMAS = {
 			.max(100)
 			.optional()
 			.describe("New alert threshold percentage (0-100)"),
+		...usageLimitCadenceFields,
 		rate_limit_rpm: z.coerce
 			.number()
 			.positive()
@@ -372,6 +401,17 @@ const createVirtualKeySchema = z
 	.object(KEYS_TOOL_SCHEMAS.createVirtualKey)
 	.superRefine((value, context) => {
 		if (
+			value.periodic_reset !== undefined &&
+			value.periodic_reset_days !== undefined
+		) {
+			context.addIssue({
+				code: "custom",
+				path: ["periodic_reset_days"],
+				message:
+					"periodic_reset and periodic_reset_days are mutually exclusive",
+			});
+		}
+		if (
 			value.key === undefined &&
 			!value.secret_mappings?.some((mapping) => mapping.target_field === "key")
 		) {
@@ -386,6 +426,17 @@ const createVirtualKeySchema = z
 const createApiKeySchema = z
 	.object(KEYS_TOOL_SCHEMAS.createApiKey)
 	.superRefine((value, ctx) => {
+		if (
+			value.periodic_reset !== undefined &&
+			value.periodic_reset_days !== undefined
+		) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["periodic_reset_days"],
+				message:
+					"periodic_reset and periodic_reset_days are mutually exclusive",
+			});
+		}
 		if (value.type === "workspace" && !value.workspace_id) {
 			ctx.addIssue({
 				code: z.ZodIssueCode.custom,
@@ -406,7 +457,11 @@ function formatKeyUsageLimits(
 	limits: VirtualKeyUsageLimits | ApiKeyUsageLimits | null,
 ): Pick<
 	VirtualKeyUsageLimits | ApiKeyUsageLimits,
-	"type" | "credit_limit" | "alert_threshold" | "periodic_reset"
+	| "type"
+	| "credit_limit"
+	| "alert_threshold"
+	| "periodic_reset"
+	| "periodic_reset_days"
 > | null {
 	return limits
 		? {
@@ -414,6 +469,7 @@ function formatKeyUsageLimits(
 				credit_limit: limits.credit_limit,
 				alert_threshold: limits.alert_threshold,
 				periodic_reset: limits.periodic_reset,
+				periodic_reset_days: limits.periodic_reset_days,
 			}
 		: null;
 }
@@ -610,6 +666,9 @@ export function registerKeysTools(
 				usage_limits: buildUsageLimits({
 					credit_limit: validated.credit_limit,
 					alert_threshold: validated.alert_threshold,
+					type: validated.usage_limit_type,
+					periodic_reset: validated.periodic_reset,
+					periodic_reset_days: validated.periodic_reset_days,
 				}),
 				rate_limits: buildRateLimitsRpm(validated.rate_limit_rpm),
 				expires_at: validated.expires_at,
@@ -649,10 +708,14 @@ export function registerKeysTools(
 			inputSchema: KEYS_TOOL_SCHEMAS.updateVirtualKey,
 		},
 		async (params) => {
+			assertResetCadenceExclusive(params);
 			const usageLimits = await mergeUsageLimitsUpdate(
 				buildUsageLimitsUpdate({
 					credit_limit: params.credit_limit,
 					alert_threshold: params.alert_threshold,
+					type: params.usage_limit_type,
+					periodic_reset: params.periodic_reset,
+					periodic_reset_days: params.periodic_reset_days,
 				}),
 				async () =>
 					(await service.keys.getVirtualKey(params.slug)).usage_limits,
@@ -725,6 +788,9 @@ export function registerKeysTools(
 					usage_limits: buildUsageLimits({
 						credit_limit: validated.credit_limit,
 						alert_threshold: validated.alert_threshold,
+						type: validated.usage_limit_type,
+						periodic_reset: validated.periodic_reset,
+						periodic_reset_days: validated.periodic_reset_days,
 					}),
 					rate_limits:
 						validated.rate_limits === undefined
@@ -799,10 +865,14 @@ export function registerKeysTools(
 			inputSchema: KEYS_TOOL_SCHEMAS.updateApiKey,
 		},
 		async (params) => {
+			assertResetCadenceExclusive(params);
 			const usageLimits = await mergeUsageLimitsUpdate(
 				buildUsageLimitsUpdate({
 					credit_limit: params.credit_limit,
 					alert_threshold: params.alert_threshold,
+					type: params.usage_limit_type,
+					periodic_reset: params.periodic_reset,
+					periodic_reset_days: params.periodic_reset_days,
 				}),
 				async () => (await service.keys.getApiKey(params.id)).usage_limits,
 			);

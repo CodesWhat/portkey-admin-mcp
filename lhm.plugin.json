@@ -2468,6 +2468,22 @@
 						"minimum": 0,
 						"maximum": 100
 					},
+					"usage_limit_type": {
+						"description": "Whether the limit measures cost or tokens. On create it defaults to cost; on update an omitted value keeps the existing type.",
+						"type": "string",
+						"enum": ["cost", "tokens"]
+					},
+					"periodic_reset": {
+						"description": "Built-in reset cadence. Mutually exclusive with periodic_reset_days. On create it defaults to monthly unless periodic_reset_days is set.",
+						"type": "string",
+						"enum": ["monthly", "weekly"]
+					},
+					"periodic_reset_days": {
+						"description": "Custom reset cadence in days, 1 through 365. Mutually exclusive with periodic_reset.",
+						"type": "integer",
+						"minimum": 1,
+						"maximum": 365
+					},
 					"rate_limit_rpm": {
 						"description": "Requests per minute limit",
 						"type": "number",
@@ -2537,6 +2553,22 @@
 						"type": "number",
 						"minimum": 0,
 						"maximum": 100
+					},
+					"usage_limit_type": {
+						"description": "Whether the limit measures cost or tokens. On create it defaults to cost; on update an omitted value keeps the existing type.",
+						"type": "string",
+						"enum": ["cost", "tokens"]
+					},
+					"periodic_reset": {
+						"description": "Built-in reset cadence. Mutually exclusive with periodic_reset_days. On create it defaults to monthly unless periodic_reset_days is set.",
+						"type": "string",
+						"enum": ["monthly", "weekly"]
+					},
+					"periodic_reset_days": {
+						"description": "Custom reset cadence in days, 1 through 365. Mutually exclusive with periodic_reset.",
+						"type": "integer",
+						"minimum": 1,
+						"maximum": 365
 					},
 					"rate_limit_rpm": {
 						"description": "New rate limit in requests per minute",
@@ -2690,6 +2722,22 @@
 						"type": "number",
 						"minimum": 0,
 						"maximum": 100
+					},
+					"usage_limit_type": {
+						"description": "Whether the limit measures cost or tokens. On create it defaults to cost; on update an omitted value keeps the existing type.",
+						"type": "string",
+						"enum": ["cost", "tokens"]
+					},
+					"periodic_reset": {
+						"description": "Built-in reset cadence. Mutually exclusive with periodic_reset_days. On create it defaults to monthly unless periodic_reset_days is set.",
+						"type": "string",
+						"enum": ["monthly", "weekly"]
+					},
+					"periodic_reset_days": {
+						"description": "Custom reset cadence in days, 1 through 365. Mutually exclusive with periodic_reset.",
+						"type": "integer",
+						"minimum": 1,
+						"maximum": 365
 					},
 					"rate_limit_rpm": {
 						"description": "Rate limit in requests per minute",
@@ -2908,6 +2956,22 @@
 						"type": "number",
 						"minimum": 0,
 						"maximum": 100
+					},
+					"usage_limit_type": {
+						"description": "Whether the limit measures cost or tokens. On create it defaults to cost; on update an omitted value keeps the existing type.",
+						"type": "string",
+						"enum": ["cost", "tokens"]
+					},
+					"periodic_reset": {
+						"description": "Built-in reset cadence. Mutually exclusive with periodic_reset_days. On create it defaults to monthly unless periodic_reset_days is set.",
+						"type": "string",
+						"enum": ["monthly", "weekly"]
+					},
+					"periodic_reset_days": {
+						"description": "Custom reset cadence in days, 1 through 365. Mutually exclusive with periodic_reset.",
+						"type": "integer",
+						"minimum": 1,
+						"maximum": 365
 					},
 					"rate_limit_rpm": {
 						"description": "New rate limit in requests per minute",
@@ -11641,6 +11705,12 @@
 						"type": "string",
 						"enum": ["monthly", "weekly"]
 					},
+					"periodic_reset_days": {
+						"description": "Custom reset cadence in days, 1 through 365. Mutually exclusive with periodic_reset.",
+						"type": "integer",
+						"minimum": 1,
+						"maximum": 365
+					},
 					"rate_limit_value": {
 						"description": "Must be provided together with rate_limit_unit.",
 						"type": "number",
@@ -11733,6 +11803,12 @@
 						"description": "Reset period: 'monthly' or 'weekly'. If omitted, preserves the existing cadence, including custom reset days; defaults to 'monthly' when no limits exist.",
 						"type": "string",
 						"enum": ["monthly", "weekly"]
+					},
+					"periodic_reset_days": {
+						"description": "Custom reset cadence in days, 1 through 365. Mutually exclusive with periodic_reset.",
+						"type": "integer",
+						"minimum": 1,
+						"maximum": 365
 					},
 					"rate_limit_value": {
 						"description": "New rate limit value. Must be provided together with rate_limit_unit.",
