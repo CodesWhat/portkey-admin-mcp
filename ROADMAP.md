@@ -62,8 +62,8 @@ README, endpoint catalog, domain counts, and Enterprise-gated inventory together
   serves `55d1615c`.
 - Docker catalog #5026 now pins `55d1615c` (fork commit `8f6728ea`). Upstream
   review and catalog publication remain pending.
-- Pending or unverified: the Glama sync for 0.16.7 is a manual step that
-  hasn't been done yet. See `docs/DISTRIBUTION.md`.
+- Glama synced to `55d1615` and published 0.16.7 on 2026-11-27 after a passing build
+  test. See `docs/DISTRIBUTION.md`.
 
 ## Completed 2026-11-23 (0.16.6)
 
@@ -361,8 +361,8 @@ stable and public, or the stated live-verification prerequisite is met:
   pending.
 - Awesome MCP Servers: [#13074](https://github.com/punkpeye/awesome-mcp-servers/pull/13074)
   merged on 2026-09-13.
-- Glama: the 0.16.7 sync is pending and unverified. The last verified sync
-  was `f27306a`, where Auto-Release published 0.16.6 on 2026-11-23. Generated descriptions and quality-score evaluation can lag
+- Glama: synced to `55d1615`, and 0.16.7 was published on 2026-11-27 after a passing
+  build test. Generated descriptions and quality-score evaluation can lag
   the inventory. See the dated publication record in `docs/DISTRIBUTION.md`.
 - Recheck PulseMCP after listing changes reopen. Its legacy record still uses the
   pre-organization namespace and is not currently editable.
