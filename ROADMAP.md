@@ -42,11 +42,28 @@ README, endpoint catalog, domain counts, and Enterprise-gated inventory together
 
 ## Next unreleased version
 
-- 0.16.8 is the published release. Work for the next version lands on
+- 0.16.9 is the published release. Work for the next version lands on
   `dev/0.16` and is recorded under the CHANGELOG's Unreleased section.
 - Carried over from 0.16.6 and already shipped: dependency updates (#207), the
   fail-closed security test module-loading fix (#226), and the prompt promotion
   fix that preserves `ai_model_id` and `finetune_id` (#227).
+
+## Completed 2026-11-27 (0.16.9)
+
+- Published 0.16.9: annotated tag `v0.16.9` at
+  `4b1d4a66223587818c298a45b4f053c16fccc102` (`main`, promotion #251, merged
+  after the reconcile PR #252 and CodeQL on the PR ref showed no high or error
+  alerts and two non-author approvals), GitHub Release marked Latest, npm with
+  SLSA provenance and dist-tag `latest`, and the MCP Registry entry at 0.16.9
+  (`isLatest`). Release workflow 46039828125 succeeded.
+- 0.16.9 adds `next_usage_reset_at` to key and provider reads, SageMaker in the
+  integration `configurations` description, and a fetch-level `configurations`
+  test (#249, release prep #250).
+- LobeHub was updated to 0.16.9 (195 tools). The Vercel production deploy
+  serves `4b1d4a66`.
+- Docker catalog #5026 now pins `4b1d4a66` (fork commit `57cee3fe`). Upstream
+  review and catalog publication remain pending.
+- Glama: verification for 0.16.9 is pending. See `docs/DISTRIBUTION.md`.
 
 ## Completed 2026-11-27 (0.16.8)
 
@@ -373,13 +390,13 @@ stable and public, or the stated live-verification prerequisite is met:
 
 - Docker MCP Catalog: submitted as
   [docker/mcp-registry #5026](https://github.com/docker/mcp-registry/pull/5026),
-  refreshed to the 0.16.8 release commit `622f8370` (fork commit `e800b9f0`,
+  refreshed to the 0.16.9 release commit `4b1d4a66` (fork commit `57cee3fe`,
   2026-11-27). Upstream maintainer review and catalog publication remain
   pending.
 - Awesome MCP Servers: [#13074](https://github.com/punkpeye/awesome-mcp-servers/pull/13074)
   merged on 2026-09-13.
-- Glama: synced to `622f837`, and 0.16.8 was published on 2026-11-27 after a
-  passing build test. Generated descriptions and quality-score evaluation can lag
+- Glama: 0.16.8 was published on 2026-11-27 after a passing build test;
+  verification for 0.16.9 is pending. Generated descriptions and quality-score evaluation can lag
   the inventory. See the dated publication record in `docs/DISTRIBUTION.md`.
 - Recheck PulseMCP after listing changes reopen. Its legacy record still uses the
   pre-organization namespace and is not currently editable.
