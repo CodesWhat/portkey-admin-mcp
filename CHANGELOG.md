@@ -11,6 +11,10 @@ release until that reference and the release notes say so.
 
 ## [Unreleased]
 
+### Fixed
+
+- `update_config` now merges `strategy` field by field like cache and retry. Setting `strategy_mode` alone used to drop other strategy fields such as `on_status_codes` and `conditions`. Targets are still replaced whole.
+
 ## [0.16.7] - 2026-11-26
 
 Fixes `update_config` wiping settings it wasn't asked to change, config writes that errored after succeeding, and MCP sub-resource paging. Adds `ping_deployment` and every log-export filter, and keeps response fields several tools were dropping.

@@ -181,7 +181,8 @@ type ConfigPayload = ReturnType<typeof buildConfigPayload>;
 
 // PUT /configs/{slug} replaces the whole config, so merge the provided
 // settings into the current one. cache and retry merge field by field;
-// strategy and targets replace as whole values.
+// strategy merges field by field too (mode overrides, other keys stay),
+// and targets replace as a whole value.
 function mergeConfigDetails(
 	current: ConfigDetails,
 	patch: ConfigPayload,
@@ -195,7 +196,9 @@ function mergeConfigDetails(
 	if (patch.retry !== undefined) {
 		merged.retry = { ...current.retry, ...patch.retry };
 	}
-	if (patch.strategy !== undefined) merged.strategy = patch.strategy;
+	if (patch.strategy !== undefined) {
+		merged.strategy = { ...current.strategy, ...patch.strategy };
+	}
 	if (patch.targets !== undefined) merged.targets = patch.targets;
 	return merged;
 }
@@ -330,7 +333,7 @@ export function registerConfigsTools(
 		"update_config",
 		{
 			description:
-				"Update a config by slug; every call creates a new config version rather than overwriting, so earlier versions stay recoverable via list_config_versions. Only provided fields change: name, status, and all routing/cache/retry settings (auto_caching, cache_mode, cache_max_age, retry_attempts, retry_on_status_codes, strategy_mode, targets) are editable, while the slug stays fixed. Changes apply immediately to every API key and prompt referencing the config. Setting fields read the current config and write the merged result back (cache and retry merge field by field, strategy and targets replace whole), and Portkey has no conditional writes, so concurrent updates to the same config can overwrite each other. Serialize them. Returns the update acknowledgement and new version_id.",
+				"Update a config by slug; every call creates a new config version rather than overwriting, so earlier versions stay recoverable via list_config_versions. Only provided fields change: name, status, and all routing/cache/retry settings (auto_caching, cache_mode, cache_max_age, retry_attempts, retry_on_status_codes, strategy_mode, targets) are editable, while the slug stays fixed. Changes apply immediately to every API key and prompt referencing the config. Setting fields read the current config and write the merged result back (cache, retry, and strategy merge field by field, so strategy_mode keeps other strategy keys like on_status_codes and conditions; targets replace whole), and Portkey has no conditional writes, so concurrent updates to the same config can overwrite each other. Serialize them. Returns the update acknowledgement and new version_id.",
 			inputSchema: CONFIGS_TOOL_SCHEMAS.updateConfig,
 			annotations: {
 				readOnlyHint: false,

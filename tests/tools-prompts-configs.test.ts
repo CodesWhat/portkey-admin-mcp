@@ -1016,6 +1016,42 @@ describe("configuration mutation tools", () => {
 		]);
 	});
 
+	it("keeps other strategy fields when only strategy_mode is set", async () => {
+		const puts: unknown[] = [];
+		const callback = configCallbacks({
+			getConfig: async () => ({
+				config: {
+					strategy: {
+						mode: "fallback",
+						on_status_codes: [429, 500],
+						conditions: [{ query: { "metadata.tier": "pro" }, target: "a" }],
+					},
+					targets: [{ provider: "openai" }],
+				},
+			}),
+			updateConfig: async (_slug: string, payload: unknown) => {
+				puts.push(payload);
+				return { success: true, version_id: "v" };
+			},
+		}).get("update_config");
+		assert.ok(callback, "expected update_config to be registered");
+
+		await callback({ slug: "production", strategy_mode: "loadbalance" });
+
+		assert.deepEqual(puts, [
+			{
+				config: {
+					strategy: {
+						mode: "loadbalance",
+						on_status_codes: [429, 500],
+						conditions: [{ query: { "metadata.tier": "pro" }, target: "a" }],
+					},
+					targets: [{ provider: "openai" }],
+				},
+			},
+		]);
+	});
+
 	it("does not read or send config for a name-only or status-only update", async () => {
 		let getCalled = false;
 		const puts: unknown[] = [];
