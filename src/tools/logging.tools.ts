@@ -535,7 +535,7 @@ export function registerLoggingTools(
 		"update_log_export",
 		{
 			description:
-				"Update an existing log export configuration before or between export runs. You can change workspace_id, requested_fields and any of the filters create_log_export accepts. Use get_log_export to review the current job and start_log_export after the definition is ready.",
+				"Update an existing log export configuration before or between export runs. You can change workspace_id, requested_fields and any of the filters create_log_export accepts, except the time range is set with time_of_generation_min and time_of_generation_max here rather than create_log_export's time_min and time_max. Use get_log_export to review the current job and start_log_export after the definition is ready.",
 			inputSchema: LOGGING_TOOL_SCHEMAS.updateLogExport,
 		},
 		async (params) => {

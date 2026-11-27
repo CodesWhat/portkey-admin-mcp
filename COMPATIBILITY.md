@@ -16,7 +16,7 @@ Node.js 24 is the supported floor (`engines.node` is `>=24`). The main CI checks
 The 0.14.x SDK supports `2025-11-25`, `2025-06-18`, `2025-03-26`,
 `2024-11-05`, and `2024-10-07`. A newer client that negotiates an older
 revision can use this server; that fallback does not mean the server natively
-supports `2026-07-28`. Over stdio the era is chosen by the first message: one carrying the `2026-07-28` `_meta` envelope (including `server/discover`) is served natively, while a bare `initialize` is answered with `2025-11-25` and `server/discover` without the envelope returns -32601. Release tests cover modern auto/pinned clients and default legacy clients over HTTP and stdio. Client products, deployed proxies and marketplace acceptance still need release validation.
+supports `2026-07-28`. From 0.15.0 (SDK v2), over stdio the era is chosen by the first message: one carrying the `2026-07-28` `_meta` envelope (including `server/discover`) is served natively, while a bare `initialize` is answered with `2025-11-25` and `server/discover` without the envelope returns -32601. Release tests cover modern auto/pinned clients and default legacy clients over HTTP and stdio. Client products, deployed proxies and marketplace acceptance still need release validation.
 
 [SECURITY.md](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/SECURITY.md) owns the security-support policy: fixes ship on the
 latest published minor line; older minor lines do not receive backports.
