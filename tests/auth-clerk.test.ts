@@ -13,7 +13,7 @@
  */
 
 import assert from "node:assert/strict";
-import { afterEach, describe, it } from "node:test";
+import { afterEach, describe, it, mock } from "node:test";
 import { exportJWK, generateKeyPair, SignJWT } from "jose";
 import {
 	assertSafeHttpAuthConfig,
@@ -22,6 +22,7 @@ import {
 	getPrincipalOwnerKey,
 	mcpAuthMiddleware,
 	resetHttpAuthStateForTest,
+	warnIfDeprecatedAuthMode,
 } from "../src/lib/auth.js";
 
 const ORIGINAL_ENV = { ...process.env };
@@ -1154,5 +1155,49 @@ describe("clerk v2 session token decoding", () => {
 				),
 			/missing a required permission/,
 		);
+	});
+});
+
+describe("clerk auth mode deprecation warning", () => {
+	afterEach(() => {
+		mock.restoreAll();
+	});
+
+	function captureStderr(): string[] {
+		const lines: string[] = [];
+		mock.method(process.stderr, "write", (chunk: string | Uint8Array) => {
+			lines.push(String(chunk));
+			return true;
+		});
+		return lines;
+	}
+
+	function baseConfig(mode: "none" | "bearer" | "clerk") {
+		return {
+			mode,
+			allowedSubjects: [],
+			allowedOrganizationIds: [],
+			allowedRoles: [],
+			requiredPermissions: [],
+		} as unknown as Parameters<typeof warnIfDeprecatedAuthMode>[0];
+	}
+
+	it("logs one warn entry for clerk mode", () => {
+		const lines = captureStderr();
+		warnIfDeprecatedAuthMode(baseConfig("clerk"));
+		const warnings = lines
+			.map((line) => JSON.parse(line) as { level: string; message: string })
+			.filter((entry) => entry.message.includes("MCP_AUTH_MODE=clerk"));
+		assert.equal(warnings.length, 1);
+		assert.equal(warnings[0]?.level, "warn");
+		assert.match(warnings[0]?.message ?? "", /0\.17\.0/);
+		assert.match(warnings[0]?.message ?? "", /2027-01-31/);
+	});
+
+	it("stays quiet for bearer and none", () => {
+		const lines = captureStderr();
+		warnIfDeprecatedAuthMode(baseConfig("bearer"));
+		warnIfDeprecatedAuthMode(baseConfig("none"));
+		assert.equal(lines.length, 0);
 	});
 });
