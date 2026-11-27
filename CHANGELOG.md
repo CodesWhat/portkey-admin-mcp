@@ -11,6 +11,15 @@ release until that reference and the release notes say so.
 
 ## [Unreleased]
 
+### Fixed
+
+- `update_config` now merges `strategy` field by field like cache and retry. Setting `strategy_mode` alone used to drop other strategy fields such as `on_status_codes` and `conditions`. Targets are still replaced whole.
+- `create_integration` and `update_integration` now take a `configurations` object, so provider fields the flat inputs never covered (Bedrock `aws_auth_type`, Azure `azure_auth_mode` and `azure_resource_name`, Workers AI, Cortex, OpenAI and Anthropic auth, custom headers) reach the API. The flat fields still work and override matching keys.
+
+### Added
+
+- `create_virtual_key`, `update_virtual_key`, `create_api_key` and `update_api_key` now take `usage_limit_type`, `periodic_reset` and `periodic_reset_days`, and the provider tools take `periodic_reset_days`, so a key or provider can use a token budget or a custom reset cadence. `periodic_reset` and `periodic_reset_days` are mutually exclusive, and updates still merge onto the limits already on the resource. Key and provider reads now return `periodic_reset_days`.
+
 ## [0.16.7] - 2026-11-26
 
 Fixes `update_config` wiping settings it wasn't asked to change, config writes that errored after succeeding, and MCP sub-resource paging. Adds `ping_deployment` and every log-export filter, and keeps response fields several tools were dropping.

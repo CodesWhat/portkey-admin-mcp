@@ -11,6 +11,7 @@ export interface ProviderUsageLimits {
 	type: "cost" | "tokens";
 	credit_limit: number;
 	periodic_reset: "monthly" | "weekly" | string | null;
+	periodic_reset_days?: number | null;
 	alert_threshold: number;
 }
 

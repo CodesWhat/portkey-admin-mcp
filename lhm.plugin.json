@@ -1795,7 +1795,7 @@
 		},
 		{
 			"name": "update_config",
-			"description": "Update a config by slug; every call creates a new config version rather than overwriting, so earlier versions stay recoverable via list_config_versions. Only provided fields change: name, status, and all routing/cache/retry settings (auto_caching, cache_mode, cache_max_age, retry_attempts, retry_on_status_codes, strategy_mode, targets) are editable, while the slug stays fixed. Changes apply immediately to every API key and prompt referencing the config. Setting fields read the current config and write the merged result back (cache and retry merge field by field, strategy and targets replace whole), and Portkey has no conditional writes, so concurrent updates to the same config can overwrite each other. Serialize them. Returns the update acknowledgement and new version_id.",
+			"description": "Update a config by slug; every call creates a new config version rather than overwriting, so earlier versions stay recoverable via list_config_versions. Only provided fields change: name, status, and all routing/cache/retry settings (auto_caching, cache_mode, cache_max_age, retry_attempts, retry_on_status_codes, strategy_mode, targets) are editable, while the slug stays fixed. Changes apply immediately to every API key and prompt referencing the config. Setting fields read the current config and write the merged result back (cache, retry, and strategy merge field by field, so strategy_mode keeps other strategy keys like on_status_codes and conditions; targets replace whole), and Portkey has no conditional writes, so concurrent updates to the same config can overwrite each other. Serialize them. Returns the update acknowledgement and new version_id.",
 			"inputSchema": {
 				"type": "object",
 				"properties": {
@@ -2468,6 +2468,22 @@
 						"minimum": 0,
 						"maximum": 100
 					},
+					"usage_limit_type": {
+						"description": "Whether the limit measures cost or tokens. On create it defaults to cost; on update an omitted value keeps the existing type.",
+						"type": "string",
+						"enum": ["cost", "tokens"]
+					},
+					"periodic_reset": {
+						"description": "Built-in reset cadence. Mutually exclusive with periodic_reset_days. On create it defaults to monthly unless periodic_reset_days is set.",
+						"type": "string",
+						"enum": ["monthly", "weekly"]
+					},
+					"periodic_reset_days": {
+						"description": "Custom reset cadence in days, 1 through 365. Mutually exclusive with periodic_reset.",
+						"type": "integer",
+						"minimum": 1,
+						"maximum": 365
+					},
 					"rate_limit_rpm": {
 						"description": "Requests per minute limit",
 						"type": "number",
@@ -2537,6 +2553,22 @@
 						"type": "number",
 						"minimum": 0,
 						"maximum": 100
+					},
+					"usage_limit_type": {
+						"description": "Whether the limit measures cost or tokens. On create it defaults to cost; on update an omitted value keeps the existing type.",
+						"type": "string",
+						"enum": ["cost", "tokens"]
+					},
+					"periodic_reset": {
+						"description": "Built-in reset cadence. Mutually exclusive with periodic_reset_days. On create it defaults to monthly unless periodic_reset_days is set.",
+						"type": "string",
+						"enum": ["monthly", "weekly"]
+					},
+					"periodic_reset_days": {
+						"description": "Custom reset cadence in days, 1 through 365. Mutually exclusive with periodic_reset.",
+						"type": "integer",
+						"minimum": 1,
+						"maximum": 365
 					},
 					"rate_limit_rpm": {
 						"description": "New rate limit in requests per minute",
@@ -2690,6 +2722,22 @@
 						"type": "number",
 						"minimum": 0,
 						"maximum": 100
+					},
+					"usage_limit_type": {
+						"description": "Whether the limit measures cost or tokens. On create it defaults to cost; on update an omitted value keeps the existing type.",
+						"type": "string",
+						"enum": ["cost", "tokens"]
+					},
+					"periodic_reset": {
+						"description": "Built-in reset cadence. Mutually exclusive with periodic_reset_days. On create it defaults to monthly unless periodic_reset_days is set.",
+						"type": "string",
+						"enum": ["monthly", "weekly"]
+					},
+					"periodic_reset_days": {
+						"description": "Custom reset cadence in days, 1 through 365. Mutually exclusive with periodic_reset.",
+						"type": "integer",
+						"minimum": 1,
+						"maximum": 365
 					},
 					"rate_limit_rpm": {
 						"description": "Rate limit in requests per minute",
@@ -2908,6 +2956,22 @@
 						"type": "number",
 						"minimum": 0,
 						"maximum": 100
+					},
+					"usage_limit_type": {
+						"description": "Whether the limit measures cost or tokens. On create it defaults to cost; on update an omitted value keeps the existing type.",
+						"type": "string",
+						"enum": ["cost", "tokens"]
+					},
+					"periodic_reset": {
+						"description": "Built-in reset cadence. Mutually exclusive with periodic_reset_days. On create it defaults to monthly unless periodic_reset_days is set.",
+						"type": "string",
+						"enum": ["monthly", "weekly"]
+					},
+					"periodic_reset_days": {
+						"description": "Custom reset cadence in days, 1 through 365. Mutually exclusive with periodic_reset.",
+						"type": "integer",
+						"minimum": 1,
+						"maximum": 365
 					},
 					"rate_limit_rpm": {
 						"description": "New rate limit in requests per minute",
@@ -11641,6 +11705,12 @@
 						"type": "string",
 						"enum": ["monthly", "weekly"]
 					},
+					"periodic_reset_days": {
+						"description": "Custom reset cadence in days, 1 through 365. Mutually exclusive with periodic_reset.",
+						"type": "integer",
+						"minimum": 1,
+						"maximum": 365
+					},
 					"rate_limit_value": {
 						"description": "Must be provided together with rate_limit_unit.",
 						"type": "number",
@@ -11733,6 +11803,12 @@
 						"description": "Reset period: 'monthly' or 'weekly'. If omitted, preserves the existing cadence, including custom reset days; defaults to 'monthly' when no limits exist.",
 						"type": "string",
 						"enum": ["monthly", "weekly"]
+					},
+					"periodic_reset_days": {
+						"description": "Custom reset cadence in days, 1 through 365. Mutually exclusive with periodic_reset.",
+						"type": "integer",
+						"minimum": 1,
+						"maximum": 365
 					},
 					"rate_limit_value": {
 						"description": "New rate limit value. Must be provided together with rate_limit_unit.",
@@ -12568,6 +12644,14 @@
 						"description": "GCP region (for Vertex AI)",
 						"type": "string"
 					},
+					"configurations": {
+						"description": "Provider-specific configuration object, passed through as given. Use the field names for the provider's variant: OpenAI (openai_organization, openai_project, provider_auth_type, oauth_*), Anthropic (anthropic_*, provider_auth_type, oauth_*), Azure OpenAI (azure_auth_mode, azure_resource_name, azure_deployment_config, azure_entra_*), Bedrock (aws_auth_type, aws_region, aws_role_arn, aws_external_id), Vertex AI (vertex_auth_type, vertex_region, vertex_project_id, vertex_service_account_json), Azure AI (azure_foundry_url, azure_auth_mode), Workers AI (workers_ai_account_id), Hugging Face (huggingface_base_url), Cortex (snowflake_account), custom host (custom_host, custom_headers). The flat fields below override matching keys.",
+						"type": "object",
+						"propertyNames": {
+							"type": "string"
+						},
+						"additionalProperties": {}
+					},
 					"custom_host": {
 						"description": "Custom base URL for the provider",
 						"type": "string"
@@ -13016,6 +13100,14 @@
 					"vertex_region": {
 						"description": "New GCP region (for Vertex AI)",
 						"type": "string"
+					},
+					"configurations": {
+						"description": "Provider-specific configuration object, passed through as given. Use the field names for the provider's variant: OpenAI (openai_organization, openai_project, provider_auth_type, oauth_*), Anthropic (anthropic_*, provider_auth_type, oauth_*), Azure OpenAI (azure_auth_mode, azure_resource_name, azure_deployment_config, azure_entra_*), Bedrock (aws_auth_type, aws_region, aws_role_arn, aws_external_id), Vertex AI (vertex_auth_type, vertex_region, vertex_project_id, vertex_service_account_json), Azure AI (azure_foundry_url, azure_auth_mode), Workers AI (workers_ai_account_id), Hugging Face (huggingface_base_url), Cortex (snowflake_account), custom host (custom_host, custom_headers). The flat fields below override matching keys.",
+						"type": "object",
+						"propertyNames": {
+							"type": "string"
+						},
+						"additionalProperties": {}
 					},
 					"custom_host": {
 						"description": "New custom base URL for the provider",

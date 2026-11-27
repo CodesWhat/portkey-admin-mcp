@@ -1312,3 +1312,203 @@ describe("usage limit type in key output", () => {
 		);
 	});
 });
+
+// ---------------------------------------------------------------------------
+// usage limit type and reset cadence
+// ---------------------------------------------------------------------------
+
+describe("key usage limit type and reset cadence", () => {
+	function setupKeys(existing: unknown) {
+		const captured: Record<string, unknown> = {};
+		const callbacks = registerToolCallbacks((server) => {
+			registerKeysTools(
+				server as never,
+				{
+					keys: {
+						createVirtualKey: async (payload: unknown) => {
+							captured.createVirtualKey = payload;
+							return { success: true, data: { slug: "vk" } };
+						},
+						updateVirtualKey: async (_slug: string, payload: unknown) => {
+							captured.updateVirtualKey = payload;
+							return { success: true };
+						},
+						getVirtualKey: async () => ({ usage_limits: existing }),
+						createApiKey: async (
+							_type: string,
+							_subType: string,
+							payload: unknown,
+						) => {
+							captured.createApiKey = payload;
+							return { success: true };
+						},
+						updateApiKey: async (_id: string, payload: unknown) => {
+							captured.updateApiKey = payload;
+							return { success: true };
+						},
+						getApiKey: async () => ({ usage_limits: existing }),
+					},
+				} as never,
+			);
+		});
+		return { callbacks, captured };
+	}
+
+	const usage = (payload: unknown) =>
+		(payload as { usage_limits?: unknown }).usage_limits;
+
+	it("sends type and periodic_reset on create_virtual_key", async () => {
+		const { callbacks, captured } = setupKeys(null);
+		await callbacks.get("create_virtual_key")?.({
+			name: "k",
+			provider: "openai",
+			key: "sk",
+			credit_limit: 5,
+			usage_limit_type: "tokens",
+			periodic_reset: "weekly",
+		});
+		assert.deepEqual(usage(captured.createVirtualKey), {
+			type: "tokens",
+			periodic_reset: "weekly",
+			credit_limit: 5,
+		});
+	});
+
+	it("drops the monthly default when create_virtual_key gets periodic_reset_days", async () => {
+		const { callbacks, captured } = setupKeys(null);
+		await callbacks.get("create_virtual_key")?.({
+			name: "k",
+			provider: "openai",
+			key: "sk",
+			credit_limit: 5,
+			periodic_reset_days: 14,
+		});
+		assert.deepEqual(usage(captured.createVirtualKey), {
+			type: "cost",
+			periodic_reset_days: 14,
+			credit_limit: 5,
+		});
+	});
+
+	it("rejects periodic_reset together with periodic_reset_days on create", async () => {
+		const { callbacks } = setupKeys(null);
+		await assert.rejects(
+			async () =>
+				callbacks.get("create_virtual_key")?.({
+					name: "k",
+					provider: "openai",
+					key: "sk",
+					periodic_reset: "weekly",
+					periodic_reset_days: 14,
+				}),
+			/mutually exclusive/,
+		);
+	});
+
+	it("sends type and periodic_reset_days on create_api_key", async () => {
+		const { callbacks, captured } = setupKeys(null);
+		await callbacks.get("create_api_key")?.({
+			type: "organisation",
+			sub_type: "service",
+			name: "k",
+			scopes: ["logs.read"],
+			credit_limit: 9,
+			usage_limit_type: "tokens",
+			periodic_reset_days: 30,
+		});
+		assert.deepEqual(usage(captured.createApiKey), {
+			type: "tokens",
+			periodic_reset_days: 30,
+			credit_limit: 9,
+		});
+	});
+
+	it("update_virtual_key swaps an existing cadence for periodic_reset_days", async () => {
+		const { callbacks, captured } = setupKeys({
+			type: "cost",
+			credit_limit: 100,
+			alert_threshold: 80,
+			periodic_reset: "monthly",
+		});
+		await callbacks.get("update_virtual_key")?.({
+			slug: "vk",
+			periodic_reset_days: 7,
+		});
+		assert.deepEqual(usage(captured.updateVirtualKey), {
+			type: "cost",
+			credit_limit: 100,
+			alert_threshold: 80,
+			periodic_reset_days: 7,
+		});
+	});
+
+	it("update_api_key changes only the type and keeps the rest", async () => {
+		const { callbacks, captured } = setupKeys({
+			type: "cost",
+			credit_limit: 100,
+			periodic_reset: "weekly",
+		});
+		await callbacks.get("update_api_key")?.({
+			id: "550e8400-e29b-41d4-a716-446655440000",
+			usage_limit_type: "tokens",
+		});
+		assert.deepEqual(usage(captured.updateApiKey), {
+			type: "tokens",
+			credit_limit: 100,
+			periodic_reset: "weekly",
+		});
+	});
+
+	it("rejects both cadences on update", async () => {
+		const { callbacks } = setupKeys(null);
+		await assert.rejects(
+			async () =>
+				callbacks.get("update_virtual_key")?.({
+					slug: "vk",
+					periodic_reset: "weekly",
+					periodic_reset_days: 3,
+				}),
+			/mutually exclusive/,
+		);
+	});
+
+	it("projects periodic_reset_days on get_virtual_key", async () => {
+		const callbacks = registerToolCallbacks((server) => {
+			registerKeysTools(
+				server as never,
+				{
+					keys: {
+						getVirtualKey: async () => ({
+							name: "k",
+							slug: "vk",
+							status: "active",
+							note: null,
+							usage_limits: {
+								type: "cost",
+								credit_limit: 10,
+								alert_threshold: 5,
+								periodic_reset: null,
+								periodic_reset_days: 30,
+							},
+							rate_limits: null,
+							reset_usage: null,
+							created_at: "2026-01-01T00:00:00.000Z",
+							model_config: {},
+						}),
+					},
+				} as never,
+			);
+		});
+		const result = (await callbacks.get("get_virtual_key")?.({
+			slug: "vk",
+		})) as { content: Array<{ text: string }> };
+		const payload = JSON.parse(result.content[0]?.text ?? "{}");
+		assert.deepEqual(payload.usage_limits, {
+			type: "cost",
+			credit_limit: 10,
+			alert_threshold: 5,
+			periodic_reset: null,
+			periodic_reset_days: 30,
+		});
+	});
+});
