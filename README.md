@@ -80,7 +80,7 @@ Website: [portkey.codeswhat.com](https://portkey.codeswhat.com/). Docs: [portkey
 
 You need a **Portkey API key** with appropriate scopes. Get one from your [Portkey dashboard](https://app.portkey.ai/) under API Keys.
 
-Version 0.15.0 uses MCP SDK v2 and serves protocol revision `2026-07-28` and
+Since 0.15.0 the server uses MCP SDK v2 and serves protocol revision `2026-07-28` and
 older clients on the same endpoint. Over stdio, a first message carrying the
 `2026-07-28` `_meta` envelope gets the new revision; a bare `initialize` gets
 `2025-11-25`. It retires HTTP sessions and replay;
@@ -429,7 +429,7 @@ for the public threat model and assurance case.
 
 <h2 align="center" id="roadmap">Roadmap</h2>
 
-Release 0.15.0 moves to MCP SDK v2 and the 2026-07-28 spec.
+Since 0.15.0 the server runs on MCP SDK v2 and the 2026-07-28 spec.
 The [roadmap](https://github.com/CodesWhat/portkey-admin-mcp/blob/main/ROADMAP.md) separates completed work from upstream contract and
 tenant-verification gates. The MCP v2 migration shipped in 0.15.0 and keeps older
 clients on the same endpoint while retiring session and replay storage. See [compatibility and deprecations](./COMPATIBILITY.md).
