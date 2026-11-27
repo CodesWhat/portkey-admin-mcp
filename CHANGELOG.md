@@ -11,6 +11,10 @@ release until that reference and the release notes say so.
 
 ## [Unreleased]
 
+## [0.16.9] - 2026-11-27
+
+Key and provider reads now show when a usage limit resets next, and the integration `configurations` description covers SageMaker.
+
 ### Added
 
 - Key and provider reads now return `next_usage_reset_at` alongside `periodic_reset_days`, so you can see when a usage limit resets next.
@@ -1156,7 +1160,8 @@ First stable release. Graduates from beta with 151 tools covering ~98% of the Po
 - Vercel deployment support
 - Contract tests, E2E tests, security tests
 
-[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.8...HEAD
+[Unreleased]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.9...HEAD
+[0.16.9]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.8...v0.16.9
 [0.16.8]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.7...v0.16.8
 [0.16.7]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.6...v0.16.7
 [0.16.6]: https://github.com/CodesWhat/portkey-admin-mcp/compare/v0.16.5...v0.16.6
