@@ -151,12 +151,12 @@ are unchanged from the September baseline. Egress calls use the hosted `/v2`
 base: `/v1` returns the inference gateway fallback, while `/v2` reaches the
 organisation permission check. The configured credential can list access
 policies but cannot read the egress allowlist; access-policy create/read/replace/version-conflict/delete behavior was verified
-with a disposable disabled policy. Egress read and mutation contracts remain
-documentation-derived pending an appropriately scoped tenant.
+with a disposable disabled policy. Egress read and mutation contracts stay
+documentation-derived. No scoped tenant is planned, so they won't be live-verified.
 
 Prisma AIRS now publishes management contracts. The interoperability guide
-records the authentication, route, domain, and verification differences. Native
-adapter work waits for a credentialed tenant to verify those contracts; a base
+records the authentication, route, domain, and verification differences. A native
+adapter isn't planned, since there's no tenant to verify those contracts against; a base
 URL substitution remains unsupported.
 No maintainer Prisma AIRS tenant is available, and acquiring paid access is
 outside this project's maintenance plan. Palo Alto Networks advertises a
@@ -378,16 +378,13 @@ stable and public, or the stated live-verification prerequisite is met:
 - MCP integration test/named authorization parameters, guardrail `ids`, and
   workspace `name_format=plain`, which are absent from the current public OpenAPI.
 - Disputed limit-policy extensions such as `tpm|tph|tpd`, requests-based usage
-  policies, custom reset cadence on creation, and fields absent from the published
-  schemas.
-- Hosted control-plane route availability for credentials that lack the required
-  organisation or feature scopes. The smoke runner treats only explicit HTTP 401
-  and 403 permission denials as skips; unexpected HTTP 400 route failures remain
-  real failures.
-- A native Prisma AIRS adapter. The management specification is now public;
-  verify its authentication, separate management bases, and supported domains
-  against a credentialed tenant before implementation. Keep it distinct from
-  Portkey mode, as described in `docs/PRISMA_AIRS_INTEROPERABILITY.md`.
+  policies, and fields absent from the published schemas. Custom reset cadence
+  (`periodic_reset_days`) shipped in 0.16.8.
+
+Live-tenant verification is out of scope: the project has no Portkey or Prisma
+AIRS tenant and won't get one. That rules out credentialed route-availability
+checks and a native Prisma AIRS adapter (see `docs/PRISMA_AIRS_INTEROPERABILITY.md`
+for the side-by-side model).
 
 ## Distribution follow-up
 
