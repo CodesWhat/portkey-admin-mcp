@@ -11,6 +11,14 @@ release until that reference and the release notes say so.
 
 ## [Unreleased]
 
+### Added
+
+- Key and provider reads now return `next_usage_reset_at` alongside `periodic_reset_days`, so you can see when a usage limit resets next.
+
+### Fixed
+
+- The `configurations` description on `create_integration` and `update_integration` now lists SageMaker (the Bedrock `aws_*` fields plus `amzn_sagemaker_*`), and tests cover it plus the request body that reaches the API.
+
 ## [0.16.8] - 2026-11-27
 
 Adds key and provider usage-limit reset options and a `configurations` passthrough for integrations, so provider settings the flat inputs missed reach the API. `update_config` now merges `strategy` instead of dropping fields you didn't set.

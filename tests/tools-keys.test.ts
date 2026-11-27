@@ -1511,4 +1511,46 @@ describe("key usage limit type and reset cadence", () => {
 			periodic_reset_days: 30,
 		});
 	});
+
+	it("projects next_usage_reset_at on get_virtual_key", async () => {
+		const callbacks = registerToolCallbacks((server) => {
+			registerKeysTools(
+				server as never,
+				{
+					keys: {
+						getVirtualKey: async () => ({
+							name: "k",
+							slug: "vk",
+							status: "active",
+							note: null,
+							usage_limits: {
+								type: "cost",
+								credit_limit: 10,
+								alert_threshold: 5,
+								periodic_reset: null,
+								periodic_reset_days: 30,
+								next_usage_reset_at: "2026-12-01T00:00:00Z",
+							},
+							rate_limits: null,
+							reset_usage: null,
+							created_at: "2026-01-01T00:00:00.000Z",
+							model_config: {},
+						}),
+					},
+				} as never,
+			);
+		});
+		const result = (await callbacks.get("get_virtual_key")?.({
+			slug: "vk",
+		})) as { content: Array<{ text: string }> };
+		const payload = JSON.parse(result.content[0]?.text ?? "{}");
+		assert.deepEqual(payload.usage_limits, {
+			type: "cost",
+			credit_limit: 10,
+			alert_threshold: 5,
+			periodic_reset: null,
+			periodic_reset_days: 30,
+			next_usage_reset_at: "2026-12-01T00:00:00Z",
+		});
+	});
 });

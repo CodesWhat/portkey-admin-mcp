@@ -12,6 +12,7 @@ export interface ProviderUsageLimits {
 	credit_limit: number;
 	periodic_reset: "monthly" | "weekly" | string | null;
 	periodic_reset_days?: number | null;
+	next_usage_reset_at?: string | null;
 	alert_threshold: number;
 }
 

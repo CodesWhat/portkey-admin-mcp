@@ -52,6 +52,19 @@ const variants: Array<{
 		},
 	},
 	{
+		name: "sagemaker",
+		ai_provider_id: "sagemaker",
+		configurations: {
+			aws_auth_type: "accessKey",
+			aws_region: "us-east-1",
+			aws_access_key_id: "AKIAEXAMPLE",
+			aws_secret_access_key: "secret",
+			amzn_sagemaker_target_model: "model.tar.gz",
+			amzn_sagemaker_target_variant: "variant-1",
+			amzn_sagemaker_inference_component: "comp",
+		},
+	},
+	{
 		name: "vertex-ai",
 		ai_provider_id: "vertex-ai",
 		configurations: {
